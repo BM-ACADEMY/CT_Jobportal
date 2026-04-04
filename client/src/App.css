@@ -1,0 +1,11 @@
+/* App-level overrides — minimal, global styles are in index.css */
+
+/* Ant Design input height normalization */
+.ant-input-affix-wrapper {
+  align-items: center;
+}
+
+/* Remove antd default body color */
+.ant-layout {
+  background: transparent;
+}
