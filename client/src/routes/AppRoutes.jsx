@@ -14,6 +14,9 @@ import { GuestRoute, PrivateRoute } from './ProtectedRoutes';
 import HomePage from '../pages/Home';
 import LoginPage from '../pages/auth/Login';
 import RegisterPage from '../pages/auth/Register';
+import VerifyOtpPage from '../pages/auth/VerifyOtp';
+import ForgotPasswordPage from '../pages/auth/ForgotPassword';
+import SocialAuthSuccess from '../pages/auth/SocialAuthSuccess';
 import JobSeekerDashboard from '../pages/jobseeker/Dashboard';
 import AdminDashboard from '../pages/admin/Dashboard';
 import CompanyDashboard from '../pages/company/Dashboard';
@@ -59,6 +62,23 @@ const AppRoutes = () => {
             </GuestRoute>
           }
         />
+        <Route
+          path="/verify-otp"
+          element={
+            <GuestRoute>
+              <VerifyOtpPage />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestRoute>
+              <ForgotPasswordPage />
+            </GuestRoute>
+          }
+        />
+        <Route path="/social-auth-success" element={<SocialAuthSuccess />} />
       </Route>
 
       {/* ── Role-Based Dashboard Routes ───────────── */}
