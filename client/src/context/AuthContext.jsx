@@ -26,6 +26,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const res = await axios.post(`${API_URL}/login`, { email, password });
+      
+      if (res.data.requireOtp) {
+        return { success: true, requireOtp: true, email: res.data.email, msg: res.data.msg };
+      }
+
       const { user, token } = res.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
@@ -40,6 +45,12 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const res = await axios.post(`${API_URL}/register`, userData);
+      
+      if (res.data.requireOtp) {
+        return { success: true, requireOtp: true, email: res.data.email, msg: res.data.msg };
+      }
+
+      // Fallback if no OTP required
       const { user, token } = res.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
@@ -51,6 +62,61 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyOtp = async (email, otp) => {
+    try {
+      const res = await axios.post(`${API_URL}/verify-otp`, { email, otp });
+      const { user, token } = res.data;
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      return { success: true, redirect: getRoleRoute(user.role) };
+    } catch (err) {
+      return { success: false, msg: err.response?.data?.msg || 'Invalid or expired OTP' };
+    }
+  };
+
+  const forgotPassword = async (email) => {
+    try {
+      const res = await axios.post(`${API_URL}/forgot-password`, { email });
+      return { success: true, msg: res.data.msg };
+    } catch (err) {
+      return { success: false, msg: err.response?.data?.msg || 'Failed to send reset email' };
+    }
+  };
+  
+  const resetPassword = async (email, otp, newPassword) => {
+    try {
+      const res = await axios.post(`${API_URL}/reset-password`, { email, otp, newPassword });
+      return { success: true, msg: res.data.msg };
+    } catch (err) {
+      return { success: false, msg: err.response?.data?.msg || 'Failed to reset password. OTP may be invalid.' };
+    }
+  };
+
+  const resendOtp = async (email) => {
+    try {
+      const res = await axios.post(`${API_URL}/resend-otp`, { email });
+      return { success: true, msg: res.data.msg };
+    } catch (err) {
+      return { success: false, msg: err.response?.data?.msg || 'Failed to resend OTP' };
+    }
+  };
+
+  const completeSocialLogin = (token, userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('token', token);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    return { success: true, redirect: getRoleRoute(userData.role) };
+  };
+
+  const updateUser = (newData) => {
+    const updatedUser = { ...user, ...newData };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -59,7 +125,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, verifyOtp, forgotPassword, resetPassword, resendOtp, completeSocialLogin, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

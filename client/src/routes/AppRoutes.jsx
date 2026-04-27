@@ -14,10 +14,17 @@ import { GuestRoute, PrivateRoute } from './ProtectedRoutes';
 import HomePage from '../pages/Home';
 import LoginPage from '../pages/auth/Login';
 import RegisterPage from '../pages/auth/Register';
+import VerifyOtpPage from '../pages/auth/VerifyOtp';
+import ForgotPasswordPage from '../pages/auth/ForgotPassword';
+import SocialAuthSuccess from '../pages/auth/SocialAuthSuccess';
 import JobSeekerDashboard from '../pages/jobseeker/Dashboard';
 import AdminDashboard from '../pages/admin/Dashboard';
 import CompanyDashboard from '../pages/company/Dashboard';
+import RecruiterSettings from '../pages/company/Settings';
+import PostJob from '../pages/company/PostJob';
 import SubAdminDashboard from '../pages/subadmin/Dashboard';
+import JobSeekerSettings from '../pages/jobseeker/Settings';
+
 
 // Role-based redirect after login
 const RoleRedirect = () => {
@@ -59,6 +66,23 @@ const AppRoutes = () => {
             </GuestRoute>
           }
         />
+        <Route
+          path="/verify-otp"
+          element={
+            <GuestRoute>
+              <VerifyOtpPage />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestRoute>
+              <ForgotPasswordPage />
+            </GuestRoute>
+          }
+        />
+        <Route path="/social-auth-success" element={<SocialAuthSuccess />} />
       </Route>
 
       {/* ── Role-Based Dashboard Routes ───────────── */}
@@ -87,8 +111,32 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/jobseeker/settings"
+          element={
+            <PrivateRoute roles={['jobseeker']}>
+              <JobSeekerSettings />
+            </PrivateRoute>
+          }
+        />
 
-        {/* Recruiter / Company */}
+
+        <Route
+          path="/company/profile"
+          element={
+            <PrivateRoute roles={['recruiter']}>
+              <RecruiterSettings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/company/post-job"
+          element={
+            <PrivateRoute roles={['recruiter']}>
+              <PostJob />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/company/*"
           element={
