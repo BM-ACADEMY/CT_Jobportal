@@ -5,18 +5,24 @@ import Sidebar from '../components/common/Sidebar';
 
 const DashboardLayout = () => {
   return (
-    <div className="min-h-screen bg-[#F8F9FB] flex flex-col">
+    <div className="min-h-screen bg-ui-bg flex flex-col font-sans">
       <Header />
-      <div className="flex flex-1 max-w-[1440px] mx-auto w-full px-4 py-6 gap-6">
-        {/* Sidebar */}
-        <aside className="hidden lg:block w-64 flex-shrink-0">
+      
+      <div className="flex-1 w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-8 px-4 sm:px-6 py-8">
+        {/* Left Sidebar - Hidden on mobile, fixed width on Desktop */}
+        <aside className="hidden lg:block w-[280px] flex-shrink-0 sticky top-24 h-fit">
           <Sidebar />
         </aside>
-        {/* Main Content */}
+
+        {/* Main Content Area */}
         <main className="flex-1 min-w-0">
-          <Outlet />
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 ease-out">
+            <Outlet />
+          </div>
         </main>
       </div>
+      
+      {/* Mobile Sidebar Trigger / Quick Actions could go here */}
     </div>
   );
 };

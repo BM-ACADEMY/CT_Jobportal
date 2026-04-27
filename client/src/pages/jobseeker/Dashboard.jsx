@@ -1,8 +1,9 @@
 import React from 'react';
 import DetailedJobCard from '../../components/jobseeker/DetailedJobCard';
 import RecommendedJobCard from '../../components/jobseeker/RecommendedJobCard';
-import { Button, Tabs, Card, Tooltip } from 'antd';
-import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles, TrendingUp, CircleCheck } from 'lucide-react';
 
 const mockRecommendedJobs = [
   { id: 1, title: 'HCL Tech-Hiring- B...', company: 'HCLTech', rating: 3.4, location: 'Bengaluru', postedAt: '3d ago', logo: 'https://logo.clearbit.com/hcltech.com' },
@@ -44,116 +45,100 @@ const mockDetailedJobs = [
 
 const JobSeekerDashboard = () => {
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
-      {/* Middle Column - Main Feed */}
+    <div className="flex flex-col xl:flex-row gap-8">
+      
+      {/* Main Content Feed */}
       <div className="flex-1 min-w-0">
         
-        {/* Recommended Jobs Horizontal Strip */}
-        <section className="mb-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="flex justify-between items-center mb-6 px-1">
-            <h2 className="text-xl font-bold text-gray-800 tracking-tight">Recommended jobs for you</h2>
-            <Button type="link" className="text-blue-600 font-bold p-0 flex items-center hover:translate-x-1 transition-transform">
-              View all <ChevronRight size={16} />
-            </Button>
+        {/* Recommended Jobs */}
+        <section className="mb-10 bg-card p-8 rounded-[32px] border border-border shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-black text-foreground tracking-tight">Recommended for you</h2>
+            <Button variant="link" className="text-primary font-extrabold text-sm h-auto p-0 hover:underline">View all</Button>
           </div>
-          
-          <Tabs 
-            defaultActiveKey="1" 
-            className="mb-4 job-tabs"
-            items={[
-              { key: '1', label: <span className="px-2 font-bold">Profile (50)</span> },
-              { key: '2', label: <span className="px-2 font-bold">Preferences (0)</span> },
-            ]}
-          />
 
-          <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-hide no-scrollbar">
+          <div className="flex gap-6 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2 snap-x">
             {mockRecommendedJobs.map(job => (
-              <RecommendedJobCard key={job.id} job={job} />
+              <div key={job.id} className="snap-start shrink-0">
+                <RecommendedJobCard job={job} />
+              </div>
             ))}
           </div>
         </section>
 
-        {/* Create Resume Banner (Premium look) */}
-        <div className="relative mb-8 p-8 rounded-2xl bg-gradient-to-r from-blue-50/50 via-white to-blue-50/50 border border-blue-100 overflow-hidden group">
-           <div className="flex items-center gap-8 relative z-10">
-              <div className="flex-shrink-0 w-24 h-32 bg-white rounded-lg border border-gray-200 p-2 shadow-sm transform -rotate-3 group-hover:rotate-0 transition-transform">
-                <div className="w-full h-full bg-gray-50 flex flex-col gap-1 p-1">
-                  <div className="h-2 w-2/3 bg-gray-200 rounded"></div>
-                  <div className="h-1 w-full bg-gray-100 rounded"></div>
-                  <div className="h-1 w-full bg-gray-100 rounded"></div>
-                  <div className="mt-4 h-1 w-full bg-blue-100 rounded"></div>
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                  Create your resume in 3 easy steps <Sparkles size={18} className="text-blue-500 animate-pulse" />
-                </h3>
-                <ol className="space-y-1 text-sm text-gray-600 font-medium list-decimal list-inside">
-                  <li>Add the missing details in your profile</li>
-                  <li>Choose a template for your resume</li>
-                  <li>Improve the content with AI</li>
-                </ol>
-              </div>
-              <Button type="primary" className="h-11 px-8 rounded-full font-bold shadow-lg shadow-blue-200">
-                Create resume
-              </Button>
+        {/* CV Banner */}
+        <div className="relative mb-10 p-10 rounded-[32px] bg-primary/5 border border-primary/10 overflow-hidden flex flex-col md:flex-row items-center gap-10">
+           <div className="shrink-0 w-24 h-32 bg-background rounded-xl shadow-lg shadow-primary/5 border border-primary/10 rotate-[-4deg] flex flex-col gap-2 p-3">
+              <div className="h-3 w-2/3 bg-muted rounded" />
+              <div className="h-2 w-full bg-muted/50 rounded" />
+              <div className="h-2 w-full bg-muted/50 rounded" />
+              <div className="mt-auto h-3 w-1/3 bg-primary rounded" />
            </div>
-           {/* Decorative graphic element */}
-           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400 opacity-5 blur-[100px] rounded-full"></div>
+           
+           <div className="flex-1 text-center md:text-left">
+              <h3 className="text-2xl font-black text-foreground mb-3 leading-tight">Design a CV that stands out in 10 minutes</h3>
+              <div className="space-y-2 text-sm text-muted-foreground font-bold">
+                 <p className="flex items-center gap-2 justify-center md:justify-start">
+                    <CircleCheck size={16} className="text-green-500" /> AI-powered content suggestions
+                 </p>
+                 <p className="flex items-center gap-2 justify-center md:justify-start">
+                    <CircleCheck size={16} className="text-green-500" /> Recruiter-approved templates
+                 </p>
+              </div>
+           </div>
+
+           <Button className="shrink-0 px-8 py-7 bg-primary text-primary-foreground font-black rounded-2xl shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-base">
+             Craft My Resume
+           </Button>
         </div>
 
-        {/* Main Job Feed */}
-        <div className="flex justify-between items-center mb-6 px-1">
-           <h2 className="text-xl font-bold text-gray-800">Job recommended for you</h2>
-           <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 font-medium">You can select upto 5 jobs to apply</span>
-              <Button disabled className="rounded-lg h-10 px-6 font-bold bg-blue-100 text-blue-300 border-none">Apply</Button>
+        {/* Job Listings Header */}
+        <div className="flex items-center justify-between mb-6 px-1">
+           <h2 className="text-xl font-black text-foreground">Recent Job Matches</h2>
+           <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-muted-foreground hidden sm:inline">Select multiple to quick apply</span>
+              <Button disabled variant="outline" className="px-6 py-2 bg-muted/50 text-muted-foreground font-black rounded-xl text-xs">Quick Apply</Button>
            </div>
         </div>
 
-        {mockDetailedJobs.map(job => (
-          <DetailedJobCard key={job.id} job={job} />
-        ))}
+        <div className="space-y-4">
+          {mockDetailedJobs.map(job => (
+            <DetailedJobCard key={job.id} job={job} />
+          ))}
+        </div>
       </div>
 
-      {/* Right Column - Utility Cards */}
-      <div className="hidden xl:flex flex-col gap-6 w-80">
-        {/* QR Code App Download */}
-        <Card className="rounded-2xl border-gray-100 shadow-sm" bodyStyle={{ padding: '24px' }}>
-          <div className="flex gap-4 mb-4">
-            <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-              <QrCode size={56} className="text-gray-800" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-800 leading-tight mb-2">
-                <span className="text-orange-500">3587+</span> users downloaded our app in last 30 mins!
-              </p>
-              <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                Scan to download from <Smartphone size={10} />
+      {/* Right Column Widgets */}
+      <div className="hidden xl:flex flex-col gap-8 w-[340px]">
+        <Card className="bg-card p-8 rounded-[32px] border border-border shadow-sm group">
+          <CardContent className="p-0">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-4 bg-muted rounded-2xl border border-border group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
+                 <QrCode size={40} />
+              </div>
+              <div>
+                <p className="text-base font-black text-foreground leading-tight">Get the App</p>
+                <p className="text-xs font-bold text-muted-foreground">Scan to Download</p>
               </div>
             </div>
-          </div>
+            <p className="text-sm font-bold text-muted-foreground leading-relaxed mb-6">Never miss an interview alert with our mobile app.</p>
+            <div className="bg-primary/5 p-4 rounded-2xl flex items-center justify-between border border-primary/10">
+               <span className="text-xs font-black text-primary uppercase tracking-tighter">Verified Users: 3.5k+</span>
+               <ExternalLink size={16} className="text-primary" />
+            </div>
+          </CardContent>
         </Card>
 
-        {/* Promotional Card (50% Women) */}
-        <Card 
-          className="rounded-2xl border-gray-100 shadow-sm overflow-hidden group cursor-pointer"
-          cover={
-            <div className="h-32 bg-gradient-to-r from-pink-100 to-purple-100 flex items-center justify-center overflow-hidden">
-               <div className="text-center">
-                  <p className="text-pink-600 font-black text-xl italic leading-none">WHAT WOMEN</p>
-                  <p className="text-purple-600 font-medium text-xs tracking-[0.2em] -mt-1">PROFESSIONALS WANT</p>
-               </div>
+        <div className="bg-slate-900 dark:bg-slate-950 p-8 rounded-[32px] text-white shadow-xl relative overflow-hidden h-64 flex flex-col justify-end group cursor-pointer hover:bg-slate-800 transition-colors">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+               <TrendingUp size={120} />
             </div>
-          }
-        >
-          <h4 className="text-base font-bold text-gray-800 mb-2 group-hover:text-pink-600 transition-colors">
-            50% women hide marriage & maternity plans amid bias fears
-          </h4>
-          <Button type="link" className="p-0 font-bold text-blue-600 hover:text-blue-700 flex items-center">
-            Know more <ChevronRight size={16} />
-          </Button>
-        </Card>
+            <div className="relative z-10">
+               <span className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 block">Industry Report</span>
+               <h4 className="text-lg font-black leading-tight">50% of women hide marriage & family plans from recruiters</h4>
+               <p className="text-xs font-bold text-slate-400 mt-3 flex items-center gap-1 group-hover:text-white transition-colors">Read Full Survey <ChevronRight size={14} /></p>
+            </div>
+        </div>
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Spin } from 'antd';
+import { Loader2 } from 'lucide-react';
 
 const Loader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gray-50">
-    <Spin size="large" />
+  <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
+    <Loader2 className="h-10 w-10 text-primary animate-spin" />
+    <span className="text-sm font-black text-muted-foreground uppercase tracking-widest animate-pulse">Loading experience...</span>
   </div>
 );
 
