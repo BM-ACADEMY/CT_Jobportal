@@ -75,11 +75,19 @@ const registerUser = async (req, res) => {
       </div>
     `;
 
-    await sendEmail({
+    const emailSent = await sendEmail({
       email,
       subject: 'Verify Your Email - Naukri Clone',
       html: htmlContent
     });
+
+    if (!emailSent) {
+      return res.status(201).json({ 
+        requireOtp: true, 
+        email: user.email, 
+        msg: 'Registration successful but failed to send OTP email. Please use the resend OTP option.' 
+      });
+    }
 
     res.status(201).json({ requireOtp: true, email: user.email, msg: 'OTP sent to your email.' });
   } catch (err) {
@@ -93,8 +101,9 @@ const registerUser = async (req, res) => {
 const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
+    const normalizedEmail = email ? email.toLowerCase() : '';
 
-    const user = await User.findOne({ email }).populate('role');
+    const user = await User.findOne({ email: normalizedEmail }).populate('role');
     if (!user) {
         return res.status(404).json({ msg: 'User not found' });
     }
@@ -163,9 +172,13 @@ const loginUser = async (req, res) => {
           </div>
         </div>
       `;
-      await sendEmail({ email, subject: 'Verify Your Email - Naukri Clone', html: htmlContent });
+      const emailSent = await sendEmail({ email, subject: 'Verify Your Email - Naukri Clone', html: htmlContent });
+      
+      const msg = emailSent 
+        ? 'Account not verified. New OTP sent.' 
+        : 'Account not verified. Failed to send OTP email. Please try resending OTP.';
 
-      return res.status(200).json({ requireOtp: true, email: user.email, msg: 'Account not verified. New OTP sent.' });
+      return res.status(200).json({ requireOtp: true, email: user.email, msg });
     }
 
     const roleName = user.role.name;
@@ -216,7 +229,11 @@ const forgotPassword = async (req, res) => {
       </div>
     `;
 
-    await sendEmail({ email, subject: 'Password Reset OTP - Naukri Clone', html: htmlContent });
+    const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Naukri Clone', html: htmlContent });
+
+    if (!emailSent) {
+      return res.status(500).json({ msg: 'Failed to send password reset email. Please try again later.' });
+    }
 
     res.json({ msg: 'Password reset OTP sent to email' });
   } catch (err) {
@@ -312,11 +329,15 @@ const resendOtp = async (req, res) => {
       </div>
     `;
 
-    await sendEmail({
+    const emailSent = await sendEmail({
       email: normalizedEmail,
       subject: 'New Verification Code - Naukri Clone',
       html: htmlContent
     });
+
+    if (!emailSent) {
+      return res.status(500).json({ msg: 'Failed to send new OTP. Please try again.' });
+    }
 
     res.json({ msg: 'New OTP has been sent to your email.' });
 

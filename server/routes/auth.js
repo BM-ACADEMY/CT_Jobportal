@@ -19,6 +19,9 @@ router.post('/login', loginUser);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.post('/resend-otp', resendOtp);
+router.get('/resend-otp', (req, res) => {
+  res.status(405).json({ msg: 'This endpoint only accepts POST requests. If you reached this via a page refresh, please go back and try again.' });
+});
 
 // --- Social Auth Routes ---
 

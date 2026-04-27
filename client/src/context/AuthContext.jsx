@@ -111,6 +111,12 @@ export const AuthProvider = ({ children }) => {
     return { success: true, redirect: getRoleRoute(userData.role) };
   };
 
+  const updateUser = (newData) => {
+    const updatedUser = { ...user, ...newData };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -119,7 +125,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, verifyOtp, forgotPassword, resetPassword, resendOtp, completeSocialLogin, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, verifyOtp, forgotPassword, resetPassword, resendOtp, completeSocialLogin, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

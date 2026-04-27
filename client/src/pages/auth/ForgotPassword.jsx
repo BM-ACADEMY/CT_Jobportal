@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Form, Input, Button, Alert } from 'antd';
-import { Mail, KeyRound, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, KeyRound, ArrowLeft, ArrowRight, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 const ForgotPasswordPage = () => {
   const { forgotPassword, resetPassword } = useAuth();
@@ -14,6 +21,7 @@ const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -57,52 +65,53 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white w-full max-w-[440px] rounded-[24px] shadow-sm border border-gray-100 p-8 md:p-10 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+      <div className="bg-background w-full max-w-[440px] rounded-[32px] shadow-xl border border-border p-8 md:p-10 relative overflow-hidden">
         
         {/* Top Decorative gradient abstract strip */}
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-indigo-500 to-violet-500" />
 
         {/* Back Button */}
         {step === 'email' && (
-          <Link to="/login" className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors mb-8">
+          <Link to="/login" className="inline-flex items-center gap-1.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors mb-8 uppercase tracking-widest">
             <ArrowLeft size={16} /> Back to Login
           </Link>
         )}
 
         {error && (
-          <Alert message={error} type="error" showIcon className="mb-6 rounded-xl" closable onClose={() => setError('')} />
+          <Alert variant="destructive" className="mb-6 rounded-2xl border-destructive/20 bg-destructive/5 py-3">
+            <AlertDescription className="text-xs font-bold">{error}</AlertDescription>
+          </Alert>
         )}
 
         {/* ── STEP 1: REQUEST EMAIL ── */}
         {step === 'email' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-              <KeyRound size={24} className="text-blue-600" />
+            <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
+              <KeyRound size={24} className="text-primary" />
             </div>
-            <h1 className="text-2xl font-black text-gray-900 mb-2">Forgot Password?</h1>
-            <p className="text-gray-500 text-sm font-medium leading-relaxed mb-8">
+            <h1 className="text-2xl font-black text-foreground mb-2 tracking-tight">Forgot Password?</h1>
+            <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8">
               No worries, we'll send you reset instructions. Enter the email associated with your account.
             </p>
             
             <div className="space-y-6">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2">Email Address</label>
-                <Input 
-                  size="large"
-                  prefix={<Mail size={16} className="text-gray-400 mr-2" />} 
-                  placeholder="Enter your email" 
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="h-14 rounded-xl border-gray-200 text-base"
-                />
+                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">Email Address</label>
+                <div className="relative">
+                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                  <Input 
+                    placeholder="Enter your email" 
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="h-14 pl-12 rounded-2xl border-border bg-muted/20 focus:bg-background transition-all font-bold text-sm"
+                  />
+                </div>
               </div>
               <Button 
-                type="primary" 
-                block 
-                loading={loading}
+                disabled={loading}
                 onClick={handleSendEmail}
-                className="h-14 rounded-xl text-base font-bold bg-gray-900 hover:bg-gray-800 border-none shadow-lg shadow-gray-900/20"
+                className="h-14 w-full rounded-2xl text-base font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 {loading ? 'Sending...' : 'Reset Password'}
               </Button>
@@ -113,42 +122,59 @@ const ForgotPasswordPage = () => {
         {/* ── STEP 2: VERIFY AND SET NEW PASSWORD ── */}
         {step === 'otp' && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center mb-6">
-              <ShieldCheck size={24} className="text-purple-600" />
+            <div className="w-14 h-14 bg-violet-500/10 rounded-2xl flex items-center justify-center mb-6">
+              <ShieldCheck size={24} className="text-violet-500" />
             </div>
-            <h1 className="text-2xl font-black text-gray-900 mb-2">Set New Password</h1>
-            <p className="text-gray-500 text-sm font-medium leading-relaxed mb-8">
-              We sent a 6-digit code to <span className="font-bold text-gray-800">{email}</span>.
+            <h1 className="text-2xl font-black text-foreground mb-2 tracking-tight">Set New Password</h1>
+            <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8">
+              We sent a 6-digit code to <span className="font-black text-foreground">{email}</span>.
             </p>
             
             <div className="space-y-6">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2">6-Digit Code</label>
-                <Input.OTP 
-                  length={6} 
+                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">6-Digit Code</label>
+                <InputOTP 
+                  maxLength={6} 
                   value={otp} 
                   onChange={setOtp} 
-                  className="w-full flex justify-between [&>input]:!h-12 border-gray-200 rounded-lg"
-                />
+                  className="gap-3"
+                >
+                  <InputOTPGroup className="gap-2">
+                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                      <InputOTPSlot 
+                        key={index} 
+                        index={index} 
+                        className="h-14 w-12 rounded-xl border-border bg-muted/20 font-black text-xl"
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2">New Password</label>
-                <Input.Password 
-                  size="large"
-                  placeholder="Enter new password" 
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  className="h-14 rounded-xl border-gray-200 text-base"
-                />
+                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">New Password</label>
+                <div className="relative">
+                  <Input 
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter new password" 
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="h-14 pr-12 rounded-2xl border-border bg-muted/20 focus:bg-background transition-all font-bold text-sm"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/60"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <Button 
-                type="primary" 
-                block 
-                loading={loading}
+                disabled={loading}
                 onClick={handleResetPassword}
-                className="h-14 rounded-xl text-base font-bold bg-green-600 hover:bg-green-700 border-none shadow-lg shadow-green-600/30 w-full"
+                className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all"
               >
                 {loading ? 'Updating...' : 'Update Password'}
               </Button>
@@ -156,7 +182,7 @@ const ForgotPasswordPage = () => {
               <div className="text-center">
                 <button 
                   onClick={() => setStep('email')} 
-                  className="text-sm font-semibold text-gray-400 hover:text-gray-700 transition"
+                  className="text-xs font-black text-muted-foreground hover:text-foreground transition uppercase tracking-widest"
                 >
                   Change Email Address
                 </button>
@@ -168,18 +194,16 @@ const ForgotPasswordPage = () => {
         {/* ── STEP 3: SUCCESS ── */}
         {step === 'success' && (
           <div className="animate-in zoom-in duration-500 text-center py-6">
-            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ShieldCheck size={36} className="text-green-500" />
+            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShieldCheck size={36} className="text-emerald-500" />
             </div>
-            <h1 className="text-2xl font-black text-gray-900 mb-3">All done!</h1>
-            <p className="text-gray-500 text-sm font-medium leading-relaxed mb-8 max-w-[260px] mx-auto">
+            <h1 className="text-2xl font-black text-foreground mb-3 tracking-tight">All done!</h1>
+            <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8 max-w-[260px] mx-auto">
               Your password has been successfully reset. You can now use your new password to log in to your account.
             </p>
             <Button 
-              type="primary" 
-              block 
               onClick={() => navigate('/login')}
-              className="h-14 rounded-xl text-base font-bold bg-blue-600 hover:bg-blue-700 border-none shadow-lg shadow-blue-500/20 w-full flex items-center justify-center gap-2"
+              className="h-14 w-full rounded-2xl text-base font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               Continue to Login <ArrowRight size={18} />
             </Button>

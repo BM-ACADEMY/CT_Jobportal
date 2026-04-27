@@ -13,7 +13,7 @@ const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded.user;
+    req.user = decoded.user || decoded;
     next();
   } catch (err) {
     res.status(401).json({ msg: 'Token is not valid' });

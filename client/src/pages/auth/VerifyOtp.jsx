@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Button, Alert, Input } from 'antd';
-import { ShieldCheck, MailOpen } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MailOpen, ShieldCheck, ArrowRight } from 'lucide-react';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 const VerifyOtpPage = () => {
   const { state } = useLocation();
@@ -69,84 +76,99 @@ const VerifyOtpPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-[#eef2ff] p-4">
-      <div className="bg-white w-full max-w-md rounded-[24px] shadow-2xl p-8 md:p-10 border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+      <div className="bg-background w-full max-w-md rounded-[32px] shadow-2xl p-8 md:p-10 border border-border overflow-hidden relative">
         
+        {/* Top Decorative gradient abstract strip */}
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
+
         {/* Header Icon */}
-        <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <MailOpen size={28} className="text-blue-600" />
+        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-sm">
+          <MailOpen size={28} className="text-primary" />
         </div>
 
         {/* Title */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-3 tracking-tight">Verify your email</h1>
-          <p className="text-sm text-gray-500 font-medium leading-relaxed">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-black text-foreground mb-3 tracking-tight">Verify your email</h1>
+          <p className="text-sm text-muted-foreground font-bold leading-relaxed">
             Please enter your registered email address and the 6-digit code we sent you.
           </p>
         </div>
 
-        {/* System Message */}
-        {msg && (
-          <Alert message={msg} type="info" showIcon className="mb-6 rounded-xl border-blue-100 bg-blue-50/50" />
-        )}
-        
-        {/* Success Message */}
-        {success && (
-          <Alert message={success} type="success" showIcon className="mb-6 rounded-xl" />
-        )}
+        {/* System Messages */}
+        <div className="space-y-4 mb-8">
+          {msg && (
+            <Alert variant="default" className="rounded-2xl border-primary/20 bg-primary/5 py-4">
+              <AlertDescription className="text-xs font-bold text-primary">{msg}</AlertDescription>
+            </Alert>
+          )}
+          
+          {success && (
+            <Alert variant="default" className="rounded-2xl border-emerald-500/20 bg-emerald-500/5 py-4">
+              <AlertDescription className="text-xs font-bold text-emerald-600">{success}</AlertDescription>
+            </Alert>
+          )}
 
-        {/* Error Message */}
-        {error && (
-          <Alert message={error} type="error" showIcon className="mb-6 rounded-xl" />
-        )}
+          {error && (
+            <Alert variant="destructive" className="rounded-2xl border-destructive/20 bg-destructive/5 py-4">
+              <AlertDescription className="text-xs font-bold">{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
 
         {/* Form Inputs */}
-        <div className="space-y-6 mb-8">
+        <div className="space-y-8 mb-10">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
+            <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">Email Address</label>
             <Input 
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="name@example.com"
-              size="large"
-              className="h-12 rounded-xl text-base"
+              className="h-14 rounded-2xl border-border bg-muted/20 focus:bg-background transition-all font-bold text-sm"
               disabled={!!state?.email}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">6-digit Security Code</label>
-            <Input.OTP 
-              length={6} 
+            <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">6-digit Security Code</label>
+            <InputOTP 
+              maxLength={6} 
               value={otp} 
               onChange={setOtp} 
-              size="large"
-              className="w-full flex justify-between [&>input]:!h-12 border-gray-200 rounded-lg"
               onComplete={handleVerify}
-            />
+              className="gap-3"
+            >
+              <InputOTPGroup className="gap-2">
+                {[0, 1, 2, 3, 4, 5].map((index) => (
+                  <InputOTPSlot 
+                    key={index} 
+                    index={index} 
+                    className="h-14 w-12 rounded-xl border-border bg-muted/20 font-black text-xl"
+                  />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
           </div>
         </div>
 
         {/* Validate Button */}
         <Button 
-          type="primary" 
-          block 
+          disabled={loading}
           onClick={handleVerify} 
-          loading={loading}
-          className="h-14 rounded-xl text-base font-bold tracking-wide border-none bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/30"
+          className="h-14 w-full rounded-2xl text-base font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
           {loading ? 'Verifying...' : 'Verify Email Address'}
         </Button>
 
         {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500 font-medium">
+        <div className="mt-10 text-center">
+          <p className="text-sm text-muted-foreground font-bold">
             Didn't receive the code?{' '}
             <button 
               onClick={handleResend}
               disabled={timer > 0 || resending}
-              className={`font-bold hover:underline cursor-pointer bg-transparent border-none p-0 ${
-                timer > 0 || resending ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600'
+              className={`font-black hover:underline transition ${
+                timer > 0 || resending ? 'text-muted-foreground/40 cursor-not-allowed' : 'text-primary'
               }`}
             >
               {resending ? 'Sending...' : timer > 0 ? `Resend Code in ${timer}s` : 'Resend Code'}

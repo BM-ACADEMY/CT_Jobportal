@@ -12,12 +12,13 @@ const getDefaultRole = async () => {
 };
 
 // Google Strategy
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL,
-    proxy: true
-  },
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      proxy: true
+    },
   async (accessToken, refreshToken, profile, done) => {
     try {
       let user = await User.findOne({ 
@@ -52,15 +53,19 @@ passport.use(new GoogleStrategy({
       return done(err, null);
     }
   }
-));
+  ));
+} else {
+  console.warn('Google OAuth strategy skipped: Missing credentials in .env');
+}
 
 // GitHub Strategy
-passport.use(new GitHubStrategy({
-    clientID: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.GITHUB_CALLBACK_URL,
-    scope: ['user:email']
-  },
+if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  passport.use(new GitHubStrategy({
+      clientID: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      callbackURL: process.env.GITHUB_CALLBACK_URL,
+      scope: ['user:email']
+    },
   async (accessToken, refreshToken, profile, done) => {
     try {
       const email = profile.emails && profile.emails[0]?.value; 
@@ -96,15 +101,19 @@ passport.use(new GitHubStrategy({
       return done(err, null);
     }
   }
-));
+  ));
+} else {
+  console.warn('GitHub OAuth strategy skipped: Missing credentials in .env');
+}
 
 // LinkedIn Strategy
-passport.use(new LinkedInStrategy({
-    clientID: process.env.LINKEDIN_CLIENT_ID,
-    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: process.env.LINKEDIN_CALLBACK_URL,
-    scope: ['r_emailaddress', 'r_liteprofile']
-  },
+if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+  passport.use(new LinkedInStrategy({
+      clientID: process.env.LINKEDIN_CLIENT_ID,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+      callbackURL: process.env.LINKEDIN_CALLBACK_URL,
+      scope: ['r_emailaddress', 'r_liteprofile']
+    },
   async (accessToken, refreshToken, profile, done) => {
     try {
       let user = await User.findOne({ 
@@ -137,7 +146,10 @@ passport.use(new LinkedInStrategy({
       return done(err, null);
     }
   }
-));
+  ));
+} else {
+  console.warn('LinkedIn OAuth strategy skipped: Missing credentials in .env');
+}
 
 passport.serializeUser((user, done) => {
   done(null, user.id);

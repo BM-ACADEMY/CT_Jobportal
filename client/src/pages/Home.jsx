@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Input, Tag } from 'antd';
-import { Search, Briefcase, Building2, Users, TrendingUp, Star, ArrowRight, ChevronRight, MapPin, CheckCircle } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, Briefcase, Building2, Users, TrendingUp, Star, ArrowRight, ChevronRight, MapPin, CircleCheck } from 'lucide-react';
 
 const stats = [
   { label: 'Jobs Posted', value: '2L+', icon: <Briefcase size={20} /> },
@@ -11,14 +13,14 @@ const stats = [
 ];
 
 const popularCategories = [
-  { label: 'IT & Software', count: '45K Jobs', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { label: 'Marketing', count: '12K Jobs', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-  { label: 'Finance', count: '18K Jobs', color: 'bg-green-50 text-green-700 border-green-200' },
-  { label: 'Design', count: '9K Jobs', color: 'bg-pink-50 text-pink-700 border-pink-200' },
-  { label: 'Sales', count: '22K Jobs', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-  { label: 'Healthcare', count: '15K Jobs', color: 'bg-teal-50 text-teal-700 border-teal-200' },
-  { label: 'Education', count: '8K Jobs', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  { label: 'Engineering', count: '30K Jobs', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  { label: 'IT & Software', count: '45K Jobs', color: 'bg-blue-50/50 text-blue-700 border-blue-100 hover:bg-blue-100/50' },
+  { label: 'Marketing', count: '12K Jobs', color: 'bg-purple-50/50 text-purple-700 border-purple-100 hover:bg-purple-100/50' },
+  { label: 'Finance', count: '18K Jobs', color: 'bg-green-50/50 text-green-700 border-green-100 hover:bg-green-100/50' },
+  { label: 'Design', count: '9K Jobs', color: 'bg-pink-50/50 text-pink-700 border-pink-100 hover:bg-pink-100/50' },
+  { label: 'Sales', count: '22K Jobs', color: 'bg-orange-50/50 text-orange-700 border-orange-100 hover:bg-orange-100/50' },
+  { label: 'Healthcare', count: '15K Jobs', color: 'bg-teal-50/50 text-teal-700 border-teal-100 hover:bg-teal-100/50' },
+  { label: 'Education', count: '8K Jobs', color: 'bg-yellow-50/50 text-yellow-700 border-yellow-100 hover:bg-yellow-100/50' },
+  { label: 'Engineering', count: '30K Jobs', color: 'bg-indigo-50/50 text-indigo-700 border-indigo-100 hover:bg-indigo-100/50' },
 ];
 
 const featuredJobs = [
@@ -46,104 +48,106 @@ const HomePage = () => {
   };
 
   return (
-    <div className="w-full overflow-x-hidden">
+    <div className="w-full overflow-x-hidden bg-background">
 
       {/* ─── HERO SECTION ─── */}
-      <section className="hero-bg relative overflow-hidden px-4 py-24 lg:py-32 border-b border-gray-100">
+      <section className="relative overflow-hidden px-4 py-24 lg:py-32 border-b border-border">
         {/* Decorative Blobs */}
-        <div className="absolute top-10 left-10 w-64 h-64 bg-blue-400 opacity-20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-400 opacity-20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-10 left-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-80 h-80 bg-violet-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="text-center w-full max-w-5xl mx-auto relative z-10 flex flex-col items-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-white border border-blue-200 rounded-full px-4 py-2 mb-8 shadow-sm">
-            <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-            <span className="text-blue-700 text-sm font-bold tracking-wide">India's #1 Job Portal · 2L+ Active Jobs</span>
+          <div className="inline-flex items-center gap-2 bg-background border border-primary/20 rounded-full px-4 py-1.5 mb-8 shadow-sm">
+            <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <span className="text-primary text-[11px] font-black uppercase tracking-widest">India's #1 Job Portal · 2L+ Active Jobs</span>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-gray-900 leading-tight mb-6 tracking-tight">
+          <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-foreground leading-[0.9] mb-8 tracking-tighter">
             Find Your
-            <span className="gradient-text block mt-1">Dream Job</span>
-            <span className="text-gray-900 block mt-1">Today</span>
+            <span className="block text-primary">Dream Job</span>
+            <span className="block italic font-serif font-light text-muted-foreground tracking-normal lowercase">Today</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto font-medium leading-relaxed">
+          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto font-bold leading-relaxed">
             Connect with 10,000+ top companies. Get hired faster with AI-powered recommendations tailored just for you.
           </p>
 
           {/* Search Bar */}
-          <div className="w-full bg-white rounded-2xl p-3 shadow-xl shadow-blue-900/5 flex flex-col md:flex-row gap-3 max-w-3xl mx-auto mb-8 border border-gray-100">
-            <div className="flex items-center gap-3 flex-1 bg-gray-50 rounded-xl px-4 py-3.5 border border-transparent focus-within:border-blue-200 focus-within:bg-white transition-all">
-              <Search size={22} className="text-blue-600 flex-shrink-0" />
+          <div className="w-full bg-background/80 backdrop-blur-xl rounded-[32px] p-2 shadow-2xl shadow-primary/10 flex flex-col md:flex-row gap-2 max-w-3xl mx-auto mb-10 border border-border">
+            <div className="flex items-center gap-3 flex-1 bg-muted/30 rounded-[24px] px-6 py-4.5 border border-transparent focus-within:border-primary/20 focus-within:bg-background transition-all">
+              <Search size={22} className="text-primary flex-shrink-0" />
               <input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Job title, skills, or company..."
-                className="flex-1 text-gray-800 font-medium bg-transparent outline-none text-base"
+                className="flex-1 text-foreground font-black bg-transparent outline-none text-base placeholder:text-muted-foreground/50"
               />
             </div>
-            <div className="flex items-center gap-3 flex-1 bg-gray-50 rounded-xl px-4 py-3.5 border border-transparent focus-within:border-blue-200 focus-within:bg-white transition-all">
-              <MapPin size={22} className="text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-3 flex-1 bg-muted/30 rounded-[24px] px-6 py-4.5 border border-transparent focus-within:border-primary/20 focus-within:bg-background transition-all">
+              <MapPin size={22} className="text-muted-foreground flex-shrink-0" />
               <input
                 value={locationQuery}
                 onChange={e => setLocationQuery(e.target.value)}
                 placeholder="City, state, or remote..."
-                className="flex-1 text-gray-800 font-medium bg-transparent outline-none text-base"
+                className="flex-1 text-foreground font-black bg-transparent outline-none text-base placeholder:text-muted-foreground/50"
               />
             </div>
-            <button
+            <Button
               onClick={handleSearch}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-base flex-shrink-0"
+              size="lg"
+              className="h-[64px] rounded-[24px] px-10 text-base font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 flex-shrink-0"
             >
               Search Jobs <ArrowRight size={18} />
-            </button>
+            </Button>
           </div>
 
           {/* Popular Searches */}
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="text-gray-500 text-sm font-semibold uppercase tracking-wider mr-2">Popular:</span>
+            <span className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mr-4">Popular:</span>
             {['React Developer', 'Python', 'Product Manager', 'Remote', 'Freshers'].map(tag => (
-              <button
+              <Badge
                 key={tag}
+                variant="outline"
+                className="cursor-pointer bg-background hover:bg-primary/5 hover:text-primary hover:border-primary/30 py-1.5 px-4 rounded-full font-black text-[11px] transition-all"
                 onClick={() => setSearchQuery(tag)}
-                className="text-sm px-4 py-1.5 rounded-full bg-white border border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-700 hover:bg-blue-50 transition-all font-semibold"
               >
                 {tag}
-              </button>
+              </Badge>
             ))}
           </div>
         </div>
 
         {/* Stats Row */}
-        <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto mt-20 relative z-10">
+        <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto mt-24 relative z-10">
           {stats.map((stat, i) => (
-            <div key={i} className="bg-white/80 backdrop-blur-md rounded-2xl p-6 text-center border border-white hover:-translate-y-1 transition-transform shadow-sm">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-blue-600 bg-blue-100 p-1.5 rounded-lg">{stat.icon}</span>
-                <span className="text-3xl font-black text-gray-900">{stat.value}</span>
+            <div key={i} className="bg-background/40 backdrop-blur-md rounded-[28px] p-8 text-center border border-border group hover:bg-background/60 hover:-translate-y-1 transition-all shadow-sm">
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <span className="text-primary bg-primary/10 p-2 rounded-xl group-hover:scale-110 transition-transform">{stat.icon}</span>
+                <span className="text-4xl font-black text-foreground leading-none">{stat.value}</span>
               </div>
-              <p className="text-sm text-gray-600 font-bold tracking-wide uppercase">{stat.label}</p>
+              <p className="text-[10px] text-muted-foreground font-black tracking-[0.2em] uppercase">{stat.label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ─── POPULAR CATEGORIES ─── */}
-      <section className="py-20 px-4 bg-white">
+      <section className="py-24 px-4 bg-background">
         <div className="w-full max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-black text-gray-900 mb-3">Browse by Category</h2>
-            <p className="text-gray-500 text-lg font-medium">Explore thousands of jobs across all industries</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tighter">Browse by Category</h2>
+            <p className="text-muted-foreground text-lg font-bold">Explore thousands of jobs across all industries</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {popularCategories.map((cat, i) => (
               <Link
                 key={i}
                 to="/jobs"
-                className={`flex flex-col items-start p-5 rounded-2xl border-2 ${cat.color} hover-lift transition-all group`}
+                className={`flex flex-col items-start p-6 rounded-3xl border-2 ${cat.color} hover:scale-[1.02] transition-all group`}
               >
-                <span className="font-bold text-base mb-1 group-hover:underline">{cat.label}</span>
-                <span className="text-xs font-semibold opacity-75">{cat.count}</span>
+                <span className="font-black text-lg mb-2 group-hover:underline transition-all tracking-tight">{cat.label}</span>
+                <span className="text-[11px] font-black uppercase tracking-widest opacity-60">{cat.count}</span>
               </Link>
             ))}
           </div>
@@ -151,41 +155,42 @@ const HomePage = () => {
       </section>
 
       {/* ─── FEATURED JOBS ─── */}
-      <section className="py-20 px-4 bg-gray-50">
+      <section className="py-24 px-4 bg-muted/20">
         <div className="w-full max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-16">
             <div>
-              <h2 className="text-4xl font-black text-gray-900 mb-2">Featured Jobs</h2>
-              <p className="text-gray-500 font-medium">Handpicked opportunities from top companies</p>
+              <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tighter">Featured Jobs</h2>
+              <p className="text-muted-foreground text-lg font-bold">Handpicked opportunities from top companies</p>
             </div>
-            <Link to="/login" className="flex items-center gap-1 text-blue-600 font-bold hover:underline">
-              View all <ChevronRight size={18} />
+            <Link to="/login">
+              <Button variant="ghost" className="font-black text-primary hover:text-primary/80 gap-2 px-6">
+                View all jobs <ChevronRight size={18} />
+              </Button>
             </Link>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredJobs.map((job, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover-lift cursor-pointer group">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className={`w-12 h-12 ${job.color} rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg`}>
+              <div key={i} className="bg-background rounded-[32px] p-8 border border-border shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all group">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className={`w-14 h-14 ${job.color} rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shrink-0`}>
                     {job.logo}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-800 text-base group-hover:text-blue-600 transition-colors truncate">{job.title}</h3>
-                    <p className="text-gray-500 text-sm font-medium">{job.company}</p>
+                    <h3 className="font-black text-foreground text-lg group-hover:text-primary transition-colors truncate tracking-tight">{job.title}</h3>
+                    <p className="text-muted-foreground text-sm font-bold">{job.company}</p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="flex items-center gap-1 text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded-full font-semibold border border-gray-100">
+                <div className="flex flex-wrap gap-2 mb-8">
+                  <Badge variant="secondary" className="bg-muted hover:bg-muted font-black text-[10px] px-3 py-1 rounded-lg border-none flex items-center gap-1.5 opacity-80">
                     <MapPin size={12} /> {job.location}
-                  </span>
-                  <span className="text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-semibold border border-green-100">{job.salary}</span>
-                  <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-semibold border border-blue-100">{job.type}</span>
+                  </Badge>
+                  <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 font-black text-[10px] px-3 py-1 rounded-lg border-none opacity-80">{job.salary}</Badge>
+                  <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/10 font-black text-[10px] px-3 py-1 rounded-lg border-none opacity-80">{job.type}</Badge>
                 </div>
-                <Link
-                  to="/login"
-                  className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border-2 border-gray-100 text-gray-600 font-bold text-sm hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all"
-                >
-                  Apply Now <ArrowRight size={14} />
+                <Link to="/login">
+                  <Button className="w-full h-12 rounded-2xl font-black text-sm bg-muted text-foreground hover:bg-primary hover:text-primary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all flex items-center justify-center gap-2">
+                    Apply Now <ArrowRight size={14} />
+                  </Button>
                 </Link>
               </div>
             ))}
@@ -194,22 +199,22 @@ const HomePage = () => {
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className="py-20 px-4 bg-white">
+      <section className="py-24 px-4 bg-background">
         <div className="w-full max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl font-black text-gray-900 mb-3">How It Works</h2>
-          <p className="text-gray-500 text-lg font-medium mb-14">Get hired in 3 simple steps</p>
-          <div className="grid md:grid-cols-3 gap-8">
+          <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tighter">How It Works</h2>
+          <p className="text-muted-foreground text-lg font-bold mb-20">Get hired in 3 simple steps</p>
+          <div className="grid md:grid-cols-3 gap-12">
             {[
               { step: '01', title: 'Create Your Profile', desc: 'Sign up, add your skills, experience and let AI build your resume.', color: 'from-blue-400 to-blue-600' },
-              { step: '02', title: 'Discover Opportunities', desc: 'Get AI-powered job recommendations that match your profile.', color: 'from-purple-400 to-purple-600' },
-              { step: '03', title: 'Get Hired Fast', desc: 'Apply with one click. Track applications & get interview alerts.', color: 'from-green-400 to-green-600' },
+              { step: '02', title: 'Discover Opportunities', desc: 'Get AI-powered job recommendations that match your profile.', color: 'from-violet-400 to-violet-600' },
+              { step: '03', title: 'Get Hired Fast', desc: 'Apply with one click. Track applications & get interview alerts.', color: 'from-emerald-400 to-emerald-600' },
             ].map((item, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white font-black text-xl mb-5 shadow-lg`}>
+              <div key={i} className="flex flex-col items-center group">
+                <div className={`w-20 h-20 rounded-[24px] bg-gradient-to-br ${item.color} flex items-center justify-center text-white font-black text-2xl mb-8 shadow-xl group-hover:scale-110 transition-transform`}>
                   {item.step}
                 </div>
-                <h3 className="text-lg font-black text-gray-800 mb-2">{item.title}</h3>
-                <p className="text-gray-500 font-medium text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="text-xl font-black text-foreground mb-3 tracking-tight">{item.title}</h3>
+                <p className="text-muted-foreground font-bold text-sm leading-relaxed max-w-[240px]">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -217,28 +222,29 @@ const HomePage = () => {
       </section>
 
       {/* ─── TESTIMONIALS ─── */}
-      <section className="py-20 px-4 bg-gradient-to-br from-blue-600 to-purple-700">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-black text-white mb-3">Success Stories</h2>
-            <p className="text-blue-100 text-lg font-medium">Join millions who found their dream job</p>
+      <section className="py-24 px-4 bg-primary relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent)]" />
+        <div className="w-full max-w-6xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tighter">Success Stories</h2>
+            <p className="text-white/70 text-lg font-bold">Join millions who found their dream job</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((t, i) => (
-              <div key={i} className="glass-card rounded-2xl p-6">
-                <div className="flex gap-0.5 mb-3">
+              <div key={i} className="bg-white/10 backdrop-blur-xl rounded-[32px] p-8 border border-white/10 shadow-2xl relative">
+                <div className="flex gap-0.5 mb-6">
                   {[...Array(t.rating)].map((_, j) => (
                     <Star key={j} size={16} className="text-yellow-400 fill-yellow-400" />
                   ))}
                 </div>
-                <p className="text-gray-700 font-medium text-sm leading-relaxed mb-4">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-black text-sm">
+                <p className="text-white font-bold text-base leading-relaxed mb-8 italic">"{t.text}"</p>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary font-black text-lg">
                     {t.name[0]}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-800 text-sm">{t.name}</p>
-                    <p className="text-gray-500 text-xs">{t.role}</p>
+                    <p className="font-black text-white text-base tracking-tight">{t.name}</p>
+                    <p className="text-white/60 text-xs font-bold">{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -248,25 +254,23 @@ const HomePage = () => {
       </section>
 
       {/* ─── FOR RECRUITERS CTA ─── */}
-      <section className="py-20 px-4 bg-gray-50">
-        <div className="w-full max-w-4xl mx-auto text-center">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-12 shadow-2xl shadow-blue-200 relative overflow-hidden">
-            <div className="absolute inset-0 bg-grid-white/10" />
-            <div className="relative z-10">
-              <h2 className="text-3xl font-black text-white mb-3">Are You Hiring?</h2>
-              <p className="text-blue-100 text-lg font-medium mb-8">Post jobs for free. Reach 50L+ active job seekers across India.</p>
+      <section className="py-24 px-4 bg-background">
+        <div className="w-full max-w-4xl mx-auto">
+          <div className="bg-foreground rounded-[48px] p-12 md:p-16 shadow-2xl relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+            <div className="relative z-10 text-center">
+              <h2 className="text-4xl md:text-5xl font-black text-background mb-6 tracking-tighter">Are You Hiring?</h2>
+              <p className="text-background/60 text-lg font-bold mb-10 max-w-lg mx-auto leading-relaxed">Post jobs for free. Reach 50L+ active job seekers across India with our high-performance talent network.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to="/register"
-                  className="bg-white text-blue-700 font-black px-8 py-3.5 rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-lg"
-                >
-                  Post a Job Free <ArrowRight size={18} />
+                <Link to="/register">
+                  <Button size="xl" className="w-full sm:w-auto h-16 px-12 rounded-2xl bg-primary text-primary-foreground font-black text-lg hover:scale-[1.05] active:scale-[0.95] transition-all">
+                    Post a Job Free <ArrowRight className="ml-2" />
+                  </Button>
                 </Link>
-                <Link
-                  to="/login"
-                  className="border-2 border-white/40 text-white font-bold px-8 py-3.5 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                >
-                  Recruiter Login
+                <Link to="/login">
+                  <Button variant="outline" size="xl" className="w-full sm:w-auto h-16 px-12 rounded-2xl border-background/20 text-background font-black text-lg hover:bg-background/10 transition-all">
+                    Recruiter Login
+                  </Button>
                 </Link>
               </div>
             </div>
@@ -275,16 +279,19 @@ const HomePage = () => {
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer className="bg-gray-900 text-gray-400 py-12 px-4 w-full">
-        <div className="w-full max-w-6xl mx-auto grid md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-black text-base">N</span>
+      <footer className="bg-foreground text-background/50 py-20 px-8 w-full border-t border-background/10">
+        <div className="w-full max-w-6xl mx-auto grid md:grid-cols-4 gap-12 mb-20">
+          <div className="col-span-1 md:col-span-1">
+            <Link to="/" className="flex items-center gap-3 mb-6 no-underline">
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
+                <span className="text-primary-foreground font-black text-lg">N</span>
               </div>
-              <span className="text-white font-black text-xl">naukri</span>
+              <span className="text-background font-black text-2xl tracking-tighter">naukri</span>
+            </Link>
+            <p className="text-sm font-bold leading-relaxed mb-8">India's #1 job portal connecting talent with opportunity since 1997.</p>
+            <div className="flex gap-4">
+              {/* Social icons would go here */}
             </div>
-            <p className="text-sm leading-relaxed">India's #1 job portal connecting talent with opportunity since 1997.</p>
           </div>
           {[
             { title: 'Job Seekers', links: ['Search Jobs', 'Create Resume', 'Career Advice', 'Salary Calculator'] },
@@ -292,17 +299,20 @@ const HomePage = () => {
             { title: 'Company', links: ['About Us', 'Contact', 'Privacy Policy', 'Terms of Service'] },
           ].map((col, i) => (
             <div key={i}>
-              <h4 className="text-white font-bold mb-4">{col.title}</h4>
-              <ul className="space-y-2">
+              <h4 className="text-background font-black uppercase text-xs tracking-widest mb-6">{col.title}</h4>
+              <ul className="space-y-4">
                 {col.links.map((link, j) => (
-                  <li key={j}><a href="#" className="text-sm hover:text-blue-400 transition-colors">{link}</a></li>
+                  <li key={j}><Link to="#" className="text-sm font-bold hover:text-primary transition-colors">{link}</Link></li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div className="w-full max-w-[1200px] mx-auto border-t border-gray-800 pt-8 text-center text-sm">
-          © {new Date().getFullYear()} Naukri Clone. All rights reserved.
+        <div className="w-full max-w-6xl mx-auto border-t border-background/10 pt-10 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-xs font-bold uppercase tracking-widest text-background/30 italic">Made with ❤️ in India</p>
+          <p className="text-xs font-black uppercase tracking-widest text-background/30">
+            © {new Date().getFullYear()} Naukri Clone. All rights reserved.
+          </p>
         </div>
       </footer>
 

@@ -20,7 +20,11 @@ import SocialAuthSuccess from '../pages/auth/SocialAuthSuccess';
 import JobSeekerDashboard from '../pages/jobseeker/Dashboard';
 import AdminDashboard from '../pages/admin/Dashboard';
 import CompanyDashboard from '../pages/company/Dashboard';
+import RecruiterSettings from '../pages/company/Settings';
+import PostJob from '../pages/company/PostJob';
 import SubAdminDashboard from '../pages/subadmin/Dashboard';
+import JobSeekerSettings from '../pages/jobseeker/Settings';
+
 
 // Role-based redirect after login
 const RoleRedirect = () => {
@@ -107,8 +111,32 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/jobseeker/settings"
+          element={
+            <PrivateRoute roles={['jobseeker']}>
+              <JobSeekerSettings />
+            </PrivateRoute>
+          }
+        />
 
-        {/* Recruiter / Company */}
+
+        <Route
+          path="/company/profile"
+          element={
+            <PrivateRoute roles={['recruiter']}>
+              <RecruiterSettings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/company/post-job"
+          element={
+            <PrivateRoute roles={['recruiter']}>
+              <PostJob />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/company/*"
           element={

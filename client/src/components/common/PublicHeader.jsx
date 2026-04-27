@@ -1,6 +1,16 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Badge, Avatar, Dropdown } from 'antd';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,75 +18,96 @@ const PublicHeader = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const userMenuItems = [
-    {
-      key: 'dashboard',
-      label: 'My Dashboard',
-      icon: <User size={14} />,
-      onClick: () => {
-        const routes = { jobseeker: '/jobseeker', recruiter: '/company', admin: '/admin', subadmin: '/subadmin' };
-        navigate(routes[user?.role] || '/jobseeker');
-      },
-    },
-    { key: 'settings', label: 'Settings', icon: <Settings size={14} /> },
-    { type: 'divider' },
-    {
-      key: 'logout',
-      label: 'Logout',
-      icon: <LogOut size={14} />,
-      danger: true,
-      onClick: () => { logout(); navigate('/'); },
-    },
-  ];
+  const handleDashboardRedirect = () => {
+    const routes = { jobseeker: '/jobseeker', recruiter: '/company', admin: '/admin', subadmin: '/subadmin' };
+    navigate(routes[user?.role] || '/jobseeker');
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm">
-      <Link to="/" className="flex items-center gap-2.5">
-        <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center shadow-md shadow-blue-200">
-          <span className="text-white font-black text-lg">N</span>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
+        
+        <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-semibold text-sm">N</span>
+            </div>
+            <span className="text-xl font-semibold tracking-tight text-primary">naukri</span>
+        </Link>
+
+        <nav className="hidden md:flex items-center gap-8">
+            <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Home</Link>
+            <Link to="/jobs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Jobs</Link>
+            <Link to="/companies" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Companies</Link>
+            <Link to="/services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Services</Link>
+        </nav>
+
+        <div className="flex items-center gap-3">
+            {user ? (
+                <>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
+                        <Bell size={18} />
+                    </Button>
+                    
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <div className="flex items-center gap-2 cursor-pointer bg-muted/40 hover:bg-muted/60 transition-all rounded-md px-2 py-1 pr-3 border border-transparent hover:border-border group">
+                                <Avatar className="h-7 w-7 rounded-full border">
+                                    <AvatarFallback className="bg-primary/10 text-primary font-medium text-[10px]">
+                                        {user.name?.[0]?.toUpperCase() || <User size={12} />}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="hidden sm:flex flex-col items-start leading-none">
+                                    <span className="text-xs font-medium text-foreground truncate max-w-[80px]">{user.name}</span>
+                                    <span className="text-[8px] text-muted-foreground uppercase tracking-wider mt-0.5">{user.role}</span>
+                                </div>
+                                <ChevronDown size={12} className="text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                            </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[180px] rounded-lg border shadow-lg p-1">
+                            <DropdownMenuLabel className="px-3 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Account</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={handleDashboardRedirect} className="rounded-md px-3 py-2 text-sm cursor-pointer">
+                                <User size={15} className="mr-2 text-muted-foreground" />
+                                Dashboard
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                onClick={() => {
+                                    const routes = { jobseeker: '/jobseeker/settings', recruiter: '/company/profile' };
+                                    navigate(routes[user?.role] || '/settings');
+                                }}
+                                className="rounded-md px-3 py-2 text-sm cursor-pointer"
+                            >
+                                <Settings size={15} className="mr-2 text-muted-foreground" />
+                                Settings
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                                onClick={() => { logout(); navigate('/'); }}
+                                className="rounded-md px-3 py-2 text-sm cursor-pointer text-destructive focus:text-destructive"
+                            >
+                                <LogOut size={15} className="mr-2" />
+                                Logout
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </>
+            ) : (
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        onClick={() => navigate('/login')}
+                        className="text-xs font-medium"
+                    >
+                        Login
+                    </Button>
+                    <Button
+                        onClick={() => navigate('/register')}
+                        className="rounded-md text-xs font-medium h-9 px-4"
+                    >
+                        Join Us
+                    </Button>
+                </div>
+            )}
         </div>
-        <span className="text-2xl font-black text-blue-700 tracking-tight">naukri</span>
-      </Link>
-
-      <nav className="hidden md:flex items-center gap-8">
-        <Link to="/" className="text-gray-600 font-semibold hover:text-blue-600 transition-colors text-sm">Home</Link>
-        <a href="#" className="text-gray-600 font-semibold hover:text-blue-600 transition-colors text-sm">Jobs</a>
-        <a href="#" className="text-gray-600 font-semibold hover:text-blue-600 transition-colors text-sm">Companies</a>
-        <a href="#" className="text-gray-600 font-semibold hover:text-blue-600 transition-colors text-sm">Services</a>
-      </nav>
-
-      <div className="flex items-center gap-3">
-        {user ? (
-          <>
-            <Badge count={2} size="small" offset={[-2, 5]}>
-              <Bell size={22} className="text-gray-500 cursor-pointer hover:text-blue-600 transition-colors" />
-            </Badge>
-            <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
-              <div className="flex items-center gap-2 cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all rounded-xl px-3 py-2 border border-gray-100">
-                <Avatar size={28} icon={<User size={14} />} className="bg-blue-100 text-blue-600 border border-blue-200" />
-                <span className="text-sm font-bold text-gray-700 hidden sm:block">{user.name}</span>
-                <ChevronDown size={14} className="text-gray-400" />
-              </div>
-            </Dropdown>
-          </>
-        ) : (
-          <>
-            <Button
-              type="text"
-              onClick={() => navigate('/login')}
-              className="font-bold text-gray-700 hover:text-blue-600"
-            >
-              Login
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => navigate('/register')}
-              className="rounded-full font-bold shadow-md shadow-blue-200"
-            >
-              Register Free
-            </Button>
-          </>
-        )}
       </div>
     </header>
   );
