@@ -53,7 +53,8 @@ const updateProfile = async (req, res) => {
             name: user.name,
             email: user.email,
             avatar: user.avatar,
-            profile: user.profile
+            profile: user.profile,
+            savedJobs: user.savedJobs || []
         }
     });
 
@@ -98,7 +99,73 @@ const uploadResume = async (req, res) => {
   }
 };
 
+// @desc    Toggle Save Job
+// @route   POST /api/user/save-job/:jobId
+const toggleSaveJob = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { jobId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    // Initialize savedJobs if it doesn't exist
+    if (!user.savedJobs) user.savedJobs = [];
+
+    const isSaved = user.savedJobs.some(id => id.toString() === jobId);
+
+    if (isSaved) {
+      // Unsave
+      user.savedJobs = user.savedJobs.filter(id => id.toString() !== jobId);
+      await user.save();
+      return res.json({ msg: 'Job removed from saved jobs', savedJobs: user.savedJobs });
+    } else {
+      // Save
+      // Optional: Verify job exists
+      const Job = require('../models/Job');
+      const jobExists = await Job.findById(jobId);
+      if (!jobExists) return res.status(404).json({ msg: 'Job not found' });
+
+      user.savedJobs.push(jobId);
+      await user.save();
+      return res.json({ msg: 'Job saved successfully', savedJobs: user.savedJobs });
+    }
+
+  } catch (err) {
+    console.error('Toggle Save Job Error:', err.message);
+    res.status(500).json({ msg: 'Server error during save job' });
+  }
+};
+
+// @desc    Get Saved Jobs
+// @route   GET /api/user/saved-jobs
+const getSavedJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate({
+      path: 'savedJobs',
+      populate: {
+        path: 'company',
+        select: 'name logo'
+      }
+    });
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    // Filter out any nulls in case a job was deleted
+    const filteredJobs = user.savedJobs.filter(job => job !== null);
+
+    res.json(filteredJobs);
+
+  } catch (err) {
+    console.error('Get Saved Jobs Error:', err.message);
+    res.status(500).json({ msg: 'Server error fetching saved jobs' });
+  }
+};
+
 module.exports = {
   updateProfile,
-  uploadResume
+  uploadResume,
+  toggleSaveJob,
+  getSavedJobs
 };

@@ -129,6 +129,7 @@ const verifyOtp = async (req, res) => {
         email: user.email,
         role: roleName,
         avatar: user.avatar,
+        savedJobs: user.savedJobs || []
       }
     });
 
@@ -192,6 +193,7 @@ const loginUser = async (req, res) => {
         email: user.email,
         role: roleName,
         avatar: user.avatar,
+        savedJobs: user.savedJobs || []
       }
     });
   } catch (err) {
@@ -287,6 +289,7 @@ const getUserProfile = async (req, res) => {
       email: user.email,
       role: user.role.name,
       avatar: user.avatar,
+      savedJobs: user.savedJobs || []
     });
   } catch (err) {
     console.error(err.message);
@@ -359,7 +362,8 @@ const socialAuthCallback = (req, res) => {
     name: user.name,
     email: user.email,
     role: roleName,
-    avatar: user.avatar
+    avatar: user.avatar,
+    savedJobs: user.savedJobs || []
   }));
 
   // Redirect to frontend with token and user data

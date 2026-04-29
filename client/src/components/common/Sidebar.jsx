@@ -16,11 +16,12 @@ const menuConfigs = {
     { icon: Briefcase, label: 'Browse Jobs', path: '/jobs' },
     { icon: Building2, label: 'Companies', path: '/companies' },
     { icon: FileText, label: 'My Applications', path: '/jobseeker/applications' },
-    { icon: Star, label: 'Saved Jobs', path: '/jobseeker/saved' },
+    { icon: Star, label: 'Saved Jobs', path: '/dashboard/saved-jobs' },
     { icon: BookOpen, label: 'Career Advice', path: '/blogs' },
   ],
   recruiter: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/company' },
+    { icon: Star, label: 'Saved Jobs', path: '/dashboard/saved-jobs' },
     { icon: Briefcase, label: 'Post a Job', path: '/company/post-job' },
     { icon: Users, label: 'Applicants', path: '/company/applicants' },
     { icon: TrendingUp, label: 'Analytics', path: '/company/analytics' },
@@ -28,6 +29,7 @@ const menuConfigs = {
   ],
   company: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/company' },
+    { icon: Star, label: 'Saved Jobs', path: '/dashboard/saved-jobs' },
     { icon: Briefcase, label: 'Post a Job', path: '/company/post-job' },
     { icon: Users, label: 'Applicants', path: '/company/applicants' },
     { icon: TrendingUp, label: 'Analytics', path: '/company/analytics' },
@@ -35,6 +37,7 @@ const menuConfigs = {
   ],
   admin: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+    { icon: Star, label: 'Saved Jobs', path: '/dashboard/saved-jobs' },
     { icon: Users, label: 'Manage Users', path: '/admin/users' },
     { icon: Building2, label: 'Companies', path: '/admin/companies' },
     { icon: TrendingUp, label: 'System Reports', path: '/admin/reports' },
@@ -42,6 +45,7 @@ const menuConfigs = {
   ],
   subadmin: [
     { icon: LayoutDashboard, label: 'Overview', path: '/subadmin' },
+    { icon: Star, label: 'Saved Jobs', path: '/dashboard/saved-jobs' },
     { icon: FileText, label: 'Job Moderation', path: '/subadmin/moderation' },
     { icon: Bell, label: 'Reports', path: '/subadmin/reports' },
     { icon: Users, label: 'User Reports', path: '/subadmin/users' },

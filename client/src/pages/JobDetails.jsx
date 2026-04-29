@@ -31,7 +31,8 @@ const JobDetails = () => {
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -74,6 +75,56 @@ const JobDetails = () => {
     // This is where you would typically open an application modal or send a request
     toast.success("Application submitted successfully!");
   };
+
+  const handleSaveJob = async () => {
+    if (!user) {
+      toast.error("Please login to save this job");
+      navigate('/login');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await axios.post(`${API_BASE_URL}/user/save-job/${id}`);
+      updateUser({ savedJobs: response.data.savedJobs });
+      toast.success(response.data.msg);
+    } catch (error) {
+      console.error('Error saving job:', error);
+      toast.error("Failed to save job");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleShareJob = () => {
+    const shareUrl = window.location.href;
+    const shareData = {
+      title: job.title,
+      text: `Check out this job opportunity: ${job.title} at ${job.company?.name}`,
+      url: shareUrl,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      navigator.share(shareData).catch((err) => {
+        if (err.name !== 'AbortError') {
+          copyToClipboard(shareUrl);
+        }
+      });
+    } else {
+      copyToClipboard(shareUrl);
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Link copied! Share it with your friends.");
+    }).catch(err => {
+      console.error('Could not copy text: ', err);
+      toast.error("Failed to copy link");
+    });
+  };
+
+  const isJobSaved = user?.savedJobs?.some(savedId => String(savedId) === String(id));
 
   const formatSalary = (salary) => {
     if (!salary || salary.isRangeHidden) return "Not Disclosed";
@@ -166,10 +217,21 @@ const JobDetails = () => {
             transition={{ delay: 0.2 }}
             className="flex items-center gap-4"
           >
-            <Button variant="outline" size="xl" className="rounded-2xl h-16 w-16 p-0 border-slate-100 hover:bg-slate-50 text-slate-400 hover:text-primary transition-all">
-              <Bookmark size={24} />
+            <Button 
+              onClick={handleSaveJob}
+              disabled={isSaving}
+              variant="outline" 
+              size="xl" 
+              className={`rounded-2xl h-16 w-16 p-0 border-slate-100 transition-all ${isJobSaved ? 'text-primary bg-primary/5 border-primary/20' : 'text-slate-400 hover:bg-slate-50 hover:text-primary'}`}
+            >
+              <Bookmark size={24} className={isJobSaved ? 'fill-primary' : ''} />
             </Button>
-            <Button variant="outline" size="xl" className="rounded-2xl h-16 w-16 p-0 border-slate-100 hover:bg-slate-50 text-slate-400 hover:text-primary transition-all">
+            <Button 
+              onClick={handleShareJob}
+              variant="outline" 
+              size="xl" 
+              className="rounded-2xl h-16 w-16 p-0 border-slate-100 hover:bg-slate-50 text-slate-400 hover:text-primary transition-all"
+            >
               <Share2 size={24} />
             </Button>
             <Button 
