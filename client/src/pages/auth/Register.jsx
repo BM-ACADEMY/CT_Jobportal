@@ -86,7 +86,7 @@ const RegisterPage = () => {
     }
   };
 
-  const isRecruiter = selectedRole === 'recruiter';
+  const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company';
 
   const onSubmit = async (values) => {
     setLoading(true);
@@ -224,6 +224,7 @@ const RegisterPage = () => {
                 {[
                   { key: 'jobseeker', label: 'Job Seeker', desc: "I'm looking for a job", Icon: Briefcase, activeColor: 'primary', borderColor: 'border-primary', bgColor: 'bg-primary/5', textColor: 'text-primary' },
                   { key: 'recruiter', label: 'Recruiter', desc: "I'm hiring talent", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
+                  { key: 'company', label: 'Company', desc: "Direct organization", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
                 ].map(role => {
                   const active = selectedRole === role.key;
                   return (
@@ -354,7 +355,7 @@ const RegisterPage = () => {
                         ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20' 
                         : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'}`}
                   >
-                    {loading ? 'Processing...' : `Create ${isRecruiter ? 'Recruiter' : 'Job Seeker'} Account`}
+                    {loading ? 'Processing...' : `Create ${selectedRole === 'company' ? 'Company' : isRecruiter ? 'Recruiter' : 'Job Seeker'} Account`}
                   </Button>
                 </form>
               </Form>

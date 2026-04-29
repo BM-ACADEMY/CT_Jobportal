@@ -28,6 +28,9 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('jobseeker');
+
+  const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company';
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -56,60 +59,75 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex bg-background">
 
-      {/* ─── Left Decorative Panel ─── */}
-      <div className="hidden lg:flex w-[45%] flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-600">
+      {/* ─── Left Panel ─── */}
+      <div
+        className={`hidden lg:flex w-[42%] flex-shrink-0 relative overflow-hidden flex-col justify-between p-12 transition-all duration-500
+          ${isRecruiter ? 'bg-gradient-to-br from-emerald-900 via-emerald-700 to-green-600' : 'bg-gradient-to-br from-indigo-900 via-indigo-700 to-violet-600'}`}
+      >
         {/* Background decorative elements */}
         <div className="absolute -top-20 -right-20 w-[300px] h-[300px] rounded-full bg-white/5" />
         <div className="absolute -bottom-24 -left-16 w-[350px] h-[350px] rounded-full bg-white/5" />
 
         <div className="flex flex-col justify-between p-12 w-full relative z-10">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 no-underline">
+          <Link to="/" className="flex items-center gap-3 no-underline relative z-10">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-lg">
-              <span className="text-blue-600 font-black text-lg">N</span>
+              <span className={`font-black text-lg ${isRecruiter ? 'text-emerald-600' : 'text-indigo-600'}`}>N</span>
             </div>
             <span className="text-white font-black text-2xl tracking-tighter">naukri</span>
           </Link>
 
-          {/* Main Content */}
-          <div>
-            <p className="text-blue-300 font-black text-[10px] uppercase tracking-[0.2em] mb-4">
-              INDIA'S #1 JOB PORTAL
+          <div className="relative z-10">
+            <p className={`font-black text-[10px] uppercase tracking-[0.2em] mb-4 
+              ${isRecruiter ? 'text-emerald-200' : 'text-indigo-200'}`}>
+              {isRecruiter ? 'FOR EMPLOYERS' : 'FOR JOB SEEKERS'}
             </p>
-            <h2 className="text-white font-black text-4xl xl:text-5xl leading-tight mb-6">
-              Your next big<br />career move<br />
-              <span className="text-blue-300">starts here.</span>
+            <h2 className="text-white font-black text-4xl leading-tight mb-6">
+              {isRecruiter ? (
+                <>Hire the best<br />talent for your<br /><span className="text-emerald-200">organization.</span></>
+              ) : (
+                <>Find your<br />dream career<br /><span className="text-indigo-200">with us today.</span></>
+              )}
             </h2>
-            <p className="text-blue-100/80 text-base font-medium leading-relaxed mb-10 max-w-xs">
-              Join 50L+ professionals who found their dream jobs. Get AI-powered recommendations tailored just for you.
+            <p className="text-white/80 text-sm font-medium leading-relaxed mb-10 max-w-xs">
+              {isRecruiter
+                ? 'Manage your job postings and applications with our advanced employer tools.'
+                : 'Get personalized job recommendations and stay ahead in your career.'}
             </p>
 
-            <div className="flex flex-col gap-4">
-              {[
-                { icon: <Briefcase size={16} />, text: 'Access 2L+ curated job listings' },
-                { icon: <Building2 size={16} />, text: 'Connect with 10K+ top companies' },
-                { icon: <TrendingUp size={16} />, text: 'AI-powered job recommendations' },
-              ].map((item, i) => (
+            <div className="flex flex-col gap-3">
+              {(isRecruiter ? [
+                'Post unlimited jobs for free',
+                'Access 50L+ candidate profiles',
+                'AI-powered candidate matching',
+                'Real-time application tracking',
+              ] : [
+                'Free account, always',
+                'AI-powered resume builder',
+                'One-click apply to 2L+ jobs',
+                'Real-time application tracking',
+              ]).map((text, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-blue-300 shrink-0">
-                    {item.icon}
-                  </div>
-                  <span className="text-blue-100/90 text-sm font-bold">{item.text}</span>
+                  <CircleCheck size={16} className={isRecruiter ? 'text-emerald-300' : 'text-indigo-300'} />
+                  <span className="text-white/90 text-[13px] font-bold">{text}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Testimonial */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 shadow-xl">
-            <div className="flex gap-0.5 mb-3">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 shadow-xl relative z-10">
+            <div className="flex gap-0.5 mb-2">
               {[1,2,3,4,5].map(i => <StarIcon key={i} />)}
             </div>
-            <p className="text-white font-bold text-sm leading-relaxed mb-2">
-              "Got 5 interview calls within a week of uploading my resume!"
+            <p className="text-white font-bold text-sm leading-relaxed mb-1">
+              {isRecruiter
+                ? '"Found my top candidates in record time!"'
+                : '"Got my dream job within a week!"'}
             </p>
-            <p className="text-blue-300 text-xs font-black uppercase tracking-wider">
-              — Rohan K., Software Engineer at Amazon
+            <p className="text-white/60 text-[10px] font-black uppercase tracking-wider">
+              {isRecruiter
+                ? '— HR Director, Google'
+                : '— Ananya S., Product Designer'}
             </p>
           </div>
         </div>
@@ -130,11 +148,33 @@ const LoginPage = () => {
           {/* Heading */}
           <div className="mb-8">
             <h1 className="text-3xl font-black text-foreground mb-2 tracking-tight">
-              Welcome back 👋
+              Welcome back
             </h1>
             <p className="text-muted-foreground text-sm font-bold">
-              Sign in to continue your job search
+              Sign in to manage your {isRecruiter ? 'hiring' : 'profile'}
             </p>
+          </div>
+
+          {/* Role Toggle */}
+          <div className="grid grid-cols-3 gap-2 mb-8">
+            {[
+              { key: 'jobseeker', label: 'Job Seeker', Icon: Briefcase, activeColor: 'primary', borderColor: 'border-primary', bgColor: 'bg-primary/5', textColor: 'text-primary' },
+              { key: 'recruiter', label: 'Recruiter', Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
+              { key: 'company', label: 'Company', Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
+            ].map(role => {
+              const active = selectedRole === role.key;
+              return (
+                <button
+                  key={role.key}
+                  onClick={() => setSelectedRole(role.key)}
+                  className={`relative flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all duration-200
+                    ${active ? `${role.borderColor} ${role.bgColor}` : 'border-border bg-muted/20 hover:bg-muted/40'}`}
+                >
+                  <role.Icon size={16} className={active ? role.textColor : 'text-muted-foreground/60'} />
+                  <span className={`font-black text-[11px] ${active ? role.textColor : 'text-muted-foreground'}`}>{role.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           {error && (
@@ -204,9 +244,12 @@ const LoginPage = () => {
               <Button 
                 type="submit" 
                 disabled={loading}
-                className="w-full h-14 rounded-2xl text-base font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className={`w-full h-14 rounded-2xl text-base font-black transition-all shadow-lg
+                  ${isRecruiter 
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20' 
+                    : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'}`}
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? 'Signing in...' : `Sign In as ${selectedRole === 'company' ? 'Company' : isRecruiter ? 'Recruiter' : 'Job Seeker'}`}
               </Button>
             </form>
           </Form>
@@ -244,6 +287,13 @@ const LoginPage = () => {
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
             </button>
+          </div>
+
+          <div className="mb-8 text-center">
+            <Link to="/company-login" className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-50 text-emerald-700 font-black text-xs hover:bg-emerald-100 transition-all">
+                <Building2 size={16} />
+                Are you a company? Use Business Login
+            </Link>
           </div>
 
           {/* Quick Demo Logins */}

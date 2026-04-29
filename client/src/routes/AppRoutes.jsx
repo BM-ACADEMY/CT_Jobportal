@@ -12,11 +12,14 @@ import { GuestRoute, PrivateRoute } from './ProtectedRoutes';
 
 // Pages
 import HomePage from '../pages/Home';
+import Jobs from '../pages/Jobs';
+import JobDetails from '../pages/JobDetails';
 import LoginPage from '../pages/auth/Login';
 import RegisterPage from '../pages/auth/Register';
 import VerifyOtpPage from '../pages/auth/VerifyOtp';
 import ForgotPasswordPage from '../pages/auth/ForgotPassword';
 import SocialAuthSuccess from '../pages/auth/SocialAuthSuccess';
+import CompanyLogin from '../pages/auth/CompanyLogin';
 import JobSeekerDashboard from '../pages/jobseeker/Dashboard';
 import AdminDashboard from '../pages/admin/Dashboard';
 import CompanyDashboard from '../pages/company/Dashboard';
@@ -24,6 +27,7 @@ import RecruiterSettings from '../pages/company/Settings';
 import PostJob from '../pages/company/PostJob';
 import SubAdminDashboard from '../pages/subadmin/Dashboard';
 import JobSeekerSettings from '../pages/jobseeker/Settings';
+
 
 
 // Role-based redirect after login
@@ -34,6 +38,7 @@ const RoleRedirect = () => {
     admin: '/admin',
     subadmin: '/subadmin',
     recruiter: '/company',
+    company: '/company',
     jobseeker: '/jobseeker',
   };
   return <Navigate to={routes[user.role] || '/jobseeker'} replace />;
@@ -46,7 +51,10 @@ const AppRoutes = () => {
       {/* ── Public Landing Page ───────────────────── */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/jobs" element={<Jobs />} />
+        <Route path="/job/:id" element={<JobDetails />} />
       </Route>
+
 
       {/* ── Auth Pages (no header/sidebar) ──────────── */}
       <Route element={<AuthLayout />}>
@@ -55,6 +63,14 @@ const AppRoutes = () => {
           element={
             <GuestRoute>
               <LoginPage />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/company-login"
+          element={
+            <GuestRoute>
+              <CompanyLogin />
             </GuestRoute>
           }
         />
@@ -122,9 +138,9 @@ const AppRoutes = () => {
 
 
         <Route
-          path="/company/profile"
+          path="/company/settings"
           element={
-            <PrivateRoute roles={['recruiter']}>
+            <PrivateRoute roles={['recruiter', 'company']}>
               <RecruiterSettings />
             </PrivateRoute>
           }
@@ -132,7 +148,7 @@ const AppRoutes = () => {
         <Route
           path="/company/post-job"
           element={
-            <PrivateRoute roles={['recruiter']}>
+            <PrivateRoute roles={['recruiter', 'company']}>
               <PostJob />
             </PrivateRoute>
           }
@@ -140,7 +156,7 @@ const AppRoutes = () => {
         <Route
           path="/company/*"
           element={
-            <PrivateRoute roles={['recruiter']}>
+            <PrivateRoute roles={['recruiter', 'company']}>
               <CompanyDashboard />
             </PrivateRoute>
           }

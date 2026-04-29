@@ -2,12 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
-import { 
-  Briefcase, MapPin, Clock, DollarSign, Users, 
-  FileText, Plus, X, Save, Sparkles, LayoutGrid,
-  Send, Trash2, ShieldCheck, Target, ChevronLeft, 
-  ArrowRight, Calendar, BadgeCheck, ExternalLink
-} from 'lucide-react';
+import { Briefcase, MapPin, Clock, DollarSign, Users, FileText, Plus, X, Sparkles, LayoutGrid, Send, Trash2, Target, ChevronLeft, ArrowRight, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -193,93 +188,100 @@ const PostJob = () => {
     if (fetching) {
         return (
             <div className="h-[60vh] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                    <p className="font-black text-xs uppercase tracking-[0.2em] text-muted-foreground animate-pulse">Synchronizing Jobs...</p>
-                </div>
+                <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
             </div>
         );
     }
 
+    const DisplayField = ({ label, value, icon: Icon }) => (
+        <div className="space-y-1.5">
+            <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground flex items-center gap-2">
+                {Icon && <Icon className="w-3 h-3 text-emerald-600/70" />}
+                {label}
+            </p>
+            <p className="text-sm font-semibold text-foreground">{value || '—'}</p>
+        </div>
+    );
+
     return (
-        <div className="max-w-7xl mx-auto py-12 px-4">
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-700">
             
             {/* ── VIEW: LIST OF JOBS ── */}
             {viewMode === 'list' && (
-                <div className="space-y-12">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-br from-primary/5 via-transparent to-transparent p-8 rounded-[40px] border border-primary/10">
-                        <div className="space-y-2">
-                            <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-4">
-                                Career Opportunities <LayoutGrid className="text-primary w-8 h-8" />
+                <div className="space-y-8">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-border pb-8">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                                Job <span className="text-emerald-600">Postings</span>
                             </h1>
-                            <p className="text-muted-foreground font-bold">Manage and track all positions posted for {user?.company?.name}</p>
+                            <p className="text-muted-foreground text-sm mt-1">Manage and track your active recruitment opportunities</p>
                         </div>
                         <Button 
                             onClick={() => setViewMode('create')}
-                            className="rounded-2xl font-black text-sm uppercase tracking-widest px-10 h-14 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform"
+                            className="rounded-lg font-semibold px-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
                         >
-                            <Plus className="w-5 h-5 mr-2" /> Post a New Position
+                            <Plus className="w-4 h-4 mr-2" /> Post a New Job
                         </Button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {jobs.map((job) => (
                             <Card 
                                 key={job._id} 
                                 onClick={() => { setSelectedJob(job); setViewMode('detail'); }}
-                                className="group rounded-[32px] border-border hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer overflow-hidden relative"
+                                className="group rounded-xl border-border bg-white hover:border-emerald-600/30 hover:shadow-lg hover:shadow-emerald-600/5 transition-all cursor-pointer overflow-hidden relative"
                             >
-                                <div className="absolute top-6 right-6 flex items-center gap-2">
-                                    <Badge className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                        job.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 
-                                        job.status === 'draft' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                                <div className="absolute top-4 right-4">
+                                    <Badge className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                        job.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
+                                        job.status === 'draft' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                                         'bg-muted text-muted-foreground'
                                     }`}>
                                         {job.status}
                                     </Badge>
                                 </div>
-                                <CardHeader className="p-8 pb-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <Briefcase className="w-6 h-6 text-primary" />
+                                <CardHeader className="p-6 pb-2">
+                                    <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <Briefcase className="w-5 h-5 text-emerald-600" />
                                     </div>
-                                    <CardTitle className="text-xl font-black group-hover:text-primary transition-colors pr-10 leading-tight">
+                                    <CardTitle className="text-lg font-bold group-hover:text-emerald-600 transition-colors pr-12 line-clamp-1">
                                         {job.title}
                                     </CardTitle>
-                                    <CardDescription className="font-bold flex items-center gap-2 mt-2">
-                                        <MapPin className="w-3 h-3" /> {job.location || 'Remote'}
+                                    <CardDescription className="font-medium flex items-center gap-1.5 mt-1">
+                                        <MapPin className="w-3.5 h-3.5" /> {job.location || 'Remote'}
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent className="p-8 pt-4 space-y-6">
-                                    <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                            <Users className="w-4 h-4 text-primary opacity-60" />
+                                <CardContent className="p-6 pt-4 space-y-4">
+                                    <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+                                        <div className="flex items-center gap-1.5">
+                                            <Users className="w-4 h-4 text-emerald-600/70" />
                                             {job.applicantsCount} Applicants
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-primary opacity-60" />
+                                        <div className="flex items-center gap-1.5">
+                                            <Clock className="w-4 h-4 text-emerald-600/70" />
                                             {job.jobType}
                                         </div>
                                     </div>
                                     <div className="pt-4 border-t border-border flex items-center justify-between">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-40">
-                                            Posted {new Date(job.createdAt).toLocaleDateString()}
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                                            {new Date(job.createdAt).toLocaleDateString()}
                                         </span>
-                                        <ArrowRight className="w-5 h-5 text-primary translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all" />
+                                        <ArrowRight className="w-4 h-4 text-emerald-600 opacity-0 group-hover:opacity-100 transition-all" />
                                     </div>
                                 </CardContent>
                             </Card>
                         ))}
                         {jobs.length === 0 && (
-                            <div className="col-span-full py-24 text-center space-y-4 bg-muted/20 border-2 border-dashed border-border rounded-[40px]">
-                                <Sparkles className="w-12 h-12 text-primary/20 mx-auto" />
-                                <h3 className="text-xl font-black text-muted-foreground">No active positions found</h3>
-                                <p className="text-sm font-bold text-muted-foreground/60">Ready to expand your team? Start by posting your first position.</p>
+                            <div className="col-span-full py-20 text-center space-y-4 bg-muted/20 border border-dashed border-border rounded-xl">
+                                <Sparkles className="w-10 h-10 text-emerald-600/30 mx-auto" />
+                                <h3 className="text-lg font-bold text-muted-foreground">No active postings</h3>
+                                <p className="text-sm text-muted-foreground/70">Start your recruitment journey by posting your first job.</p>
                                 <Button 
                                     onClick={() => setViewMode('create')}
                                     variant="outline"
-                                    className="mt-6 rounded-xl font-black px-8 border-primary/20 text-primary"
+                                    className="mt-4 rounded-lg font-semibold border-emerald-600/20 text-emerald-700 hover:bg-emerald-50"
                                 >
-                                    Post Job Regularly
+                                    Post Your First Job
                                 </Button>
                             </div>
                         )}
@@ -289,70 +291,70 @@ const PostJob = () => {
 
             {/* ── VIEW: JOB DETAILS ── */}
             {viewMode === 'detail' && selectedJob && (
-                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex items-center gap-6">
-                        <Button 
-                            variant="ghost" 
-                            onClick={() => setViewMode('list')}
-                            className="w-12 h-12 rounded-2xl bg-muted/50 hover:bg-muted border border-border"
-                        >
-                            <ChevronLeft className="w-6 h-6" />
-                        </Button>
-                        <div className="flex-1">
-                            <h2 className="text-3xl font-black tracking-tight">{selectedJob.title || "Untitled Role"}</h2>
-                            <p className="text-muted-foreground font-bold flex items-center gap-2">
-                                Full Role Specification & Requirements
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-border pb-8">
+                        <div className="flex items-center gap-4">
                             <Button 
                                 variant="outline" 
-                                onClick={(e) => { e.stopPropagation(); handleEdit(selectedJob); }}
-                                className="rounded-xl border-border px-6 font-black text-xs uppercase tracking-widest hover:bg-primary hover:text-white hover:border-primary transition-all"
+                                onClick={() => setViewMode('list')}
+                                className="w-10 h-10 p-0 rounded-lg border-border hover:bg-muted"
                             >
-                                Edit Role
+                                <ChevronLeft className="w-5 h-5" />
+                            </Button>
+                            <div>
+                                <h2 className="text-2xl font-bold tracking-tight">{selectedJob.title}</h2>
+                                <p className="text-muted-foreground text-sm font-medium">Full specifications and requirements</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 w-full md:w-auto">
+                            <Button 
+                                variant="outline" 
+                                onClick={() => handleEdit(selectedJob)}
+                                className="rounded-lg font-semibold border-border hover:bg-muted flex-1 md:flex-none"
+                            >
+                                Edit Job
                             </Button>
                             <Button 
                                 variant="outline" 
-                                onClick={(e) => { e.stopPropagation(); handleStatusToggle(selectedJob); }}
-                                className="rounded-xl border-border px-6 font-black text-xs uppercase tracking-widest hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-all"
+                                onClick={() => handleStatusToggle(selectedJob)}
+                                className="rounded-lg font-semibold border-border hover:bg-muted flex-1 md:flex-none"
                             >
-                                {selectedJob.status === 'active' ? 'Set Inactive' : 'Set Active'}
+                                {selectedJob.status === 'active' ? 'Deactivate' : 'Activate'}
                             </Button>
                             <Button 
                                 variant="ghost" 
-                                onClick={(e) => { e.stopPropagation(); handleDelete(selectedJob._id); }}
-                                className="w-12 h-12 rounded-xl text-destructive hover:bg-destructive/5"
+                                onClick={() => handleDelete(selectedJob._id)}
+                                className="w-10 h-10 p-0 rounded-lg text-destructive hover:bg-destructive/5"
                             >
                                 <Trash2 className="w-5 h-5" />
                             </Button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                        <div className="lg:col-span-2 space-y-10">
-                            <Card className="rounded-[40px] border-border shadow-sm">
-                                <CardHeader className="p-10 pb-4">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <Badge className="bg-primary/10 text-primary border-primary/20 px-4 py-1.5 rounded-full font-black text-[11px] uppercase tracking-widest">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-6">
+                            <Card className="rounded-xl border-border bg-white shadow-none">
+                                <CardHeader className="p-6 border-b border-border/50">
+                                    <div className="flex items-center gap-3">
+                                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 px-3 py-1 rounded-md font-bold text-[10px] uppercase tracking-wider">
                                             {selectedJob.jobType}
                                         </Badge>
-                                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-4 py-1.5 rounded-full font-black text-[11px] uppercase tracking-widest">
+                                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 px-3 py-1 rounded-md font-bold text-[10px] uppercase tracking-wider">
                                             {selectedJob.workMode}
                                         </Badge>
                                     </div>
-                                    <CardTitle className="text-2xl font-black">Detailed Job Overview</CardTitle>
+                                    <CardTitle className="text-lg font-bold mt-4">Job Description</CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-10 space-y-8">
-                                    <div className="prose prose-sm max-w-none text-muted-foreground font-bold leading-relaxed whitespace-pre-wrap">
+                                <CardContent className="p-6 space-y-8">
+                                    <div className="text-sm text-muted-foreground font-medium leading-relaxed whitespace-pre-wrap">
                                         {selectedJob.description}
                                     </div>
 
-                                    <div className="pt-8 border-t border-border space-y-6">
-                                        <h3 className="font-black text-xs uppercase tracking-[0.2em]">Required Skills</h3>
+                                    <div className="pt-6 border-t border-border/50 space-y-4">
+                                        <h3 className="font-bold text-xs uppercase tracking-widest text-emerald-600/70">Required Skills</h3>
                                         <div className="flex flex-wrap gap-2">
                                             {selectedJob.skillsRequired.map(skill => (
-                                                <Badge key={skill} className="px-5 py-2.5 rounded-2xl bg-muted/50 border-border text-foreground font-black text-xs">
+                                                <Badge key={skill} className="px-3 py-1.5 rounded-md bg-muted/50 border-border text-foreground font-semibold text-xs">
                                                     {skill}
                                                 </Badge>
                                             ))}
@@ -360,13 +362,13 @@ const PostJob = () => {
                                     </div>
 
                                     {selectedJob.additionalDetails.length > 0 && (
-                                        <div className="pt-8 border-t border-border space-y-6">
-                                            <h3 className="font-black text-xs uppercase tracking-[0.2em]">Additional Criteria</h3>
+                                        <div className="pt-6 border-t border-border/50 space-y-4">
+                                            <h3 className="font-bold text-xs uppercase tracking-widest text-emerald-600/70">Additional Information</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {selectedJob.additionalDetails.map((detail, idx) => (
-                                                    <div key={idx} className="p-5 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{detail.key}</span>
-                                                        <span className="font-black text-sm text-primary">{detail.value}</span>
+                                                    <div key={idx} className="p-4 rounded-lg bg-muted/30 border border-border/50 flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{detail.key}</span>
+                                                        <span className="font-semibold text-sm text-emerald-600">{detail.value}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -376,40 +378,40 @@ const PostJob = () => {
                             </Card>
                         </div>
 
-                        <div className="space-y-10">
-                            <Card className="rounded-[40px] bg-foreground text-background shadow-2xl">
-                                <CardContent className="p-10 space-y-8">
+                        <div className="space-y-6">
+                            <Card className="rounded-xl bg-slate-950 text-white shadow-xl">
+                                <CardContent className="p-6 space-y-6">
                                     <div className="space-y-6">
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Compensation</p>
-                                            <p className="text-2xl font-black">
-                                                {selectedJob.salary.isRangeHidden ? 'Undisclosed' : `₹ ${selectedJob.salary.min} - ${selectedJob.salary.max} LPA`}
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Compensation</p>
+                                            <p className="text-xl font-bold">
+                                                {selectedJob.salary.isRangeHidden ? 'As per Industry' : `₹ ${selectedJob.salary.min} - ${selectedJob.salary.max} LPA`}
                                             </p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Locations</p>
-                                            <p className="text-lg font-bold">{selectedJob.location}</p>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Location</p>
+                                            <p className="text-md font-semibold">{selectedJob.location}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Experience</p>
-                                            <p className="text-lg font-bold">{selectedJob.experience.min} - {selectedJob.experience.max} Years</p>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Experience</p>
+                                            <p className="text-md font-semibold">{selectedJob.experience.min} - {selectedJob.experience.max} Years</p>
                                         </div>
                                     </div>
-                                    <div className="pt-8 border-t border-background/10 space-y-4">
-                                        <div className="flex items-center justify-between font-black text-xs uppercase tracking-widest">
-                                            <span className="opacity-40">Active Vacancies</span>
+                                    <div className="pt-6 border-t border-white/10 space-y-3">
+                                        <div className="flex items-center justify-between font-bold text-[11px] uppercase tracking-wider">
+                                            <span className="text-white/40">Vacancies</span>
                                             <span>{selectedJob.vacancies} Positions</span>
                                         </div>
-                                        <div className="flex items-center justify-between font-black text-xs uppercase tracking-widest">
-                                            <span className="opacity-40">Last Updated</span>
-                                            <span>{new Date(selectedJob.updatedAt).toLocaleDateString()}</span>
+                                        <div className="flex items-center justify-between font-bold text-[11px] uppercase tracking-wider">
+                                            <span className="text-white/40">Posted on</span>
+                                            <span>{new Date(selectedJob.createdAt).toLocaleDateString()}</span>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Button className="w-full h-16 rounded-[24px] font-black text-sm uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] transition-transform">
-                                <ExternalLink className="w-5 h-5 mr-3" /> View Applicants
+                            <Button className="w-full h-12 rounded-lg font-bold text-sm uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/10 transition-all">
+                                <ExternalLink className="w-4 h-4 mr-2" /> View Applicants
                             </Button>
                         </div>
                     </div>
@@ -418,82 +420,70 @@ const PostJob = () => {
 
             {/* ── VIEW: CREATE JOB FORM ── */}
             {viewMode === 'create' && (
-                <form id="post-job-form" onSubmit={handleSubmit} className="space-y-12 animate-in fade-in zoom-in-95 duration-500">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-br from-primary/5 via-transparent to-transparent p-8 rounded-[40px] border border-primary/10">
-                        <div className="flex items-center gap-6">
+                <form id="post-job-form" onSubmit={handleSubmit} className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-border pb-8">
+                        <div className="flex items-center gap-4">
                             <Button 
                                 type="button"
-                                variant="ghost" 
+                                variant="outline" 
                                 onClick={() => { setViewMode('list'); resetForm(); }}
-                                className="w-12 h-12 rounded-2xl bg-muted/50 hover:bg-muted border border-border"
+                                className="w-10 h-10 p-0 rounded-lg border-border hover:bg-muted"
                             >
-                                <ChevronLeft className="w-6 h-6" />
+                                <ChevronLeft className="w-5 h-5" />
                             </Button>
-                             <div className="space-y-1">
-                                <h1 className="text-3xl font-black tracking-tight">{editingJobId ? 'Retouch Position' : 'Post New Position'}</h1>
-                                <p className="text-muted-foreground font-bold">{editingJobId ? 'Refine the details of your opportunity' : 'Define the future of your team'}</p>
+                            <div>
+                                <h1 className="text-2xl font-bold tracking-tight">{editingJobId ? 'Edit Job' : 'Post a New Job'}</h1>
+                                <p className="text-muted-foreground text-sm font-medium">{editingJobId ? 'Update your recruitment criteria' : 'Specify the details for your new opening'}</p>
                             </div>
                         </div>
-                        <div className="flex gap-4">
+                        <div className="flex gap-3 w-full md:w-auto">
                             <Button 
                                 type="button"
-                                variant="ghost" 
-                                onClick={() => { setViewMode('list'); resetForm(); }}
-                                className="rounded-2xl font-black text-sm uppercase tracking-widest px-8"
-                            >
-                                Discard
-                            </Button>
-                            <Button 
-                                type="button"
-                                variant="outline"
+                                variant="outline" 
                                 onClick={() => handleSubmit(null, 'draft')}
-                                loading={draftLoading}
-                                disabled={loading}
-                                className="rounded-2xl font-black text-sm uppercase tracking-widest px-8 border-primary/20 text-primary hover:bg-primary/5"
+                                disabled={loading || draftLoading}
+                                className="rounded-lg font-semibold px-6 border-border hover:bg-muted flex-1 md:flex-none"
                             >
-                                <FileText className="w-4 h-4 mr-2" /> Save as Draft
+                                {draftLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileText className="w-4 h-4 mr-2" />}
+                                Save Draft
                             </Button>
                             <Button 
                                 type="submit"
                                 form="post-job-form"
-                                loading={loading}
-                                disabled={draftLoading}
-                                className="rounded-2xl font-black text-sm uppercase tracking-widest px-10 h-14 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform"
+                                disabled={loading || draftLoading}
+                                className="rounded-lg font-semibold px-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex-1 md:flex-none"
                             >
-                                <Send className="w-4 h-4 mr-2" /> Publish Position
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                                Publish Job
                             </Button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                        <div className="lg:col-span-2 space-y-10">
-                            {/* Role architecture */}
-                            <Card className="rounded-[40px] border-border shadow-sm">
-                                <CardHeader className="p-10 pb-4">
-                                    <CardTitle className="text-xl font-black flex items-center gap-3 ">
-                                        Position Blueprint
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-6">
+                            <Card className="rounded-xl border-border bg-white shadow-none">
+                                <CardHeader className="p-6 border-b border-border/50">
+                                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                        <LayoutGrid className="text-emerald-600 w-5 h-5" /> Job Details
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-10 space-y-8">
-                                    <div className="space-y-3">
-                                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Internal Title / Role</Label>
-                                        <div className="relative">
-                                            <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                                            <Input 
-                                                placeholder="e.g. Senior Software Architect"
-                                                value={formData.title}
-                                                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                                                required
-                                                className="pl-11 h-16 rounded-2xl bg-muted/20 border-border font-bold focus:bg-background transition-all"
-                                            />
-                                        </div>
+                                <CardContent className="p-6 space-y-6">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Job Title</Label>
+                                        <Input 
+                                            placeholder="e.g. Senior Software Engineer"
+                                            value={formData.title}
+                                            onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                            required
+                                            className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                        />
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Scope of Responsibilities</Label>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Full Description</Label>
                                         <textarea 
-                                            className="w-full min-h-[300px] p-8 rounded-[32px] bg-muted/20 border border-border font-bold transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background text-sm leading-relaxed"
-                                            placeholder="What will this person achieve in their first 6 months?..."
+                                            className="w-full min-h-[250px] p-4 rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-emerald-600 text-sm font-medium leading-relaxed"
+                                            placeholder="Outline roles, responsibilities, and benefits..."
                                             value={formData.description}
                                             onChange={(e) => setFormData({...formData, description: e.target.value})}
                                             required
@@ -502,122 +492,120 @@ const PostJob = () => {
                                 </CardContent>
                             </Card>
 
-                                {/* Requirements */}
-                                <Card className="rounded-[40px] border-border shadow-sm">
-                                    <CardHeader className="p-10 pb-4">
-                                        <CardTitle className="text-xl font-black flex items-center gap-3">
-                                            <Target className="text-primary w-5 h-5" /> Requirements & Expertise
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-10 space-y-10">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                            <div className="space-y-3">
-                                                <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Min Experience (Years)</Label>
-                                                <Input 
-                                                    type="number" 
-                                                    value={formData.experience.min}
-                                                    onChange={(e) => setFormData({...formData, experience: {...formData.experience, min: e.target.value}})}
-                                                    className="h-14 rounded-2xl bg-muted/20 border-border font-bold text-lg"
-                                                />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Max Experience (Years)</Label>
-                                                <Input 
-                                                    type="number" 
-                                                    value={formData.experience.max}
-                                                    onChange={(e) => setFormData({...formData, experience: {...formData.experience, max: e.target.value}})}
-                                                    className="h-14 rounded-2xl bg-muted/20 border-border font-bold text-lg"
-                                                />
-                                            </div>
+                            <Card className="rounded-xl border-border bg-white shadow-none">
+                                <CardHeader className="p-6 border-b border-border/50">
+                                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                        <Target className="text-emerald-600 w-5 h-5" /> Requirements
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6 space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-semibold text-muted-foreground">Min Experience (Years)</Label>
+                                            <Input 
+                                                type="number" 
+                                                value={formData.experience.min}
+                                                onChange={(e) => setFormData({...formData, experience: {...formData.experience, min: e.target.value}})}
+                                                className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                            />
                                         </div>
-
-                                        <div className="space-y-5">
-                                            <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Core Expertise Stack</Label>
-                                            <div className="flex gap-3">
-                                                <Input 
-                                                    placeholder="e.g. React.js, Python, Project Management..."
-                                                    value={newSkill}
-                                                    onChange={(e) => setNewSkill(e.target.value)}
-                                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
-                                                    className="h-14 rounded-2xl bg-muted/20 border-border font-bold"
-                                                />
-                                                <Button type="button" onClick={handleAddSkill} className="h-14 w-14 rounded-2xl shrink-0 shadow-lg bg-primary hover:bg-primary/90 transition-all">
-                                                    <Plus className="w-6 h-6" />
-                                                </Button>
-                                            </div>
-                                            <div className="flex flex-wrap gap-3 pt-2">
-                                                {formData.skillsRequired.map((skill) => (
-                                                    <Badge key={skill} className="px-5 py-2.5 rounded-2xl font-black text-xs bg-primary/10 text-primary border-primary/20 flex items-center gap-3 hover:bg-primary/20 transition-all cursor-default">
-                                                        {skill}
-                                                        <button type="button" onClick={() => handleRemoveSkill(skill)} className="hover:text-destructive text-primary/40 hover:opacity-100 transition-all">
-                                                            <X size={14} strokeWidth={3} />
-                                                        </button>
-                                                    </Badge>
-                                                ))}
-                                            </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-semibold text-muted-foreground">Max Experience (Years)</Label>
+                                            <Input 
+                                                type="number" 
+                                                value={formData.experience.max}
+                                                onChange={(e) => setFormData({...formData, experience: {...formData.experience, max: e.target.value}})}
+                                                className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                            />
                                         </div>
-                                    </CardContent>
-                                </Card>
-
-                            {/* Additional Criteria */}
-                            <Card className="rounded-[40px] border-border shadow-sm border-dashed border-2 bg-gradient-to-b from-transparent to-primary/5">
-                                <CardHeader className="p-10 pb-4 flex flex-row items-center justify-between">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-xl font-black">Dynamic Matrix</CardTitle>
-                                        <CardDescription className="font-bold">Add bespoke requirements (Gender, Notice Period, Shift etc.)</CardDescription>
                                     </div>
-                                    <Button type="button" variant="outline" onClick={handleAddDetail} className="rounded-xl border-primary/20 text-primary hover:bg-white shadow-sm">
-                                        <Plus className="w-4 h-4 mr-2" /> New Matrix
+
+                                    <div className="space-y-4">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Required Skills</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                placeholder="Add a skill..."
+                                                value={newSkill}
+                                                onChange={(e) => setNewSkill(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
+                                                className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                            />
+                                            <Button type="button" onClick={handleAddSkill} className="h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700">
+                                                <Plus className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {formData.skillsRequired.map((skill) => (
+                                                <Badge key={skill} className="px-3 py-1.5 rounded-md font-bold text-[10px] uppercase tracking-wider bg-emerald-50 text-emerald-700 border-emerald-100 flex items-center gap-2">
+                                                    {skill}
+                                                    <X size={12} className="cursor-pointer" onClick={() => handleRemoveSkill(skill)} />
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="rounded-xl border-border bg-white shadow-none border-dashed">
+                                <CardHeader className="p-6 border-b border-border/50 flex flex-row items-center justify-between">
+                                    <div className="space-y-1">
+                                        <CardTitle className="text-lg font-bold">Additional Specs</CardTitle>
+                                        <CardDescription className="text-xs font-medium">Custom fields for specific criteria</CardDescription>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={handleAddDetail} className="rounded-lg border-emerald-600/20 text-emerald-700 hover:bg-emerald-50">
+                                        <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Field
                                     </Button>
                                 </CardHeader>
-                                <CardContent className="p-10 space-y-6 pt-0">
+                                <CardContent className="p-6 space-y-4">
                                     {formData.additionalDetails.map((detail, index) => (
-                                        <div key={index} className="flex gap-6 items-end group">
-                                            <div className="flex-1 space-y-2">
-                                                <Label className="text-[10px] uppercase font-black text-muted-foreground/60">Key Identifier</Label>
+                                        <div key={index} className="flex gap-4 items-end animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div className="flex-1 space-y-1.5">
+                                                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Label</Label>
                                                 <Input 
                                                     placeholder="e.g. Notice Period"
                                                     value={detail.key}
                                                     onChange={(e) => handleDetailChange(index, 'key', e.target.value)}
-                                                    className="h-14 rounded-2xl bg-white border-border font-bold shadow-sm"
+                                                    className="h-10 rounded-lg border-border"
                                                 />
                                             </div>
-                                            <div className="flex-[2] space-y-2">
-                                                <Label className="text-[10px] uppercase font-black text-muted-foreground/60">Expected Value</Label>
+                                            <div className="flex-[1.5] space-y-1.5">
+                                                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Value</Label>
                                                 <Input 
-                                                    placeholder="e.g. 15 Days (Immediate)"
+                                                    placeholder="e.g. 30 Days"
                                                     value={detail.value}
                                                     onChange={(e) => handleDetailChange(index, 'value', e.target.value)}
-                                                    className="h-14 rounded-2xl bg-white border-border font-bold shadow-sm"
+                                                    className="h-10 rounded-lg border-border"
                                                 />
                                             </div>
                                             <Button 
                                                 type="button" 
                                                 variant="ghost" 
                                                 onClick={() => handleRemoveDetail(index)}
-                                                className="h-14 w-14 rounded-2xl text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                                                className="h-10 w-10 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
                                             >
-                                                <Trash2 className="w-5 h-5" />
+                                                <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </div>
                                     ))}
+                                    {formData.additionalDetails.length === 0 && (
+                                        <p className="text-center py-4 text-xs font-medium text-muted-foreground italic">No custom fields added</p>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>
 
-                        <div className="space-y-10">
-                            {/* Distribution settings */}
-                            <Card className="rounded-[40px] border-border shadow-sm overflow-hidden">
-                                <CardHeader className="p-10 pb-4 bg-muted/20">
-                                    <CardTitle className="text-lg font-black flex items-center gap-3">
-                                        <Target className="w-5 h-5 text-primary" /> Delivery Logic
+                        <div className="space-y-6">
+                            <Card className="rounded-xl border-border bg-white shadow-none">
+                                <CardHeader className="p-6 border-b border-border/50">
+                                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                        <MapPin className="text-emerald-600 w-5 h-5" /> Logistics
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-10 space-y-10">
-                                    <div className="space-y-4">
-                                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Contract Type</Label>
+                                <CardContent className="p-6 space-y-6">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Job Type</Label>
                                         <select 
-                                            className="w-full h-14 px-6 rounded-2xl bg-muted/20 border border-border font-black text-sm focus:bg-background transition-all outline-none"
+                                            className="w-full h-10 px-3 rounded-lg border border-border text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 bg-white"
                                             value={formData.jobType}
                                             onChange={(e) => setFormData({...formData, jobType: e.target.value})}
                                         >
@@ -627,10 +615,10 @@ const PostJob = () => {
                                         </select>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Arrangement</Label>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Work Mode</Label>
                                         <select 
-                                            className="w-full h-14 px-6 rounded-2xl bg-muted/20 border border-border font-black text-sm focus:bg-background transition-all outline-none"
+                                            className="w-full h-10 px-3 rounded-lg border border-border text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 bg-white"
                                             value={formData.workMode}
                                             onChange={(e) => setFormData({...formData, workMode: e.target.value})}
                                         >
@@ -640,60 +628,58 @@ const PostJob = () => {
                                         </select>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Base Location</Label>
-                                        <div className="relative">
-                                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                                            <Input 
-                                                placeholder="e.g. Pune, Maharashtra"
-                                                value={formData.location}
-                                                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                                                className="pl-11 h-14 rounded-2xl bg-muted/20 border-border font-bold"
-                                            />
-                                        </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Location</Label>
+                                        <Input 
+                                            placeholder="e.g. Bengaluru, Karnataka"
+                                            value={formData.location}
+                                            onChange={(e) => setFormData({...formData, location: e.target.value})}
+                                            className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                        />
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            {/* Reward Bracket */}
-                            <Card className="rounded-[40px] border-border shadow-sm overflow-hidden border-2 border-primary/20 bg-primary/5">
-                                <CardHeader className="p-10 pb-4">
-                                    <CardTitle className="text-lg font-black flex items-center gap-3">
-                                        <DollarSign className="w-5 h-5 text-primary" /> Compensation
+                            <Card className="rounded-xl border-border bg-emerald-50/50 shadow-none border-emerald-600/10">
+                                <CardHeader className="p-6 border-b border-emerald-600/10">
+                                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                        <DollarSign className="text-emerald-600 w-5 h-5" /> Salary Range
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-10 space-y-8 pt-0">
-                                    <div className="flex gap-4">
-                                        <div className="flex-1 space-y-2">
-                                            <Label className="text-[10px] uppercase font-black opacity-60">Min</Label>
+                                <CardContent className="p-6 space-y-6">
+                                    <div className="flex gap-3">
+                                        <div className="flex-1 space-y-1.5">
+                                            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Min (LPA)</Label>
                                             <Input 
-                                                placeholder="7.5"
+                                                placeholder="e.g. 5"
+                                                type="number"
                                                 disabled={formData.salary.isRangeHidden}
                                                 value={formData.salary.min}
                                                 onChange={(e) => setFormData({...formData, salary: {...formData.salary, min: e.target.value}})}
-                                                className="h-14 rounded-2xl bg-background border-border font-grey text-lg"
+                                                className="h-10 rounded-lg bg-white border-border font-semibold"
                                             />
                                         </div>
-                                        <div className="flex-1 space-y-2">
-                                            <Label className="text-[10px] uppercase font-black opacity-60">Max</Label>
+                                        <div className="flex-1 space-y-1.5">
+                                            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Max (LPA)</Label>
                                             <Input 
-                                                placeholder="15.0"
+                                                placeholder="e.g. 10"
+                                                type="number"
                                                 disabled={formData.salary.isRangeHidden}
                                                 value={formData.salary.max}
                                                 onChange={(e) => setFormData({...formData, salary: {...formData.salary, max: e.target.value}})}
-                                                className="h-14 rounded-2xl bg-background border-border font-grey text-lg"
+                                                className="h-10 rounded-lg bg-white border-border font-semibold"
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4 bg-background/50 p-6 rounded-3xl border border-primary/10">
+                                    <div className="flex items-center gap-2 pt-2">
                                         <input 
                                             type="checkbox" 
                                             id="hide-range"
-                                            className="w-6 h-6 accent-primary cursor-pointer rounded-lg"
+                                            className="w-4 h-4 accent-emerald-600 cursor-pointer rounded"
                                             checked={formData.salary.isRangeHidden}
                                             onChange={(e) => setFormData({...formData, salary: {...formData.salary, isRangeHidden: e.target.checked}})}
                                         />
-                                        <Label htmlFor="hide-range" className="text-sm font-black cursor-pointer uppercase tracking-tight">As per Industry Standard</Label>
+                                        <Label htmlFor="hide-range" className="text-xs font-semibold cursor-pointer text-muted-foreground">As per Industry Standard</Label>
                                     </div>
                                 </CardContent>
                             </Card>
