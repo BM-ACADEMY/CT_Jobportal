@@ -8,6 +8,7 @@ const userRoutes = require('./routes/user');
 const recruiterRoutes = require('./routes/recruiter');
 const jobRoutes = require('./routes/job');
 const companyRoutes = require('./routes/company');
+const applicationRoutes = require('./routes/application');
 const seedRoles = require('./config/seedRoles');
 const path = require('path');
 
@@ -45,6 +46,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/recruiter', recruiterRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/applications', applicationRoutes);
 
 
 // MongoDB Connection
