@@ -27,6 +27,7 @@ import RecruiterSettings from '../pages/company/Settings';
 import PostJob from '../pages/company/PostJob';
 import SubAdminDashboard from '../pages/subadmin/Dashboard';
 import JobSeekerSettings from '../pages/jobseeker/Settings';
+import SavedJobs from '../pages/jobseeker/SavedJobs';
 
 
 
@@ -118,7 +119,14 @@ const AppRoutes = () => {
           </PrivateRoute>
         }
       >
-        {/* Job Seeker */}
+        <Route
+          path="/dashboard/saved-jobs"
+          element={
+            <PrivateRoute>
+              <SavedJobs />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/jobseeker/*"
           element={
