@@ -73,6 +73,7 @@ const userSchema = new mongoose.Schema({
     preferredRole: { type: String, default: '' },
     resumeUrl: { type: String, default: '' },
     resumeName: { type: String, default: '' },
+    portfolioUrl: { type: String, default: '' },
     profileCompletion: { type: Number, default: 0 },
     jobPreferences: {
       jobTitles: [{ type: String }],

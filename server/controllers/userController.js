@@ -163,9 +163,25 @@ const getSavedJobs = async (req, res) => {
   }
 };
 
+// @desc    Get Public Profile by ID
+// @route   GET /api/user/profile/:id
+const getPublicProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).select('name email avatar profile role');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    console.error('Get Public Profile Error:', err.message);
+    res.status(500).json({ msg: 'Server error fetching profile' });
+  }
+};
+
 module.exports = {
   updateProfile,
   uploadResume,
   toggleSaveJob,
-  getSavedJobs
+  getSavedJobs,
+  getPublicProfile
 };

@@ -25,7 +25,6 @@ const menuConfigs = {
     { icon: Briefcase, label: 'Post a Job', path: '/company/post-job' },
     { icon: Users, label: 'Applicants', path: '/company/applicants' },
     { icon: TrendingUp, label: 'Analytics', path: '/company/analytics' },
-    { icon: Settings, label: 'Settings', path: '/company/settings' },
   ],
   company: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/company' },
@@ -33,7 +32,6 @@ const menuConfigs = {
     { icon: Briefcase, label: 'Post a Job', path: '/company/post-job' },
     { icon: Users, label: 'Applicants', path: '/company/applicants' },
     { icon: TrendingUp, label: 'Analytics', path: '/company/analytics' },
-    { icon: Settings, label: 'Settings', path: '/company/settings' },
   ],
   admin: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
@@ -41,7 +39,6 @@ const menuConfigs = {
     { icon: Users, label: 'Manage Users', path: '/admin/users' },
     { icon: Building2, label: 'Companies', path: '/admin/companies' },
     { icon: TrendingUp, label: 'System Reports', path: '/admin/reports' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ],
   subadmin: [
     { icon: LayoutDashboard, label: 'Overview', path: '/subadmin' },

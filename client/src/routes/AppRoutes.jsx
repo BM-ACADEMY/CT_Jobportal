@@ -28,6 +28,8 @@ import PostJob from '../pages/company/PostJob';
 import SubAdminDashboard from '../pages/subadmin/Dashboard';
 import JobSeekerSettings from '../pages/jobseeker/Settings';
 import SavedJobs from '../pages/jobseeker/SavedJobs';
+import Applicants from '../pages/company/Applicants';
+import PublicProfile from '../pages/jobseeker/PublicProfile';
 
 
 
@@ -136,6 +138,14 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/jobseeker/profile/:id"
+          element={
+            <PrivateRoute>
+              <PublicProfile />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/jobseeker/settings"
           element={
             <PrivateRoute roles={['jobseeker']}>
@@ -158,6 +168,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['recruiter', 'company']}>
               <PostJob />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/company/applicants/:jobId"
+          element={
+            <PrivateRoute roles={['recruiter', 'company']}>
+              <Applicants />
             </PrivateRoute>
           }
         />

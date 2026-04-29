@@ -35,8 +35,87 @@ const PostJob = () => {
         timings: '',
         shifts: '',
         skillsRequired: [],
-        additionalDetails: []
+        additionalDetails: [],
+        applicationQuestions: [
+            { questionText: 'Full Name', type: 'text', isRequired: true, isStandard: true, enabled: true },
+            { questionText: 'Email Address', type: 'text', isRequired: true, isStandard: true, enabled: true },
+            { questionText: 'Phone Number', type: 'text', isRequired: true, isStandard: true, enabled: true },
+            { questionText: 'Resume/CV', type: 'text', isRequired: true, isStandard: true, enabled: true },
+        ]
     });
+
+    const standardFields = [
+        { id: 'name', label: 'Full Name', type: 'text' },
+        { id: 'email', label: 'Email Address', type: 'text' },
+        { id: 'phone', label: 'Phone Number', type: 'text' },
+        { id: 'resume', label: 'Resume/CV', type: 'text' },
+        { id: 'coverLetter', label: 'Cover Letter', type: 'textarea' },
+        { id: 'portfolio', label: 'Portfolio URL', type: 'text' },
+    ];
+
+    const toggleStandardField = (field) => {
+        const exists = formData.applicationQuestions.find(q => q.questionText === field.label);
+        if (exists) {
+            setFormData({
+                ...formData,
+                applicationQuestions: formData.applicationQuestions.filter(q => q.questionText !== field.label)
+            });
+        } else {
+            setFormData({
+                ...formData,
+                applicationQuestions: [...formData.applicationQuestions, { 
+                    questionText: field.label, 
+                    type: field.type, 
+                    isRequired: true, 
+                    isStandard: true 
+                }]
+            });
+        }
+    };
+
+    const addCustomQuestion = () => {
+        setFormData({
+            ...formData,
+            applicationQuestions: [...formData.applicationQuestions, { 
+                questionText: '', 
+                type: 'text', 
+                isRequired: true, 
+                isStandard: false,
+                options: []
+            }]
+        });
+    };
+
+    const updateCustomQuestion = (index, updates) => {
+        const updated = [...formData.applicationQuestions];
+        updated[index] = { ...updated[index], ...updates };
+        setFormData({ ...formData, applicationQuestions: updated });
+    };
+
+    const removeCustomQuestion = (index) => {
+        const updated = [...formData.applicationQuestions];
+        updated.splice(index, 1);
+        setFormData({ ...formData, applicationQuestions: updated });
+    };
+
+    const addQuestionOption = (qIndex) => {
+        const updated = [...formData.applicationQuestions];
+        const question = updated[qIndex];
+        question.options = [...(question.options || []), ''];
+        setFormData({ ...formData, applicationQuestions: updated });
+    };
+
+    const updateQuestionOption = (qIndex, oIndex, value) => {
+        const updated = [...formData.applicationQuestions];
+        updated[qIndex].options[oIndex] = value;
+        setFormData({ ...formData, applicationQuestions: updated });
+    };
+
+    const removeQuestionOption = (qIndex, oIndex) => {
+        const updated = [...formData.applicationQuestions];
+        updated[qIndex].options.splice(oIndex, 1);
+        setFormData({ ...formData, applicationQuestions: updated });
+    };
 
     useEffect(() => {
         fetchJobs();
@@ -105,7 +184,13 @@ const PostJob = () => {
             timings: '',
             shifts: '',
             skillsRequired: [],
-            additionalDetails: []
+            additionalDetails: [],
+            applicationQuestions: [
+                { questionText: 'Full Name', type: 'text', isRequired: true, isStandard: true },
+                { questionText: 'Email Address', type: 'text', isRequired: true, isStandard: true },
+                { questionText: 'Phone Number', type: 'text', isRequired: true, isStandard: true },
+                { questionText: 'Resume/CV', type: 'text', isRequired: true, isStandard: true },
+            ]
         });
     };
 
@@ -123,7 +208,13 @@ const PostJob = () => {
             timings: job.timings || '',
             shifts: job.shifts || '',
             skillsRequired: job.skillsRequired || [],
-            additionalDetails: job.additionalDetails || []
+            additionalDetails: job.additionalDetails || [],
+            applicationQuestions: job.applicationQuestions || [
+                { questionText: 'Full Name', type: 'text', isRequired: true, isStandard: true },
+                { questionText: 'Email Address', type: 'text', isRequired: true, isStandard: true },
+                { questionText: 'Phone Number', type: 'text', isRequired: true, isStandard: true },
+                { questionText: 'Resume/CV', type: 'text', isRequired: true, isStandard: true },
+            ]
         });
         setViewMode('create');
     };
@@ -410,7 +501,10 @@ const PostJob = () => {
                                 </CardContent>
                             </Card>
 
-                            <Button className="w-full h-12 rounded-lg font-bold text-sm uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/10 transition-all">
+                            <Button 
+                                onClick={() => navigate(`/company/applicants/${selectedJob._id}`)}
+                                className="w-full h-12 rounded-lg font-bold text-sm uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/10 transition-all"
+                            >
                                 <ExternalLink className="w-4 h-4 mr-2" /> View Applicants
                             </Button>
                         </div>
@@ -490,61 +584,199 @@ const PostJob = () => {
                                         />
                                     </div>
                                 </CardContent>
-                            </Card>
-
-                            <Card className="rounded-xl border-border bg-white shadow-none">
+                                     <Card className="rounded-xl border-border bg-white shadow-none">
                                 <CardHeader className="p-6 border-b border-border/50">
-                                    <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                        <Target className="text-emerald-600 w-5 h-5" /> Requirements
-                                    </CardTitle>
+                                     <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                         <Target className="text-emerald-600 w-5 h-5" /> Requirements
+                                     </CardTitle>
+                                 </CardHeader>
+                                 <CardContent className="p-6 space-y-8">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                         <div className="space-y-2">
+                                             <Label className="text-xs font-semibold text-muted-foreground">Min Experience (Years)</Label>
+                                             <Input 
+                                                 type="number" 
+                                                 value={formData.experience.min}
+                                                 onChange={(e) => setFormData({...formData, experience: {...formData.experience, min: e.target.value}})}
+                                                 className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                             />
+                                         </div>
+                                         <div className="space-y-2">
+                                             <Label className="text-xs font-semibold text-muted-foreground">Max Experience (Years)</Label>
+                                             <Input 
+                                                 type="number" 
+                                                 value={formData.experience.max}
+                                                 onChange={(e) => setFormData({...formData, experience: {...formData.experience, max: e.target.value}})}
+                                                 className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                             />
+                                         </div>
+                                     </div>
+
+                                     <div className="space-y-4">
+                                         <Label className="text-xs font-semibold text-muted-foreground">Required Skills</Label>
+                                         <div className="flex gap-2">
+                                             <Input 
+                                                 placeholder="Add a skill..."
+                                                 value={newSkill}
+                                                 onChange={(e) => setNewSkill(e.target.value)}
+                                                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
+                                                 className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                             />
+                                             <Button type="button" onClick={handleAddSkill} className="h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700">
+                                                 <Plus className="w-4 h-4" />
+                                             </Button>
+                                         </div>
+                                         <div className="flex flex-wrap gap-2 pt-2">
+                                             {formData.skillsRequired.map((skill) => (
+                                                 <Badge key={skill} className="px-3 py-1.5 rounded-md font-bold text-[10px] uppercase tracking-wider bg-emerald-50 text-emerald-700 border-emerald-100 flex items-center gap-2">
+                                                     {skill}
+                                                     <X size={12} className="cursor-pointer" onClick={() => handleRemoveSkill(skill)} />
+                                                 </Badge>
+                                             ))}
+                                         </div>
+                                     </div>
+                                 </CardContent>
+                             </Card>
+
+                            <Card className="rounded-xl border-border bg-white shadow-none border-emerald-600/5">
+                                <CardHeader className="p-6 border-b border-border/50">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                                <FileText className="text-emerald-600 w-5 h-5" /> Application Form Builder
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">Select fields and add custom questions for applicants</CardDescription>
+                                        </div>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground">Min Experience (Years)</Label>
-                                            <Input 
-                                                type="number" 
-                                                value={formData.experience.min}
-                                                onChange={(e) => setFormData({...formData, experience: {...formData.experience, min: e.target.value}})}
-                                                className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground">Max Experience (Years)</Label>
-                                            <Input 
-                                                type="number" 
-                                                value={formData.experience.max}
-                                                onChange={(e) => setFormData({...formData, experience: {...formData.experience, max: e.target.value}})}
-                                                className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
-                                            />
+                                    {/* Standard Fields */}
+                                    <div className="space-y-4">
+                                        <Label className="text-xs font-bold uppercase tracking-widest text-emerald-600/70">Standard Fields</Label>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                            {standardFields.map((field) => {
+                                                const isEnabled = formData.applicationQuestions.some(q => q.questionText === field.label);
+                                                return (
+                                                    <div 
+                                                        key={field.id}
+                                                        onClick={() => toggleStandardField(field)}
+                                                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                                            isEnabled 
+                                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' 
+                                                            : 'bg-white border-border text-muted-foreground hover:border-emerald-200'
+                                                        }`}
+                                                    >
+                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                                            isEnabled ? 'bg-emerald-600 border-emerald-600' : 'bg-white border-border'
+                                                        }`}>
+                                                            {isEnabled && <Plus size={10} className="text-white rotate-45" />}
+                                                        </div>
+                                                        <span className="text-xs font-bold uppercase tracking-tight">{field.label}</span>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <Label className="text-xs font-semibold text-muted-foreground">Required Skills</Label>
-                                        <div className="flex gap-2">
-                                            <Input 
-                                                placeholder="Add a skill..."
-                                                value={newSkill}
-                                                onChange={(e) => setNewSkill(e.target.value)}
-                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
-                                                className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
-                                            />
-                                            <Button type="button" onClick={handleAddSkill} className="h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700">
-                                                <Plus className="w-4 h-4" />
+                                    {/* Custom Questions */}
+                                    <div className="space-y-4 pt-6 border-t border-border/50">
+                                        <div className="flex justify-between items-center">
+                                            <Label className="text-xs font-bold uppercase tracking-widest text-emerald-600/70">Custom Questions</Label>
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={addCustomQuestion}
+                                                className="h-8 rounded-md border-emerald-600/20 text-emerald-700 hover:bg-emerald-50"
+                                            >
+                                                <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Question
                                             </Button>
                                         </div>
-                                        <div className="flex flex-wrap gap-2 pt-2">
-                                            {formData.skillsRequired.map((skill) => (
-                                                <Badge key={skill} className="px-3 py-1.5 rounded-md font-bold text-[10px] uppercase tracking-wider bg-emerald-50 text-emerald-700 border-emerald-100 flex items-center gap-2">
-                                                    {skill}
-                                                    <X size={12} className="cursor-pointer" onClick={() => handleRemoveSkill(skill)} />
-                                                </Badge>
-                                            ))}
+
+                                        <div className="space-y-4">
+                                            {formData.applicationQuestions.filter(q => !q.isStandard).map((question, qIdx) => {
+                                                // Find the original index in the full array
+                                                const fullIdx = formData.applicationQuestions.findIndex((q, i) => i >= 0 && q === question);
+                                                return (
+                                                    <div key={qIdx} className="p-4 rounded-xl border border-border bg-slate-50/50 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                        <div className="flex gap-4">
+                                                            <div className="flex-1 space-y-2">
+                                                                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Question Text</Label>
+                                                                <Input 
+                                                                    placeholder="e.g. Why do you want to join us?"
+                                                                    value={question.questionText}
+                                                                    onChange={(e) => updateCustomQuestion(fullIdx, { questionText: e.target.value })}
+                                                                    className="h-9 rounded-md bg-white"
+                                                                />
+                                                            </div>
+                                                            <div className="w-40 space-y-2">
+                                                                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Type</Label>
+                                                                <select 
+                                                                    className="w-full h-9 px-2 rounded-md border border-border text-xs font-bold bg-white"
+                                                                    value={question.type}
+                                                                    onChange={(e) => updateCustomQuestion(fullIdx, { type: e.target.value })}
+                                                                >
+                                                                    <option value="text">Short Text</option>
+                                                                    <option value="textarea">Long Text</option>
+                                                                    <option value="multiple-choice">Multiple Choice</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="flex items-end pb-1">
+                                                                <Button 
+                                                                    type="button" 
+                                                                    variant="ghost" 
+                                                                    onClick={() => removeCustomQuestion(fullIdx)}
+                                                                    className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+
+                                                        {question.type === 'multiple-choice' && (
+                                                            <div className="pl-4 space-y-3 border-l-2 border-emerald-100">
+                                                                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Options</Label>
+                                                                <div className="space-y-2">
+                                                                    {(question.options || []).map((opt, oIdx) => (
+                                                                        <div key={oIdx} className="flex gap-2 items-center">
+                                                                            <div className="w-2 h-2 rounded-full border-2 border-emerald-600/30" />
+                                                                            <Input 
+                                                                                placeholder={`Option ${oIdx + 1}`}
+                                                                                value={opt}
+                                                                                onChange={(e) => updateQuestionOption(fullIdx, oIdx, e.target.value)}
+                                                                                className="h-8 rounded-md bg-white text-xs"
+                                                                            />
+                                                                            <Button 
+                                                                                type="button" 
+                                                                                variant="ghost" 
+                                                                                onClick={() => removeQuestionOption(fullIdx, oIdx)}
+                                                                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                                                            >
+                                                                                <X className="w-3.5 h-3.5" />
+                                                                            </Button>
+                                                                        </div>
+                                                                    ))}
+                                                                    <Button 
+                                                                        type="button" 
+                                                                        variant="ghost" 
+                                                                        onClick={() => addQuestionOption(fullIdx)}
+                                                                        className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 p-0 h-auto"
+                                                                    >
+                                                                        + Add Option
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                            {formData.applicationQuestions.filter(q => !q.isStandard).length === 0 && (
+                                                <p className="text-center py-4 text-xs font-medium text-muted-foreground italic">No custom questions added</p>
+                                            )}
                                         </div>
                                     </div>
                                 </CardContent>
-                            </Card>
+                            </Card>                     </Card>
 
                             <Card className="rounded-xl border-border bg-white shadow-none border-dashed">
                                 <CardHeader className="p-6 border-b border-border/50 flex flex-row items-center justify-between">

@@ -71,7 +71,18 @@ const jobSchema = new mongoose.Schema({
   applicantsCount: {
     type: Number,
     default: 0
-  }
+  },
+  applicationQuestions: [{
+    questionText: { type: String, required: true },
+    type: { 
+      type: String, 
+      enum: ['text', 'textarea', 'multiple-choice', 'checkbox'], 
+      default: 'text' 
+    },
+    options: [String],
+    isRequired: { type: Boolean, default: true },
+    isStandard: { type: Boolean, default: false }
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Job', jobSchema);

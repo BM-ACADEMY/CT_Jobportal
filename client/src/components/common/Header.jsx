@@ -31,6 +31,17 @@ const roleConfig = {
       { label: 'Post Job', href: '/company/post-job' },
       { label: 'Applicants', href: '/company/applicants' },
       { label: 'Analytics', href: '/company/analytics' },
+      { label: 'Settings', href: '/company/settings' },
+    ],
+  },
+  company: {
+    label: 'Company',
+    color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+    navItems: [
+      { label: 'Post Job', href: '/company/post-job' },
+      { label: 'Applicants', href: '/company/applicants' },
+      { label: 'Analytics', href: '/company/analytics' },
+      { label: 'Settings', href: '/company/settings' },
     ],
   },
   admin: {
@@ -76,7 +87,7 @@ const Header = () => {
         </div>
 
         {/* Search */}
-        <div className="hidden md:flex flex-1 justify-center max-w-lg">
+        <div className="hidden xl:flex flex-1 justify-center max-w-md">
             <div className="w-full relative group">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input 
@@ -85,6 +96,19 @@ const Header = () => {
                 />
             </div>
         </div>
+
+        {/* Navigation */}
+        <nav className="hidden lg:flex items-center gap-6">
+            {config.navItems?.map((item) => (
+                <Link 
+                    key={item.href} 
+                    to={item.href}
+                    className="text-sm font-semibold text-slate-500 hover:text-primary transition-colors whitespace-nowrap"
+                >
+                    {item.label}
+                </Link>
+            ))}
+        </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-4">
@@ -120,8 +144,12 @@ const Header = () => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                         onClick={() => {
-                            const routes = { jobseeker: '/jobseeker/settings', recruiter: '/company/profile' };
-                            navigate(routes[user?.role] || '/settings');
+                            const routes = { 
+                                jobseeker: '/jobseeker/settings', 
+                                recruiter: '/company/settings',
+                                company: '/company/settings'
+                            };
+                            navigate(routes[user?.role] || '/jobseeker/settings');
                         }}
                         className="rounded-md px-3 py-2 text-sm cursor-pointer"
                     >

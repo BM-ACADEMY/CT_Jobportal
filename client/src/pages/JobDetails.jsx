@@ -26,12 +26,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import JobApplicationModal from '../components/jobs/JobApplicationModal';
 
 const JobDetails = () => {
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
 
@@ -67,13 +69,17 @@ const JobDetails = () => {
       return;
     }
 
-    if (user.role !== 'jobseeker') {
-      toast.error("Only job seekers can apply for jobs");
+    if (user.role === 'company') {
+      toast.error("Companies cannot apply for jobs");
       return;
     }
 
-    // This is where you would typically open an application modal or send a request
-    toast.success("Application submitted successfully!");
+    if (user.id === job.recruiter) {
+      toast.error("You cannot apply for a job you have posted");
+      return;
+    }
+
+    setIsApplyModalOpen(true);
   };
 
   const handleSaveJob = async () => {
@@ -427,6 +433,13 @@ const JobDetails = () => {
         </div>
 
       </div>
+
+      <JobApplicationModal 
+        isOpen={isApplyModalOpen} 
+        onClose={() => setIsApplyModalOpen(false)} 
+        job={job}
+        user={user}
+      />
     </div>
   );
 };
