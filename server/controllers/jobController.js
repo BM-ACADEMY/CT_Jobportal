@@ -152,9 +152,26 @@ const deleteJob = async (req, res) => {
   }
 };
 
+// @desc    Get all active jobs
+// @route   GET /api/jobs
+// @access  Public
+const getAllJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ status: 'active' })
+      .populate('company', 'name logo location website')
+      .sort({ createdAt: -1 });
+    res.json(jobs);
+  } catch (err) {
+    console.error('Get All Jobs Error:', err);
+    res.status(500).json({ msg: 'Server error while fetching jobs' });
+  }
+};
+
 module.exports = {
   createJob,
   getCompanyJobs,
   updateJob,
-  deleteJob
+  deleteJob,
+  getAllJobs
 };
+

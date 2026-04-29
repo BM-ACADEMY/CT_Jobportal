@@ -27,18 +27,18 @@ const PublicHeader = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
         
-        <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold text-sm">N</span>
+        <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                <span className="text-white font-bold text-xl italic">C</span>
             </div>
-            <span className="text-xl font-semibold tracking-tight text-primary">naukri</span>
+            <span className="text-2xl font-bold tracking-tight text-slate-900">careerpoint</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Home</Link>
-            <Link to="/jobs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Jobs</Link>
-            <Link to="/companies" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Companies</Link>
-            <Link to="/services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Services</Link>
+        <nav className="hidden md:flex items-center gap-10">
+            <Link to="/" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Home</Link>
+            <Link to="/jobs" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Find Jobs</Link>
+            <Link to="/companies" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Companies</Link>
+            <Link to="/services" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Services</Link>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -91,19 +91,19 @@ const PublicHeader = () => {
                     </DropdownMenu>
                 </>
             ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <Button
                         variant="ghost"
                         onClick={() => navigate('/login')}
-                        className="text-xs font-medium"
+                        className="text-sm font-semibold text-slate-600 hover:text-primary hover:bg-emerald-50 rounded-md px-6"
                     >
                         Login
                     </Button>
                     <Button
                         onClick={() => navigate('/register')}
-                        className="rounded-md text-xs font-medium h-9 px-4"
+                        className="rounded-md text-sm font-bold h-10 px-8 bg-slate-900 hover:bg-primary text-white shadow-md transition-all"
                     >
-                        Join Us
+                        Join Now
                     </Button>
                 </div>
             )}

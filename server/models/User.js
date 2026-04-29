@@ -115,6 +115,13 @@ const userSchema = new mongoose.Schema({
       year: { type: String }
     }]
   },
+  companyProfile: {
+    jobTitle: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    location: { type: String, default: '' },
+    bio: { type: String, default: '' },
+    adminRole: { type: String, default: 'Admin' }
+  },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'

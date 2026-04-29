@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const recruiterRoutes = require('./routes/recruiter');
 const jobRoutes = require('./routes/job');
+const companyRoutes = require('./routes/company');
 const seedRoles = require('./config/seedRoles');
 const path = require('path');
 
@@ -42,6 +43,7 @@ app.use(passport.session());
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/recruiter', recruiterRoutes);
+app.use('/api/company', companyRoutes);
 app.use('/api/jobs', jobRoutes);
 
 

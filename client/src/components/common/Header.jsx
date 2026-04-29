@@ -69,7 +69,7 @@ const Header = () => {
                     <span className="text-primary-foreground font-semibold text-sm">N</span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-xl font-semibold tracking-tight text-foreground leading-none">naukri</span>
+                    <span className="text-xl font-semibold tracking-tight text-foreground leading-none">CT Job Portal</span>
                     <span className="text-[9px] text-muted-foreground uppercase tracking-widest mt-0.5">Professional</span>
                 </div>
             </Link>
