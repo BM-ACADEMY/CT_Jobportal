@@ -1,0 +1,276 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { 
+  Users, 
+  ChevronLeft, 
+  Mail, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  ExternalLink,
+  Loader2,
+  Search,
+  Filter,
+  MoreVertical,
+  Download
+} from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { useAuth } from '../../context/AuthContext';
+
+const Applicants = () => {
+  const { jobId } = useParams();
+  const navigate = useNavigate();
+  const { updateUser } = useAuth();
+  const [applicants, setApplicants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
+
+  useEffect(() => {
+    fetchApplicants();
+  }, [jobId]);
+
+  const fetchApplicants = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_BASE_URL}/applications/job/${jobId}`);
+      setApplicants(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load applicants");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (applicationId, status) => {
+    try {
+      const res = await axios.put(`${API_BASE_URL}/applications/${applicationId}/status`, { status });
+      toast.success(res.data.msg);
+      setApplicants(prev => prev.map(app => 
+        app._id === applicationId ? { ...app, status } : app
+      ));
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleDownloadResume = async (app) => {
+    if (!app.applicant?.profile?.resumeUrl) {
+      toast.error("No resume uploaded by this applicant");
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/applications/${app._id}/track-download`);
+      if (res.data.downloadsUsed !== undefined) {
+        updateUser({ downloadsUsed: res.data.downloadsUsed });
+      }
+
+      const url = app.applicant.profile.resumeUrl.startsWith('http') 
+        ? app.applicant.profile.resumeUrl 
+        : `${API_DOMAIN}${app.applicant.profile.resumeUrl}`;
+      window.open(url, '_blank');
+      
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.msg || "Failed to authorize download");
+    }
+  };
+
+  const filteredApplicants = applicants.filter(app => {
+    const matchesSearch = app.applicant?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         app.applicant?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filter === 'all' || app.status === filter;
+    return matchesSearch && matchesFilter;
+  });
+
+  const getStatusBadge = (status) => {
+    const configs = {
+      pending: "bg-amber-50 text-amber-700 border-amber-100",
+      shortlisted: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      rejected: "bg-rose-50 text-rose-700 border-rose-100",
+      reviewed: "bg-emerald-50 text-emerald-700 border-emerald-100"
+    };
+    return configs[status] || "bg-muted text-muted-foreground";
+  };
+
+  if (loading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-10 py-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 p-0 rounded-xl border-slate-200 hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <ChevronLeft className="w-5 h-5 text-slate-400" />
+          </Button>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight">Talent Pipeline</h1>
+            <p className="text-base text-slate-500 font-medium">Reviewing {applicants.length} candidates for this position</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input 
+              placeholder="Search directory..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 rounded-xl border-slate-200 bg-white text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all"
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="rounded-xl border-slate-200 bg-white gap-2 font-bold text-xs uppercase tracking-widest text-slate-600 h-10 px-4">
+                <Filter size={14} />
+                {filter === 'all' ? 'All Tiers' : filter}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl p-1 border-slate-200 shadow-xl">
+              <DropdownMenuItem onClick={() => setFilter('all')} className="rounded-lg font-bold text-xs uppercase tracking-widest py-2.5">All Applicants</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilter('pending')} className="rounded-lg font-bold text-xs uppercase tracking-widest text-amber-600 py-2.5">Pending</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilter('shortlisted')} className="rounded-lg font-bold text-xs uppercase tracking-widest text-emerald-600 py-2.5">Shortlisted</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilter('rejected')} className="rounded-lg font-bold text-xs uppercase tracking-widest text-rose-600 py-2.5">Rejected</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5">
+        {filteredApplicants.map((app) => (
+          <Card key={app._id} className="rounded-[24px] border-slate-200 shadow-sm hover:border-emerald-100 transition-all group overflow-hidden bg-white">
+            <CardContent className="p-0">
+              <div className="p-6 flex flex-col lg:flex-row gap-8">
+                {/* Applicant Profile */}
+                <div className="flex gap-5 lg:w-[30%]">
+                  <Avatar className="w-14 h-14 rounded-xl border border-slate-200 group-hover:border-emerald-100 transition-all">
+                    <AvatarFallback className="bg-slate-50 text-slate-400 font-bold text-lg">
+                      {app.applicant?.name?.[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1.5 min-w-0">
+                    <h4 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight truncate">
+                      {app.applicant?.name}
+                    </h4>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-slate-500 font-medium text-xs truncate">
+                        <Mail size={12} className="text-slate-300" />
+                        {app.applicant?.email}
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-tight">
+                        <Clock size={12} className="text-slate-300" />
+                        {new Date(app.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Answers Section */}
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 bg-slate-50/50 rounded-2xl p-5 border border-slate-100/50">
+                  {app.answers?.slice(0, 4).map((ans, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">{ans.questionText}</p>
+                      <p className="text-xs font-bold text-slate-700 line-clamp-1">{Array.isArray(ans.answer) ? ans.answer.join(', ') : ans.answer || '—'}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Actions Section */}
+                <div className="lg:w-1/4 flex flex-col justify-between items-end gap-4">
+                  <Badge className={`px-3 py-1 rounded-lg font-bold text-[9px] uppercase tracking-widest border-none ${getStatusBadge(app.status)}`}>
+                    {app.status}
+                  </Badge>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => updateStatus(app._id, 'rejected')}
+                      className="w-10 h-10 rounded-xl text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                      title="Decline"
+                    >
+                      <XCircle size={20} />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => updateStatus(app._id, 'shortlisted')}
+                      className="w-10 h-10 rounded-xl text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
+                      title="Shortlist"
+                    >
+                      <CheckCircle size={20} />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl text-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                          <MoreVertical size={18} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52 rounded-xl p-1 border-slate-200 shadow-xl">
+                        <DropdownMenuItem 
+                          onClick={() => navigate(`/jobseeker/profile/${app.applicant?._id}`)}
+                          className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
+                        >
+                          <ExternalLink size={14} /> Full Dossier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDownloadResume(app)}
+                          className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
+                        >
+                          <Download size={14} /> Extract Resume
+                        </DropdownMenuItem>
+                        <div className="h-px bg-slate-100 my-1" />
+                        <DropdownMenuItem onClick={() => updateStatus(app._id, 'reviewed')} className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5 text-emerald-600">
+                          <CheckCircle size={14} /> Mark Reviewed
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        {filteredApplicants.length === 0 && (
+          <div className="py-24 text-center space-y-4 bg-white border border-dashed border-slate-200 rounded-[24px] shadow-sm">
+            <Users className="w-12 h-12 text-slate-200 mx-auto" />
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900">Pipeline Empty</h3>
+              <p className="text-sm font-medium text-slate-400 max-w-xs mx-auto">
+                No candidates match your current search or status criteria.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Applicants;
