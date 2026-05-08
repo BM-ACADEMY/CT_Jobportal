@@ -18,6 +18,9 @@ import {
   Users,
   Building2
 } from 'lucide-react';
+import PricingCard from '../../components/subscription/PricingCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,56 +52,43 @@ const ManageSubscriptions = () => {
     name: '',
     price: '',
     duration: 'Monthly',
-    roles: [],
+    role: '',
     isActive: true,
     // Job Seeker
     hasResumeBuilder: false,
     resumeBuilderCount: 0,
-    hasUnlimitedApplications: false,
-    applicationLimit: 0,
     jobAlerts: 'None',
     hasProfileBoost: false,
-    hasAIResumeReview: false,
-    aiResumeReviewCount: 0,
     hasProfileViewInsights: false,
     hasMessageRecruiters: false,
-    hasSalaryBenchmarking: false,
-    hasSkillGapAnalysis: false,
-    skillGapSessionsCount: 0,
+    hasCareerCounselling: false,
     careerCounsellingCount: 0,
     hasInterviewPrep: false,
     hasPriorityBadge: false,
     // Recruiter
     activeJobPostings: 0,
     candidateSearchPerDay: 0,
-    hasAICandidateMatching: false,
-    aiCandidateMatchingCount: 0,
     hasATSPipeline: false,
-    hasPriorityListing: false,
     hasAnalyticsDashboard: false,
     hasCandidateDBExport: false,
     hasBulkMessaging: false,
     hasVideoInterview: false,
-    hasDedicatedManager: false,
-    hasWhiteLabelProfile: false,
     // Organization
     userSeats: 1,
     companyProfileType: 'Basic',
-    hasBrandedCareersPage: false,
     hasTeamCollaboration: false,
     teamCollaborationCount: 0,
     hasBulkApplicantManagement: false,
     hasInterviewScheduling: false,
-    hasAPIIntegration: false,
-    hasSSO: false,
-    hasDedicatedOnboarding: false,
-    hasSLAGuarantee: false,
-    hasComplianceAudit: false
+    hasDedicatedOnboarding: false
   });
 
   const fetchSubscriptions = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/subscriptions`);
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/subscriptions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (Array.isArray(res.data)) {
         setSubscriptions(res.data);
       } else {
@@ -120,24 +110,21 @@ const ManageSubscriptions = () => {
 
   const resetForm = () => {
     setForm({
-      name: '', price: '', duration: 'Monthly', roles: [], isActive: true,
+      name: '', price: '', duration: 'Monthly', role: '', isActive: true,
       hasResumeBuilder: false, resumeBuilderCount: 0,
-      hasUnlimitedApplications: false, applicationLimit: 0,
       jobAlerts: 'None',
-      hasProfileBoost: false, hasAIResumeReview: false, aiResumeReviewCount: 0,
+      hasProfileBoost: false,
       hasProfileViewInsights: false, hasMessageRecruiters: false,
-      hasSalaryBenchmarking: false, hasSkillGapAnalysis: false, skillGapSessionsCount: 0,
-      careerCounsellingCount: 0, hasInterviewPrep: false, hasPriorityBadge: false,
+      hasCareerCounselling: false, careerCounsellingCount: 0, 
+      hasInterviewPrep: false, hasPriorityBadge: false,
       activeJobPostings: 0, candidateSearchPerDay: 0, 
-      hasAICandidateMatching: false, aiCandidateMatchingCount: 0,
-      hasATSPipeline: false, hasPriorityListing: false, hasAnalyticsDashboard: false,
+      hasATSPipeline: false, hasAnalyticsDashboard: false,
       hasCandidateDBExport: false, hasBulkMessaging: false, hasVideoInterview: false,
-      hasDedicatedManager: false, hasWhiteLabelProfile: false,
-      userSeats: 1, companyProfileType: 'Basic', hasBrandedCareersPage: false,
+      userSeats: 1, companyProfileType: 'Basic', 
       hasTeamCollaboration: false, teamCollaborationCount: 0,
       hasBulkApplicantManagement: false,
-      hasInterviewScheduling: false, hasAPIIntegration: false, hasSSO: false,
-      hasDedicatedOnboarding: false, hasSLAGuarantee: false, hasComplianceAudit: false
+      hasInterviewScheduling: false,
+      hasDedicatedOnboarding: false
     });
     setEditingId(null);
   };
@@ -148,49 +135,33 @@ const ManageSubscriptions = () => {
       name: sub.name,
       price: sub.price,
       duration: sub.duration,
-      roles: sub.roles || [],
+      role: sub.role || (sub.roles && sub.roles[0]) || '',
       isActive: sub.isActive,
       // All flags & counts
       hasResumeBuilder: !!sub.hasResumeBuilder,
       resumeBuilderCount: sub.resumeBuilderCount || 0,
-      hasUnlimitedApplications: !!sub.hasUnlimitedApplications,
-      applicationLimit: sub.applicationLimit || 0,
       jobAlerts: sub.jobAlerts || 'None',
       hasProfileBoost: !!sub.hasProfileBoost,
-      hasAIResumeReview: !!sub.hasAIResumeReview,
-      aiResumeReviewCount: sub.aiResumeReviewCount || 0,
       hasProfileViewInsights: !!sub.hasProfileViewInsights,
       hasMessageRecruiters: !!sub.hasMessageRecruiters,
-      hasSalaryBenchmarking: !!sub.hasSalaryBenchmarking,
-      hasSkillGapAnalysis: !!sub.hasSkillGapAnalysis,
-      skillGapSessionsCount: sub.skillGapSessionsCount || 0,
+      hasCareerCounselling: !!sub.hasCareerCounselling,
       careerCounsellingCount: sub.careerCounsellingCount || 0,
       hasInterviewPrep: !!sub.hasInterviewPrep,
       hasPriorityBadge: !!sub.hasPriorityBadge,
       activeJobPostings: sub.activeJobPostings || 0,
       candidateSearchPerDay: sub.candidateSearchPerDay || 0,
-      hasAICandidateMatching: !!sub.hasAICandidateMatching,
-      aiCandidateMatchingCount: sub.aiCandidateMatchingCount || 0,
       hasATSPipeline: !!sub.hasATSPipeline,
-      hasPriorityListing: !!sub.hasPriorityListing,
       hasAnalyticsDashboard: !!sub.hasAnalyticsDashboard,
       hasCandidateDBExport: !!sub.hasCandidateDBExport,
       hasBulkMessaging: !!sub.hasBulkMessaging,
       hasVideoInterview: !!sub.hasVideoInterview,
-      hasDedicatedManager: !!sub.hasDedicatedManager,
-      hasWhiteLabelProfile: !!sub.hasWhiteLabelProfile,
       userSeats: sub.userSeats || 1,
       companyProfileType: sub.companyProfileType || 'Basic',
-      hasBrandedCareersPage: !!sub.hasBrandedCareersPage,
       hasTeamCollaboration: !!sub.hasTeamCollaboration,
       teamCollaborationCount: sub.teamCollaborationCount || 0,
       hasBulkApplicantManagement: !!sub.hasBulkApplicantManagement,
       hasInterviewScheduling: !!sub.hasInterviewScheduling,
-      hasAPIIntegration: !!sub.hasAPIIntegration,
-      hasSSO: !!sub.hasSSO,
-      hasDedicatedOnboarding: !!sub.hasDedicatedOnboarding,
-      hasSLAGuarantee: !!sub.hasSLAGuarantee,
-      hasComplianceAudit: !!sub.hasComplianceAudit
+      hasDedicatedOnboarding: !!sub.hasDedicatedOnboarding
     });
     setModalOpen(true);
   };
@@ -200,11 +171,16 @@ const ManageSubscriptions = () => {
     try {
       const payload = { ...form };
 
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
       if (editingId) {
-        await axios.put(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/${editingId}`, payload);
+        await axios.put(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/${editingId}`, payload, config);
         toast.success('Subscription updated');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/subscriptions`, payload);
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/subscriptions`, payload, config);
         toast.success('Subscription created');
       }
       setModalOpen(false);
@@ -218,7 +194,10 @@ const ManageSubscriptions = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this plan?')) return;
     try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/${id}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('Subscription removed');
       setSubscriptions(subscriptions.filter(s => s._id !== id));
     } catch (err) {
@@ -226,103 +205,116 @@ const ManageSubscriptions = () => {
     }
   };
 
+  const seekerFeatures = [
+    { label: 'Resume builder', key: 'hasResumeBuilder' },
+    { label: 'Job alerts', key: 'jobAlerts' },
+    { label: 'Profile boost', key: 'hasProfileBoost' },
+    { label: 'Profile view insights', key: 'hasProfileViewInsights' },
+    { label: 'Message recruiters', key: 'hasMessageRecruiters' },
+    { label: 'Career counselling', key: 'careerCounsellingCount', unit: 'Sessions' },
+    { label: 'Interview prep', key: 'hasInterviewPrep' },
+    { label: 'Priority badge', key: 'hasPriorityBadge' }
+  ];
+
+  const recruiterFeatures = [
+    { label: 'Job postings', key: 'activeJobPostings' },
+    { label: 'Candidate search', key: 'candidateSearchPerDay', unit: '/day' },
+    { label: 'ATS pipeline', key: 'hasATSPipeline' },
+    { label: 'Analytics dashboard', key: 'hasAnalyticsDashboard' },
+    { label: 'Candidate DB export', key: 'hasCandidateDBExport' },
+    { label: 'Bulk messaging', key: 'hasBulkMessaging' },
+    { label: 'Video interview', key: 'hasVideoInterview' }
+  ];
+
+  const organizationFeatures = [
+    { label: 'Job postings', key: 'activeJobPostings', unit: '/month' },
+    { label: 'User seats', key: 'userSeats' },
+    { label: 'Company profile', key: 'companyProfileType' },
+    { label: 'Team collaboration', key: 'hasTeamCollaboration' },
+    { label: 'Bulk app management', key: 'hasBulkApplicantManagement' },
+    { label: 'Interview scheduling', key: 'hasInterviewScheduling' },
+    { label: 'Dedicated onboarding', key: 'hasDedicatedOnboarding' }
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto space-y-12">
-      {/* Header - Simple & Professional */}
+    <div className="max-w-7xl mx-auto space-y-12 pb-20">
+      {/* Header */}
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight">Subscription Settings</h1>
-            <p className="text-base text-slate-500 font-medium">Manage your platform's pricing models and service deliverability.</p>
+            <h1 className="text-4xl font-black text-[#0f172a] tracking-tight uppercase">Subscription Catalog</h1>
+            <p className="text-base text-slate-500 font-medium italic">Architect your platform's monetization strategy and tier structures.</p>
           </div>
           
           <Button 
             onClick={() => { resetForm(); setModalOpen(true); }}
-            className="rounded-xl h-12 px-8 bg-slate-900 text-white hover:bg-slate-800 transition-all font-bold text-sm shadow-sm flex items-center gap-2"
+            className="rounded-2xl h-14 px-8 bg-slate-900 text-white hover:bg-slate-800 transition-all font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3"
           >
-            <Plus size={18} /> Create New Plan
+            <Plus size={18} strokeWidth={3} /> Add New Plan
           </Button>
         </div>
         <div className="h-px bg-slate-200 w-full" />
       </div>
 
-      {/* Plans Directory - Simple Card Style */}
-      <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-96 bg-white gap-4">
-             <Loader2 className="animate-spin h-8 w-8 text-slate-400" />
-             <p className="text-xs font-bold text-slate-400">Loading infrastructure...</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest">Plan Name</th>
-                  <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Availability</th>
-                  <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Pricing</th>
-                  <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Status</th>
-                  <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {(subscriptions || []).length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="p-20 text-center text-slate-400 font-medium text-sm italic">No active subscription plans found.</td>
-                  </tr>
-                ) : (
-                  Array.isArray(subscriptions) && subscriptions.map((sub) => (
-                    <tr key={sub._id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="p-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-slate-50 text-slate-900 flex items-center justify-center rounded-xl border border-slate-100 shadow-sm">
-                             <Zap size={20} className={sub.isActive ? 'text-emerald-600 fill-emerald-600' : 'text-slate-400'} />
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-slate-900 tracking-tight">{sub.name}</div>
-                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">{sub.duration} billing</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-6 text-center">
-                         <div className="flex flex-wrap justify-center gap-1.5">
-                           {(sub.roles || []).map(r => (
-                             <Badge key={r} variant="outline" className="px-2.5 py-0.5 bg-slate-50 text-slate-600 border-slate-200 text-[9px] font-bold uppercase tracking-tight rounded-md">
-                               {r}
-                             </Badge>
-                           ))}
-                         </div>
-                      </td>
-                      <td className="p-6 text-center">
-                         <div className="text-sm font-bold text-slate-900">₹{sub.price.toLocaleString()}</div>
-                         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{sub.currency}</div>
-                      </td>
-                      <td className="p-6 text-center">
-                         <div className="flex items-center justify-center gap-2">
-                            <div className={`w-1.5 h-1.5 rounded-full ${sub.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                            <span className={`text-[10px] font-bold uppercase tracking-tight ${sub.isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
-                              {sub.isActive ? 'Active' : 'Draft'}
-                            </span>
-                         </div>
-                      </td>
-                      <td className="p-6 text-right">
-                         <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(sub)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all">
-                              <Edit2 size={16} />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(sub._id)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
-                              <Trash2 size={16} />
-                            </Button>
-                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      {/* Role-Based Filtering Tabs */}
+      <Tabs defaultValue="jobseeker" className="w-full space-y-10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+           <TabsList className="bg-slate-100 p-1.5 rounded-2xl w-fit">
+              <TabsTrigger value="jobseeker" className="rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-md">Job Seekers</TabsTrigger>
+              <TabsTrigger value="recruiter" className="rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-md">Recruiters</TabsTrigger>
+              <TabsTrigger value="company" className="rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-md">Organizations</TabsTrigger>
+           </TabsList>
+           
+           {loading && (
+             <div className="flex items-center gap-3 text-slate-400">
+                <Loader2 size={16} className="animate-spin" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Synchronizing Data...</span>
+             </div>
+           )}
+        </div>
+
+        {['jobseeker', 'recruiter', 'company'].map(role => (
+          <TabsContent key={role} value={role} className="m-0 focus-visible:ring-0">
+            <div className="flex flex-col gap-8">
+              {subscriptions
+                .filter(sub => sub.role === role)
+                .map((sub, idx) => (
+                  <PricingCard 
+                    key={sub._id}
+                    plan={sub}
+                    features={role === 'jobseeker' ? seekerFeatures : (role === 'recruiter' ? recruiterFeatures : organizationFeatures)}
+                    isPopular={idx === 1}
+                    footer={
+                      <div className="flex items-center gap-3">
+                        <Button 
+                          onClick={() => handleEdit(sub)}
+                          className="flex-1 h-12 rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800"
+                        >
+                          <Edit2 size={14} className="mr-2" /> Edit Plan
+                        </Button>
+                        <Button 
+                          onClick={() => handleDelete(sub._id)}
+                          variant="outline"
+                          className="w-12 h-12 rounded-xl border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-100 hover:bg-red-50"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    }
+                  />
+                ))}
+              {subscriptions.filter(sub => sub.role === role).length === 0 && !loading && (
+                <div className="col-span-full py-32 text-center bg-slate-50 rounded-[40px] border-2 border-dashed border-slate-200">
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100">
+                     <Package className="text-slate-300" size={32} />
+                  </div>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No plans established for {role} role.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
 
       {/* Subscription Form Modal - Seeker Style */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -385,7 +377,7 @@ const ManageSubscriptions = () => {
 
                  {/* Role Authorization */}
                  <div className="space-y-4">
-                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1">Target Roles</Label>
+                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1">Target Role</Label>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                        {[
                          { id: 'jobseeker', label: 'Job Seeker', icon: Users },
@@ -394,23 +386,18 @@ const ManageSubscriptions = () => {
                        ].map(role => (
                          <div key={role.id} 
                            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                             form.roles.includes(role.id) 
+                             form.role === role.id 
                              ? 'bg-emerald-50/50 border-emerald-600 shadow-sm' 
                              : 'bg-white border-slate-100 hover:border-slate-200'
                            }`} 
-                           onClick={() => {
-                             const newRoles = form.roles.includes(role.id) 
-                               ? form.roles.filter(r => r !== role.id) 
-                               : [...form.roles, role.id];
-                             setForm({...form, roles: newRoles});
-                           }}
+                           onClick={() => setForm({...form, role: role.id})}
                          >
-                            <role.icon size={16} className={form.roles.includes(role.id) ? 'text-emerald-600' : 'text-slate-400'} />
-                            <span className={`text-sm font-bold flex-1 ${form.roles.includes(role.id) ? 'text-emerald-700' : 'text-slate-600'}`}>{role.label}</span>
+                            <role.icon size={16} className={form.role === role.id ? 'text-emerald-600' : 'text-slate-400'} />
+                            <span className={`text-sm font-bold flex-1 ${form.role === role.id ? 'text-emerald-700' : 'text-slate-600'}`}>{role.label}</span>
                             <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                               form.roles.includes(role.id) ? 'bg-emerald-600 border-emerald-600' : 'border-slate-200'
+                               form.role === role.id ? 'bg-emerald-600 border-emerald-600' : 'border-slate-200'
                             }`}>
-                               {form.roles.includes(role.id) && <CheckCircle2 size={12} className="text-white" />}
+                               {form.role === role.id && <CheckCircle2 size={12} className="text-white" />}
                             </div>
                          </div>
                        ))}
@@ -420,7 +407,7 @@ const ManageSubscriptions = () => {
                  <div className="space-y-10">
                     {/* Role-Specific Feature Toggles & Counts */}
                     <div className="space-y-12">
-                       {form.roles.includes('jobseeker') && (
+                       {form.role === 'jobseeker' && (
                         <div className="space-y-6">
                            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                               <Users size={18} className="text-emerald-600" />
@@ -429,13 +416,11 @@ const ManageSubscriptions = () => {
                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                               {[
                                 { id: 'hasResumeBuilder', label: 'Resume Builder' },
-                                { id: 'hasUnlimitedApplications', label: 'Unlimited Apps' },
                                 { id: 'hasProfileBoost', label: 'Profile Boost' },
-                                { id: 'hasAIResumeReview', label: 'AI Resume Review' },
+                                
                                 { id: 'hasProfileViewInsights', label: 'View Insights' },
                                 { id: 'hasMessageRecruiters', label: 'Msg Recruiters' },
-                                { id: 'hasSalaryBenchmarking', label: 'Salary Bench' },
-                                { id: 'hasSkillGapAnalysis', label: 'Skill Gap' },
+                                { id: 'hasCareerCounselling', label: 'Career Guidance' },
                                 { id: 'hasInterviewPrep', label: 'Interview Prep' },
                                 { id: 'hasPriorityBadge', label: 'Priority Badge' }
                               ].map(feature => (
@@ -457,23 +442,11 @@ const ManageSubscriptions = () => {
                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
                               <div className="space-y-2">
                                  <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Resume Limit</Label>
-                                 <Input type="number" value={form.resumeBuilderCount} onChange={(e) => setForm({...form, resumeBuilderCount: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="Max Resumes" />
-                              </div>
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Application Limit</Label>
-                                 <Input type="number" value={form.applicationLimit} onChange={(e) => setForm({...form, applicationLimit: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="0 = Unlimited" />
-                              </div>
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">AI Review Limit</Label>
-                                 <Input type="number" value={form.aiResumeReviewCount} onChange={(e) => setForm({...form, aiResumeReviewCount: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="Max Reviews" />
-                              </div>
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Skill Gap Sessions</Label>
-                                 <Input type="number" value={form.skillGapSessionsCount} onChange={(e) => setForm({...form, skillGapSessionsCount: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="Sessions" />
+                                 <Input type="number" disabled={!form.hasResumeBuilder} value={form.resumeBuilderCount} onChange={(e) => setForm({...form, resumeBuilderCount: e.target.value})} className="h-10 rounded-xl bg-white disabled:bg-slate-100/50 disabled:text-slate-400" placeholder="Max Resumes" />
                               </div>
                               <div className="space-y-2">
                                  <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Career Guidance</Label>
-                                 <Input type="number" value={form.careerCounsellingCount} onChange={(e) => setForm({...form, careerCounsellingCount: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="Sessions" />
+                                 <Input type="number" disabled={!form.hasCareerCounselling} value={form.careerCounsellingCount} onChange={(e) => setForm({...form, careerCounsellingCount: e.target.value})} className="h-10 rounded-xl bg-white disabled:bg-slate-100/50 disabled:text-slate-400" placeholder="Sessions" />
                               </div>
                               <div className="space-y-2 lg:col-span-1">
                                  <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Job Alerts</Label>
@@ -484,7 +457,8 @@ const ManageSubscriptions = () => {
                                     <SelectContent>
                                        <SelectItem value="None">None</SelectItem>
                                        <SelectItem value="Daily">Daily</SelectItem>
-                                       <SelectItem value="Real-time">Real-time</SelectItem>
+                                       <SelectItem value="Weekly">Weekly</SelectItem>
+                                       <SelectItem value="Monthly">Monthly</SelectItem>
                                     </SelectContent>
                                  </Select>
                               </div>
@@ -492,7 +466,7 @@ const ManageSubscriptions = () => {
                         </div>
                        )}
 
-                       {form.roles.includes('recruiter') && (
+                       {form.role === 'recruiter' && (
                         <div className="space-y-6 pt-8 border-t border-slate-100">
                            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                               <ShieldCheck size={18} className="text-blue-600" />
@@ -500,15 +474,15 @@ const ManageSubscriptions = () => {
                            </div>
                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                               {[
-                                { id: 'hasAICandidateMatching', label: 'AI Matching' },
+                                
                                 { id: 'hasATSPipeline', label: 'ATS Pipeline' },
-                                { id: 'hasPriorityListing', label: 'Priority Listing' },
+                                
                                 { id: 'hasAnalyticsDashboard', label: 'Analytics' },
                                 { id: 'hasCandidateDBExport', label: 'DB Export' },
                                 { id: 'hasBulkMessaging', label: 'Bulk Msg' },
                                 { id: 'hasVideoInterview', label: 'Video Interview' },
-                                { id: 'hasDedicatedManager', label: 'Ded. Manager' },
-                                { id: 'hasWhiteLabelProfile', label: 'White-label' }
+                                
+                                
                               ].map(feature => (
                                 <div key={feature.id} 
                                   onClick={() => setForm({...form, [feature.id]: !form[feature.id]})}
@@ -533,14 +507,14 @@ const ManageSubscriptions = () => {
                                  <Input type="number" value={form.candidateSearchPerDay} onChange={(e) => setForm({...form, candidateSearchPerDay: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="0 = Unlimited" />
                               </div>
                               <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">AI Matching Limit</Label>
-                                 <Input type="number" value={form.aiCandidateMatchingCount} onChange={(e) => setForm({...form, aiCandidateMatchingCount: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="0 = Unlimited" />
+                                 
+                                 
                               </div>
                            </div>
                         </div>
                        )}
 
-                       {form.roles.includes('company') && (
+                       {form.role === 'company' && (
                         <div className="space-y-6 pt-8 border-t border-slate-100">
                            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                               <Building2 size={18} className="text-purple-600" />
@@ -548,15 +522,15 @@ const ManageSubscriptions = () => {
                            </div>
                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                               {[
-                                { id: 'hasBrandedCareersPage', label: 'Branded Career' },
+                                
                                 { id: 'hasTeamCollaboration', label: 'Collaboration' },
                                 { id: 'hasBulkApplicantManagement', label: 'Bulk App Mgmt' },
                                 { id: 'hasInterviewScheduling', label: 'Scheduling' },
-                                { id: 'hasAPIIntegration', label: 'API/HRMS' },
-                                { id: 'hasSSO', label: 'SSO/Security' },
+                                
+                                
                                 { id: 'hasDedicatedOnboarding', label: 'Ded. Onboarding' },
-                                { id: 'hasSLAGuarantee', label: 'SLA Guarantee' },
-                                { id: 'hasComplianceAudit', label: 'Compliance' }
+                                
+                                
                               ].map(feature => (
                                 <div key={feature.id} 
                                   onClick={() => setForm({...form, [feature.id]: !form[feature.id]})}
@@ -578,7 +552,7 @@ const ManageSubscriptions = () => {
                               </div>
                               <div className="space-y-2">
                                  <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Team Collaboration Limit</Label>
-                                 <Input type="number" value={form.teamCollaborationCount} onChange={(e) => setForm({...form, teamCollaborationCount: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="0 = Unlimited" />
+                                 <Input type="number" disabled={!form.hasTeamCollaboration} value={form.teamCollaborationCount} onChange={(e) => setForm({...form, teamCollaborationCount: e.target.value})} className="h-10 rounded-xl bg-white disabled:bg-slate-100/50 disabled:text-slate-400" placeholder="0 = Unlimited" />
                               </div>
                               <div className="space-y-2">
                                  <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Profile Type</Label>

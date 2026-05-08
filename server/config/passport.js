@@ -17,9 +17,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      passReqToCallback: true,
       proxy: true
     },
-  async (accessToken, refreshToken, profile, done) => {
+  async (req, accessToken, refreshToken, profile, done) => {
     try {
       let user = await User.findOne({ 
         $or: [
@@ -38,7 +39,19 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       }
 
       // Create new user
-      const roleId = await getDefaultRole();
+      let intendedRole = 'jobseeker';
+      if (req.query.state) {
+        try {
+          const stateObj = JSON.parse(req.query.state);
+          if (stateObj.role) intendedRole = stateObj.role;
+        } catch (e) {
+          console.error("Failed to parse OAuth state:", e);
+        }
+      }
+
+      const role = await Role.findOne({ name: intendedRole });
+      const roleId = role ? role._id : await getDefaultRole();
+
       user = await User.create({
         name: profile.displayName,
         email: profile.emails[0].value,
@@ -65,9 +78,10 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL: process.env.GITHUB_CALLBACK_URL,
-      scope: ['user:email']
+      scope: ['user:email'],
+      passReqToCallback: true
     },
-  async (accessToken, refreshToken, profile, done) => {
+  async (req, accessToken, refreshToken, profile, done) => {
     try {
       const email = profile.emails && profile.emails[0]?.value; 
       // Note: GitHub might not return email if it's private.
@@ -87,7 +101,20 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
         return done(null, user);
       }
 
-      const roleId = await getDefaultRole();
+      // Create new user
+      let intendedRole = 'jobseeker';
+      if (req.query.state) {
+        try {
+          const stateObj = JSON.parse(req.query.state);
+          if (stateObj.role) intendedRole = stateObj.role;
+        } catch (e) {
+          console.error("Failed to parse GitHub OAuth state:", e);
+        }
+      }
+
+      const role = await Role.findOne({ name: intendedRole });
+      const roleId = role ? role._id : await getDefaultRole();
+
       user = await User.create({
         name: profile.displayName || profile.username,
         email: email || `${profile.username}@github.com`, // Fallback email
@@ -115,9 +142,10 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
       callbackURL: process.env.LINKEDIN_CALLBACK_URL,
       scope: ['openid', 'profile', 'email'],
+      passReqToCallback: true,
       proxy: true
     },
-  async (accessToken, refreshToken, profile, done) => {
+  async (req, accessToken, refreshToken, profile, done) => {
     try {
       let user = await User.findOne({ 
         $or: [
@@ -134,7 +162,20 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
         return done(null, user);
       }
 
-      const roleId = await getDefaultRole();
+      // Create new user
+      let intendedRole = 'jobseeker';
+      if (req.query.state) {
+        try {
+          const stateObj = JSON.parse(req.query.state);
+          if (stateObj.role) intendedRole = stateObj.role;
+        } catch (e) {
+          console.error("Failed to parse LinkedIn OAuth state:", e);
+        }
+      }
+
+      const role = await Role.findOne({ name: intendedRole });
+      const roleId = role ? role._id : await getDefaultRole();
+
       user = await User.create({
         name: profile.displayName,
         email: profile.emails[0].value,

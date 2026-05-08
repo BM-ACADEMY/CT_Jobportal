@@ -74,7 +74,7 @@ const getCompanyJobs = async (req, res) => {
     const user = await User.findById(userId);
 
     if (!user || !user.company) {
-      return res.status(400).json({ msg: 'No company association found' });
+      return res.json([]);
     }
 
     const jobs = await Job.find({ company: user.company }).sort({ createdAt: -1 });

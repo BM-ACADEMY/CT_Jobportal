@@ -70,7 +70,10 @@ const ManageUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users`);
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (Array.isArray(res.data)) {
         setUsers(res.data);
       } else {
@@ -88,7 +91,10 @@ const ManageUsers = () => {
 
   const fetchRoles = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/roles`);
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/roles`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (Array.isArray(res.data)) {
         setRoles(res.data);
       } else {
@@ -110,7 +116,10 @@ const ManageUsers = () => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     
     try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${id}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('User deleted successfully');
       setUsers(users.filter(u => u._id !== id));
     } catch (err) {
@@ -120,7 +129,10 @@ const ManageUsers = () => {
 
   const handleToggleBlock = async (id) => {
     try {
-      const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${id}/block`);
+      const token = localStorage.getItem('token');
+      const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${id}/block`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(res.data.msg);
       setUsers(users.map(u => u._id === id ? { ...u, isAdminBlocked: res.data.isAdminBlocked } : u));
     } catch (err) {
@@ -130,7 +142,10 @@ const ManageUsers = () => {
 
   const handleViewDetails = async (user) => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${user._id}`);
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${user._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setSelectedUser(res.data);
       setViewModalOpen(true);
     } catch (err) {
@@ -157,7 +172,10 @@ const ManageUsers = () => {
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${selectedUser._id}`, editForm);
+      const token = localStorage.getItem('token');
+      const res = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${selectedUser._id}`, editForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('User updated successfully');
       setEditModalOpen(false);
       fetchUsers();

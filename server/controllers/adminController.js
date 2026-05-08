@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const User = require('../models/User');
+const Role = require('../models/Role');
 const Company = require('../models/Company');
 const Job = require('../models/Job');
 
@@ -141,8 +142,8 @@ const getUserDetails = async (req, res) => {
     }
     res.json(user);
   } catch (err) {
-    console.error('Get User Details Error:', err.message);
-    res.status(500).send('Server Error');
+    console.error('Get User Details Error:', err);
+    res.status(500).json({ msg: 'Server Error', error: err.message });
   }
 };
 
@@ -163,15 +164,35 @@ const updateUser = async (req, res) => {
     user.name = name || user.name;
     user.email = email || user.email;
     if (role) user.role = role;
-    if (profile) user.profile = { ...user.profile, ...profile };
-    if (recruiterProfile) user.recruiterProfile = { ...user.recruiterProfile, ...recruiterProfile };
-    if (companyProfile) user.companyProfile = { ...user.companyProfile, ...companyProfile };
+    
+    // Update profiles safely
+    if (profile) {
+      Object.keys(profile).forEach(key => {
+        if (profile[key] !== undefined) {
+          user.profile[key] = profile[key];
+        }
+      });
+    }
+    if (recruiterProfile) {
+      Object.keys(recruiterProfile).forEach(key => {
+        if (recruiterProfile[key] !== undefined) {
+          user.recruiterProfile[key] = recruiterProfile[key];
+        }
+      });
+    }
+    if (companyProfile) {
+      Object.keys(companyProfile).forEach(key => {
+        if (companyProfile[key] !== undefined) {
+          user.companyProfile[key] = companyProfile[key];
+        }
+      });
+    }
 
     await user.save();
     res.json(user);
   } catch (err) {
-    console.error('Update User Error:', err.message);
-    res.status(500).send('Server Error');
+    console.error('Update User Error:', err);
+    res.status(500).json({ msg: 'Server Error', error: err.message });
   }
 };
 
@@ -198,12 +219,11 @@ const toggleBlockUser = async (req, res) => {
 // @route   GET /api/admin/roles
 const getRoles = async (req, res) => {
   try {
-    const Role = require('../models/Role');
     const roles = await Role.find();
     res.json(roles);
   } catch (err) {
-    console.error('Get Roles Error:', err.message);
-    res.status(500).send('Server Error');
+    console.error('Get Roles Error:', err);
+    res.status(500).json({ msg: 'Server Error', error: err.message });
   }
 };
 

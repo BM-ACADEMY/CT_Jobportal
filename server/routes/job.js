@@ -6,9 +6,9 @@ const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlew
 // Public route to get all jobs
 router.get('/', optionalVerifyToken, getAllJobs);
 
-// All routes below this are protected and for recruiters
+// All routes below this are protected and for recruiters/companies
 router.use(verifyToken);
-router.use(authorizeRoles('recruiter'));
+router.use(authorizeRoles('recruiter', 'company'));
 
 router.post('/', createJob);
 router.get('/company-jobs', getCompanyJobs);
