@@ -71,9 +71,16 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users`);
-      setUsers(res.data);
+      if (Array.isArray(res.data)) {
+        setUsers(res.data);
+      } else {
+        console.error('API returned non-array data for users:', res.data);
+        setUsers([]);
+      }
     } catch (err) {
+      console.error('Error fetching users:', err);
       toast.error('Failed to load users');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -82,9 +89,15 @@ const ManageUsers = () => {
   const fetchRoles = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/roles`);
-      setRoles(res.data);
+      if (Array.isArray(res.data)) {
+        setRoles(res.data);
+      } else {
+        console.error('API returned non-array data for roles:', res.data);
+        setRoles([]);
+      }
     } catch (err) {
-      console.error('Failed to fetch roles');
+      console.error('Failed to fetch roles:', err);
+      setRoles([]);
     }
   };
 
@@ -154,10 +167,10 @@ const ManageUsers = () => {
   };
 
   const filterUsersByRole = (roleName) => {
-    return users.filter(user => {
+    return (Array.isArray(users) ? users : []).filter(user => {
       const matchesRole = user.role?.name === roleName;
-      const matchesSearch = user.name.toLowerCase().includes(search.toLowerCase()) || 
-                           user.email.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = user.name?.toLowerCase().includes(search.toLowerCase()) || 
+                           user.email?.toLowerCase().includes(search.toLowerCase());
       return matchesRole && matchesSearch;
     });
   };
@@ -174,12 +187,12 @@ const ManageUsers = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
-          {data.length === 0 ? (
+          {(data || []).length === 0 ? (
             <tr>
               <td colSpan="4" className="p-20 text-center text-slate-400 font-medium text-sm italic">No {roleLabel} records identified.</td>
             </tr>
           ) : (
-            data.map((user) => (
+            Array.isArray(data) && data.map((user) => (
               <tr key={user._id} className={`hover:bg-slate-50/50 transition-colors group ${user.isAdminBlocked ? 'bg-red-50/20' : ''}`}>
                 <td className="p-6">
                   <div className="flex items-center gap-4">
@@ -455,7 +468,7 @@ const ManageUsers = () => {
                       <SelectValue placeholder="Select access level" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                      {roles.map(role => (
+                      {Array.isArray(roles) && roles.map(role => (
                         <SelectItem key={role._id} value={role._id} className="text-sm py-2">
                           {role.name}
                         </SelectItem>

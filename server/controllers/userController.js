@@ -159,7 +159,8 @@ const getSavedJobs = async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     // Filter out any nulls in case a job was deleted
-    const filteredJobs = user.savedJobs.filter(job => job !== null);
+    const jobs = user.savedJobs || [];
+    const filteredJobs = jobs.filter(job => job !== null);
 
     res.json(filteredJobs);
 

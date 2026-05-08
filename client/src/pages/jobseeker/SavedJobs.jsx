@@ -30,7 +30,12 @@ const SavedJobs = () => {
     const fetchSavedJobs = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/user/saved-jobs`);
-        setSavedJobs(response.data);
+        if (Array.isArray(response.data)) {
+          setSavedJobs(response.data);
+        } else {
+          console.error('API returned non-array data for saved jobs:', response.data);
+          setSavedJobs([]);
+        }
       } catch (error) {
         console.error('Error fetching saved jobs:', error);
         toast.error("Failed to load saved jobs");
@@ -72,11 +77,11 @@ const SavedJobs = () => {
           <p className="text-base text-slate-500 font-medium">Manage and track your bookmarked career positions.</p>
         </div>
         <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold px-4 py-1.5 rounded-lg text-xs tracking-tight">
-          {savedJobs.length} {savedJobs.length === 1 ? 'Position' : 'Positions'} Saved
+          {(savedJobs || []).length} {((savedJobs || []).length === 1) ? 'Position' : 'Positions'} Saved
         </Badge>
       </div>
 
-      {savedJobs.length === 0 ? (
+      {(!savedJobs || savedJobs.length === 0) ? (
         <Card className="border-dashed border-2 border-slate-200 bg-white rounded-[24px] p-16 text-center shadow-sm">
           <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-6 border border-slate-100">
             <Bookmark size={28} />
@@ -93,7 +98,7 @@ const SavedJobs = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {savedJobs.map((job) => (
+          {Array.isArray(savedJobs) && savedJobs.map((job) => (
             <motion.div
               key={job._id}
               initial={{ opacity: 0, y: 10 }}

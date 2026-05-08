@@ -15,9 +15,16 @@ const ManageJobs = () => {
   const fetchJobs = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs`);
-      setJobs(res.data);
+      if (Array.isArray(res.data)) {
+        setJobs(res.data);
+      } else {
+        console.error('API returned non-array data for jobs:', res.data);
+        setJobs([]);
+      }
     } catch (err) {
+      console.error('Error fetching jobs:', err);
       toast.error('Failed to load jobs');
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -39,8 +46,8 @@ const ManageJobs = () => {
     }
   };
 
-  const filteredJobs = jobs.filter(job => 
-    job.title.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredJobs = (Array.isArray(jobs) ? jobs : []).filter(job => 
+    (job.title && job.title.toLowerCase().includes(search.toLowerCase())) || 
     (job.company?.companyName && job.company.companyName.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -71,8 +78,8 @@ const ManageJobs = () => {
       {/* Metrics Row - Elegant Style */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {[
-          { label: 'Total Listings', value: jobs.length, color: 'text-slate-900', bg: 'bg-slate-50/50' },
-          { label: 'Active Nodes', value: jobs.length, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
+          { label: 'Total Listings', value: (jobs || []).length, color: 'text-slate-900', bg: 'bg-slate-50/50' },
+          { label: 'Active Nodes', value: (jobs || []).length, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
           { label: 'Platform Velocity', value: 'Optimal', color: 'text-emerald-600', bg: 'bg-emerald-50/50' }
         ].map((stat, i) => (
           <Card key={i} className="p-6 rounded-[24px] border-slate-200 shadow-sm bg-white">
@@ -102,12 +109,12 @@ const ManageJobs = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredJobs.length === 0 ? (
+                {(filteredJobs || []).length === 0 ? (
                   <tr>
                     <td colSpan="5" className="p-20 text-center text-slate-400 font-medium text-sm italic">No records identified.</td>
                   </tr>
                 ) : (
-                  filteredJobs.map((job) => (
+                  Array.isArray(filteredJobs) && filteredJobs.map((job) => (
                     <tr key={job._id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="p-6">
                         <div className="flex items-center gap-4">

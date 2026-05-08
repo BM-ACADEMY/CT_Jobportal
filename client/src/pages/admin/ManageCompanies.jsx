@@ -58,9 +58,16 @@ const ManageCompanies = () => {
   const fetchCompanies = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/companies`);
-      setCompanies(res.data);
+      if (Array.isArray(res.data)) {
+        setCompanies(res.data);
+      } else {
+        console.error('API returned non-array data for companies:', res.data);
+        setCompanies([]);
+      }
     } catch (err) {
+      console.error('Error fetching companies:', err);
       toast.error('Failed to load companies');
+      setCompanies([]);
     } finally {
       setLoading(false);
     }
@@ -115,7 +122,7 @@ const ManageCompanies = () => {
     }
   };
 
-  const filteredCompanies = companies.filter(company => 
+  const filteredCompanies = (Array.isArray(companies) ? companies : []).filter(company => 
     (company.name && company.name.toLowerCase().includes(search.toLowerCase())) || 
     (company.admin_email && company.admin_email.toLowerCase().includes(search.toLowerCase()))
   );
@@ -152,9 +159,9 @@ const ManageCompanies = () => {
       {/* Metrics Row - Elegant Style */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {[
-          { label: 'Total Registry', value: companies.length, color: 'text-slate-900', bg: 'bg-slate-50/50' },
-          { label: 'Verified Nodes', value: companies.filter(c => c.is_verified).length, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-          { label: 'Audit Queue', value: companies.filter(c => !c.is_verified).length, color: 'text-amber-600', bg: 'bg-amber-50/50' }
+          { label: 'Total Registry', value: (companies || []).length, color: 'text-slate-900', bg: 'bg-slate-50/50' },
+          { label: 'Verified Nodes', value: (Array.isArray(companies) ? companies : []).filter(c => c.is_verified).length, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
+          { label: 'Audit Queue', value: (Array.isArray(companies) ? companies : []).filter(c => !c.is_verified).length, color: 'text-amber-600', bg: 'bg-amber-50/50' }
         ].map((stat, i) => (
           <Card key={i} className="p-6 rounded-[24px] border-slate-200 shadow-sm bg-white">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -183,12 +190,12 @@ const ManageCompanies = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredCompanies.length === 0 ? (
+                {(filteredCompanies || []).length === 0 ? (
                   <tr>
                     <td colSpan="5" className="p-20 text-center text-slate-400 font-medium text-sm italic">No business records identified.</td>
                   </tr>
                 ) : (
-                  filteredCompanies.map((company) => (
+                  Array.isArray(filteredCompanies) && filteredCompanies.map((company) => (
                     <tr key={company._id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="p-6">
                         <div className="flex items-center gap-4">

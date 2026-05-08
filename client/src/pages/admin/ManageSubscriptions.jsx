@@ -99,9 +99,16 @@ const ManageSubscriptions = () => {
   const fetchSubscriptions = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/subscriptions`);
-      setSubscriptions(res.data);
+      if (Array.isArray(res.data)) {
+        setSubscriptions(res.data);
+      } else {
+        console.error('API returned non-array data for subscriptions:', res.data);
+        setSubscriptions([]);
+      }
     } catch (err) {
+      console.error('Error fetching subscriptions:', err);
       toast.error('Failed to load subscriptions');
+      setSubscriptions([]);
     } finally {
       setLoading(false);
     }
@@ -259,12 +266,12 @@ const ManageSubscriptions = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {subscriptions.length === 0 ? (
+                {(subscriptions || []).length === 0 ? (
                   <tr>
                     <td colSpan="5" className="p-20 text-center text-slate-400 font-medium text-sm italic">No active subscription plans found.</td>
                   </tr>
                 ) : (
-                  subscriptions.map((sub) => (
+                  Array.isArray(subscriptions) && subscriptions.map((sub) => (
                     <tr key={sub._id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="p-6">
                         <div className="flex items-center gap-4">
