@@ -13,7 +13,8 @@ import {
   Search,
   Filter,
   MoreVertical,
-  Download
+  Download,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -83,14 +84,39 @@ const Applicants = () => {
         updateUser({ downloadsUsed: res.data.downloadsUsed });
       }
 
-      const url = app.applicant.profile.resumeUrl.startsWith('http') 
-        ? app.applicant.profile.resumeUrl 
+      const url = app.applicant.profile.resumeUrl.startsWith('http')
+        ? app.applicant.profile.resumeUrl
         : `${API_DOMAIN}${app.applicant.profile.resumeUrl}`;
-      window.open(url, '_blank');
-      
+      const filename = app.applicant.profile.resumeName || `${app.applicant.name || 'resume'}.pdf`;
+
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.msg || "Failed to authorize download");
+      toast.error(err.response?.data?.msg || "Failed to download resume");
+    }
+  };
+
+  const handleStartConversation = async (recipientId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API_BASE_URL}/messages/conversation`, 
+        { recipientId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      navigate('/company/messages');
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to start conversation");
     }
   };
 
@@ -224,6 +250,14 @@ const Applicants = () => {
                       title="Shortlist"
                     >
                       <CheckCircle size={20} />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => handleStartConversation(app.applicant?._id)}
+                      className="w-10 h-10 rounded-xl text-slate-300 hover:text-violet-600 hover:bg-violet-50 transition-all"
+                      title="Message Candidate"
+                    >
+                      <MessageSquare size={20} />
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

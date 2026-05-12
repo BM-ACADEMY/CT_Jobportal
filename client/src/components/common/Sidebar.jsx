@@ -1,17 +1,20 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Home, Briefcase, Building2, BookOpen, ChevronRight, LayoutDashboard,
-  Users, UserCog, Settings, FileText, TrendingUp, Star, Bell, LogOut,
-  ShieldCheck, CircleUser, Activity, CreditCard
+import {
+  Home, Briefcase, Building2, FileText, Star, LogOut,
+  LayoutDashboard, Users, UserCog, Settings, TrendingUp, Bell,
+  ShieldCheck, CircleUser, Activity, CreditCard, ChevronRight,
+  Lock, MessageCircle, Video, Layers, BarChart2, Mail,
+  BookOpen, Mic, UserCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { hasFeature } from '../subscription/FeatureGate';
 
-const menuConfigs = {
+// ─── Core nav (always visible) ───────────────────────────────────────────────
+const coreMenus = {
   jobseeker: [
     { icon: Home, label: 'Overview', path: '/jobseeker' },
     { icon: Briefcase, label: 'Search Jobs', path: '/jobs' },
@@ -24,14 +27,12 @@ const menuConfigs = {
     { icon: LayoutDashboard, label: 'Statistics', path: '/company' },
     { icon: Briefcase, label: 'Publish Job', path: '/company/post-job' },
     { icon: Users, label: 'Candidates', path: '/company/applicants' },
-    { icon: Activity, label: 'Metrics', path: '/company/analytics' },
     { icon: CreditCard, label: 'Subscription', path: '/company/subscription' },
   ],
   company: [
     { icon: LayoutDashboard, label: 'Corporate Desk', path: '/company' },
     { icon: Briefcase, label: 'New Listing', path: '/company/post-job' },
     { icon: Users, label: 'Talent Pool', path: '/company/applicants' },
-    { icon: TrendingUp, label: 'Performance', path: '/company/analytics' },
     { icon: CreditCard, label: 'Subscription', path: '/company/subscription' },
   ],
   admin: [
@@ -39,7 +40,88 @@ const menuConfigs = {
     { icon: Users, label: 'Users Account', path: '/admin/users' },
     { icon: Briefcase, label: 'Job Inventory', path: '/admin/jobs' },
     { icon: CreditCard, label: 'Subscriptions', path: '/admin/subscriptions' },
+    { icon: MessageCircle, label: 'Messages', path: '/admin/messages' },
   ],
+};
+
+// ─── Premium feature nav per role ────────────────────────────────────────────
+const premiumMenus = {
+  jobseeker: [
+    { icon: FileText, label: 'Resume Builder', path: '/jobseeker/resume-builder', featureKey: 'hasResumeBuilder' },
+    { icon: Bell, label: 'Job Alerts', path: '/jobseeker/job-alerts', featureKey: 'jobAlerts' },
+    { icon: Users, label: 'Profile Insights', path: '/jobseeker/profile-insights', featureKey: 'hasProfileViewInsights' },
+    { icon: MessageCircle, label: 'Messages', path: '/jobseeker/messages', featureKey: 'hasMessageRecruiters' },
+    { icon: Star, label: 'Career Counselling', path: '/jobseeker/career-counselling', featureKey: 'hasCareerCounselling' },
+    { icon: Mic, label: 'Interview Prep', path: '/jobseeker/interview-prep', featureKey: 'hasInterviewPrep' },
+  ],
+  recruiter: [
+    { icon: Layers, label: 'ATS Pipeline', path: '/company/ats-pipeline', featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Analytics', path: '/company/analytics', featureKey: 'hasAnalyticsDashboard' },
+    { icon: Mail, label: 'Bulk Messaging', path: '/company/bulk-messaging', featureKey: 'hasBulkMessaging' },
+    { icon: MessageCircle, label: 'Direct Messages', path: '/company/messages' },
+    { icon: Video, label: 'Video Interview', path: '/company/video-interview', featureKey: 'hasVideoInterview' },
+  ],
+  company: [
+    { icon: Layers, label: 'ATS Pipeline', path: '/company/ats-pipeline', featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Analytics', path: '/company/analytics', featureKey: 'hasAnalyticsDashboard' },
+    { icon: UserCheck, label: 'Team', path: '/company/team', featureKey: 'hasTeamCollaboration' },
+    { icon: Mail, label: 'Bulk Messaging', path: '/company/bulk-messaging', featureKey: 'hasBulkMessaging' },
+    { icon: MessageCircle, label: 'Direct Messages', path: '/company/messages' },
+    { icon: Video, label: 'Video Interview', path: '/company/video-interview', featureKey: 'hasVideoInterview' },
+    { icon: Activity, label: 'Scheduling', path: '/company/interview-scheduling', featureKey: 'hasInterviewScheduling' },
+  ],
+};
+
+const NavItem = ({ item, active }) => {
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.path}
+      className={`group flex items-center gap-4 px-5 py-3.5 transition-all rounded-xl relative
+        ${active
+          ? 'bg-emerald-50 text-emerald-700 font-bold'
+          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+        }`}
+    >
+      <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all
+        ${active ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 group-hover:text-slate-900'}`}>
+        <Icon size={16} strokeWidth={active ? 2.5 : 1.5} />
+      </div>
+      <span className="text-[11px] uppercase font-bold tracking-widest flex-1">{item.label}</span>
+      {active && <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />}
+    </Link>
+  );
+};
+
+const PremiumNavItem = ({ item, active, unlocked }) => {
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.path}
+      className={`group flex items-center gap-4 px-5 py-3 transition-all rounded-xl relative
+        ${active
+          ? 'bg-emerald-50 text-emerald-700 font-bold'
+          : unlocked
+            ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+            : 'text-slate-400 hover:bg-slate-50/60'
+        }`}
+    >
+      <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all
+        ${active ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 group-hover:text-slate-700'}`}>
+        <Icon size={15} strokeWidth={active ? 2.5 : 1.5} />
+      </div>
+      <span className={`text-[10px] uppercase font-bold tracking-widest flex-1 ${unlocked ? '' : 'opacity-60'}`}>
+        {item.label}
+      </span>
+      {active ? (
+        <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
+      ) : unlocked ? (
+        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-60" />
+      ) : (
+        <Lock size={10} className="text-slate-300 shrink-0" />
+      )}
+    </Link>
+  );
 };
 
 const Sidebar = () => {
@@ -47,20 +129,20 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const role = user?.role || 'jobseeker';
-  const menuItems = menuConfigs[role] || menuConfigs.jobseeker;
+
+  const coreItems = coreMenus[role] || coreMenus.jobseeker;
+  const premiumItems = premiumMenus[role] || [];
 
   const isActive = (path) => {
     const rootRoutes = ['/jobseeker', '/company', '/admin', '/subadmin'];
-    if (rootRoutes.includes(path)) {
-      return location.pathname === path;
-    }
+    if (rootRoutes.includes(path)) return location.pathname === path;
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   return (
-    <aside className="w-full h-fit bg-white border border-slate-200 rounded-[24px] flex flex-col font-sans select-none shadow-sm overflow-hidden animate-in fade-in slide-in-from-left-4 duration-700">
-      
-      {/* Brand Section - Premium & Minimalist */}
+    <aside className="w-full h-full bg-white border border-slate-200 rounded-[24px] flex flex-col font-sans select-none shadow-sm overflow-y-auto animate-in fade-in slide-in-from-left-4 duration-700">
+
+      {/* Brand */}
       <div className="p-8 border-b border-slate-50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/20">
@@ -75,11 +157,12 @@ const Sidebar = () => {
         </Badge>
       </div>
 
-      {/* User Context - Premium Profile Card */}
+      {/* User card */}
       <div className="px-6 py-8">
         <div className="p-4 rounded-2xl border border-slate-100 flex items-center gap-4 bg-slate-50/30 group hover:bg-white hover:border-emerald-100 hover:shadow-md hover:shadow-emerald-600/5 transition-all duration-300 cursor-pointer">
           <div className="relative">
             <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm bg-white">
+              <AvatarImage src={user?.avatar} />
               <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold text-xs">
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </AvatarFallback>
@@ -94,42 +177,46 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Navigation Layer */}
-      <div className="flex-1 px-4 pb-8">
+      {/* Core nav */}
+      <div className="flex-1 px-4">
         <div className="space-y-1">
           <div className="px-5 mb-4 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 flex items-center gap-2">
             <div className="w-1 h-1 bg-emerald-600 rounded-full" />
             Control Desk
           </div>
-          {menuItems.map((item) => {
-            const active = isActive(item.path);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`group flex items-center gap-4 px-5 py-3.5 transition-all rounded-xl relative
-                  ${active
-                    ? 'bg-emerald-50 text-emerald-700 font-bold'
-                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-              >
-                <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all
-                  ${active ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 group-hover:text-slate-900'}`}>
-                  <Icon size={16} strokeWidth={active ? 2.5 : 1.5} />
-                </div>
-                <span className="text-[11px] uppercase font-bold tracking-widest">{item.label}</span>
-                {active && (
-                   <div className="ml-auto w-1.5 h-1.5 bg-emerald-600 rounded-full" />
-                )}
-              </Link>
-            );
-          })}
+          {coreItems.map(item => (
+            <NavItem key={item.path} item={item} active={isActive(item.path)} />
+          ))}
         </div>
+
+        {/* Premium Features section */}
+        {premiumItems.length > 0 && (
+          <div className="mt-6 space-y-1">
+            <div className="px-5 mb-3 flex items-center gap-2">
+              <div className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">Premium Features</div>
+              {!user?.subscription && (
+                <Badge className="text-[8px] font-bold bg-amber-50 text-amber-600 border-amber-100 px-1.5 py-0">
+                  Upgrade
+                </Badge>
+              )}
+            </div>
+            {premiumItems.map(item => {
+              const unlocked = hasFeature(user, item.featureKey);
+              return (
+                <PremiumNavItem
+                  key={item.path}
+                  item={item}
+                  active={isActive(item.path)}
+                  unlocked={unlocked}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Control Actions */}
-      <div className="px-6 py-8 border-t border-slate-50 bg-slate-50/20">
+      {/* Logout */}
+      <div className="px-6 py-8 mt-6 border-t border-slate-50 bg-slate-50/20">
         <button
           onClick={() => { logout(); navigate('/'); }}
           className="flex items-center justify-between px-5 py-4 w-full rounded-2xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 border border-transparent transition-all duration-300 group"

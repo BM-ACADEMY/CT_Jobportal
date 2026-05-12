@@ -302,7 +302,10 @@ const getUserProfile = async (req, res) => {
       savedJobs: user.savedJobs || [],
       subscription: user.subscription,
       subscriptionExpiry: user.subscriptionExpiry,
-      downloadsUsed: user.downloadsUsed || 0
+      autoRenew: user.autoRenew || false,
+      downloadsUsed: user.downloadsUsed || 0,
+      searchUsed: user.searchUsed || 0,
+      jobsUsed: user.jobsUsed || 0,
     });
   } catch (err) {
     console.error(err.message);

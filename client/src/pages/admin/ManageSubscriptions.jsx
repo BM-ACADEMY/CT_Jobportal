@@ -1,614 +1,891 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  CreditCard, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
-  ChevronRight,
-  ListPlus,
-  Zap,
-  ShieldCheck,
-  Package,
-  AlertCircle,
-  Users,
-  Building2
+import {
+  Plus, Trash2, Settings2, User, Users, Building2,
+  ListPlus, X, Check, Pencil, ChevronDown, ChevronUp, Infinity,
+  Tag, Hash, Clock, ToggleLeft, Zap, AlertCircle, RefreshCw
 } from 'lucide-react';
-import PricingCard from '../../components/subscription/PricingCard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const ManageSubscriptions = () => {
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+const API = import.meta.env.VITE_API_BASE_URL;
+
+const ROLES = [
+  { id: 'jobseeker', label: 'Job Seekers', icon: User, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+  { id: 'recruiter', label: 'Recruiters', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  { id: 'company', label: 'Organizations', icon: Building2, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
+];
+
+// Static schema fields per role — always present regardless of feature catalog
+const STATIC_FEATURES = {
+  jobseeker: [
+    { key: 'hasResumeBuilder', label: 'Resume Builder', type: 'boolean' },
+    { key: 'resumeBuilderCount', label: 'Resume Count', type: 'count', unit: 'resumes' },
+    { key: 'jobAlerts', label: 'Job Alerts', type: 'select', options: ['None', 'Daily', 'Weekly', 'Monthly'] },
+    { key: 'hasProfileBoost', label: 'Profile Boost', type: 'boolean' },
+    { key: 'hasProfileViewInsights', label: 'Profile View Insights', type: 'boolean' },
+    { key: 'hasMessageRecruiters', label: 'Message Recruiters', type: 'boolean' },
+    { key: 'hasCareerCounselling', label: 'Career Counselling', type: 'boolean' },
+    { key: 'careerCounsellingCount', label: 'Counselling Sessions', type: 'count', unit: 'sessions' },
+    { key: 'hasInterviewPrep', label: 'Interview Prep', type: 'boolean' },
+    { key: 'hasPriorityBadge', label: 'Priority Badge', type: 'boolean' },
+  ],
+  recruiter: [
+    { key: 'activeJobPostings', label: 'Active Job Postings', type: 'count', unit: 'jobs', hint: '0 = Unlimited' },
+    { key: 'candidateSearchPerDay', label: 'Candidate Searches / Day', type: 'count', unit: '/day', hint: '0 = Unlimited' },
+    { key: 'hasATSPipeline', label: 'ATS Pipeline', type: 'boolean' },
+    { key: 'hasAnalyticsDashboard', label: 'Analytics Dashboard', type: 'boolean' },
+    { key: 'hasCandidateDBExport', label: 'Candidate DB Export', type: 'boolean' },
+    { key: 'hasBulkMessaging', label: 'Bulk Messaging', type: 'boolean' },
+    { key: 'hasVideoInterview', label: 'Video Interview', type: 'boolean' },
+  ],
+  company: [
+    { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
+    { key: 'companyProfileType', label: 'Company Profile Type', type: 'select', options: ['Basic', 'Branded', 'Full Custom'] },
+    { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean' },
+    { key: 'teamCollaborationCount', label: 'Collaboration Members', type: 'count', unit: 'members', hint: '0 = Unlimited' },
+    { key: 'hasBulkApplicantManagement', label: 'Bulk Applicant Management', type: 'boolean' },
+    { key: 'hasInterviewScheduling', label: 'Interview Scheduling', type: 'boolean' },
+    { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
+  ],
+};
+
+const DEFAULT_FORM = {
+  name: '', price: 0, duration: 'Monthly', role: 'jobseeker', isActive: true,
+  hasResumeBuilder: false, resumeBuilderCount: 0, jobAlerts: 'None',
+  hasProfileBoost: false, hasProfileViewInsights: false, hasMessageRecruiters: false,
+  hasCareerCounselling: false, careerCounsellingCount: 0, hasInterviewPrep: false, hasPriorityBadge: false,
+  activeJobPostings: 0, candidateSearchPerDay: 0,
+  hasATSPipeline: false, hasAnalyticsDashboard: false, hasCandidateDBExport: false,
+  hasBulkMessaging: false, hasVideoInterview: false,
+  userSeats: 1, companyProfileType: 'Basic',
+  hasTeamCollaboration: false, teamCollaborationCount: 0,
+  hasBulkApplicantManagement: false, hasInterviewScheduling: false, hasDedicatedOnboarding: false,
+  features: [],
+};
+
+const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+const Toggle = ({ value, onChange, size = 'md' }) => {
+  const s = size === 'sm' ? 'w-8 h-4' : 'w-10 h-5';
+  const d = size === 'sm' ? 'w-3 h-3 top-0.5' : 'w-3.5 h-3.5 top-[3px]';
+  return (
+    <div
+      onClick={() => onChange(!value)}
+      className={`${s} rounded-full relative cursor-pointer transition-colors duration-200 ${value ? 'bg-emerald-500' : 'bg-slate-200'}`}
+    >
+      <div className={`absolute ${d} bg-white rounded-full shadow transition-all duration-200 ${value ? 'right-0.5' : 'left-0.5'}`} />
+    </div>
+  );
+};
+
+const TypeIcon = ({ type }) => {
+  const icons = { boolean: ToggleLeft, count: Hash, duration: Clock };
+  const Icon = icons[type] || Tag;
+  return <Icon size={12} className="text-slate-400" />;
+};
+
+const FeatureTypeBadge = ({ type }) => {
+  const styles = {
+    boolean: 'bg-blue-50 text-blue-700',
+    count: 'bg-amber-50 text-amber-700',
+    duration: 'bg-violet-50 text-violet-700',
+  };
+  return (
+    <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md ${styles[type] || 'bg-slate-100 text-slate-500'}`}>
+      {type}
+    </span>
+  );
+};
+
+// ── Feature Catalog Panel ─────────────────────────────────────────────────────
+const FeatureCatalogPanel = ({ role, features, onRefresh }) => {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', type: 'boolean', unit: '', defaultValue: '' });
   const [editingId, setEditingId] = useState(null);
-  
-  const [form, setForm] = useState({
-    name: '',
-    price: '',
-    duration: 'Monthly',
-    role: '',
-    isActive: true,
-    // Job Seeker
-    hasResumeBuilder: false,
-    resumeBuilderCount: 0,
-    jobAlerts: 'None',
-    hasProfileBoost: false,
-    hasProfileViewInsights: false,
-    hasMessageRecruiters: false,
-    hasCareerCounselling: false,
-    careerCounsellingCount: 0,
-    hasInterviewPrep: false,
-    hasPriorityBadge: false,
-    // Recruiter
-    activeJobPostings: 0,
-    candidateSearchPerDay: 0,
-    hasATSPipeline: false,
-    hasAnalyticsDashboard: false,
-    hasCandidateDBExport: false,
-    hasBulkMessaging: false,
-    hasVideoInterview: false,
-    // Organization
-    userSeats: 1,
-    companyProfileType: 'Basic',
-    hasTeamCollaboration: false,
-    teamCollaborationCount: 0,
-    hasBulkApplicantManagement: false,
-    hasInterviewScheduling: false,
-    hasDedicatedOnboarding: false
-  });
+  const [saving, setSaving] = useState(false);
 
-  const fetchSubscriptions = async () => {
+  const roleFeatures = features.filter(f => f.role === role);
+
+  const handleSave = async () => {
+    if (!form.name.trim()) { toast.error('Feature name is required'); return; }
+    setSaving(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/subscriptions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (Array.isArray(res.data)) {
-        setSubscriptions(res.data);
+      const payload = {
+        name: form.name.trim(),
+        type: form.type,
+        unit: form.unit.trim(),
+        defaultValue: form.type === 'count' ? (parseInt(form.defaultValue) || 0)
+          : form.type === 'duration' ? form.defaultValue
+          : null,
+        role,
+      };
+      if (editingId) {
+        await axios.put(`${API}/subscriptions/features/${editingId}`, payload, { headers: authHeader() });
+        toast.success('Feature updated — all plans refreshed');
       } else {
-        console.error('API returned non-array data for subscriptions:', res.data);
-        setSubscriptions([]);
+        await axios.post(`${API}/subscriptions/features`, payload, { headers: authHeader() });
+        toast.success('Feature created & added to all existing plans (disabled)');
       }
+      setForm({ name: '', type: 'boolean', unit: '', defaultValue: '' });
+      setEditingId(null);
+      setOpen(false);
+      onRefresh();
     } catch (err) {
-      console.error('Error fetching subscriptions:', err);
-      toast.error('Failed to load subscriptions');
-      setSubscriptions([]);
+      toast.error(err.response?.data?.msg || 'Failed to save feature');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  useEffect(() => {
-    fetchSubscriptions();
-  }, []);
-
-  const resetForm = () => {
-    setForm({
-      name: '', price: '', duration: 'Monthly', role: '', isActive: true,
-      hasResumeBuilder: false, resumeBuilderCount: 0,
-      jobAlerts: 'None',
-      hasProfileBoost: false,
-      hasProfileViewInsights: false, hasMessageRecruiters: false,
-      hasCareerCounselling: false, careerCounsellingCount: 0, 
-      hasInterviewPrep: false, hasPriorityBadge: false,
-      activeJobPostings: 0, candidateSearchPerDay: 0, 
-      hasATSPipeline: false, hasAnalyticsDashboard: false,
-      hasCandidateDBExport: false, hasBulkMessaging: false, hasVideoInterview: false,
-      userSeats: 1, companyProfileType: 'Basic', 
-      hasTeamCollaboration: false, teamCollaborationCount: 0,
-      hasBulkApplicantManagement: false,
-      hasInterviewScheduling: false,
-      hasDedicatedOnboarding: false
-    });
-    setEditingId(null);
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Delete feature "${name}"? It will be removed from all plans.`)) return;
+    try {
+      await axios.delete(`${API}/subscriptions/features/${id}`, { headers: authHeader() });
+      toast.success('Feature deleted from all plans');
+      onRefresh();
+    } catch {
+      toast.error('Delete failed');
+    }
   };
 
-  const handleEdit = (sub) => {
-    setEditingId(sub._id);
-    setForm({
-      name: sub.name,
-      price: sub.price,
-      duration: sub.duration,
-      role: sub.role || (sub.roles && sub.roles[0]) || '',
-      isActive: sub.isActive,
-      // All flags & counts
-      hasResumeBuilder: !!sub.hasResumeBuilder,
-      resumeBuilderCount: sub.resumeBuilderCount || 0,
-      jobAlerts: sub.jobAlerts || 'None',
-      hasProfileBoost: !!sub.hasProfileBoost,
-      hasProfileViewInsights: !!sub.hasProfileViewInsights,
-      hasMessageRecruiters: !!sub.hasMessageRecruiters,
-      hasCareerCounselling: !!sub.hasCareerCounselling,
-      careerCounsellingCount: sub.careerCounsellingCount || 0,
-      hasInterviewPrep: !!sub.hasInterviewPrep,
-      hasPriorityBadge: !!sub.hasPriorityBadge,
-      activeJobPostings: sub.activeJobPostings || 0,
-      candidateSearchPerDay: sub.candidateSearchPerDay || 0,
-      hasATSPipeline: !!sub.hasATSPipeline,
-      hasAnalyticsDashboard: !!sub.hasAnalyticsDashboard,
-      hasCandidateDBExport: !!sub.hasCandidateDBExport,
-      hasBulkMessaging: !!sub.hasBulkMessaging,
-      hasVideoInterview: !!sub.hasVideoInterview,
-      userSeats: sub.userSeats || 1,
-      companyProfileType: sub.companyProfileType || 'Basic',
-      hasTeamCollaboration: !!sub.hasTeamCollaboration,
-      teamCollaborationCount: sub.teamCollaborationCount || 0,
-      hasBulkApplicantManagement: !!sub.hasBulkApplicantManagement,
-      hasInterviewScheduling: !!sub.hasInterviewScheduling,
-      hasDedicatedOnboarding: !!sub.hasDedicatedOnboarding
-    });
-    setModalOpen(true);
+  const startEdit = (f) => {
+    setForm({ name: f.name, type: f.type, unit: f.unit || '', defaultValue: String(f.defaultValue ?? '') });
+    setEditingId(f._id);
+    setOpen(true);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+        <div className="flex items-center gap-2.5">
+          <ListPlus size={16} className="text-slate-400" />
+          <p className="text-sm font-bold text-slate-800">Dynamic Feature Catalog</p>
+          <Badge className="bg-slate-100 text-slate-500 border-none text-[10px] font-bold px-2 py-0.5 rounded-lg">
+            {roleFeatures.length} features
+          </Badge>
+        </div>
+        <Button
+          onClick={() => { setForm({ name: '', type: 'boolean', unit: '', defaultValue: '' }); setEditingId(null); setOpen(true); }}
+          className="h-8 px-4 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-700 flex items-center gap-1.5"
+        >
+          <Plus size={13} /> Add Feature
+        </Button>
+      </div>
+
+      {/* Feature list */}
+      <div className="divide-y divide-slate-50">
+        {roleFeatures.length === 0 ? (
+          <div className="py-8 text-center">
+            <Tag size={24} className="text-slate-200 mx-auto mb-2" />
+            <p className="text-xs font-semibold text-slate-400">No dynamic features yet.</p>
+            <p className="text-[11px] text-slate-300 mt-0.5">Add features — they auto-apply to all plans.</p>
+          </div>
+        ) : (
+          roleFeatures.map(f => (
+            <div key={f._id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 group">
+              <TypeIcon type={f.type} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{f.name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <FeatureTypeBadge type={f.type} />
+                  {f.unit && <span className="text-[10px] text-slate-400 font-medium">Unit: {f.unit}</span>}
+                  {f.defaultValue !== null && f.defaultValue !== undefined && f.defaultValue !== '' && (
+                    <span className="text-[10px] text-slate-400 font-medium">Default: {String(f.defaultValue)}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => startEdit(f)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors">
+                  <Pencil size={12} />
+                </button>
+                <button onClick={() => handleDelete(f._id, f.name)} className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-500 transition-colors">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Info note */}
+      <div className="px-5 py-3 bg-amber-50/60 border-t border-amber-100 flex items-start gap-2.5">
+        <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+        <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+          New features are <strong>auto-added (disabled)</strong> to all existing plans. Enable them individually per plan below.
+        </p>
+      </div>
+
+      {/* Add/Edit Feature Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-4 bg-white border-b border-slate-100">
+            <DialogTitle className="text-lg font-bold text-slate-900">
+              {editingId ? 'Edit Feature' : 'New Dynamic Feature'}
+            </DialogTitle>
+            <p className="text-xs text-slate-400 mt-0.5 font-medium">
+              {editingId ? 'Changes propagate to all plan feature names.' : 'Will be added (disabled) to all current plans.'}
+            </p>
+          </DialogHeader>
+          <div className="p-6 space-y-5 bg-white">
+            <div>
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Feature Name *</Label>
+              <Input
+                value={form.name}
+                onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                placeholder="e.g. Placement Support, Priority Interviews"
+                className="h-11 rounded-xl border-slate-200 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Type</Label>
+                <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v, defaultValue: '' }))}>
+                  <SelectTrigger className="h-11 rounded-xl border-slate-200 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="boolean">
+                      <span className="flex items-center gap-2"><ToggleLeft size={14} /> On / Off toggle</span>
+                    </SelectItem>
+                    <SelectItem value="count">
+                      <span className="flex items-center gap-2"><Hash size={14} /> Numeric count</span>
+                    </SelectItem>
+                    <SelectItem value="duration">
+                      <span className="flex items-center gap-2"><Clock size={14} /> Duration / time</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">
+                  Unit <span className="normal-case font-normal">(optional)</span>
+                </Label>
+                <Input
+                  value={form.unit}
+                  onChange={e => setForm(p => ({ ...p, unit: e.target.value }))}
+                  placeholder={form.type === 'duration' ? 'months' : form.type === 'count' ? 'interviews' : ''}
+                  className="h-11 rounded-xl border-slate-200 text-sm"
+                />
+              </div>
+            </div>
+
+            {form.type !== 'boolean' && (
+              <div>
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">
+                  Default Value <span className="normal-case font-normal">(suggested when enabled on a plan)</span>
+                </Label>
+                <Input
+                  value={form.defaultValue}
+                  onChange={e => setForm(p => ({ ...p, defaultValue: e.target.value }))}
+                  placeholder={form.type === 'count' ? '3' : '1 month'}
+                  className="h-11 rounded-xl border-slate-200 text-sm"
+                />
+              </div>
+            )}
+
+            <div className="bg-slate-50 rounded-xl p-3.5 text-xs text-slate-500 font-medium">
+              <strong className="text-slate-700">Example:</strong>{' '}
+              {form.type === 'boolean' && '"Placement Support" — shows as a checkmark (enabled/disabled per plan)'}
+              {form.type === 'count' && `"Priority Interviews" with unit "interviews" and default "3" — admin sets count per plan`}
+              {form.type === 'duration' && `"Mentorship Access" with unit "months" and default "1" — admin sets time per plan`}
+            </div>
+          </div>
+          <div className="p-4 border-t border-slate-100 bg-slate-50/60 flex gap-3 justify-end">
+            <Button variant="ghost" onClick={() => setOpen(false)} className="h-10 px-5 rounded-xl text-sm font-bold text-slate-500">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving} className="h-10 px-6 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-700">
+              {saving ? <RefreshCw size={14} className="animate-spin mr-2" /> : null}
+              {editingId ? 'Save Changes' : 'Create Feature'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+// ── Plan Card ─────────────────────────────────────────────────────────────────
+const PlanCard = ({ plan, roleFeatures, onEdit, onDelete, onToggleDynamicFeature }) => {
+  const [expanded, setExpanded] = useState(false);
+  const staticFields = STATIC_FEATURES[plan.role] || [];
+
+  const enabledStaticCount = staticFields.filter(f => {
+    if (f.type === 'boolean') return !!plan[f.key];
+    if (f.type === 'count') return plan[f.key] > 0;
+    if (f.type === 'select') return plan[f.key] && plan[f.key] !== 'None';
+    return false;
+  }).length;
+
+  const enabledDynCount = (plan.features || []).filter(f => f.isActive).length;
+
+  return (
+    <div className={`bg-white rounded-2xl border shadow-sm transition-all duration-300 overflow-hidden ${plan.isActive ? 'border-slate-100 hover:border-emerald-100 hover:shadow-md' : 'border-dashed border-slate-200 opacity-60'}`}>
+      {/* Header */}
+      <div className="p-5 pb-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-slate-900 text-base truncate">{plan.name}</h3>
+              <Badge className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border-none shrink-0 ${plan.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                {plan.isActive ? 'Active' : 'Hidden'}
+              </Badge>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold text-slate-900">
+                {plan.price === 0 ? 'Free' : `₹${plan.price.toLocaleString()}`}
+              </span>
+              {plan.price > 0 && (
+                <span className="text-xs text-slate-400 font-semibold">/{plan.duration.toLowerCase()}</span>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1.5 shrink-0">
+            <button onClick={() => onEdit(plan)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-500 flex items-center justify-center transition-all">
+              <Settings2 size={14} />
+            </button>
+            <button onClick={() => onDelete(plan._id)} className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-red-100 hover:text-red-600 text-slate-400 flex items-center justify-center transition-all">
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Summary pills */}
+        <div className="flex gap-2 flex-wrap">
+          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+            {enabledStaticCount}/{staticFields.length} core
+          </span>
+          <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg">
+            {enabledDynCount}/{roleFeatures.length} dynamic
+          </span>
+        </div>
+      </div>
+
+      {/* Expandable feature list */}
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center justify-between px-5 py-3 border-t border-slate-50 bg-slate-50/60 hover:bg-slate-100/60 transition-colors text-left"
+      >
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Feature Toggles</span>
+        {expanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+      </button>
+
+      {expanded && (
+        <div className="border-t border-slate-50 divide-y divide-slate-50">
+          {/* Static features (read-only display) */}
+          <div className="px-5 py-3">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Core Features</p>
+            <div className="space-y-2">
+              {staticFields.map(f => {
+                let enabled = false;
+                let display = '';
+                if (f.type === 'boolean') { enabled = !!plan[f.key]; }
+                else if (f.type === 'count') {
+                  const v = plan[f.key];
+                  enabled = v > 0 || (f.hint?.includes('Unlimited') && v === 0);
+                  display = v === 0 && f.hint?.includes('Unlimited') ? 'Unlimited' : `${v}`;
+                }
+                else if (f.type === 'select') { enabled = plan[f.key] && plan[f.key] !== 'None'; display = plan[f.key]; }
+                return (
+                  <div key={f.key} className="flex items-center gap-2.5">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${enabled ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-300'}`}>
+                      {enabled ? <Check size={9} strokeWidth={3} /> : <X size={9} strokeWidth={3} />}
+                    </div>
+                    <span className={`text-[11px] font-semibold flex-1 ${enabled ? 'text-slate-700' : 'text-slate-400'}`}>{f.label}</span>
+                    {enabled && display && display !== 'true' && (
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                        {display === 'Unlimited' ? <Infinity size={10} /> : display} {f.unit || ''}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dynamic features (toggleable inline) */}
+          {roleFeatures.length > 0 && (
+            <div className="px-5 py-3">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Dynamic Features</p>
+              <div className="space-y-2.5">
+                {roleFeatures.map(gf => {
+                  const featureInPlan = (plan.features || []).find(f => f.name === gf.name);
+                  const isActive = !!featureInPlan?.isActive;
+                  const currentValue = featureInPlan?.value ?? gf.defaultValue ?? '';
+
+                  return (
+                    <DynamicFeatureRow
+                      key={gf._id}
+                      gf={gf}
+                      isActive={isActive}
+                      currentValue={String(currentValue ?? '')}
+                      onToggle={(v) => onToggleDynamicFeature(plan._id, gf.name, v, currentValue)}
+                      onValueChange={(v) => onToggleDynamicFeature(plan._id, gf.name, isActive, v)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const DynamicFeatureRow = ({ gf, isActive, currentValue, onToggle, onValueChange }) => {
+  const [localVal, setLocalVal] = useState(currentValue);
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => { setLocalVal(currentValue); }, [currentValue]);
+
+  const handleValueSubmit = () => {
+    onValueChange(localVal);
+    setEditing(false);
+  };
+
+  return (
+    <div className={`rounded-xl border p-3 transition-all ${isActive ? 'border-emerald-100 bg-emerald-50/40' : 'border-slate-100 bg-white'}`}>
+      <div className="flex items-center gap-2.5">
+        <Toggle value={isActive} onChange={onToggle} size="sm" />
+        <div className="flex-1 min-w-0">
+          <p className={`text-[11px] font-bold truncate ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>{gf.name}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <FeatureTypeBadge type={gf.type} />
+            {gf.unit && <span className="text-[9px] text-slate-400 font-medium">{gf.unit}</span>}
+          </div>
+        </div>
+
+        {/* Value editor for count/duration types */}
+        {isActive && gf.type !== 'boolean' && (
+          editing ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <input
+                type={gf.type === 'count' ? 'number' : 'text'}
+                value={localVal}
+                onChange={e => setLocalVal(e.target.value)}
+                className="w-20 h-7 px-2 text-xs font-bold rounded-lg border border-emerald-300 outline-none focus:ring-2 focus:ring-emerald-200"
+                autoFocus
+                onKeyDown={e => e.key === 'Enter' && handleValueSubmit()}
+              />
+              <button onClick={handleValueSubmit} className="w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center">
+                <Check size={11} />
+              </button>
+              <button onClick={() => setEditing(false)} className="w-6 h-6 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center">
+                <X size={11} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditing(true)}
+              className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg hover:bg-emerald-200 transition-colors"
+            >
+              {localVal || gf.defaultValue || '—'} {gf.unit}
+              <Pencil size={9} />
+            </button>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Plan Editor Modal ─────────────────────────────────────────────────────────
+const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) => {
+  const [form, setForm] = useState(DEFAULT_FORM);
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (editingPlan) {
+      setForm({ ...DEFAULT_FORM, ...editingPlan, features: editingPlan.features || [] });
+      setIsCustomDuration(!['Monthly', 'Quarterly', 'Yearly', 'Lifetime'].includes(editingPlan.duration));
+    } else {
+      setForm(DEFAULT_FORM);
+      setIsCustomDuration(false);
+    }
+  }, [editingPlan, open]);
+
+  const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
+
+  const toggleDynFeature = (gfName) => {
+    const cur = (form.features || []).find(f => f.name === gfName);
+    let next;
+    if (cur) {
+      next = form.features.map(f => f.name === gfName ? { ...f, isActive: !f.isActive } : f);
+    } else {
+      next = [...(form.features || []), { name: gfName, isActive: true, value: null }];
+    }
+    set('features', next);
+  };
+
+  const setDynValue = (gfName, val) => {
+    const next = (form.features || []).map(f => f.name === gfName ? { ...f, value: val } : f);
+    set('features', next);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.name.trim()) { toast.error('Plan name is required'); return; }
+    setSaving(true);
     try {
-      const payload = { ...form };
-
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
-      if (editingId) {
-        await axios.put(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/${editingId}`, payload, config);
-        toast.success('Subscription updated');
+      if (editingPlan) {
+        await axios.put(`${API}/subscriptions/${editingPlan._id}`, form, { headers: authHeader() });
+        toast.success('Plan updated');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/subscriptions`, payload, config);
-        toast.success('Subscription created');
+        await axios.post(`${API}/subscriptions`, form, { headers: authHeader() });
+        toast.success('Plan created');
       }
-      setModalOpen(false);
-      fetchSubscriptions();
-      resetForm();
+      onSaved();
+      onClose();
     } catch (err) {
-      toast.error(err.response?.data?.msg || 'Failed to save subscription');
+      toast.error(err.response?.data?.msg || 'Save failed');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this plan?')) return;
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Subscription removed');
-      setSubscriptions(subscriptions.filter(s => s._id !== id));
-    } catch (err) {
-      toast.error('Failed to delete subscription');
-    }
-  };
-
-  const seekerFeatures = [
-    { label: 'Resume builder', key: 'hasResumeBuilder' },
-    { label: 'Job alerts', key: 'jobAlerts' },
-    { label: 'Profile boost', key: 'hasProfileBoost' },
-    { label: 'Profile view insights', key: 'hasProfileViewInsights' },
-    { label: 'Message recruiters', key: 'hasMessageRecruiters' },
-    { label: 'Career counselling', key: 'careerCounsellingCount', unit: 'Sessions' },
-    { label: 'Interview prep', key: 'hasInterviewPrep' },
-    { label: 'Priority badge', key: 'hasPriorityBadge' }
-  ];
-
-  const recruiterFeatures = [
-    { label: 'Job postings', key: 'activeJobPostings' },
-    { label: 'Candidate search', key: 'candidateSearchPerDay', unit: '/day' },
-    { label: 'ATS pipeline', key: 'hasATSPipeline' },
-    { label: 'Analytics dashboard', key: 'hasAnalyticsDashboard' },
-    { label: 'Candidate DB export', key: 'hasCandidateDBExport' },
-    { label: 'Bulk messaging', key: 'hasBulkMessaging' },
-    { label: 'Video interview', key: 'hasVideoInterview' }
-  ];
-
-  const organizationFeatures = [
-    { label: 'Job postings', key: 'activeJobPostings', unit: '/month' },
-    { label: 'User seats', key: 'userSeats' },
-    { label: 'Company profile', key: 'companyProfileType' },
-    { label: 'Team collaboration', key: 'hasTeamCollaboration' },
-    { label: 'Bulk app management', key: 'hasBulkApplicantManagement' },
-    { label: 'Interview scheduling', key: 'hasInterviewScheduling' },
-    { label: 'Dedicated onboarding', key: 'hasDedicatedOnboarding' }
-  ];
+  const staticFields = STATIC_FEATURES[form.role] || [];
+  const dynFields = allFeatures.filter(f => f.role === form.role && f.isActive !== false);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 pb-20">
-      {/* Header */}
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-1">
-            <h1 className="text-4xl font-black text-[#0f172a] tracking-tight uppercase">Subscription Catalog</h1>
-            <p className="text-base text-slate-500 font-medium italic">Architect your platform's monetization strategy and tier structures.</p>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[92vh] overflow-hidden flex flex-col p-0 rounded-2xl border-none shadow-2xl">
+        <DialogHeader className="px-7 py-5 border-b border-slate-100 bg-white">
+          <DialogTitle className="text-xl font-bold text-slate-900">
+            {editingPlan ? `Edit Plan: ${editingPlan.name}` : 'Create New Plan'}
+          </DialogTitle>
+          <p className="text-xs text-slate-400 font-medium mt-0.5">Configure pricing, role, and feature access.</p>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-7 py-6 space-y-7 bg-white">
+
+            {/* Basics */}
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-1">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Plan Name *</Label>
+                <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Pro Plan" className="h-11 rounded-xl border-slate-200 text-sm" required />
+              </div>
+              <div>
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Price (₹)</Label>
+                <Input type="number" min="0" value={form.price} onChange={e => set('price', Number(e.target.value))} className="h-11 rounded-xl border-slate-200 text-sm" required />
+              </div>
+              <div>
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Billing Cycle</Label>
+                <Select value={isCustomDuration ? 'Custom' : form.duration} onValueChange={v => {
+                  if (v === 'Custom') { setIsCustomDuration(true); set('duration', ''); }
+                  else { setIsCustomDuration(false); set('duration', v); }
+                }}>
+                  <SelectTrigger className="h-11 rounded-xl border-slate-200 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Monthly">Monthly</SelectItem>
+                    <SelectItem value="Quarterly">Quarterly</SelectItem>
+                    <SelectItem value="Yearly">Yearly</SelectItem>
+                    <SelectItem value="Lifetime">Lifetime</SelectItem>
+                    <SelectItem value="Custom">Custom…</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isCustomDuration && (
+                  <Input value={form.duration} onChange={e => set('duration', e.target.value)} placeholder="e.g. 15 Days" className="h-11 rounded-xl border-slate-200 text-sm mt-2" required />
+                )}
+              </div>
+            </div>
+
+            {/* Role */}
+            <div>
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 block">For Role</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {ROLES.map(r => (
+                  <div
+                    key={r.id}
+                    onClick={() => set('role', r.id)}
+                    className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${form.role === r.id ? `${r.bg} ${r.border} shadow-sm` : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                  >
+                    <r.icon size={16} className={form.role === r.id ? r.color : 'text-slate-300'} />
+                    <span className={`text-xs font-bold ${form.role === r.id ? r.color : 'text-slate-500'}`}>{r.label}</span>
+                    {form.role === r.id && <Check size={13} className={`ml-auto ${r.color}`} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Static Features */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Zap size={13} className="text-slate-400" />
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Core Features</Label>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {staticFields.map(f => (
+                  <StaticFeatureInput key={f.key} field={f} form={form} onChange={set} />
+                ))}
+              </div>
+            </div>
+
+            {/* Dynamic Features from catalog */}
+            {dynFields.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <ListPlus size={13} className="text-slate-400" />
+                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dynamic Features (from catalog)</Label>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {dynFields.map(gf => {
+                    const fp = (form.features || []).find(f => f.name === gf.name);
+                    const active = !!fp?.isActive;
+                    return (
+                      <div key={gf._id} className={`rounded-xl border p-3.5 transition-all ${active ? 'border-violet-100 bg-violet-50/30' : 'border-slate-100 bg-white'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="text-[11px] font-bold text-slate-700">{gf.name}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <FeatureTypeBadge type={gf.type} />
+                              {gf.unit && <span className="text-[10px] text-slate-400">{gf.unit}</span>}
+                            </div>
+                          </div>
+                          <Toggle value={active} onChange={() => toggleDynFeature(gf.name)} size="sm" />
+                        </div>
+                        {active && gf.type !== 'boolean' && (
+                          <div className="mt-2">
+                            <Input
+                              type={gf.type === 'count' ? 'number' : 'text'}
+                              value={fp?.value ?? gf.defaultValue ?? ''}
+                              onChange={e => setDynValue(gf.name, gf.type === 'count' ? Number(e.target.value) : e.target.value)}
+                              placeholder={`Value in ${gf.unit || 'units'}…`}
+                              className="h-8 rounded-lg border-slate-200 text-xs"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Active toggle */}
+            <div className="flex items-center justify-between py-3.5 px-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div>
+                <p className="text-sm font-bold text-slate-800">Plan Visibility</p>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Active plans are visible to users on the subscription page</p>
+              </div>
+              <Toggle value={form.isActive} onChange={v => set('isActive', v)} />
+            </div>
           </div>
-          
-          <Button 
-            onClick={() => { resetForm(); setModalOpen(true); }}
-            className="rounded-2xl h-14 px-8 bg-slate-900 text-white hover:bg-slate-800 transition-all font-black text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-3"
-          >
-            <Plus size={18} strokeWidth={3} /> Add New Plan
-          </Button>
+
+          <div className="px-7 py-4 border-t border-slate-100 bg-slate-50/60 flex gap-3 justify-end">
+            <Button type="button" variant="ghost" onClick={onClose} className="h-11 px-6 rounded-xl font-bold text-sm text-slate-500">Cancel</Button>
+            <Button type="submit" disabled={saving} className="h-11 px-8 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-700">
+              {saving ? <RefreshCw size={14} className="animate-spin mr-2" /> : null}
+              {editingPlan ? 'Save Changes' : 'Create Plan'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const StaticFeatureInput = ({ field, form, onChange }) => {
+  const val = form[field.key];
+  if (field.type === 'boolean') {
+    return (
+      <div
+        onClick={() => onChange(field.key, !val)}
+        className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all select-none ${val ? 'bg-emerald-50/50 border-emerald-200' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+      >
+        <span className="text-[11px] font-bold text-slate-700">{field.label}</span>
+        <Toggle value={!!val} onChange={v => onChange(field.key, v)} size="sm" />
+      </div>
+    );
+  }
+  if (field.type === 'count') {
+    return (
+      <div className="space-y-1.5">
+        <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          {field.label}
+          {field.hint && <span className="normal-case font-normal text-slate-300">({field.hint})</span>}
+        </Label>
+        <Input
+          type="number"
+          min="0"
+          value={val}
+          onChange={e => onChange(field.key, Number(e.target.value))}
+          className="h-10 rounded-xl border-slate-200 text-sm"
+        />
+      </div>
+    );
+  }
+  if (field.type === 'select') {
+    return (
+      <div className="space-y-1.5">
+        <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{field.label}</Label>
+        <Select value={val} onValueChange={v => onChange(field.key, v)}>
+          <SelectTrigger className="h-10 rounded-xl border-slate-200 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {field.options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+  return null;
+};
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+const ManageSubscriptions = () => {
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [globalFeatures, setGlobalFeatures] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(null);
+  const [activeRole, setActiveRole] = useState('jobseeker');
+
+  const fetchAll = useCallback(async () => {
+    try {
+      const [subsRes, featRes] = await Promise.all([
+        axios.get(`${API}/subscriptions`),
+        axios.get(`${API}/subscriptions/features`),
+      ]);
+      setSubscriptions(subsRes.data);
+      setGlobalFeatures(featRes.data);
+    } catch {
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const handleEdit = (plan) => { setEditingPlan(plan); setPlanModalOpen(true); };
+  const handleNew = () => { setEditingPlan(null); setPlanModalOpen(true); };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this plan? This cannot be undone.')) return;
+    try {
+      await axios.delete(`${API}/subscriptions/${id}`, { headers: authHeader() });
+      toast.success('Plan deleted');
+      setSubscriptions(s => s.filter(x => x._id !== id));
+    } catch {
+      toast.error('Delete failed');
+    }
+  };
+
+  const handleToggleDynFeature = async (planId, featureName, isActive, value) => {
+    try {
+      const res = await axios.patch(
+        `${API}/subscriptions/${planId}/features/${encodeURIComponent(featureName)}`,
+        { isActive, value },
+        { headers: authHeader() }
+      );
+      setSubscriptions(s => s.map(p => p._id === planId ? res.data : p));
+    } catch {
+      toast.error('Failed to update feature');
+    }
+  };
+
+  const roleFeatures = (role) => globalFeatures.filter(f => f.role === role);
+  const rolePlans = (role) => subscriptions.filter(s => s.role === role);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw size={24} className="animate-spin text-slate-400 mr-3" />
+        <p className="text-slate-500 font-semibold">Loading subscription data…</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 pb-20 pt-4 px-2">
+
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Subscription Catalog</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Manage plans, features, and pricing for all user roles.</p>
         </div>
-        <div className="h-px bg-slate-200 w-full" />
+        <Button
+          onClick={handleNew}
+          className="h-10 px-6 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-700 flex items-center gap-2 shadow-sm"
+        >
+          <Plus size={15} /> New Plan
+        </Button>
       </div>
 
-      {/* Role-Based Filtering Tabs */}
-      <Tabs defaultValue="jobseeker" className="w-full space-y-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-           <TabsList className="bg-slate-100 p-1.5 rounded-2xl w-fit">
-              <TabsTrigger value="jobseeker" className="rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-md">Job Seekers</TabsTrigger>
-              <TabsTrigger value="recruiter" className="rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-md">Recruiters</TabsTrigger>
-              <TabsTrigger value="company" className="rounded-xl px-8 py-3 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-md">Organizations</TabsTrigger>
-           </TabsList>
-           
-           {loading && (
-             <div className="flex items-center gap-3 text-slate-400">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Synchronizing Data...</span>
-             </div>
-           )}
-        </div>
+      {/* Role Tabs */}
+      <Tabs value={activeRole} onValueChange={setActiveRole} className="space-y-6">
+        <TabsList className="bg-slate-100 p-1 rounded-xl w-fit">
+          {ROLES.map(r => (
+            <TabsTrigger key={r.id} value={r.id} className="rounded-lg px-5 py-2 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+              <r.icon size={13} />
+              {r.label}
+              <span className="ml-1 text-[10px] bg-slate-200 data-[state=active]:bg-slate-100 px-1.5 py-0.5 rounded-full font-black">
+                {rolePlans(r.id).length}
+              </span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-        {['jobseeker', 'recruiter', 'company'].map(role => (
-          <TabsContent key={role} value={role} className="m-0 focus-visible:ring-0">
-            <div className="flex flex-col gap-8">
-              {subscriptions
-                .filter(sub => sub.role === role)
-                .map((sub, idx) => (
-                  <PricingCard 
-                    key={sub._id}
-                    plan={sub}
-                    features={role === 'jobseeker' ? seekerFeatures : (role === 'recruiter' ? recruiterFeatures : organizationFeatures)}
-                    isPopular={idx === 1}
-                    footer={
-                      <div className="flex items-center gap-3">
-                        <Button 
-                          onClick={() => handleEdit(sub)}
-                          className="flex-1 h-12 rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800"
-                        >
-                          <Edit2 size={14} className="mr-2" /> Edit Plan
-                        </Button>
-                        <Button 
-                          onClick={() => handleDelete(sub._id)}
-                          variant="outline"
-                          className="w-12 h-12 rounded-xl border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-100 hover:bg-red-50"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    }
-                  />
-                ))}
-              {subscriptions.filter(sub => sub.role === role).length === 0 && !loading && (
-                <div className="col-span-full py-32 text-center bg-slate-50 rounded-[40px] border-2 border-dashed border-slate-200">
-                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100">
-                     <Package className="text-slate-300" size={32} />
-                  </div>
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No plans established for {role} role.</p>
+        {ROLES.map(r => (
+          <TabsContent key={r.id} value={r.id} className="mt-0 space-y-6">
+            {/* Feature Catalog */}
+            <FeatureCatalogPanel
+              role={r.id}
+              features={globalFeatures}
+              onRefresh={fetchAll}
+            />
+
+            {/* Plans Grid */}
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {rolePlans(r.id).map(plan => (
+                <PlanCard
+                  key={plan._id}
+                  plan={plan}
+                  roleFeatures={roleFeatures(r.id)}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggleDynamicFeature={handleToggleDynFeature}
+                />
+              ))}
+
+              {/* Add Plan card */}
+              <div
+                onClick={() => { setEditingPlan(null); setPlanModalOpen(true); setActiveRole(r.id); }}
+                className="min-h-[180px] rounded-2xl border-2 border-dashed border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/20 transition-all cursor-pointer flex flex-col items-center justify-center gap-3 group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-300 group-hover:text-emerald-500 group-hover:scale-110 transition-all">
+                  <Plus size={26} />
                 </div>
-              )}
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest group-hover:text-emerald-600 transition-colors">
+                  Add {r.label} Plan
+                </p>
+              </div>
             </div>
           </TabsContent>
         ))}
       </Tabs>
 
-      {/* Subscription Form Modal - Seeker Style */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-4xl rounded-[24px] p-0 border-slate-200 shadow-2xl overflow-hidden bg-white">
-           <DialogHeader className="p-8 border-b border-slate-100 bg-white">
-              <div className="space-y-1">
-                 <DialogTitle className="text-2xl font-bold text-[#0f172a] tracking-tight">
-                   {editingId ? 'Edit Subscription Plan' : 'Create New Subscription Plan'}
-                 </DialogTitle>
-                 <DialogDescription className="text-sm text-slate-500 font-medium">Define the pricing, features, and accessibility for this plan.</DialogDescription>
-              </div>
-           </DialogHeader>
-
-           <form onSubmit={handleSubmit} className="flex flex-col bg-white">
-              <div className="p-8 overflow-y-auto space-y-10 max-h-[70vh] custom-scrollbar">
-                 {/* Basic Parameters */}
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1">Plan Name</Label>
-                       <div className="relative group">
-                          <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
-                          <Input 
-                            value={form.name} 
-                            onChange={(e) => setForm({...form, name: e.target.value})}
-                            className="rounded-xl border-slate-200 h-12 pl-12 font-medium text-sm bg-white focus:border-emerald-600 focus:ring-0 transition-all"
-                            placeholder="e.g. Enterprise Elite"
-                            required
-                          />
-                       </div>
-                    </div>
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1">Pricing (INR)</Label>
-                       <div className="relative group">
-                          <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
-                          <Input 
-                            type="number"
-                            value={form.price} 
-                            onChange={(e) => setForm({...form, price: e.target.value})}
-                            className="rounded-xl border-slate-200 h-12 pl-12 font-medium text-sm bg-white focus:border-emerald-600 focus:ring-0 transition-all"
-                            placeholder="0.00"
-                            required
-                          />
-                       </div>
-                    </div>
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1">Billing Cycle</Label>
-                       <Select value={form.duration} onValueChange={(v) => setForm({...form, duration: v})}>
-                          <SelectTrigger className="rounded-xl border-slate-200 h-12 font-medium text-sm bg-white focus:ring-0 focus:border-emerald-600">
-                             <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                             <SelectItem value="Monthly" className="text-sm py-2">Monthly</SelectItem>
-                             <SelectItem value="Quarterly" className="text-sm py-2">Quarterly</SelectItem>
-                             <SelectItem value="Yearly" className="text-sm py-2">Yearly</SelectItem>
-                             <SelectItem value="Lifetime" className="text-sm py-2">Lifetime</SelectItem>
-                          </SelectContent>
-                       </Select>
-                    </div>
-                 </div>
-
-                 {/* Role Authorization */}
-                 <div className="space-y-4">
-                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1">Target Role</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                       {[
-                         { id: 'jobseeker', label: 'Job Seeker', icon: Users },
-                         { id: 'recruiter', label: 'Recruiter', icon: ShieldCheck },
-                         { id: 'company', label: 'Organization', icon: Building2 }
-                       ].map(role => (
-                         <div key={role.id} 
-                           className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                             form.role === role.id 
-                             ? 'bg-emerald-50/50 border-emerald-600 shadow-sm' 
-                             : 'bg-white border-slate-100 hover:border-slate-200'
-                           }`} 
-                           onClick={() => setForm({...form, role: role.id})}
-                         >
-                            <role.icon size={16} className={form.role === role.id ? 'text-emerald-600' : 'text-slate-400'} />
-                            <span className={`text-sm font-bold flex-1 ${form.role === role.id ? 'text-emerald-700' : 'text-slate-600'}`}>{role.label}</span>
-                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                               form.role === role.id ? 'bg-emerald-600 border-emerald-600' : 'border-slate-200'
-                            }`}>
-                               {form.role === role.id && <CheckCircle2 size={12} className="text-white" />}
-                            </div>
-                         </div>
-                       ))}
-                    </div>
-                 </div>
-
-                 <div className="space-y-10">
-                    {/* Role-Specific Feature Toggles & Counts */}
-                    <div className="space-y-12">
-                       {form.role === 'jobseeker' && (
-                        <div className="space-y-6">
-                           <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                              <Users size={18} className="text-emerald-600" />
-                              <Label className="text-xs font-bold uppercase text-slate-900 tracking-widest">Job Seeker Features & Limits</Label>
-                           </div>
-                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {[
-                                { id: 'hasResumeBuilder', label: 'Resume Builder' },
-                                { id: 'hasProfileBoost', label: 'Profile Boost' },
-                                
-                                { id: 'hasProfileViewInsights', label: 'View Insights' },
-                                { id: 'hasMessageRecruiters', label: 'Msg Recruiters' },
-                                { id: 'hasCareerCounselling', label: 'Career Guidance' },
-                                { id: 'hasInterviewPrep', label: 'Interview Prep' },
-                                { id: 'hasPriorityBadge', label: 'Priority Badge' }
-                              ].map(feature => (
-                                <div key={feature.id} 
-                                  onClick={() => setForm({...form, [feature.id]: !form[feature.id]})}
-                                  className={`flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
-                                    form[feature.id] ? 'bg-emerald-50/30 border-emerald-200 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'
-                                  }`}
-                                >
-                                   <span className="text-[10px] font-bold text-slate-700">{feature.label}</span>
-                                   <div className={`w-8 h-4 rounded-full relative transition-all ${form[feature.id] ? 'bg-emerald-600' : 'bg-slate-200'}`}>
-                                      <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${form[feature.id] ? 'right-0.5' : 'left-0.5'}`} />
-                                   </div>
-                                </div>
-                              ))}
-                           </div>
-
-                           {/* Numeric Limits for Seeker */}
-                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Resume Limit</Label>
-                                 <Input type="number" disabled={!form.hasResumeBuilder} value={form.resumeBuilderCount} onChange={(e) => setForm({...form, resumeBuilderCount: e.target.value})} className="h-10 rounded-xl bg-white disabled:bg-slate-100/50 disabled:text-slate-400" placeholder="Max Resumes" />
-                              </div>
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Career Guidance</Label>
-                                 <Input type="number" disabled={!form.hasCareerCounselling} value={form.careerCounsellingCount} onChange={(e) => setForm({...form, careerCounsellingCount: e.target.value})} className="h-10 rounded-xl bg-white disabled:bg-slate-100/50 disabled:text-slate-400" placeholder="Sessions" />
-                              </div>
-                              <div className="space-y-2 lg:col-span-1">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Job Alerts</Label>
-                                 <Select value={form.jobAlerts} onValueChange={(v) => setForm({...form, jobAlerts: v})}>
-                                    <SelectTrigger className="h-10 rounded-xl bg-white">
-                                       <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="None">None</SelectItem>
-                                       <SelectItem value="Daily">Daily</SelectItem>
-                                       <SelectItem value="Weekly">Weekly</SelectItem>
-                                       <SelectItem value="Monthly">Monthly</SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                           </div>
-                        </div>
-                       )}
-
-                       {form.role === 'recruiter' && (
-                        <div className="space-y-6 pt-8 border-t border-slate-100">
-                           <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                              <ShieldCheck size={18} className="text-blue-600" />
-                              <Label className="text-xs font-bold uppercase text-slate-900 tracking-widest">Recruiter Features & Limits</Label>
-                           </div>
-                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {[
-                                
-                                { id: 'hasATSPipeline', label: 'ATS Pipeline' },
-                                
-                                { id: 'hasAnalyticsDashboard', label: 'Analytics' },
-                                { id: 'hasCandidateDBExport', label: 'DB Export' },
-                                { id: 'hasBulkMessaging', label: 'Bulk Msg' },
-                                { id: 'hasVideoInterview', label: 'Video Interview' },
-                                
-                                
-                              ].map(feature => (
-                                <div key={feature.id} 
-                                  onClick={() => setForm({...form, [feature.id]: !form[feature.id]})}
-                                  className={`flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
-                                    form[feature.id] ? 'bg-blue-50/30 border-blue-200 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'
-                                  }`}
-                                >
-                                   <span className="text-[10px] font-bold text-slate-700">{feature.label}</span>
-                                   <div className={`w-8 h-4 rounded-full relative transition-all ${form[feature.id] ? 'bg-blue-600' : 'bg-slate-200'}`}>
-                                      <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${form[feature.id] ? 'right-0.5' : 'left-0.5'}`} />
-                                   </div>
-                                </div>
-                              ))}
-                           </div>
-                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 p-6 bg-blue-50/20 rounded-2xl border border-blue-50">
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Active Job Postings</Label>
-                                 <Input type="number" value={form.activeJobPostings} onChange={(e) => setForm({...form, activeJobPostings: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="0 = Unlimited" />
-                              </div>
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Candidate Search/Day</Label>
-                                 <Input type="number" value={form.candidateSearchPerDay} onChange={(e) => setForm({...form, candidateSearchPerDay: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="0 = Unlimited" />
-                              </div>
-                              <div className="space-y-2">
-                                 
-                                 
-                              </div>
-                           </div>
-                        </div>
-                       )}
-
-                       {form.role === 'company' && (
-                        <div className="space-y-6 pt-8 border-t border-slate-100">
-                           <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                              <Building2 size={18} className="text-purple-600" />
-                              <Label className="text-xs font-bold uppercase text-slate-900 tracking-widest">Organization Features & Limits</Label>
-                           </div>
-                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {[
-                                
-                                { id: 'hasTeamCollaboration', label: 'Collaboration' },
-                                { id: 'hasBulkApplicantManagement', label: 'Bulk App Mgmt' },
-                                { id: 'hasInterviewScheduling', label: 'Scheduling' },
-                                
-                                
-                                { id: 'hasDedicatedOnboarding', label: 'Ded. Onboarding' },
-                                
-                                
-                              ].map(feature => (
-                                <div key={feature.id} 
-                                  onClick={() => setForm({...form, [feature.id]: !form[feature.id]})}
-                                  className={`flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
-                                    form[feature.id] ? 'bg-purple-50/30 border-purple-200 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'
-                                  }`}
-                                >
-                                   <span className="text-[10px] font-bold text-slate-700">{feature.label}</span>
-                                   <div className={`w-8 h-4 rounded-full relative transition-all ${form[feature.id] ? 'bg-purple-600' : 'bg-slate-200'}`}>
-                                      <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${form[feature.id] ? 'right-0.5' : 'left-0.5'}`} />
-                                   </div>
-                                </div>
-                              ))}
-                           </div>
-                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 p-6 bg-purple-50/20 rounded-2xl border border-purple-50">
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">User Seats</Label>
-                                 <Input type="number" value={form.userSeats} onChange={(e) => setForm({...form, userSeats: e.target.value})} className="h-10 rounded-xl bg-white" placeholder="Max Seats" />
-                              </div>
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Team Collaboration Limit</Label>
-                                 <Input type="number" disabled={!form.hasTeamCollaboration} value={form.teamCollaborationCount} onChange={(e) => setForm({...form, teamCollaborationCount: e.target.value})} className="h-10 rounded-xl bg-white disabled:bg-slate-100/50 disabled:text-slate-400" placeholder="0 = Unlimited" />
-                              </div>
-                              <div className="space-y-2">
-                                 <Label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Profile Type</Label>
-                                 <Select value={form.companyProfileType} onValueChange={(v) => setForm({...form, companyProfileType: v})}>
-                                    <SelectTrigger className="h-10 rounded-xl bg-white">
-                                       <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                       <SelectItem value="Basic">Basic</SelectItem>
-                                       <SelectItem value="Branded">Branded</SelectItem>
-                                       <SelectItem value="Full Custom">Full Custom</SelectItem>
-                                    </SelectContent>
-                                 </Select>
-                              </div>
-                           </div>
-                        </div>
-                       )}
-                    </div>
-                 </div>
-
-                  {/* Overall Status */}
-                  <div className="pt-8 border-t border-slate-100 flex justify-end items-center gap-6">
-                    <div className="flex items-center gap-3">
-                       <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Plan Status</Label>
-                       <Select value={form.isActive.toString()} onValueChange={(v) => setForm({...form, isActive: v === 'true'})}>
-                          <SelectTrigger className={`rounded-xl h-10 w-32 font-bold text-xs transition-all focus:ring-0 ${form.isActive ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-red-200 bg-red-50 text-red-600'}`}>
-                             <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                             <SelectItem value="true" className="text-emerald-600 text-xs font-bold">Active</SelectItem>
-                             <SelectItem value="false" className="text-red-600 text-xs font-bold">Draft</SelectItem>
-                          </SelectContent>
-                       </Select>
-                    </div>
-                  </div>
-              </div>
-
-              <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex gap-4 justify-end">
-                 <Button 
-                   type="button" 
-                   variant="ghost" 
-                   className="rounded-xl h-12 px-6 font-bold text-sm text-slate-500 hover:bg-slate-100 transition-all" 
-                   onClick={() => setModalOpen(false)}
-                 >
-                   Cancel
-                 </Button>
-                 <Button 
-                   type="submit" 
-                   className="rounded-xl h-12 px-8 font-bold text-sm bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm"
-                 >
-                   {editingId ? 'Save Changes' : 'Create Plan'}
-                 </Button>
-              </div>
-           </form>
-        </DialogContent>
-      </Dialog>
+      {/* Plan Editor Modal */}
+      <PlanEditorModal
+        open={planModalOpen}
+        onClose={() => setPlanModalOpen(false)}
+        editingPlan={editingPlan}
+        onSaved={fetchAll}
+        allFeatures={globalFeatures}
+      />
     </div>
   );
 };

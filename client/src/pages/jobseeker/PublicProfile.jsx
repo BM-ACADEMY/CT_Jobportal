@@ -65,14 +65,28 @@ const PublicProfile = () => {
 
   if (!profile) return null;
 
-  const handleDownloadCV = () => {
-    if (profile.profile?.resumeUrl) {
-      const url = profile.profile.resumeUrl.startsWith('http') 
-        ? profile.profile.resumeUrl 
-        : `${API_DOMAIN}${profile.profile.resumeUrl}`;
-      window.open(url, '_blank');
-    } else {
+  const handleDownloadCV = async () => {
+    if (!profile.profile?.resumeUrl) {
       toast.error("No resume uploaded");
+      return;
+    }
+    try {
+      const url = profile.profile.resumeUrl.startsWith('http')
+        ? profile.profile.resumeUrl
+        : `${API_DOMAIN}${profile.profile.resumeUrl}`;
+      const filename = profile.profile.resumeName || `${profile.name || 'resume'}.pdf`;
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Failed to download resume");
     }
   };
 

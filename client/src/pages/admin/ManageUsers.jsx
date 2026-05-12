@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { 
   Trash2, 
@@ -22,7 +23,8 @@ import {
   Download,
   ExternalLink,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  MessageSquare
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -47,6 +49,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 const ManageUsers = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -184,6 +187,20 @@ const ManageUsers = () => {
     }
   };
 
+  const handleStartConversation = async (recipientId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/messages/conversation`, 
+        { recipientId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      navigate('/admin/messages');
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to start conversation");
+    }
+  };
+
   const filterUsersByRole = (roleName) => {
     return (Array.isArray(users) ? users : []).filter(user => {
       const matchesRole = user.role?.name === roleName;
@@ -258,6 +275,9 @@ const ManageUsers = () => {
                         user.isAdminBlocked ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:text-red-600 hover:bg-red-50'
                       }`} title={user.isAdminBlocked ? 'Unblock' : 'Block'}>
                       {user.isAdminBlocked ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleStartConversation(user._id)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all" title="Direct Message">
+                      <MessageSquare size={16} />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(user._id)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all" title="Delete">
                       <Trash2 size={16} />

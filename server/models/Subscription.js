@@ -17,8 +17,7 @@ const subscriptionSchema = new mongoose.Schema({
   },
   duration: {
     type: String,
-    required: true,
-    enum: ['Monthly', 'Quarterly', 'Yearly', 'Lifetime']
+    required: true
   },
   role: {
     type: String,
@@ -59,7 +58,12 @@ const subscriptionSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+  features: [{
+    name: { type: String, required: true },
+    isActive: { type: Boolean, default: true },
+    value: { type: mongoose.Schema.Types.Mixed, default: null }
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Subscription', subscriptionSchema);

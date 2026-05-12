@@ -188,11 +188,108 @@ const getAllJobs = async (req, res) => {
   }
 };
 
+// @desc    Get matching jobs for current seeker
+// @route   GET /api/jobs/matching
+// @access  Private (Jobseeker)
+const getMatchingJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    const { profile } = user;
+    if (!profile) {
+      return res.json([]); // Return empty if no profile
+    }
+
+    const { jobPreferences, skills, location, preferredRole } = profile;
+
+    // Build the query
+    let query = { status: 'active' };
+    let orConditions = [];
+
+    // 1. Match by skills
+    if (skills && skills.length > 0) {
+      orConditions.push({ skillsRequired: { $in: skills } });
+    }
+
+    // 2. Match by Job Titles / Preferred Role
+    const titles = [];
+    if (jobPreferences?.jobTitles && jobPreferences.jobTitles.length > 0) {
+      titles.push(...jobPreferences.jobTitles);
+    }
+    if (preferredRole) titles.push(preferredRole);
+    
+    if (titles.length > 0) {
+      // Escape special characters for regex
+      const escapedTitles = titles.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      orConditions.push({ title: { $regex: escapedTitles.join('|'), $options: 'i' } });
+    }
+
+    // 3. Match by Location
+    const locations = [];
+    if (location) locations.push(location);
+    if (jobPreferences?.onSiteLocations && jobPreferences.onSiteLocations.length > 0) {
+      jobPreferences.onSiteLocations.forEach(loc => {
+        if (loc.city) locations.push(loc.city);
+      });
+    }
+    
+    if (locations.length > 0) {
+      const escapedLocations = locations.map(l => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      orConditions.push({ location: { $regex: escapedLocations.join('|'), $options: 'i' } });
+    }
+
+    // 4. Match by Employment Type
+    if (jobPreferences?.employmentTypes && jobPreferences.employmentTypes.length > 0) {
+      orConditions.push({ jobType: { $in: jobPreferences.employmentTypes } });
+    }
+
+    // 5. Match by Work Mode
+    if (jobPreferences?.locationTypes && jobPreferences.locationTypes.length > 0) {
+      orConditions.push({ workMode: { $in: jobPreferences.locationTypes } });
+    }
+
+    if (orConditions.length > 0) {
+      query.$or = orConditions;
+    } else {
+        // If no preferences, return most recent active jobs as "recommendations"
+        // or we could return nothing. Let's return recent jobs.
+    }
+
+    // Handle blocking
+    let blockedIds = [];
+    const adminBlockedUsers = await User.find({ isAdminBlocked: true }).select('_id');
+    blockedIds = adminBlockedUsers.map(u => u._id);
+    if (user.blockedEntities) {
+      blockedIds = [...new Set([...blockedIds, ...user.blockedEntities.map(id => id.toString())])];
+    }
+    
+    query.recruiter = { $nin: blockedIds };
+    query.company = { $nin: blockedIds };
+
+    const matchingJobs = await Job.find(query)
+      .populate('company', 'name logo location website')
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    res.json(matchingJobs);
+
+  } catch (err) {
+    console.error('Get Matching Jobs Error:', err);
+    res.status(500).json({ msg: 'Server error while fetching matching jobs' });
+  }
+};
+
 module.exports = {
   createJob,
   getCompanyJobs,
   updateJob,
   deleteJob,
-  getAllJobs
+  getAllJobs,
+  getMatchingJobs
 };
 

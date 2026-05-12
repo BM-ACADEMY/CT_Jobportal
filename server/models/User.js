@@ -154,7 +154,19 @@ const userSchema = new mongoose.Schema({
   subscriptionExpiry: {
     type: Date
   },
+  autoRenew: {
+    type: Boolean,
+    default: false
+  },
   downloadsUsed: {
+    type: Number,
+    default: 0
+  },
+  searchUsed: {
+    type: Number,
+    default: 0
+  },
+  jobsUsed: {
     type: Number,
     default: 0
   }

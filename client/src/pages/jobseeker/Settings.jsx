@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { 
-  User, Mail, Phone, MapPin, Briefcase, GraduationCap, 
+  User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Plus, X, Upload, FileText, CheckCircle2, Loader2,
-  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2
+  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2, Download
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
+const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
 
 const INDIAN_STATES = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", 
@@ -139,6 +140,28 @@ const Settings = () => {
             }
         });
         setIsEditing(false);
+    };
+
+    const handleResumeDownload = async () => {
+        if (!user?.profile?.resumeUrl) return;
+        try {
+            const url = user.profile.resumeUrl.startsWith('http')
+                ? user.profile.resumeUrl
+                : `${API_DOMAIN}${user.profile.resumeUrl}`;
+            const filename = user.profile.resumeName || 'resume.pdf';
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch {
+            toast.error("Failed to download resume");
+        }
     };
 
     const handleResumeUpload = async (e) => {
@@ -675,6 +698,9 @@ const Settings = () => {
                                     <div className="flex gap-3">
                                          <Button variant="outline" size="sm" className="h-10 px-5 rounded-lg text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:bg-white hover:text-emerald-600 transition-all" asChild>
                                             <a href={`${import.meta.env.VITE_API_DOMAIN}${user.profile.resumeUrl}`} target="_blank" rel="noreferrer">Review</a>
+                                         </Button>
+                                         <Button variant="outline" size="sm" onClick={handleResumeDownload} className="h-10 px-5 rounded-lg text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:bg-white hover:text-emerald-600 transition-all flex items-center gap-1.5">
+                                            <Download size={12} /> Download
                                          </Button>
                                          {isEditing && (
                                             <label className="cursor-pointer">

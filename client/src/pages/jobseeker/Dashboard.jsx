@@ -1,50 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DetailedJobCard from '../../components/jobseeker/DetailedJobCard';
 import RecommendedJobCard from '../../components/jobseeker/RecommendedJobCard';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles, TrendingUp, CircleCheck } from 'lucide-react';
-
-const mockRecommendedJobs = [
-  { id: 1, title: 'HCL Tech-Hiring- B...', company: 'HCLTech', rating: 3.4, location: 'Bengaluru', postedAt: '3d ago', logo: 'https://logo.clearbit.com/hcltech.com' },
-  { id: 2, title: 'Walk-in || Service D...', company: 'Wipro', rating: 3.6, location: 'Bengaluru', postedAt: '23h ago', logo: 'https://logo.clearbit.com/wipro.com' },
-  { id: 3, title: 'Associate Analy...', company: 'GlobalLogic', rating: 3.5, location: 'Mahbubnagar', postedAt: '1d ago', logo: 'https://logo.clearbit.com/globallogic.com' },
-  { id: 4, title: 'Software Engineer', company: 'TCS', rating: 3.8, location: 'Hyderabad', postedAt: '2d ago', logo: 'https://logo.clearbit.com/tcs.com' },
-];
-
-const mockDetailedJobs = [
-  { 
-    id: 1, 
-    title: 'HCL Tech-Hiring- Bangalore Location-Freshers-Process Associate', 
-    company: 'HCLTech', 
-    rating: 3.4, 
-    reviews: '45546', 
-    experience: '0 Yrs', 
-    salary: 'Not disclosed', 
-    location: 'Bengaluru', 
-    summary: 'HCL Tech-Hiring- Bangalore Location-Freshers-Process Associate / Customer ser...', 
-    tags: ['Customer Support', 'BPO', 'Freshers'], 
-    postedAt: '3 Days Ago', 
-    logo: 'https://logo.clearbit.com/hcltech.com' 
-  },
-  { 
-    id: 2, 
-    title: 'Walk-in || Service Desk Administrator', 
-    company: 'Wipro', 
-    rating: 3.6, 
-    reviews: '64633', 
-    experience: '07 Apr - 10 Apr', 
-    salary: 'Not disclosed', 
-    location: 'Bengaluru', 
-    summary: 'Shifts: Rotational ( 5 days WFO ). Flexible and Open to working in a 24x7 environ...', 
-    tags: ['Service Desk', 'Communication Skills', 'IT Helpdesk', 'L1 Support'], 
-    postedAt: '1 Day Ago', 
-    logo: 'https://logo.clearbit.com/wipro.com' 
-  },
-];
+import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles, TrendingUp, CircleCheck, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 const JobSeekerDashboard = () => {
+  const [matchingJobs, setMatchingJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMatchingJobs = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/jobs/matching`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setMatchingJobs(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error('Error fetching matching jobs:', err);
+        setMatchingJobs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMatchingJobs();
+  }, []);
+
+  // Map backend jobs to RecommendedJobCard format
+  const recommendedJobs = (Array.isArray(matchingJobs) ? matchingJobs : []).slice(0, 4).map(job => ({
+    id: job._id,
+    title: job.title,
+    company: job.company?.name || 'Unknown',
+    location: job.location || 'Remote',
+    postedAt: new Date(job.createdAt).toLocaleDateString(),
+    logo: job.company?.logo || '/default-company-logo.png',
+    rating: 4.0 // Mock rating
+  }));
+
+  // Map backend jobs to DetailedJobCard format
+  const detailedJobs = (Array.isArray(matchingJobs) ? matchingJobs : []).map(job => ({
+    id: job._id,
+    title: job.title,
+    company: job.company?.name || 'Unknown',
+    location: job.location || 'Remote',
+    experience: `${job.experience?.min || 0} - ${job.experience?.max || 0} Yrs`,
+    salary: job.salary?.isRangeHidden ? 'Not disclosed' : `${job.salary?.min || 0} - ${job.salary?.max || 0} ${job.salary?.currency || 'INR'}`,
+    summary: job.description?.substring(0, 150) + '...',
+    tags: job.skillsRequired || [],
+    postedAt: new Date(job.createdAt).toLocaleDateString(),
+    logo: job.company?.logo || '/default-company-logo.png',
+    rating: 4.0,
+    reviews: '100+'
+  }));
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6">
       
@@ -61,13 +73,27 @@ const JobSeekerDashboard = () => {
             <Button variant="ghost" className="text-emerald-600 font-bold text-xs hover:bg-emerald-50 h-9 px-4 rounded-lg">View all</Button>
           </div>
 
-          <div className="flex gap-6 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2 snap-x">
-            {mockRecommendedJobs.map(job => (
-              <div key={job.id} className="snap-start shrink-0">
-                <RecommendedJobCard job={job} />
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex gap-6 overflow-x-auto pb-4 no-scrollbar">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="w-[280px] h-40 bg-slate-50 rounded-2xl animate-pulse shrink-0 border border-slate-100" />
+              ))}
+            </div>
+          ) : recommendedJobs.length === 0 ? (
+             <div className="text-center py-10 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+               <Sparkles className="mx-auto text-slate-300 mb-2" size={24} />
+               <p className="text-sm font-bold text-slate-500">No recommendations yet</p>
+               <p className="text-[10px] text-slate-400">Complete your profile to get matched!</p>
+             </div>
+          ) : (
+            <div className="flex gap-6 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2 snap-x">
+              {recommendedJobs.map(job => (
+                <div key={job.id} className="snap-start shrink-0">
+                  <RecommendedJobCard job={job} />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* CV Banner - Elegant Version */}
@@ -101,17 +127,26 @@ const JobSeekerDashboard = () => {
           <div className="flex items-center justify-between px-2">
              <div className="space-y-0.5">
                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Recent Matches</h2>
-               <p className="text-sm font-medium text-slate-500">Directly aligned with your recent search history.</p>
+               <p className="text-sm font-medium text-slate-500">Directly aligned with your profile requirements.</p>
              </div>
              <div className="flex items-center gap-3">
+                {loading && <Loader2 size={16} className="text-emerald-500 animate-spin" />}
                 <Button disabled variant="outline" className="h-9 px-4 border-slate-200 text-slate-400 font-bold rounded-lg text-[10px] uppercase tracking-widest">Quick Apply</Button>
              </div>
           </div>
 
           <div className="space-y-4">
-            {mockDetailedJobs.map(job => (
-              <DetailedJobCard key={job.id} job={job} />
-            ))}
+            {loading ? (
+              [1, 2].map(i => <div key={i} className="h-32 bg-slate-50 rounded-2xl animate-pulse border border-slate-100" />)
+            ) : detailedJobs.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-[32px] border border-slate-100 shadow-sm">
+                <p className="text-slate-400 font-medium">No matching jobs found today.</p>
+              </div>
+            ) : (
+              detailedJobs.map(job => (
+                <DetailedJobCard key={job.id} job={job} />
+              ))
+            )}
           </div>
         </div>
       </div>

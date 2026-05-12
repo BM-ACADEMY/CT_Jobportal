@@ -93,11 +93,14 @@ const verifyPayment = async (req, res) => {
       expiryDate.setFullYear(expiryDate.getFullYear() + 100);
     }
 
+    const { autoRenew } = req.body;
+
     const user = await User.findById(req.user.id);
     user.subscription = plan._id;
     user.subscriptionExpiry = expiryDate;
-    
-    // Reset usage stats if needed
+    if (autoRenew !== undefined) user.autoRenew = !!autoRenew;
+
+    // Reset usage stats on new subscription
     user.downloadsUsed = 0;
     user.searchUsed = 0;
     user.jobsUsed = 0;

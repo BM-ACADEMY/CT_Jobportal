@@ -259,7 +259,7 @@ const getProfileViewers = async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'User not found' });
     
     // Check if user has access to see viewers
-    if (!user.subscription || !user.subscription.hasProfileViewAccess) {
+    if (!user.subscription || !user.subscription.hasProfileViewInsights) {
       return res.status(403).json({ 
         msg: 'Subscription required to view profile visitors',
         requiresUpgrade: true 
@@ -267,7 +267,10 @@ const getProfileViewers = async (req, res) => {
     }
 
     const viewers = await ProfileView.find({ viewed: userId })
-      .populate('viewer', 'name avatar')
+      .populate({
+        path: 'viewer',
+        select: 'name avatar logo recruiterProfile companyProfile'
+      })
       .sort({ timestamp: -1 })
       .limit(50);
 
@@ -275,6 +278,26 @@ const getProfileViewers = async (req, res) => {
   } catch (err) {
     console.error('Get Profile Viewers Error:', err.message);
     res.status(500).json({ msg: 'Server error fetching viewers' });
+  }
+};
+
+// @desc    Toggle auto-renewal preference
+// @route   PATCH /api/user/auto-renew
+const updateAutoRenew = async (req, res) => {
+  try {
+    const { autoRenew } = req.body;
+    if (typeof autoRenew !== 'boolean') {
+      return res.status(400).json({ msg: 'autoRenew must be a boolean' });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { autoRenew },
+      { new: true }
+    ).select('autoRenew');
+    res.json({ autoRenew: user.autoRenew });
+  } catch (err) {
+    console.error('Update AutoRenew Error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
 };
 
@@ -286,5 +309,6 @@ module.exports = {
   getPublicProfile,
   toggleBlockEntity,
   trackProfileView,
-  getProfileViewers
+  getProfileViewers,
+  updateAutoRenew
 };
