@@ -12,8 +12,9 @@ export const hasFeature = (user, featureKey) => {
   const plan = user?.subscription;
   if (!plan) return false;
 
-  // Expired subscription
-  if (user.subscriptionExpiry && new Date(user.subscriptionExpiry) < new Date()) return false;
+  // Expired subscription — skip this check for free/lifetime plans
+  const isFree = plan.price === 0 || plan.duration === 'Lifetime';
+  if (!isFree && user.subscriptionExpiry && new Date(user.subscriptionExpiry) < new Date()) return false;
 
   const val = plan[featureKey];
   if (val === undefined || val === null) return false;
@@ -41,6 +42,8 @@ const PERKS = {
   hasBulkApplicantManagement: ['Batch accept / reject', 'Multi-job applicant view', 'Smart filters', 'One-click status update'],
   hasInterviewScheduling:   ['Calendar sync (Google/Outlook)', 'Auto-reminders', 'Self-schedule links', 'Interviewer availability'],
   hasDedicatedOnboarding:   ['Dedicated success manager', 'Custom onboarding plan', 'Priority support queue', 'Training sessions'],
+  hasSalaryBenchmarking:    ['Compare salary vs market rate', 'Company-specific benchmarks', 'Role & experience adjusted', 'Instant report'],
+  hasAiResumeReview:        ['AI-powered feedback', 'ATS compatibility score', 'Section-by-section analysis', 'Improvement suggestions'],
 };
 
 const NAMES = {
@@ -59,6 +62,8 @@ const NAMES = {
   hasBulkApplicantManagement: 'Bulk Applicant Management',
   hasInterviewScheduling: 'Interview Scheduling',
   hasDedicatedOnboarding: 'Dedicated Onboarding',
+  hasSalaryBenchmarking: 'Salary Benchmarking',
+  hasAiResumeReview: 'AI Resume Review',
 };
 
 const LockedScreen = ({ featureKey, featureName, description, subscriptionPath }) => {

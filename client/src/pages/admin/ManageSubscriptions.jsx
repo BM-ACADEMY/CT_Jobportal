@@ -30,7 +30,6 @@ const STATIC_FEATURES = {
     { key: 'jobAlerts', label: 'Job Alerts', type: 'select', options: ['None', 'Daily', 'Weekly', 'Monthly'] },
     { key: 'hasProfileBoost', label: 'Profile Boost', type: 'boolean' },
     { key: 'hasProfileViewInsights', label: 'Profile View Insights', type: 'boolean' },
-    { key: 'hasMessageRecruiters', label: 'Message Recruiters', type: 'boolean' },
     { key: 'hasCareerCounselling', label: 'Career Counselling', type: 'boolean' },
     { key: 'careerCounsellingCount', label: 'Counselling Sessions', type: 'count', unit: 'sessions' },
     { key: 'hasInterviewPrep', label: 'Interview Prep', type: 'boolean' },
@@ -47,9 +46,8 @@ const STATIC_FEATURES = {
   ],
   company: [
     { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
-    { key: 'companyProfileType', label: 'Company Profile Type', type: 'select', options: ['Basic', 'Branded', 'Full Custom'] },
+    { key: 'companyProfileType', label: 'Company Profile Type', type: 'select', options: ['No', 'Basic', 'Branded', 'Full Custom'] },
     { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean' },
-    { key: 'teamCollaborationCount', label: 'Collaboration Members', type: 'count', unit: 'members', hint: '0 = Unlimited' },
     { key: 'hasBulkApplicantManagement', label: 'Bulk Applicant Management', type: 'boolean' },
     { key: 'hasInterviewScheduling', label: 'Interview Scheduling', type: 'boolean' },
     { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
@@ -57,7 +55,7 @@ const STATIC_FEATURES = {
 };
 
 const DEFAULT_FORM = {
-  name: '', price: 0, duration: 'Monthly', role: 'jobseeker', isActive: true,
+  name: '', price: 0, duration: 'Monthly', role: 'jobseeker', isActive: true, isCustomPrice: false,
   hasResumeBuilder: false, resumeBuilderCount: 0, jobAlerts: 'None',
   hasProfileBoost: false, hasProfileViewInsights: false, hasMessageRecruiters: false,
   hasCareerCounselling: false, careerCounsellingCount: 0, hasInterviewPrep: false, hasPriorityBadge: false,
@@ -65,7 +63,7 @@ const DEFAULT_FORM = {
   hasATSPipeline: false, hasAnalyticsDashboard: false, hasCandidateDBExport: false,
   hasBulkMessaging: false, hasVideoInterview: false,
   userSeats: 1, companyProfileType: 'Basic',
-  hasTeamCollaboration: false, teamCollaborationCount: 0,
+  hasTeamCollaboration: false,
   hasBulkApplicantManagement: false, hasInterviewScheduling: false, hasDedicatedOnboarding: false,
   features: [],
 };
@@ -343,7 +341,7 @@ const PlanCard = ({ plan, roleFeatures, onEdit, onDelete, onToggleDynamicFeature
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold text-slate-900">
-                {plan.price === 0 ? 'Free' : `₹${plan.price.toLocaleString()}`}
+                {plan.isCustomPrice ? 'Custom' : (plan.price === 0 ? 'Free' : `₹${plan.price.toLocaleString()}`)}
               </span>
               {plan.price > 0 && (
                 <span className="text-xs text-slate-400 font-semibold">/{plan.duration.toLowerCase()}</span>
@@ -392,8 +390,8 @@ const PlanCard = ({ plan, roleFeatures, onEdit, onDelete, onToggleDynamicFeature
                 if (f.type === 'boolean') { enabled = !!plan[f.key]; }
                 else if (f.type === 'count') {
                   const v = plan[f.key];
-                  enabled = v > 0 || (f.hint?.includes('Unlimited') && v === 0);
-                  display = v === 0 && f.hint?.includes('Unlimited') ? 'Unlimited' : `${v}`;
+                  enabled = true; 
+                  display = v === 0 ? 'Unlimited' : `${v}`;
                 }
                 else if (f.type === 'select') { enabled = plan[f.key] && plan[f.key] !== 'None'; display = plan[f.key]; }
                 return (
@@ -490,7 +488,7 @@ const DynamicFeatureRow = ({ gf, isActive, currentValue, onToggle, onValueChange
               onClick={() => setEditing(true)}
               className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg hover:bg-emerald-200 transition-colors"
             >
-              {localVal || gf.defaultValue || '—'} {gf.unit}
+              {localVal === '0' || localVal === 0 ? 'Unlimited' : (localVal || gf.defaultValue || '—')} {gf.unit}
               <Pencil size={9} />
             </button>
           )
@@ -578,8 +576,22 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
                 <Input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Pro Plan" className="h-11 rounded-xl border-slate-200 text-sm" required />
               </div>
               <div>
-                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Price (₹)</Label>
-                <Input type="number" min="0" value={form.price} onChange={e => set('price', Number(e.target.value))} className="h-11 rounded-xl border-slate-200 text-sm" required />
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Price (₹)</Label>
+                  <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => set('isCustomPrice', !form.isCustomPrice)}>
+                    <input type="checkbox" checked={form.isCustomPrice} readOnly className="w-3 h-3 rounded border-slate-300 text-emerald-600 focus:ring-0" />
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Custom</span>
+                  </div>
+                </div>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.isCustomPrice ? '' : form.price}
+                  onChange={e => set('price', Number(e.target.value))}
+                  disabled={form.isCustomPrice}
+                  className={`h-11 rounded-xl border-slate-200 text-sm ${form.isCustomPrice ? 'bg-slate-50 opacity-60' : ''}`}
+                  required={!form.isCustomPrice}
+                />
               </div>
               <div>
                 <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Billing Cycle</Label>

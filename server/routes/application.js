@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { applyJob, getJobApplicants, updateApplicationStatus, trackDownload } = require('../controllers/applicationController');
+const { applyJob, getJobApplicants, updateApplicationStatus, trackDownload, getMyApplications } = require('../controllers/applicationController');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 
 router.use(verifyToken);
 
-// Apply for a job (All roles except company as per recent changes)
+// Job seeker: view their own applications
+router.get('/my-applications', authorizeRoles('jobseeker'), getMyApplications);
+
+// Apply for a job
 router.post('/apply', applyJob);
 
 // Recruiter routes

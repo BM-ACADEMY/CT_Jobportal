@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import {
   ShieldCheck, Zap, Briefcase, Users, Star, CheckCircle2,
-  Clock, AlertCircle, Crown, FileText, TrendingUp, MessageCircle,
+  Clock, AlertCircle, Crown, FileText, TrendingUp,
   RefreshCw
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,6 @@ const JOBSEEKER_FEATURES = [
   { label: 'Job Alerts', key: 'jobAlerts' },
   { label: 'Profile Boost', key: 'hasProfileBoost' },
   { label: 'Profile View Insights', key: 'hasProfileViewInsights' },
-  { label: 'Message Recruiters', key: 'hasMessageRecruiters' },
   { label: 'Career Counselling', key: 'hasCareerCounselling' },
   { label: 'Counselling Sessions', key: 'careerCounsellingCount' },
   { label: 'Interview Prep', key: 'hasInterviewPrep' },
@@ -28,7 +27,6 @@ const FEATURE_HIGHLIGHTS = [
   { key: 'hasResumeBuilder', icon: FileText, label: 'Resume Builder', desc: 'AI-powered professional templates', color: 'text-blue-600', bg: 'bg-blue-50' },
   { key: 'hasProfileBoost', icon: TrendingUp, label: 'Profile Boost', desc: 'Appear higher in recruiter searches', color: 'text-amber-600', bg: 'bg-amber-50' },
   { key: 'hasProfileViewInsights', icon: Users, label: 'Profile Insights', desc: 'See who viewed your profile', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { key: 'hasMessageRecruiters', icon: MessageCircle, label: 'Direct Messaging', desc: 'Chat with hiring managers', color: 'text-violet-600', bg: 'bg-violet-50' },
   { key: 'hasCareerCounselling', icon: Star, label: 'Career Counselling', desc: '1-on-1 expert career sessions', color: 'text-rose-600', bg: 'bg-rose-50' },
   { key: 'hasInterviewPrep', icon: Briefcase, label: 'Interview Prep', desc: 'AI mock interviews & feedback', color: 'text-teal-600', bg: 'bg-teal-50' },
 ];
@@ -37,16 +35,14 @@ const AutoRenewToggle = ({ enabled, onToggle, saving }) => (
   <button
     onClick={onToggle}
     disabled={saving}
-    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none shrink-0 ${
-      enabled ? 'bg-emerald-500' : 'bg-slate-200'
-    } ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none shrink-0 ${enabled ? 'bg-emerald-500' : 'bg-slate-200'
+      } ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
     role="switch"
     aria-checked={enabled}
   >
     <span
-      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-        enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
-      }`}
+      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+        }`}
     />
   </button>
 );
@@ -58,6 +54,8 @@ const SubscriptionPage = () => {
   const [loading, setLoading] = useState(true);
   const [autoRenew, setAutoRenew] = useState(!!user?.autoRenew);
   const [savingAutoRenew, setSavingAutoRenew] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -88,6 +86,30 @@ const SubscriptionPage = () => {
   const daysLeft = expiry ? Math.max(0, Math.ceil((expiry - new Date()) / 86400000)) : null;
   const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
   const isExpired = daysLeft !== null && daysLeft === 0;
+
+  // When user has no subscription they are implicitly on the free plan
+  const freePlan = plans.find(p => p.price === 0);
+  const effectiveCurrentPlanId = currentPlan?._id || freePlan?._id || null;
+  const isOnFreePlan = !currentPlan || currentPlan?.price === 0;
+
+  const handleCancel = () => setCancelConfirm(true);
+
+  const confirmCancel = async () => {
+    setCancelling(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/payments/cancel-plan`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success('Subscription cancelled. You are now on the Free plan.');
+      setCancelConfirm(false);
+      refreshUser();
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to cancel subscription');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const handleAutoRenewToggle = async () => {
     const next = !autoRenew;
@@ -192,29 +214,57 @@ const SubscriptionPage = () => {
         <p className="text-sm text-slate-500 mt-1">Unlock advanced tools to accelerate your job search.</p>
       </div>
 
+      {/* Cancel confirmation modal */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in slide-in-from-bottom-4">
+            <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertCircle size={22} className="text-rose-600" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 text-center mb-1">Cancel Subscription?</h3>
+            <p className="text-xs text-slate-500 text-center mb-6 leading-relaxed">
+              Your plan will be cancelled immediately and you'll be moved to the <strong>Free plan</strong>. Any remaining paid period will be forfeited.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCancelConfirm(false)}
+                disabled={cancelling}
+                className="flex-1 h-10 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
+              >
+                Keep Plan
+              </button>
+              <button
+                onClick={confirmCancel}
+                disabled={cancelling}
+                className="flex-1 h-10 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {cancelling ? 'Cancelling…' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Current Plan Status */}
-      {currentPlan ? (
-        <div className={`rounded-2xl border p-6 flex flex-col gap-5 ${
-          isExpired ? 'border-red-200 bg-red-50' :
-          isExpiringSoon ? 'border-amber-200 bg-amber-50' :
-          'border-emerald-200 bg-emerald-50'
-        }`}>
+      {!isOnFreePlan ? (
+        <div className={`rounded-2xl border p-6 flex flex-col gap-5 ${isExpired ? 'border-red-200 bg-red-50' :
+            isExpiringSoon ? 'border-amber-200 bg-amber-50' :
+              'border-emerald-200 bg-emerald-50'
+          }`}>
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-              isExpired ? 'bg-red-100' : isExpiringSoon ? 'bg-amber-100' : 'bg-emerald-100'
-            }`}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isExpired ? 'bg-red-100' : isExpiringSoon ? 'bg-amber-100' : 'bg-emerald-100'
+              }`}>
               {isExpired ? <AlertCircle size={22} className="text-red-600" /> :
-               isExpiringSoon ? <Clock size={22} className="text-amber-600" /> :
-               <Crown size={22} className="text-emerald-600" />}
+                isExpiringSoon ? <Clock size={22} className="text-amber-600" /> :
+                  <Crown size={22} className="text-emerald-600" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                <p className="font-bold text-slate-900">{currentPlan.name}</p>
-                <Badge className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg border-none ${
-                  isExpired ? 'bg-red-100 text-red-700' :
-                  isExpiringSoon ? 'bg-amber-100 text-amber-700' :
-                  'bg-emerald-100 text-emerald-700'
-                }`}>
+                <p className="font-bold text-slate-900">{currentPlan?.name}</p>
+                <Badge className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg border-none ${isExpired ? 'bg-red-100 text-red-700' :
+                    isExpiringSoon ? 'bg-amber-100 text-amber-700' :
+                      'bg-emerald-100 text-emerald-700'
+                  }`}>
                   {isExpired ? 'Expired' : isExpiringSoon ? `${daysLeft}d left` : 'Active'}
                 </Badge>
               </div>
@@ -272,9 +322,8 @@ const SubscriptionPage = () => {
               return (
                 <div
                   key={i}
-                  className={`rounded-2xl border p-4 flex items-start gap-3 transition-opacity ${
-                    active ? 'border-slate-100 bg-white shadow-sm' : 'border-slate-100 bg-white opacity-40'
-                  }`}
+                  className={`rounded-2xl border p-4 flex items-start gap-3 transition-opacity ${active ? 'border-slate-100 bg-white shadow-sm' : 'border-slate-100 bg-white opacity-40'
+                    }`}
                 >
                   <div className={`w-9 h-9 rounded-xl ${active ? item.bg : 'bg-slate-100'} flex items-center justify-center shrink-0`}>
                     <item.icon size={17} className={active ? item.color : 'text-slate-400'} />
@@ -321,8 +370,9 @@ const SubscriptionPage = () => {
                 key={plan._id}
                 plan={plan}
                 features={buildPlanFeatures(plan)}
-                currentPlanId={currentPlan?._id}
+                currentPlanId={effectiveCurrentPlanId}
                 onAction={handleUpgrade}
+                onCancel={!isOnFreePlan ? handleCancel : undefined}
                 isPopular={idx === Math.floor(plans.length / 2)}
               />
             ))}

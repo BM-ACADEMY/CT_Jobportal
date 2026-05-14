@@ -39,6 +39,25 @@ const JobAlerts = () => {
   const [loading, setLoading] = useState(true);
   const freq = user?.subscription?.jobAlerts || 'daily';
 
+  const filterByFrequency = (jobs, frequency) => {
+    const now = new Date();
+    if (frequency === 'instant') return jobs;
+    if (frequency === 'daily') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return jobs.filter(j => new Date(j.createdAt) >= start);
+    }
+    if (frequency === 'weekly') {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 7);
+      return jobs.filter(j => new Date(j.createdAt) >= start);
+    }
+    if (frequency === 'monthly') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      return jobs.filter(j => new Date(j.createdAt) >= start);
+    }
+    return jobs;
+  };
+
   useEffect(() => {
     const fetchMatchingJobs = async () => {
       try {
@@ -46,7 +65,8 @@ const JobAlerts = () => {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/jobs/matching`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setMatchingJobs(Array.isArray(res.data) ? res.data : []);
+        const all = Array.isArray(res.data) ? res.data : [];
+        setMatchingJobs(filterByFrequency(all, freq));
       } catch (err) {
         console.error('Error fetching matching jobs:', err);
         setMatchingJobs([]);
@@ -56,7 +76,7 @@ const JobAlerts = () => {
     };
 
     fetchMatchingJobs();
-  }, []);
+  }, [freq]);
 
   return (
     <FeatureGate
@@ -89,7 +109,12 @@ const JobAlerts = () => {
           </div>
           <div className="flex-1">
             <p className="text-xs font-bold text-amber-900">Delivery Frequency</p>
-            <p className="text-[11px] text-amber-700 mt-0.5">Your plan includes <strong>{FREQ_LABELS[freq]}</strong> alerts</p>
+            <p className="text-[11px] text-amber-700 mt-0.5">
+              Your plan includes <strong>{FREQ_LABELS[freq]}</strong> alerts
+              {freq === 'daily' && ' — showing jobs posted today'}
+              {freq === 'weekly' && ' — showing jobs from the last 7 days'}
+              {freq === 'monthly' && ' — showing jobs posted this month'}
+            </p>
           </div>
           <Badge className="bg-amber-100 text-amber-700 border-none text-[10px] font-bold">{FREQ_LABELS[freq]}</Badge>
         </div>

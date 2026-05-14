@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { Briefcase, Play, BookOpen, Mic, BarChart2, CheckCircle2, Clock, ChevronRight } from 'lucide-react';
+import { Briefcase, Play, BookOpen, Mic, BarChart2, CheckCircle2, Clock, ChevronRight, Send, Loader2, AlertCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import FeatureGate from '@/components/subscription/FeatureGate';
+import axios from 'axios';
+
+const API = import.meta.env.VITE_API_BASE_URL;
 
 const CATEGORIES = [
   { label: 'Frontend', count: 42, color: 'bg-blue-50 text-blue-700 border-blue-100' },
@@ -21,8 +27,84 @@ const QUESTIONS = [
 
 const diffColor = { Easy: 'bg-emerald-50 text-emerald-700', Medium: 'bg-amber-50 text-amber-700', Hard: 'bg-red-50 text-red-700' };
 
+const RequestModal = ({ onClose }) => {
+  const [form, setForm] = useState({ skills: '', careerGoal: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.skills.trim()) { setError('Please enter your skills.'); return; }
+    setError('');
+    setLoading(true);
+    try {
+      await axios.post(`${API}/requests/interview-prep`, form, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setDone(true);
+    } catch (err) {
+      setError(err.response?.data?.msg || 'Failed to submit. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in slide-in-from-bottom-4">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Request AI Mock Interview</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Tell us about your skills and goals</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-all">
+            <X size={16} />
+          </button>
+        </div>
+
+        {done ? (
+          <div className="text-center py-6">
+            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 size={22} className="text-emerald-600" />
+            </div>
+            <p className="text-sm font-bold text-slate-900 mb-1">Request Submitted!</p>
+            <p className="text-xs text-slate-500 mb-5">We'll prepare a personalised mock interview session for you.</p>
+            <Button onClick={onClose} variant="outline" className="rounded-xl h-9 px-5 text-xs font-bold">Close</Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="skills" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Your Skills *</Label>
+              <Input id="skills" placeholder="e.g. React, Node.js, System Design"
+                value={form.skills} onChange={e => setForm(f => ({ ...f, skills: e.target.value }))}
+                className="rounded-xl border-slate-200 focus:border-teal-400 text-sm" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="goal" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Career Goal</Label>
+              <Textarea id="goal" placeholder="e.g. Senior Frontend Engineer at a fintech startup"
+                value={form.careerGoal} onChange={e => setForm(f => ({ ...f, careerGoal: e.target.value }))}
+                className="rounded-xl border-slate-200 focus:border-teal-400 text-sm resize-none" rows={3} />
+            </div>
+            {error && (
+              <p className="text-xs text-rose-600 font-medium bg-rose-50 border border-rose-100 rounded-xl px-4 py-2 flex items-center gap-2">
+                <AlertCircle size={12} className="shrink-0" /> {error}
+              </p>
+            )}
+            <Button type="submit" disabled={loading}
+              className="w-full h-10 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm gap-2">
+              {loading ? <><Loader2 size={14} className="animate-spin" /> Submitting…</> : <><Send size={14} /> Submit Request</>}
+            </Button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const InterviewPrep = () => {
   const [selected, setSelected] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   return (
     <FeatureGate
@@ -43,8 +125,9 @@ const InterviewPrep = () => {
             </div>
             <p className="text-sm text-slate-500">AI-powered mock interviews and question banks.</p>
           </div>
-          <Button className="h-10 px-5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm gap-2 shrink-0">
-            <Mic size={15} /> Start Mock Interview
+          <Button onClick={() => setShowModal(true)}
+            className="h-10 px-5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm gap-2 shrink-0">
+            <Mic size={15} /> Request Mock Interview
           </Button>
         </div>
 
@@ -70,13 +153,11 @@ const InterviewPrep = () => {
           <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Question Categories</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {CATEGORIES.map(c => (
-              <button
-                key={c.label}
+              <button key={c.label}
                 onClick={() => setSelected(c.label === selected ? null : c.label)}
                 className={`flex items-center justify-between p-4 rounded-xl border font-medium text-sm transition-all hover:shadow-sm ${
                   selected === c.label ? 'ring-2 ring-teal-400 ' + c.color : c.color
-                }`}
-              >
+                }`}>
                 <span>{c.label}</span>
                 <span className="text-xs opacity-60">{c.count}</span>
               </button>
@@ -116,6 +197,8 @@ const InterviewPrep = () => {
           </div>
         </div>
       </div>
+
+      {showModal && <RequestModal onClose={() => setShowModal(false)} />}
     </FeatureGate>
   );
 };

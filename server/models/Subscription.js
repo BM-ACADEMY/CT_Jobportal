@@ -15,6 +15,10 @@ const subscriptionSchema = new mongoose.Schema({
     type: String,
     default: 'INR'
   },
+  isCustomPrice: {
+    type: Boolean,
+    default: false
+  },
   duration: {
     type: String,
     required: true
@@ -36,6 +40,9 @@ const subscriptionSchema = new mongoose.Schema({
   careerCounsellingCount: { type: Number, default: 0 },
   hasInterviewPrep: { type: Boolean, default: false },
   hasPriorityBadge: { type: Boolean, default: false },
+  messageRecruitersCount: { type: Number, default: 0 }, // 0 = unlimited
+  hasSalaryBenchmarking: { type: Boolean, default: false },
+  hasAiResumeReview: { type: Boolean, default: false },
 
   // Recruiter specific
   activeJobPostings: { type: Number, default: 0 }, // 0 for unlimited
@@ -48,7 +55,7 @@ const subscriptionSchema = new mongoose.Schema({
 
   // Organization specific
   userSeats: { type: Number, default: 1 },
-  companyProfileType: { type: String, enum: ['Basic', 'Branded', 'Full Custom'], default: 'Basic' },
+  companyProfileType: { type: String, enum: ['No', 'Basic', 'Branded', 'Full Custom'], default: 'Basic' },
   hasTeamCollaboration: { type: Boolean, default: false },
   teamCollaborationCount: { type: Number, default: 0 }, // 0 for unlimited
   hasBulkApplicantManagement: { type: Boolean, default: false },

@@ -40,6 +40,8 @@ import Applicants from '../pages/company/Applicants';
 import PublicProfile from '../pages/jobseeker/PublicProfile';
 import JobSeekerSubscription from '../pages/jobseeker/Subscription';
 import CompanySubscription from '../pages/company/Subscription';
+import PaymentHistory from '../pages/shared/PaymentHistory';
+import AdminPaymentHistory from '../pages/admin/PaymentHistory';
 
 // Jobseeker feature pages
 import ResumeBuilder from '../pages/jobseeker/features/ResumeBuilder';
@@ -48,6 +50,10 @@ import ProfileInsights from '../pages/jobseeker/features/ProfileInsights';
 import Messages from '../pages/Messages';
 import CareerCounselling from '../pages/jobseeker/features/CareerCounselling';
 import InterviewPrep from '../pages/jobseeker/features/InterviewPrep';
+import SkillTests from '../pages/jobseeker/features/SkillTests';
+import SalaryBenchmarking from '../pages/jobseeker/features/SalaryBenchmarking';
+import AiResumeReview from '../pages/jobseeker/features/AiResumeReview';
+import MyApplications from '../pages/jobseeker/MyApplications';
 
 // Company/Recruiter feature pages
 import AtsPipeline from '../pages/company/features/AtsPipeline';
@@ -56,6 +62,10 @@ import BulkMessaging from '../pages/company/features/BulkMessaging';
 import VideoInterview from '../pages/company/features/VideoInterview';
 import TeamCollaboration from '../pages/company/features/TeamCollaboration';
 import InterviewScheduling from '../pages/company/features/InterviewScheduling';
+import MyJobs from '../pages/company/MyJobs';
+
+// Org Employee pages
+import EmployeeDashboard from '../pages/employee/Dashboard';
 
 
 
@@ -69,6 +79,7 @@ const RoleRedirect = () => {
     recruiter: '/company',
     company: '/company',
     jobseeker: '/jobseeker',
+    org_employee: '/employee',
   };
   return <Navigate to={routes[user.role] || '/jobseeker'} replace />;
 };
@@ -198,12 +209,17 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route path="/jobseeker/applications" element={<PrivateRoute roles={['jobseeker']}><MyApplications /></PrivateRoute>} />
         <Route path="/jobseeker/resume-builder" element={<PrivateRoute roles={['jobseeker']}><ResumeBuilder /></PrivateRoute>} />
         <Route path="/jobseeker/job-alerts" element={<PrivateRoute roles={['jobseeker']}><JobAlerts /></PrivateRoute>} />
         <Route path="/jobseeker/profile-insights" element={<PrivateRoute roles={['jobseeker']}><ProfileInsights /></PrivateRoute>} />
         <Route path="/jobseeker/messages" element={<PrivateRoute roles={['jobseeker']}><Messages /></PrivateRoute>} />
         <Route path="/jobseeker/career-counselling" element={<PrivateRoute roles={['jobseeker']}><CareerCounselling /></PrivateRoute>} />
         <Route path="/jobseeker/interview-prep" element={<PrivateRoute roles={['jobseeker']}><InterviewPrep /></PrivateRoute>} />
+        <Route path="/jobseeker/skill-tests" element={<PrivateRoute roles={['jobseeker']}><SkillTests /></PrivateRoute>} />
+        <Route path="/jobseeker/salary-benchmarking" element={<PrivateRoute roles={['jobseeker']}><SalaryBenchmarking /></PrivateRoute>} />
+        <Route path="/jobseeker/ai-resume-review" element={<PrivateRoute roles={['jobseeker']}><AiResumeReview /></PrivateRoute>} />
+        <Route path="/jobseeker/payment-history" element={<PrivateRoute roles={['jobseeker']}><PaymentHistory /></PrivateRoute>} />
 
 
         <Route
@@ -238,13 +254,15 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route path="/company/jobs" element={<PrivateRoute roles={['recruiter', 'company']}><MyJobs /></PrivateRoute>} />
         <Route path="/company/ats-pipeline" element={<PrivateRoute roles={['recruiter', 'company']}><AtsPipeline /></PrivateRoute>} />
         <Route path="/company/analytics" element={<PrivateRoute roles={['recruiter', 'company']}><Analytics /></PrivateRoute>} />
         <Route path="/company/bulk-messaging" element={<PrivateRoute roles={['recruiter', 'company']}><BulkMessaging /></PrivateRoute>} />
         <Route path="/company/video-interview" element={<PrivateRoute roles={['recruiter', 'company']}><VideoInterview /></PrivateRoute>} />
-        <Route path="/company/team" element={<PrivateRoute roles={['company']}><TeamCollaboration /></PrivateRoute>} />
+        <Route path="/company/team" element={<PrivateRoute roles={['recruiter', 'company']}><TeamCollaboration /></PrivateRoute>} />
         <Route path="/company/interview-scheduling" element={<PrivateRoute roles={['recruiter', 'company']}><InterviewScheduling /></PrivateRoute>} />
         <Route path="/company/messages" element={<PrivateRoute roles={['recruiter', 'company']}><Messages /></PrivateRoute>} />
+        <Route path="/company/payment-history" element={<PrivateRoute roles={['recruiter', 'company']}><PaymentHistory /></PrivateRoute>} />
         <Route
           path="/company/*"
           element={
@@ -253,6 +271,14 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
+        {/* Org Employee */}
+        <Route path="/employee" element={<PrivateRoute roles={['org_employee']}><EmployeeDashboard /></PrivateRoute>} />
+        <Route path="/employee/settings" element={<PrivateRoute roles={['org_employee']}><JobSeekerSettings /></PrivateRoute>} />
+        <Route path="/employee/applications" element={<PrivateRoute roles={['org_employee']}><MyApplications /></PrivateRoute>} />
+        <Route path="/employee/messages" element={<PrivateRoute roles={['org_employee']}><Messages /></PrivateRoute>} />
+        <Route path="/employee/video-interview" element={<PrivateRoute roles={['org_employee']}><VideoInterview /></PrivateRoute>} />
+        <Route path="/employee/interview-scheduling" element={<PrivateRoute roles={['org_employee']}><InterviewScheduling /></PrivateRoute>} />
 
         {/* Admin */}
         <Route
@@ -300,6 +326,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <Messages />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/payment-history"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminPaymentHistory />
             </PrivateRoute>
           }
         />

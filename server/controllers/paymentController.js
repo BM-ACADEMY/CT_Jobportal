@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const razorpay = require('../config/razorpay');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
+const Payment = require('../models/Payment');
 
 // @desc    Create a Razorpay order
 // @route   POST /api/payments/create-order
@@ -104,8 +105,39 @@ const verifyPayment = async (req, res) => {
     user.downloadsUsed = 0;
     user.searchUsed = 0;
     user.jobsUsed = 0;
+    user.messagesUsed = 0;
+    user.counsellingSessionsUsed = 0;
 
     await user.save();
+
+    // Deactivate existing completed plans (supersede them)
+    try {
+      await Payment.updateMany(
+        { user: req.user.id, status: 'completed' },
+        { $set: { status: 'superseded' } }
+      );
+    } catch (deactivationErr) {
+      console.error('Error deactivating old plans:', deactivationErr);
+    }
+
+    // Create payment record
+    try {
+      const paymentRecord = new Payment({
+        user: req.user.id,
+        plan: plan._id,
+        amount: isFree ? 0 : plan.price,
+        currency: plan.currency || 'INR',
+        razorpay_order_id: razorpay_order_id || 'FREE_ORDER',
+        razorpay_payment_id: razorpay_payment_id || 'FREE_PAYMENT',
+        razorpay_signature: razorpay_signature || '',
+        status: 'completed',
+        paymentMethod: isFree ? 'None' : 'Razorpay'
+      });
+      await paymentRecord.save();
+    } catch (paymentErr) {
+      console.error('Error saving payment record:', paymentErr);
+      // We don't return error here because the subscription was already updated
+    }
 
     res.json({ 
       success: true, 
@@ -121,7 +153,77 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+// @desc    Get payment history for the logged-in user
+// @route   GET /api/payments/history
+const getPaymentHistory = async (req, res) => {
+  try {
+    const payments = await Payment.find({ user: req.user.id })
+      .populate('plan', 'name price duration')
+      .sort({ createdAt: -1 });
+
+    res.json(payments);
+  } catch (err) {
+    console.error('Get Payment History Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+// @desc    Get all payment history (Admin only)
+// @route   GET /api/payments/admin/all
+const getAllPayments = async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate('user', 'name email role')
+      .populate('plan', 'name price duration')
+      .sort({ createdAt: -1 });
+
+    res.json(payments);
+  } catch (err) {
+    console.error('Get All Payments Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+// @desc    Cancel current subscription and revert to free plan
+// @route   POST /api/payments/cancel-plan
+const cancelSubscription = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('role');
+    const userRole = user?.role?.name || 'jobseeker';
+
+    const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: userRole });
+    if (!freePlan) {
+      return res.status(404).json({ msg: 'Free plan not found for this role' });
+    }
+
+    // Mark existing completed/active payments as cancelled
+    await Payment.updateMany(
+      { user: req.user.id, status: 'completed' },
+      { $set: { status: 'cancelled' } }
+    );
+
+    // Downgrade to free plan
+    user.subscription = freePlan._id;
+    user.subscriptionExpiry = null;
+    user.autoRenew = false;
+    user.downloadsUsed = 0;
+    user.searchUsed = 0;
+    user.jobsUsed = 0;
+    user.messagesUsed = 0;
+    user.counsellingSessionsUsed = 0;
+    await user.save();
+
+    res.json({ success: true, msg: 'Subscription cancelled. You are now on the Free plan.' });
+  } catch (err) {
+    console.error('Cancel Subscription Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
 module.exports = {
   createOrder,
   verifyPayment,
+  getPaymentHistory,
+  getAllPayments,
+  cancelSubscription
 };

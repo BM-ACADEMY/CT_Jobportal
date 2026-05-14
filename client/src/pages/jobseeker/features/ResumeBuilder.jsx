@@ -6,6 +6,7 @@ import {
   Clock, Check, MoreHorizontal, Sparkles, X
 } from 'lucide-react';
 import FeatureGate from '@/components/subscription/FeatureGate';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── LocalStorage ─────────────────────────────────────────────────────────────
 const STORE_KEY = 'ct_resumes_v1';
@@ -1109,10 +1110,27 @@ const Editor = ({ resumeId, onBack }) => {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 const ResumeBuilder = () => {
+  const { user } = useAuth();
   const [view, setView] = useState('list');
   const [editingId, setEditingId] = useState(null);
-  const openEditor = (id = null) => { setEditingId(id); setView('editor'); };
-  const goHome = () => { setView('list'); setEditingId(null); };
+  const [limitError, setLimitError] = useState('');
+
+  const handleNew = () => {
+    const limit = user?.subscription?.resumeBuilderCount ?? 0;
+    if (limit > 0) {
+      const existing = load();
+      if (existing.length >= limit) {
+        setLimitError(`Your plan allows up to ${limit} resume${limit > 1 ? 's' : ''}. Delete an existing one or upgrade to create more.`);
+        return;
+      }
+    }
+    setLimitError('');
+    setEditingId(null);
+    setView('editor');
+  };
+
+  const goHome = () => { setView('list'); setEditingId(null); setLimitError(''); };
+
   return (
     <FeatureGate
       featureKey="hasResumeBuilder"
@@ -1120,8 +1138,13 @@ const ResumeBuilder = () => {
       description="Build professional, ATS-optimized resumes with live preview, full customization, and PDF download."
       subscriptionPath="/jobseeker/subscription"
     >
+      {limitError && (
+        <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-medium text-amber-800">
+          {limitError}
+        </div>
+      )}
       {view === 'list'
-        ? <ResumeList onNew={() => openEditor(null)} onEdit={openEditor} />
+        ? <ResumeList onNew={handleNew} onEdit={(id) => { setLimitError(''); setEditingId(id); setView('editor'); }} />
         : <Editor resumeId={editingId} onBack={goHome} />
       }
     </FeatureGate>

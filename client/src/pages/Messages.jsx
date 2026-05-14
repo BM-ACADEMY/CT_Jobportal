@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Send, Search, Circle, Loader2, Smile, Paperclip, X, FileText, Download, Image as ImageIcon } from 'lucide-react';
-import FeatureGate from '@/components/subscription/FeatureGate';
+import { createPortal } from 'react-dom';
+import { MessageCircle, Send, Search, Circle, Loader2, Smile, Paperclip, X, FileText, Download, Image as ImageIcon, AlertCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Link } from 'react-router-dom';
 import { useSocket } from '@/context/SocketContext';
 import axios from 'axios';
 
@@ -17,6 +18,8 @@ const Messages = () => {
   const [showEmojis, setShowEmojis] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [hoveredConv, setHoveredConv] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -196,6 +199,7 @@ const Messages = () => {
   }
 
   const Content = (
+    <>
     <div className="flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
       <div className="flex items-center gap-2 mb-4 shrink-0">
         <div className="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center">
@@ -206,6 +210,36 @@ const Messages = () => {
           <p className="text-sm text-slate-500">Chat with {user.role === 'jobseeker' ? 'recruiters and hiring managers' : 'candidates and teammates'}.</p>
         </div>
       </div>
+
+      {/* Recruiter message limit banner for jobseekers */}
+      {user.role === 'jobseeker' && (() => {
+        const limit = user?.subscription?.messageRecruitersCount ?? 0;
+        const used = user?.messagesUsed ?? 0;
+        const unlimited = limit === 0;
+        if (unlimited) return null;
+        const remaining = Math.max(0, limit - used);
+        const atLimit = remaining === 0;
+        return (
+          <div className={`mb-4 shrink-0 flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-xs font-medium ${
+            atLimit
+              ? 'bg-rose-50 border-rose-200 text-rose-700'
+              : 'bg-amber-50 border-amber-200 text-amber-700'
+          }`}>
+            <div className="flex items-center gap-2">
+              <AlertCircle size={13} className="shrink-0" />
+              {atLimit
+                ? `You've reached your limit of ${limit} recruiter conversation${limit > 1 ? 's' : ''}. Upgrade to message more.`
+                : `${remaining} of ${limit} recruiter conversation${limit > 1 ? 's' : ''} remaining on your plan.`
+              }
+            </div>
+            {atLimit && (
+              <Link to="/jobseeker/subscription" className="flex items-center gap-1 shrink-0 font-bold hover:underline">
+                <Sparkles size={11} /> Upgrade
+              </Link>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="rounded-2xl border border-slate-100 overflow-hidden bg-white shadow-sm flex-1 min-h-0">
         <div className="flex h-full">
@@ -230,6 +264,12 @@ const Messages = () => {
                     <button
                       key={c._id}
                       onClick={() => selectConversation(c)}
+                      onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setTooltipPos({ top: rect.top, left: rect.right + 8 });
+                        setHoveredConv({ id: c._id, recipient });
+                      }}
+                      onMouseLeave={() => setHoveredConv(null)}
                       className={`w-full text-left p-4 border-b border-slate-50 hover:bg-white transition-all ${active?._id === c._id ? 'bg-white shadow-sm z-10' : ''}`}
                     >
                       <div className="flex items-start gap-3">
@@ -426,20 +466,26 @@ const Messages = () => {
         </div>
       </div>
     </div>
-  );
 
-  if (user.role === 'jobseeker') {
-    return (
-      <FeatureGate
-        featureKey="hasMessageRecruiters"
-        featureName="Direct Messaging"
-        description="Chat directly with recruiters and hiring managers — respond fast and stand out from other applicants."
-        subscriptionPath="/jobseeker/subscription"
+    {hoveredConv && createPortal(
+      <div
+        className="fixed z-[9999] bg-white rounded-xl shadow-xl border border-slate-100 p-3 flex items-center gap-3 pointer-events-none"
+        style={{ top: tooltipPos.top, left: tooltipPos.left }}
       >
-        {Content}
-      </FeatureGate>
-    );
-  }
+        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
+          {hoveredConv.recipient?.avatar
+            ? <img src={hoveredConv.recipient.avatar} alt={hoveredConv.recipient.name} className="w-full h-full object-cover" />
+            : hoveredConv.recipient?.name?.[0]}
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-900 whitespace-nowrap">{hoveredConv.recipient?.name}</p>
+          <p className="text-[11px] text-slate-500 capitalize whitespace-nowrap">{hoveredConv.recipient?.role || 'User'}</p>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
+  );
 
   return Content;
 };

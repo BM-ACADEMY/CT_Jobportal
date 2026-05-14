@@ -1,20 +1,142 @@
-import React from 'react';
-import { Star, Calendar, Clock, Video, CheckCircle2, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Star, Calendar, Clock, Video, CheckCircle2, Send, Loader2, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Link } from 'react-router-dom';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
+import axios from 'axios';
 
-const COUNSELLORS = [
-  { name: 'Dr. Ananya Sharma', speciality: 'Tech Careers & Salary Negotiation', exp: '12 yrs', rating: 4.9, sessions: 840, avatar: 'AS', next: 'Thu 3 PM' },
-  { name: 'Vikram Iyer', speciality: 'Startup & Product Roles', exp: '8 yrs', rating: 4.8, sessions: 620, avatar: 'VI', next: 'Fri 11 AM' },
-  { name: 'Meera Patel', speciality: 'Career Change & Upskilling', exp: '10 yrs', rating: 4.9, sessions: 970, avatar: 'MP', next: 'Wed 5 PM' },
-];
+const API = import.meta.env.VITE_API_BASE_URL;
+
+const BookingForm = ({ onSuccess, sessionsLeft, unlimited }) => {
+  const { user } = useAuth();
+  const [form, setForm] = useState({
+    bookingName: user?.name || '',
+    bookingEmail: user?.email || '',
+    bookingPhone: '',
+    bookingDate: '',
+    bookingTime: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const { bookingName, bookingEmail, bookingPhone, bookingDate, bookingTime } = form;
+    if (!bookingName || !bookingEmail || !bookingDate || !bookingTime) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await axios.post(`${API}/requests/counselling`, form, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.msg || 'Failed to submit request. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="bName" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Full Name *</Label>
+          <Input id="bName" value={form.bookingName} onChange={e => set('bookingName', e.target.value)}
+            placeholder="Your name" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="bEmail" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Email *</Label>
+          <Input id="bEmail" type="email" value={form.bookingEmail} onChange={e => set('bookingEmail', e.target.value)}
+            placeholder="your@email.com" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="bPhone" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Phone</Label>
+          <Input id="bPhone" value={form.bookingPhone} onChange={e => set('bookingPhone', e.target.value)}
+            placeholder="+91 98765 43210" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="bDate" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Preferred Date *</Label>
+          <Input id="bDate" type="date" value={form.bookingDate} onChange={e => set('bookingDate', e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="bTime" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Preferred Time *</Label>
+          <Input id="bTime" type="time" value={form.bookingTime} onChange={e => set('bookingTime', e.target.value)}
+            className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+        </div>
+      </div>
+
+      {error && (
+        <p className="text-xs text-rose-600 font-medium bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+          <AlertCircle size={13} className="shrink-0" /> {error}
+        </p>
+      )}
+
+      <Button type="submit" disabled={loading}
+        className="w-full h-11 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm gap-2 shadow-md shadow-rose-500/20">
+        {loading ? <><Loader2 size={15} className="animate-spin" /> Booking…</> : <><Send size={15} /> Book Session</>}
+      </Button>
+
+      {!unlimited && (
+        <p className="text-[11px] text-center text-slate-400 font-medium">
+          {sessionsLeft} session{sessionsLeft !== 1 ? 's' : ''} remaining on your plan
+        </p>
+      )}
+    </form>
+  );
+};
+
+const LimitReached = () => (
+  <div className="flex flex-col items-center justify-center min-h-[40vh] text-center px-4">
+    <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <AlertCircle size={24} className="text-amber-600" />
+    </div>
+    <h3 className="text-lg font-bold text-slate-900 mb-2">Session Limit Reached</h3>
+    <p className="text-sm text-slate-500 mb-6 max-w-sm leading-relaxed">
+      You've used all your career counselling sessions on this plan. Upgrade to book more sessions with our experts.
+    </p>
+    <Link to="/jobseeker/subscription">
+      <Button className="h-10 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm gap-2 shadow-md shadow-emerald-500/20">
+        <Sparkles size={14} /> Upgrade Plan <ArrowRight size={13} />
+      </Button>
+    </Link>
+  </div>
+);
+
+const SuccessView = ({ onBook }) => (
+  <div className="flex flex-col items-center justify-center min-h-[40vh] text-center px-4">
+    <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <CheckCircle2 size={24} className="text-emerald-600" />
+    </div>
+    <h3 className="text-lg font-bold text-slate-900 mb-2">Session Booked!</h3>
+    <p className="text-sm text-slate-500 mb-6 max-w-sm leading-relaxed">
+      Your career counselling session request has been received. Our team will confirm via email shortly.
+    </p>
+    <Button variant="outline" onClick={onBook} className="rounded-xl h-10 px-6 text-sm font-bold">
+      Book Another Session
+    </Button>
+  </div>
+);
 
 const CareerCounselling = () => {
   const { user } = useAuth();
-  const sessionsLeft = user?.subscription?.careerCounsellingCount ?? 0;
-  const unlimited = sessionsLeft === 0;
+  const [submitted, setSubmitted] = useState(false);
+
+  const limit = user?.subscription?.careerCounsellingCount ?? 0;
+  const unlimited = limit === 0;
+  const sessionsUsed = user?.counsellingSessionsUsed ?? 0;
+  const sessionsLeft = unlimited ? Infinity : limit - sessionsUsed;
+  const atLimit = !unlimited && sessionsUsed >= limit;
 
   return (
     <FeatureGate
@@ -36,12 +158,12 @@ const CareerCounselling = () => {
             <p className="text-sm text-slate-500">Expert 1-on-1 sessions to accelerate your career.</p>
           </div>
           <div className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-3 text-center shrink-0">
-            <p className="text-lg font-bold text-rose-700">{unlimited ? '∞' : sessionsLeft}</p>
+            <p className="text-lg font-bold text-rose-700">{unlimited ? '∞' : sessionsLeft > 0 ? sessionsLeft : 0}</p>
             <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wide">Sessions Left</p>
           </div>
         </div>
 
-        {/* Session perks */}
+        {/* Perks */}
         <div className="grid sm:grid-cols-3 gap-3">
           {[
             { icon: Video, label: 'Video Sessions', desc: 'HD video + screen share' },
@@ -60,35 +182,18 @@ const CareerCounselling = () => {
           ))}
         </div>
 
-        {/* Counsellors */}
-        <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Available Counsellors</p>
-          <div className="space-y-4">
-            {COUNSELLORS.map((c, i) => (
-              <div key={i} className="rounded-2xl border border-slate-100 bg-white p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-rose-400 to-pink-500 rounded-2xl flex items-center justify-center text-white text-sm font-bold shrink-0">
-                  {c.avatar}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                    <p className="text-sm font-bold text-slate-900">{c.name}</p>
-                    <Badge className="text-[9px] bg-amber-50 text-amber-700 border-none font-bold px-1.5 py-0">
-                      ★ {c.rating}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-500">{c.speciality}</p>
-                  <div className="flex items-center gap-4 mt-1.5">
-                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1"><User size={9} /> {c.exp} exp</span>
-                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1"><CheckCircle2 size={9} className="text-emerald-500" /> {c.sessions} sessions</span>
-                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1"><Clock size={9} /> Next: {c.next}</span>
-                  </div>
-                </div>
-                <Button size="sm" className="h-9 px-5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs gap-1.5 shrink-0">
-                  <Calendar size={12} /> Book Session
-                </Button>
-              </div>
-            ))}
-          </div>
+        {/* Booking form / limit / success */}
+        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+          {submitted ? (
+            <SuccessView onBook={() => setSubmitted(false)} />
+          ) : atLimit ? (
+            <LimitReached />
+          ) : (
+            <>
+              <h3 className="text-sm font-bold text-slate-900 mb-5">Book a Session</h3>
+              <BookingForm onSuccess={() => setSubmitted(true)} sessionsLeft={sessionsLeft} unlimited={unlimited} />
+            </>
+          )}
         </div>
       </div>
     </FeatureGate>

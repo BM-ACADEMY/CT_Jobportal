@@ -143,6 +143,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
   },
+  employerCompany: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company'
+  },
   savedJobs: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Job'
@@ -167,6 +171,14 @@ const userSchema = new mongoose.Schema({
     default: 0
   },
   jobsUsed: {
+    type: Number,
+    default: 0
+  },
+  messagesUsed: {
+    type: Number,
+    default: 0
+  },
+  counsellingSessionsUsed: {
     type: Number,
     default: 0
   }

@@ -49,7 +49,10 @@ const Applicants = () => {
   const fetchApplicants = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/applications/job/${jobId}`);
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/applications/job/${jobId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setApplicants(res.data);
     } catch (err) {
       console.error(err);
@@ -61,7 +64,10 @@ const Applicants = () => {
 
   const updateStatus = async (applicationId, status) => {
     try {
-      const res = await axios.put(`${API_BASE_URL}/applications/${applicationId}/status`, { status });
+      const token = localStorage.getItem('token');
+      const res = await axios.put(`${API_BASE_URL}/applications/${applicationId}/status`, { status }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(res.data.msg);
       setApplicants(prev => prev.map(app => 
         app._id === applicationId ? { ...app, status } : app

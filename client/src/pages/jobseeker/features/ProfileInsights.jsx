@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, TrendingUp, Eye, Building2, BarChart2, Loader2 } from 'lucide-react';
+import { Users, TrendingUp, Eye, Building2, BarChart2, Loader2, User, Briefcase } from 'lucide-react';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import axios from 'axios';
 
@@ -128,6 +128,50 @@ const ProfileInsights = () => {
             ))}
           </div>
         </div>
+
+        {/* Role Breakdown */}
+        {viewers.length > 0 && (() => {
+          const seekerCount = viewers.filter(v => {
+            const roleName = v.viewer?.role?.name || v.viewer?.role || '';
+            return !['recruiter', 'company', 'org_employee'].includes(roleName) && v.viewerModel !== 'Company';
+          }).length;
+          const recruiterCount = viewers.filter(v => {
+            const roleName = v.viewer?.role?.name || v.viewer?.role || '';
+            return ['recruiter', 'company'].includes(roleName);
+          }).length;
+          const orgCount = viewers.filter(v => v.viewerModel === 'Company' || (v.viewer?.role?.name || v.viewer?.role) === 'org_employee').length;
+          const total = viewers.length || 1;
+          const segments = [
+            { label: 'Job Seekers', count: seekerCount, color: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50', icon: User },
+            { label: 'Recruiters', count: recruiterCount, color: 'bg-violet-500', text: 'text-violet-700', bg: 'bg-violet-50', icon: Briefcase },
+            { label: 'Organizations', count: orgCount, color: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', icon: Building2 },
+          ].filter(s => s.count > 0);
+
+          return (
+            <div className="rounded-2xl border border-slate-100 bg-white p-6">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-5">Viewer Breakdown</p>
+              <div className="flex rounded-xl overflow-hidden h-4 mb-4 gap-0.5">
+                {segments.map(s => (
+                  <div key={s.label} className={`${s.color} transition-all`}
+                    style={{ width: `${(s.count / total) * 100}%` }} title={`${s.label}: ${s.count}`} />
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-4">
+                {segments.map(s => {
+                  const Icon = s.icon;
+                  return (
+                    <div key={s.label} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${s.bg}`}>
+                      <Icon size={12} className={s.text} />
+                      <span className={`text-xs font-bold ${s.text}`}>{s.count}</span>
+                      <span className="text-[10px] font-medium text-slate-500">{s.label}</span>
+                      <span className={`text-[10px] font-bold ${s.text}`}>{Math.round((s.count / total) * 100)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Recent Viewers */}
         <div>

@@ -1,5 +1,6 @@
 const Job = require('../models/Job');
 const User = require('../models/User');
+const Application = require('../models/Application');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -284,12 +285,85 @@ const getMatchingJobs = async (req, res) => {
   }
 };
 
+// @desc    Get company jobs with applicant counts
+// @route   GET /api/jobs/company-jobs-stats
+// @access  Private (Recruiter/Company)
+const getCompanyJobsWithStats = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user || !user.company) return res.json([]);
+
+    const jobs = await Job.find({ company: user.company })
+      .populate('company', 'name logo')
+      .sort({ createdAt: -1 });
+
+    const jobsWithStats = await Promise.all(jobs.map(async (job) => {
+      const appCount = await Application.countDocuments({ job: job._id });
+      const shortlisted = await Application.countDocuments({ job: job._id, status: 'shortlisted' });
+      const rejected = await Application.countDocuments({ job: job._id, status: 'rejected' });
+      return {
+        ...job.toObject(),
+        applicantsCount: appCount,
+        shortlistedCount: shortlisted,
+        rejectedCount: rejected
+      };
+    }));
+
+    res.json(jobsWithStats);
+  } catch (err) {
+    console.error('Get Company Jobs Stats Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Get hiring analytics for recruiter/company
+// @route   GET /api/jobs/analytics
+// @access  Private (Recruiter/Company)
+const getRecruiterAnalytics = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user || !user.company) return res.json({ totalJobs: 0, totalApplicants: 0, shortlisted: 0, rejected: 0, activeJobs: 0, monthlyData: [] });
+
+    const jobs = await Job.find({ company: user.company });
+    const jobIds = jobs.map(j => j._id);
+
+    const [totalApplicants, shortlisted, rejected, reviewed] = await Promise.all([
+      Application.countDocuments({ job: { $in: jobIds } }),
+      Application.countDocuments({ job: { $in: jobIds }, status: 'shortlisted' }),
+      Application.countDocuments({ job: { $in: jobIds }, status: 'rejected' }),
+      Application.countDocuments({ job: { $in: jobIds }, status: 'reviewed' }),
+    ]);
+
+    const activeJobs = jobs.filter(j => j.status === 'active').length;
+
+    // Monthly breakdown for the last 12 months
+    const monthlyData = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+      const count = await Application.countDocuments({ job: { $in: jobIds }, createdAt: { $gte: start, $lte: end } });
+      monthlyData.push({ month: start.toLocaleString('default', { month: 'short' }), count });
+    }
+
+    res.json({ totalJobs: jobs.length, activeJobs, totalApplicants, shortlisted, rejected, reviewed, monthlyData });
+  } catch (err) {
+    console.error('Analytics Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   createJob,
   getCompanyJobs,
+  getCompanyJobsWithStats,
   updateJob,
   deleteJob,
   getAllJobs,
-  getMatchingJobs
+  getMatchingJobs,
+  getRecruiterAnalytics
 };
 

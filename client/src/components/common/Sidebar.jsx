@@ -2,73 +2,96 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Briefcase, Building2, FileText, Star, LogOut,
-  LayoutDashboard, Users, UserCog, Settings, TrendingUp, Bell,
-  ShieldCheck, CircleUser, Activity, CreditCard, ChevronRight,
+  LayoutDashboard, Users, UserCog, TrendingUp, Bell,
+  Activity, CreditCard, ChevronRight,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck
+  BookOpen, Mic, UserCheck, List, History
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { hasFeature } from '../subscription/FeatureGate';
 
 // ─── Core nav (always visible) ───────────────────────────────────────────────
 const coreMenus = {
   jobseeker: [
-    { icon: Home, label: 'Overview', path: '/jobseeker' },
-    { icon: Briefcase, label: 'Search Jobs', path: '/jobs' },
-    { icon: Building2, label: 'Organizations', path: '/companies' },
-    { icon: FileText, label: 'Applications', path: '/jobseeker/applications' },
-    { icon: Star, label: 'Registry', path: '/dashboard/saved-jobs' },
-    { icon: CreditCard, label: 'Subscription', path: '/jobseeker/subscription' },
+    { icon: Home,        label: 'Overview',      path: '/jobseeker' },
+    { icon: Briefcase,   label: 'Search Jobs',   path: '/jobs' },
+    { icon: Building2,   label: 'Organizations', path: '/companies' },
+    { icon: FileText,    label: 'Applications',  path: '/jobseeker/applications' },
+    { icon: Star,        label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
+    { icon: CreditCard,  label: 'Subscription',  path: '/jobseeker/subscription' },
+    { icon: UserCog,     label: 'Settings',      path: '/jobseeker/settings' },
+    { icon: History,     label: 'Payment History', path: '/jobseeker/payment-history' },
+    { icon: MessageCircle, label: 'Messages',      path: '/jobseeker/messages' },
   ],
   recruiter: [
-    { icon: LayoutDashboard, label: 'Statistics', path: '/company' },
-    { icon: Briefcase, label: 'Publish Job', path: '/company/post-job' },
-    { icon: Users, label: 'Candidates', path: '/company/applicants' },
-    { icon: CreditCard, label: 'Subscription', path: '/company/subscription' },
+    { icon: LayoutDashboard, label: 'Overview',     path: '/company' },
+    { icon: List,            label: 'My Jobs',      path: '/company/jobs' },
+    { icon: Briefcase,       label: 'Post Job',     path: '/company/post-job' },
+    { icon: MessageCircle,   label: 'Messages',     path: '/company/messages' },
+    { icon: CreditCard,      label: 'Subscription', path: '/company/subscription' },
+    { icon: UserCog,         label: 'Settings',     path: '/company/settings' },
+    { icon: History,         label: 'Payment History', path: '/company/payment-history' },
   ],
   company: [
-    { icon: LayoutDashboard, label: 'Corporate Desk', path: '/company' },
-    { icon: Briefcase, label: 'New Listing', path: '/company/post-job' },
-    { icon: Users, label: 'Talent Pool', path: '/company/applicants' },
-    { icon: CreditCard, label: 'Subscription', path: '/company/subscription' },
+    { icon: LayoutDashboard, label: 'Overview',     path: '/company' },
+    { icon: List,            label: 'My Jobs',      path: '/company/jobs' },
+    { icon: Briefcase,       label: 'Post Job',     path: '/company/post-job' },
+    { icon: MessageCircle,   label: 'Messages',     path: '/company/messages' },
+    { icon: CreditCard,      label: 'Subscription', path: '/company/subscription' },
+    { icon: UserCog,         label: 'Settings',     path: '/company/settings' },
+    { icon: History,         label: 'Payment History', path: '/company/payment-history' },
   ],
   admin: [
     { icon: LayoutDashboard, label: 'Command Center', path: '/admin' },
-    { icon: Users, label: 'Users Account', path: '/admin/users' },
-    { icon: Briefcase, label: 'Job Inventory', path: '/admin/jobs' },
-    { icon: CreditCard, label: 'Subscriptions', path: '/admin/subscriptions' },
-    { icon: MessageCircle, label: 'Messages', path: '/admin/messages' },
+    { icon: Users,           label: 'Users Account',  path: '/admin/users' },
+    { icon: Building2,       label: 'Companies',      path: '/admin/companies' },
+    { icon: Briefcase,       label: 'Job Inventory',  path: '/admin/jobs' },
+    { icon: CreditCard,      label: 'Subscriptions',  path: '/admin/subscriptions' },
+    { icon: History,         label: 'Payment History', path: '/admin/payment-history' },
+    { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
+  ],
+  org_employee: [
+    { icon: Home,           label: 'Overview',      path: '/employee' },
+    { icon: Briefcase,      label: 'Search Jobs',   path: '/jobs' },
+    { icon: Building2,      label: 'Organizations', path: '/companies' },
+    { icon: FileText,       label: 'Applications',  path: '/employee/applications' },
+    { icon: Star,           label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
+    { icon: UserCog,        label: 'Settings',      path: '/employee/settings' },
+    { icon: MessageCircle,  label: 'Messages',      path: '/employee/messages' },
   ],
 };
 
 // ─── Premium feature nav per role ────────────────────────────────────────────
 const premiumMenus = {
   jobseeker: [
-    { icon: FileText, label: 'Resume Builder', path: '/jobseeker/resume-builder', featureKey: 'hasResumeBuilder' },
-    { icon: Bell, label: 'Job Alerts', path: '/jobseeker/job-alerts', featureKey: 'jobAlerts' },
-    { icon: Users, label: 'Profile Insights', path: '/jobseeker/profile-insights', featureKey: 'hasProfileViewInsights' },
-    { icon: MessageCircle, label: 'Messages', path: '/jobseeker/messages', featureKey: 'hasMessageRecruiters' },
-    { icon: Star, label: 'Career Counselling', path: '/jobseeker/career-counselling', featureKey: 'hasCareerCounselling' },
-    { icon: Mic, label: 'Interview Prep', path: '/jobseeker/interview-prep', featureKey: 'hasInterviewPrep' },
+    { icon: FileText,      label: 'Resume Builder',      path: '/jobseeker/resume-builder',      featureKey: 'hasResumeBuilder' },
+    { icon: Bell,          label: 'Job Alerts',          path: '/jobseeker/job-alerts',          featureKey: 'jobAlerts' },
+    { icon: Users,         label: 'Profile Insights',    path: '/jobseeker/profile-insights',    featureKey: 'hasProfileViewInsights' },
+    { icon: Star,          label: 'Career Counselling',  path: '/jobseeker/career-counselling',  featureKey: 'hasCareerCounselling' },
+    { icon: Mic,           label: 'Interview Prep',      path: '/jobseeker/interview-prep',      featureKey: 'hasInterviewPrep' },
+    { icon: TrendingUp,    label: 'Salary Benchmarking', path: '/jobseeker/salary-benchmarking', featureKey: 'hasSalaryBenchmarking' },
+    { icon: BookOpen,      label: 'AI Resume Review',    path: '/jobseeker/ai-resume-review',    featureKey: 'hasAiResumeReview' },
   ],
   recruiter: [
-    { icon: Layers, label: 'ATS Pipeline', path: '/company/ats-pipeline', featureKey: 'hasATSPipeline' },
-    { icon: BarChart2, label: 'Analytics', path: '/company/analytics', featureKey: 'hasAnalyticsDashboard' },
-    { icon: Mail, label: 'Bulk Messaging', path: '/company/bulk-messaging', featureKey: 'hasBulkMessaging' },
-    { icon: MessageCircle, label: 'Direct Messages', path: '/company/messages' },
-    { icon: Video, label: 'Video Interview', path: '/company/video-interview', featureKey: 'hasVideoInterview' },
+    { icon: Layers,   label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Analytics',     path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: Mail,     label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Video,    label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasVideoInterview' },
+    { icon: Activity, label: 'Scheduling',     path: '/company/interview-scheduling', featureKey: 'hasInterviewScheduling' },
   ],
   company: [
-    { icon: Layers, label: 'ATS Pipeline', path: '/company/ats-pipeline', featureKey: 'hasATSPipeline' },
-    { icon: BarChart2, label: 'Analytics', path: '/company/analytics', featureKey: 'hasAnalyticsDashboard' },
-    { icon: UserCheck, label: 'Team', path: '/company/team', featureKey: 'hasTeamCollaboration' },
-    { icon: Mail, label: 'Bulk Messaging', path: '/company/bulk-messaging', featureKey: 'hasBulkMessaging' },
-    { icon: MessageCircle, label: 'Direct Messages', path: '/company/messages' },
-    { icon: Video, label: 'Video Interview', path: '/company/video-interview', featureKey: 'hasVideoInterview' },
-    { icon: Activity, label: 'Scheduling', path: '/company/interview-scheduling', featureKey: 'hasInterviewScheduling' },
+    { icon: Layers,     label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2,  label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: UserCheck,  label: 'Team',           path: '/company/team',                 featureKey: 'hasTeamCollaboration' },
+    { icon: Mail,       label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Video,      label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasVideoInterview' },
+    { icon: Activity,   label: 'Scheduling',     path: '/company/interview-scheduling', featureKey: 'hasInterviewScheduling' },
+  ],
+  org_employee: [
+    { icon: Video,     label: 'Video Interview', path: '/employee/video-interview',     featureKey: 'hasVideoInterview' },
+    { icon: Activity,  label: 'Scheduling',      path: '/employee/interview-scheduling', featureKey: 'hasInterviewScheduling' },
   ],
 };
 
@@ -134,7 +157,7 @@ const Sidebar = () => {
   const premiumItems = premiumMenus[role] || [];
 
   const isActive = (path) => {
-    const rootRoutes = ['/jobseeker', '/company', '/admin', '/subadmin'];
+    const rootRoutes = ['/jobseeker', '/company', '/admin', '/subadmin', '/employee'];
     if (rootRoutes.includes(path)) return location.pathname === path;
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
@@ -194,7 +217,7 @@ const Sidebar = () => {
           <div className="mt-6 space-y-1">
             <div className="px-5 mb-3 flex items-center gap-2">
               <div className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">Premium Features</div>
-              {!user?.subscription && (
+              {(!user?.subscription || user?.subscription?.price === 0) && (
                 <Badge className="text-[8px] font-bold bg-amber-50 text-amber-600 border-amber-100 px-1.5 py-0">
                   Upgrade
                 </Badge>

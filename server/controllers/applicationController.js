@@ -1,6 +1,23 @@
 const Application = require('../models/Application');
 const Job = require('../models/Job');
 
+exports.getMyApplications = async (req, res) => {
+  try {
+    const applicantId = req.user.id;
+    const applications = await Application.find({ applicant: applicantId })
+      .populate({
+        path: 'job',
+        select: 'title location jobType workMode salary status createdAt',
+        populate: { path: 'company', select: 'name logo' }
+      })
+      .sort({ createdAt: -1 });
+    res.json(applications);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 exports.applyJob = async (req, res) => {
   try {
     const { jobId, answers } = req.body;

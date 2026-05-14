@@ -1,17 +1,20 @@
 import React from 'react';
-import { Check, X, Star, Zap, Infinity } from 'lucide-react';
+import { Check, X, Star, Zap, Infinity, XCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const NUMERIC_KEYS = new Set([
   'resumeBuilderCount', 'careerCounsellingCount', 'teamCollaborationCount',
   'activeJobPostings', 'candidateSearchPerDay', 'userSeats',
 ]);
-const UNLIMITED_ZERO_KEYS = new Set(['activeJobPostings', 'candidateSearchPerDay']);
 const STRING_ENUM_KEYS = new Set(['jobAlerts', 'companyProfileType']);
 
 const resolveFeature = (feature, plan) => {
   if (feature.isDynamic) {
-    return { enabled: !!feature.isActive, displayValue: feature.value ?? null };
+    let displayValue = feature.value ?? null;
+    if (feature.type === 'count' && (displayValue === 0 || displayValue === '0')) {
+      displayValue = 'Unlimited';
+    }
+    return { enabled: !!feature.isActive, displayValue };
   }
 
   const key = feature.key;
@@ -28,7 +31,7 @@ const resolveFeature = (feature, plan) => {
 
   if (NUMERIC_KEYS.has(key)) {
     const num = Number(rawVal);
-    if (UNLIMITED_ZERO_KEYS.has(key) && num === 0) {
+    if (num === 0) {
       return { enabled: true, displayValue: 'Unlimited' };
     }
     return { enabled: num > 0, displayValue: num > 0 ? num : null };
@@ -41,6 +44,7 @@ const PricingCard = ({
   plan,
   features = [],
   onAction,
+  onCancel,
   actionLabel = 'Choose Plan',
   isPopular = false,
   currentPlanId = null,
@@ -93,7 +97,7 @@ const PricingCard = ({
           <div className="text-right shrink-0">
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-bold text-slate-900 tracking-tight">
-                {isFree ? 'Free' : `₹${plan.price.toLocaleString()}`}
+                {plan.isCustomPrice ? 'Custom' : (isFree ? 'Free' : `₹${plan.price.toLocaleString()}`)}
               </span>
               {!isFree && (
                 <span className="text-xs font-semibold text-slate-400">/{plan.duration.toLowerCase()}</span>
@@ -139,25 +143,38 @@ const PricingCard = ({
 
         {/* Action */}
         {footer ?? (
-          <Button
-            onClick={() => onAction?.(plan)}
-            disabled={isCurrent}
-            className={`w-full h-12 rounded-xl font-bold text-sm transition-all duration-200 ${
-              isCurrent
-                ? 'bg-blue-50 text-blue-600 border border-blue-200 cursor-default hover:bg-blue-50'
-                : isPopular
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:scale-[1.02]'
-                  : 'bg-slate-900 hover:bg-slate-800 text-white hover:scale-[1.02]'
-            }`}
-          >
-            {isCurrent ? (
-              <span className="flex items-center gap-2"><Check size={16} /> Active Plan</span>
-            ) : isFree ? (
-              'Get Started Free'
-            ) : (
-              <span className="flex items-center gap-2"><Zap size={15} /> {actionLabel}</span>
+          <div className="space-y-2">
+            <Button
+              onClick={() => onAction?.(plan)}
+              disabled={isCurrent}
+              className={`w-full h-12 rounded-xl font-bold text-sm transition-all duration-200 ${
+                isCurrent
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200 cursor-default hover:bg-blue-50'
+                  : isPopular
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:scale-[1.02]'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white hover:scale-[1.02]'
+              }`}
+            >
+              {isCurrent ? (
+                <span className="flex items-center gap-2"><Check size={16} /> {isFree ? 'Current Plan' : 'Active Plan'}</span>
+              ) : isFree ? (
+                'Get Started Free'
+              ) : (
+                <span className="flex items-center gap-2"><Zap size={15} /> {actionLabel}</span>
+              )}
+            </Button>
+
+            {/* Cancel button — only on active paid plans */}
+            {isCurrent && !isFree && onCancel && (
+              <Button
+                onClick={() => onCancel(plan)}
+                variant="ghost"
+                className="w-full h-9 rounded-xl text-xs font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all gap-1.5"
+              >
+                <XCircle size={13} /> Cancel Plan
+              </Button>
             )}
-          </Button>
+          </div>
         )}
       </div>
     </div>

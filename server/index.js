@@ -14,8 +14,10 @@ const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const requestRoutes = require('./routes/requests');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
+const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
 const path = require('path');
 
 const session = require('express-session');
@@ -94,6 +96,7 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/requests', requestRoutes);
 
 
 // MongoDB Connection
@@ -106,6 +109,8 @@ mongoose.connect(MONGODB_URI)
     console.log('Successfully connected to MongoDB');
     await seedRoles();
     await seedAdmin();
+    await seedSubscriptions();
+    await migrateUsersToFreePlan();
   })
   .catch((err) => {
     console.error('MongoDB connection error details:', err.message);

@@ -2,7 +2,25 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Role = require('../models/Role');
+const Company = require('../models/Company');
+const Subscription = require('../models/Subscription');
 const sendEmail = require('../utils/sendEmail');
+
+// Auto-assign the free plan if the user has no subscription
+const ensureFreePlan = async (user, roleName) => {
+  if (user.subscription || roleName === 'org_employee') return;
+  try {
+    const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: roleName });
+    if (freePlan) {
+      user.subscription = freePlan._id;
+      user.subscriptionExpiry = null;
+      await user.save();
+      await user.populate('subscription');
+    }
+  } catch (e) {
+    console.error('ensureFreePlan error:', e.message);
+  }
+};
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -121,6 +139,19 @@ const verifyOtp = async (req, res) => {
     const roleName = user.role.name;
     const token = generateToken(user._id, roleName);
 
+    await ensureFreePlan(user, roleName);
+
+    let subscription = user.subscription;
+    let subscriptionExpiry = user.subscriptionExpiry;
+    let employerCompanyName = null;
+
+    if (roleName === 'org_employee' && user.employerCompany) {
+      const employer = await Company.findById(user.employerCompany).populate('subscription');
+      subscription = employer?.subscription || null;
+      subscriptionExpiry = employer?.subscriptionExpiry || null;
+      employerCompanyName = employer?.name || null;
+    }
+
     res.json({
       token,
       user: {
@@ -130,9 +161,13 @@ const verifyOtp = async (req, res) => {
         role: roleName,
         avatar: user.avatar,
         savedJobs: user.savedJobs || [],
-        subscription: user.subscription,
-        subscriptionExpiry: user.subscriptionExpiry,
-        downloadsUsed: user.downloadsUsed || 0
+        subscription,
+        subscriptionExpiry,
+        downloadsUsed: user.downloadsUsed || 0,
+        messagesUsed: user.messagesUsed || 0,
+        counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+        employerCompany: user.employerCompany || null,
+        employerCompanyName,
       }
     });
 
@@ -192,6 +227,19 @@ const loginUser = async (req, res) => {
     const roleName = user.role.name;
     const token = generateToken(user._id, roleName);
 
+    await ensureFreePlan(user, roleName);
+
+    let subscription = user.subscription;
+    let subscriptionExpiry = user.subscriptionExpiry;
+    let employerCompanyName = null;
+
+    if (roleName === 'org_employee' && user.employerCompany) {
+      const employer = await Company.findById(user.employerCompany).populate('subscription');
+      subscription = employer?.subscription || null;
+      subscriptionExpiry = employer?.subscriptionExpiry || null;
+      employerCompanyName = employer?.name || null;
+    }
+
     res.json({
       token,
       user: {
@@ -201,9 +249,13 @@ const loginUser = async (req, res) => {
         role: roleName,
         avatar: user.avatar,
         savedJobs: user.savedJobs || [],
-        subscription: user.subscription,
-        subscriptionExpiry: user.subscriptionExpiry,
-        downloadsUsed: user.downloadsUsed || 0
+        subscription,
+        subscriptionExpiry,
+        downloadsUsed: user.downloadsUsed || 0,
+        messagesUsed: user.messagesUsed || 0,
+        counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+        employerCompany: user.employerCompany || null,
+        employerCompanyName,
       }
     });
   } catch (err) {
@@ -292,20 +344,44 @@ const getUserProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
-    
+
+    const roleName = user.role.name;
+    await ensureFreePlan(user, roleName);
+
+    // Clear stale expiry for free/lifetime plans
+    if (user.subscription && user.subscription.price === 0 && user.subscriptionExpiry) {
+      user.subscriptionExpiry = null;
+      await user.save();
+    }
+
+    let subscription = user.subscription;
+    let subscriptionExpiry = user.subscriptionExpiry;
+    let employerCompanyName = null;
+
+    if (roleName === 'org_employee' && user.employerCompany) {
+      const employer = await Company.findById(user.employerCompany).populate('subscription');
+      subscription = employer?.subscription || null;
+      subscriptionExpiry = employer?.subscriptionExpiry || null;
+      employerCompanyName = employer?.name || null;
+    }
+
     res.json({
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role.name,
+      role: roleName,
       avatar: user.avatar,
       savedJobs: user.savedJobs || [],
-      subscription: user.subscription,
-      subscriptionExpiry: user.subscriptionExpiry,
+      subscription,
+      subscriptionExpiry,
       autoRenew: user.autoRenew || false,
       downloadsUsed: user.downloadsUsed || 0,
       searchUsed: user.searchUsed || 0,
       jobsUsed: user.jobsUsed || 0,
+      messagesUsed: user.messagesUsed || 0,
+      counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+      employerCompany: user.employerCompany || null,
+      employerCompanyName,
     });
   } catch (err) {
     console.error(err.message);

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createJob, getCompanyJobs, updateJob, deleteJob, getAllJobs, getMatchingJobs } = require('../controllers/jobController');
+const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getMatchingJobs, getRecruiterAnalytics } = require('../controllers/jobController');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
 
 // Public route to get all jobs
@@ -15,6 +15,8 @@ router.use(authorizeRoles('recruiter', 'company'));
 
 router.post('/', createJob);
 router.get('/company-jobs', getCompanyJobs);
+router.get('/company-jobs-stats', getCompanyJobsWithStats);
+router.get('/analytics', getRecruiterAnalytics);
 router.put('/:id', updateJob);
 router.delete('/:id', deleteJob);
 

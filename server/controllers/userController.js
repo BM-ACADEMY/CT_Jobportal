@@ -175,7 +175,9 @@ const getSavedJobs = async (req, res) => {
 const getPublicProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).select('name email avatar profile role');
+    const user = await User.findById(id)
+      .select('name email avatar profile role subscription')
+      .populate('subscription', 'hasPriorityBadge hasProfileBoost');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     res.json(user);

@@ -5,7 +5,7 @@ const AuthContext = createContext();
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/auth`;
 
 const getRoleRoute = (role) => {
-  const routes = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', jobseeker: '/jobseeker' };
+  const routes = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', company: '/company', jobseeker: '/jobseeker', org_employee: '/employee' };
   return routes[role] || '/jobseeker';
 };
 
@@ -18,8 +18,24 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (storedUser && token) {
       try {
+        // Hydrate immediately from localStorage so the UI doesn't flash
         setUser(JSON.parse(storedUser));
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Then sync from server — this triggers ensureFreePlan for users with no subscription
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/me`)
+          .then(res => {
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          })
+          .catch(() => {
+            // Token expired or invalid — clear session
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            setUser(null);
+            delete axios.defaults.headers.common['Authorization'];
+          })
+          .finally(() => setLoading(false));
+        return;
       } catch (err) {
         console.error('Error parsing stored user:', err);
         localStorage.removeItem('user');
