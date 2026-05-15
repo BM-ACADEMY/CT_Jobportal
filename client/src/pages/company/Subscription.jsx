@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PricingCard from '../../components/subscription/PricingCard';
+import CheckoutModal from '../../components/subscription/CheckoutModal';
 
 const RECRUITER_FEATURES = [
   { label: 'Job postings', key: 'activeJobPostings' },
@@ -18,10 +19,11 @@ const RECRUITER_FEATURES = [
   { label: 'Candidate DB export', key: 'hasCandidateDBExport' },
   { label: 'Bulk messaging', key: 'hasBulkMessaging' },
   { label: 'Video interview', key: 'hasVideoInterview' },
+  { label: 'Priority Listing', key: 'hasPriorityListing' },
+  { label: 'AI candidate matching', key: 'hasAICandidateMatching' },
 ];
 
 const COMPANY_FEATURES = [
-  { label: 'Job postings', key: 'activeJobPostings', unit: '/month' },
   { label: 'User seats', key: 'userSeats' },
   { label: 'Company profile', key: 'companyProfileType' },
   { label: 'Team collaboration', key: 'hasTeamCollaboration' },
@@ -52,7 +54,9 @@ const SubscriptionPage = () => {
   const { user, refreshUser } = useAuth();
   const [plans, setPlans] = useState([]);
   const [globalFeatures, setGlobalFeatures] = useState([]);
+  const [gstPercentage, setGstPercentage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [checkoutPlan, setCheckoutPlan] = useState(null);
   const [autoRenew, setAutoRenew] = useState(!!user?.autoRenew);
   const [savingAutoRenew, setSavingAutoRenew] = useState(false);
 
@@ -61,12 +65,14 @@ const SubscriptionPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [plansRes, featuresRes] = await Promise.all([
+        const [plansRes, featuresRes, settingsRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/subscriptions`),
           axios.get(`${API_BASE_URL}/subscriptions/features`),
+          axios.get(`${API_BASE_URL}/settings`),
         ]);
         setPlans(plansRes.data.filter(p => p.isActive));
         setGlobalFeatures(featuresRes.data);
+        setGstPercentage(settingsRes.data.gstPercentage || 0);
       } catch {
         toast.error('Failed to load subscription plans');
       } finally {
@@ -104,7 +110,15 @@ const SubscriptionPage = () => {
     }
   };
 
-  const handleUpgrade = async (plan) => {
+  const handleUpgrade = (plan) => {
+    if (plan.price === 0) {
+      handleProceedPayment(plan);
+      return;
+    }
+    setCheckoutPlan(plan);
+  };
+
+  const handleProceedPayment = async (plan, quantity = 1, selectedAutoRenew = true) => {
     try {
       const token = localStorage.getItem('token');
 
@@ -115,11 +129,13 @@ const SubscriptionPage = () => {
           razorpay_order_id: `free_order_${Date.now()}`,
           razorpay_signature: 'free_signature',
           isFree: true,
-          autoRenew,
+          quantity: 1,
+          autoRenew: selectedAutoRenew,
         }, { headers: { Authorization: `Bearer ${token}` } });
 
         if (res.data.success) {
           toast.success('Subscription updated');
+          setCheckoutPlan(null);
           refreshUser();
         }
         return;
@@ -127,16 +143,19 @@ const SubscriptionPage = () => {
 
       const orderRes = await axios.post(`${API_BASE_URL}/payments/create-order`, {
         planId: plan._id,
+        quantity,
       }, { headers: { Authorization: `Bearer ${token}` } });
 
       const { orderId, amount, currency } = orderRes.data;
+
+      setCheckoutPlan(null);
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount,
         currency,
         name: 'Job Portal',
-        description: `Upgrade to ${plan.name}`,
+        description: `${plan.name} — ${quantity > 1 ? `${quantity}× ` : ''}${plan.duration}`,
         order_id: orderId,
         handler: async (response) => {
           try {
@@ -145,7 +164,8 @@ const SubscriptionPage = () => {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               planId: plan._id,
-              autoRenew,
+              quantity,
+              autoRenew: selectedAutoRenew,
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             if (verifyRes.data.success) {
@@ -169,18 +189,22 @@ const SubscriptionPage = () => {
 
   const buildFeatures = (plan, role) => {
     const base = role === 'company' ? COMPANY_FEATURES : RECRUITER_FEATURES;
+    const staticLabels = new Set(base.map(f => f.label.toLowerCase()));
     return [
       ...base,
-      ...globalFeatures.filter(f => f.role === role).map(gf => {
-        const featureInPlan = (plan.features || []).find(f => f.name === gf.name);
-        return {
-          label: gf.name,
-          key: 'dynamic',
-          isDynamic: true,
-          isActive: !!featureInPlan?.isActive,
-          value: featureInPlan?.value,
-        };
-      }),
+      ...globalFeatures
+        .filter(f => f.role === role)
+        .filter(gf => !staticLabels.has(gf.name.toLowerCase()))
+        .map(gf => {
+          const featureInPlan = (plan.features || []).find(f => f.name === gf.name);
+          return {
+            label: gf.name,
+            key: 'dynamic',
+            isDynamic: true,
+            isActive: !!featureInPlan?.isActive,
+            value: featureInPlan?.value,
+          };
+        }),
     ];
   };
 
@@ -188,6 +212,17 @@ const SubscriptionPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-20 pt-4">
+
+      {/* Checkout summary modal */}
+      {checkoutPlan && (
+        <CheckoutModal
+          plan={checkoutPlan}
+          plans={plans}
+          gstPercentage={gstPercentage}
+          onClose={() => setCheckoutPlan(null)}
+          onProceed={handleProceedPayment}
+        />
+      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
@@ -306,6 +341,7 @@ const SubscriptionPage = () => {
                         currentPlanId={currentPlan?._id}
                         onAction={handleUpgrade}
                         isPopular={idx === 1}
+                        gstPercentage={gstPercentage}
                       />
                     ))}
                   </div>
@@ -328,6 +364,7 @@ const SubscriptionPage = () => {
                         currentPlanId={currentPlan?._id}
                         onAction={handleUpgrade}
                         isPopular={idx === 1}
+                        gstPercentage={gstPercentage}
                       />
                     ))}
                   </div>

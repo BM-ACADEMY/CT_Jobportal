@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const AdminRequest = require('../models/AdminRequest');
+const mongoose = require('mongoose');
 
 // @desc    Book a career counselling session
 // @route   POST /api/requests/counselling
@@ -113,8 +114,91 @@ const submitSalaryBenchmarkRequest = async (req, res) => {
 const getMySessions = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('counsellingSessionsUsed');
-    res.json({ counsellingSessionsUsed: user?.counsellingSessionsUsed || 0 });
+    const sessions = await AdminRequest.find({ user: req.user.id, type: 'counselling' })
+      .sort({ createdAt: -1 });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const counts = { booked: 0, accepted: 0, upcoming: 0, completed: 0, rejected: 0 };
+    sessions.forEach(s => {
+      if (s.status === 'pending') counts.booked++;
+      else if (s.status === 'approved') {
+        counts.accepted++;
+        if (new Date(s.bookingDate) >= today) counts.upcoming++;
+      } else if (s.status === 'completed') counts.completed++;
+      else if (s.status === 'cancelled') counts.rejected++;
+    });
+
+    res.json({
+      counsellingSessionsUsed: user?.counsellingSessionsUsed || 0,
+      sessions,
+      counts,
+    });
   } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Get interview prep requests for current user
+// @route   GET /api/requests/my-interview-prep
+const getMyInterviewPrep = async (req, res) => {
+  try {
+    const requests = await AdminRequest.find({ user: req.user.id, type: 'interview_prep' })
+      .sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Seeker: Cancel own counselling session
+// @route   PATCH /api/requests/counselling/:id/cancel
+const cancelMySession = async (req, res) => {
+  try {
+    const session = await AdminRequest.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+      type: 'counselling',
+    });
+
+    if (!session) return res.status(404).json({ msg: 'Session not found' });
+    if (session.status === 'completed') return res.status(400).json({ msg: 'Completed sessions cannot be cancelled' });
+    if (session.status === 'cancelled') return res.status(400).json({ msg: 'Session is already cancelled' });
+
+    session.status = 'cancelled';
+    await session.save();
+
+    // Refund the usage count so the user can rebook
+    await User.findByIdAndUpdate(req.user.id, { $inc: { counsellingSessionsUsed: -1 } });
+
+    res.json({ msg: 'Session cancelled successfully' });
+  } catch (err) {
+    console.error('Cancel Session Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Seeker: Cancel own interview prep request
+// @route   PATCH /api/requests/interview-prep/:id/cancel
+const cancelMyInterviewPrep = async (req, res) => {
+  try {
+    const request = await AdminRequest.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+      type: 'interview_prep',
+    });
+
+    if (!request) return res.status(404).json({ msg: 'Request not found' });
+    if (request.status === 'completed') return res.status(400).json({ msg: 'Completed requests cannot be cancelled' });
+    if (request.status === 'cancelled') return res.status(400).json({ msg: 'Request is already cancelled' });
+
+    request.status = 'cancelled';
+    await request.save();
+
+    res.json({ msg: 'Interview prep request cancelled' });
+  } catch (err) {
+    console.error('Cancel Interview Prep Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
@@ -130,6 +214,7 @@ const getAdminRequests = async (req, res) => {
 
     const requests = await AdminRequest.find(filter)
       .populate('user', 'name email avatar')
+      .populate('assignedTo', 'name email role companyName')
       .sort({ createdAt: -1 });
 
     res.json(requests);
@@ -139,7 +224,7 @@ const getAdminRequests = async (req, res) => {
   }
 };
 
-// @desc    Admin: Update request status
+// @desc    Admin: Update request status / notes
 // @route   PATCH /api/requests/admin/:id
 const updateRequestStatus = async (req, res) => {
   try {
@@ -148,10 +233,94 @@ const updateRequestStatus = async (req, res) => {
       req.params.id,
       { status, adminNotes },
       { new: true }
-    );
+    ).populate('assignedTo', 'name email role');
     if (!request) return res.status(404).json({ msg: 'Request not found' });
     res.json(request);
   } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Admin: Assign request to a recruiter or company
+// @route   PATCH /api/requests/admin/:id/assign
+const adminAssignRequest = async (req, res) => {
+  try {
+    const { assignedTo, adminNotes } = req.body;
+    if (!assignedTo) return res.status(400).json({ msg: 'assignedTo is required' });
+
+    const assignee = await User.findById(assignedTo).select('name email role');
+    if (!assignee) return res.status(404).json({ msg: 'Assignee user not found' });
+    if (!['recruiter', 'company'].includes(assignee.role)) {
+      return res.status(400).json({ msg: 'Can only assign to recruiters or companies' });
+    }
+
+    const update = {
+      assignedTo,
+      assignedAt: new Date(),
+      status: 'approved',
+    };
+    if (adminNotes !== undefined) update.adminNotes = adminNotes;
+
+    const request = await AdminRequest.findByIdAndUpdate(req.params.id, update, { new: true })
+      .populate('user', 'name email avatar')
+      .populate('assignedTo', 'name email role companyName');
+
+    if (!request) return res.status(404).json({ msg: 'Request not found' });
+    res.json(request);
+  } catch (err) {
+    console.error('Assign Request Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Admin: Get recruiters and companies for assign dropdown
+// @route   GET /api/requests/admin/assignees
+const getAssignees = async (req, res) => {
+  try {
+    const assignees = await User.find({ role: { $in: ['recruiter', 'company'] } })
+      .select('name email role companyName')
+      .sort({ name: 1 });
+    res.json(assignees);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Recruiter/Company: Get requests assigned to them
+// @route   GET /api/requests/assigned
+const getAssignedRequests = async (req, res) => {
+  try {
+    const { type, status } = req.query;
+    const filter = { assignedTo: req.user.id };
+    if (type) filter.type = type;
+    if (status) filter.status = status;
+
+    const requests = await AdminRequest.find(filter)
+      .populate('user', 'name email avatar phone')
+      .sort({ assignedAt: -1 });
+
+    res.json(requests);
+  } catch (err) {
+    console.error('Get Assigned Requests Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Recruiter/Company: Update status on an assigned request (complete / add notes)
+// @route   PATCH /api/requests/assigned/:id
+const updateAssignedRequest = async (req, res) => {
+  try {
+    const { status, adminNotes } = req.body;
+    const request = await AdminRequest.findOne({ _id: req.params.id, assignedTo: req.user.id });
+    if (!request) return res.status(404).json({ msg: 'Request not found or not assigned to you' });
+
+    if (status) request.status = status;
+    if (adminNotes !== undefined) request.adminNotes = adminNotes;
+    await request.save();
+
+    res.json(request);
+  } catch (err) {
+    console.error('Update Assigned Request Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
@@ -161,6 +330,13 @@ module.exports = {
   submitInterviewPrepRequest,
   submitSalaryBenchmarkRequest,
   getMySessions,
+  getMyInterviewPrep,
+  cancelMySession,
+  cancelMyInterviewPrep,
   getAdminRequests,
   updateRequestStatus,
+  adminAssignRequest,
+  getAssignees,
+  getAssignedRequests,
+  updateAssignedRequest,
 };

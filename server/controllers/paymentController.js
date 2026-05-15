@@ -3,6 +3,12 @@ const razorpay = require('../config/razorpay');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Payment = require('../models/Payment');
+const Settings = require('../models/Settings');
+
+const fetchGstPercentage = async () => {
+  const settings = await Settings.findOne({ key: 'global' });
+  return settings?.gstPercentage || 0;
+};
 
 // @desc    Create a Razorpay order
 // @route   POST /api/payments/create-order
@@ -25,12 +31,19 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ msg: 'Free plans do not require a Razorpay order' });
     }
 
+    const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
+    const gstPercentage = await fetchGstPercentage();
+    const baseAmountPerUnit = plan.price;
+    const baseAmount = baseAmountPerUnit * quantity;
+    const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
+    const totalAmount = baseAmount + gstAmount;
+
     // Amount in paise (1 INR = 100 paise)
-    const amount = plan.price * 100;
+    const amountInPaise = Math.round(totalAmount * 100);
     const currency = 'INR';
 
     const options = {
-      amount,
+      amount: amountInPaise,
       currency,
       receipt: `receipt_${Date.now()}`,
     };
@@ -41,7 +54,13 @@ const createOrder = async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      planId: plan._id
+      planId: plan._id,
+      quantity,
+      baseAmountPerUnit,
+      baseAmount,
+      gstPercentage,
+      gstAmount,
+      totalAmount,
     });
   } catch (err) {
     console.error('Create Order Error:', err);
@@ -53,13 +72,14 @@ const createOrder = async (req, res) => {
 // @route   POST /api/payments/verify-payment
 const verifyPayment = async (req, res) => {
   try {
-    const { 
-      razorpay_order_id, 
-      razorpay_payment_id, 
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
       razorpay_signature,
       planId,
       isFree
     } = req.body;
+    const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
 
     if (!isFree) {
       const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -82,14 +102,14 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ msg: 'Plan not found' });
     }
 
-    // Calculate expiry date
+    // Calculate expiry date (multiplied by quantity)
     let expiryDate = new Date();
     if (plan.duration === 'Monthly') {
-      expiryDate.setMonth(expiryDate.getMonth() + 1);
+      expiryDate.setMonth(expiryDate.getMonth() + quantity);
     } else if (plan.duration === 'Quarterly') {
-      expiryDate.setMonth(expiryDate.getMonth() + 3);
+      expiryDate.setMonth(expiryDate.getMonth() + (3 * quantity));
     } else if (plan.duration === 'Yearly') {
-      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+      expiryDate.setFullYear(expiryDate.getFullYear() + quantity);
     } else if (plan.duration === 'Lifetime') {
       expiryDate.setFullYear(expiryDate.getFullYear() + 100);
     }
@@ -122,10 +142,19 @@ const verifyPayment = async (req, res) => {
 
     // Create payment record
     try {
+      const gstPct = isFree ? 0 : await fetchGstPercentage();
+      const baseAmt = isFree ? 0 : plan.price * quantity;
+      const gstAmt = isFree ? 0 : Math.round(baseAmt * gstPct) / 100;
+      const totalAmt = baseAmt + gstAmt;
+
       const paymentRecord = new Payment({
         user: req.user.id,
         plan: plan._id,
-        amount: isFree ? 0 : plan.price,
+        amount: totalAmt,
+        baseAmount: baseAmt,
+        gstPercentage: gstPct,
+        gstAmount: gstAmt,
+        quantity: isFree ? 1 : quantity,
         currency: plan.currency || 'INR',
         razorpay_order_id: razorpay_order_id || 'FREE_ORDER',
         razorpay_payment_id: razorpay_payment_id || 'FREE_PAYMENT',

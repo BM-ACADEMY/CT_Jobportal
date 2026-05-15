@@ -26,6 +26,9 @@ const adminRequestSchema = new mongoose.Schema({
   companyName: String,
   // Admin notes
   adminNotes: String,
+  // Assignment to recruiter/company
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  assignedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('AdminRequest', adminRequestSchema);

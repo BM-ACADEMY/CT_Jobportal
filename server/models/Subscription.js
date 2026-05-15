@@ -52,6 +52,8 @@ const subscriptionSchema = new mongoose.Schema({
   hasCandidateDBExport: { type: Boolean, default: false },
   hasBulkMessaging: { type: Boolean, default: false },
   hasVideoInterview: { type: Boolean, default: false },
+  hasPriorityListing: { type: Boolean, default: false },
+  hasAICandidateMatching: { type: Boolean, default: false },
 
   // Organization specific
   userSeats: { type: Number, default: 1 },

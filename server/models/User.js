@@ -181,6 +181,10 @@ const userSchema = new mongoose.Schema({
   counsellingSessionsUsed: {
     type: Number,
     default: 0
+  },
+  searchUsedDate: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
 

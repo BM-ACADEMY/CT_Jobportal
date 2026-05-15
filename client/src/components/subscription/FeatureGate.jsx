@@ -4,9 +4,34 @@ import { Lock, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 
+// Maps static schema keys to their human-readable names used in the dynamic features array.
+// Values can be a string OR an array of strings (aliases) — admin may name features differently.
+const DYNAMIC_FEATURE_NAMES = {
+  hasResumeBuilder:          'Resume Builder',
+  hasProfileBoost:           'Profile Boost',
+  hasProfileViewInsights:    'Profile View Insights',
+  hasMessageRecruiters:      'Message Recruiters',
+  hasCareerCounselling:      'Career Counselling',
+  hasInterviewPrep:          'Interview Prep',
+  hasPriorityBadge:          'Priority Badge',
+  hasSalaryBenchmarking:     ['Salary Benchmarking', 'Salary Benchmark'],
+  hasAiResumeReview:         ['AI Resume Review', 'AI Resume'],
+  hasATSPipeline:            ['ATS Pipeline', 'ATS'],
+  hasAnalyticsDashboard:     ['Analytics Dashboard', 'Analytics'],
+  hasCandidateDBExport:      ['Candidate DB Export', 'Candidate DB export', 'DB Export'],
+  hasBulkMessaging:          ['Bulk Messaging', 'Bulk Message'],
+  hasVideoInterview:         ['Video Interview', 'Video interview'],
+  hasPriorityListing:        ['Priority Listing', 'Priority'],
+  hasAICandidateMatching:    ['AI Candidate Matching', 'AI candidate matching', 'AI Matching'],
+  hasTeamCollaboration:      ['Team Collaboration', 'Team'],
+  hasBulkApplicantManagement: ['Bulk Applicant Management', 'Bulk Applicant'],
+  hasInterviewScheduling:    ['Interview Scheduling', 'Schedule', 'Scheduling'],
+  hasDedicatedOnboarding:    ['Dedicated Onboarding', 'Onboarding'],
+};
+
 /**
  * Checks if a specific feature key is active on the user's subscription.
- * Handles booleans, counts (0=unlimited=enabled), and string enums.
+ * Checks both static schema fields and the dynamic features[] array.
  */
 export const hasFeature = (user, featureKey) => {
   const plan = user?.subscription;
@@ -16,13 +41,32 @@ export const hasFeature = (user, featureKey) => {
   const isFree = plan.price === 0 || plan.duration === 'Lifetime';
   if (!isFree && user.subscriptionExpiry && new Date(user.subscriptionExpiry) < new Date()) return false;
 
+  // 1. Check static schema field — only short-circuit on truthy values.
+  // A static `false` falls through so the dynamic features[] can still grant access.
   const val = plan[featureKey];
-  if (val === undefined || val === null) return false;
-  if (typeof val === 'boolean') return val;
-  // Count fields: 0 = unlimited → enabled; negative not used
-  if (typeof val === 'number') return val >= 0;
-  // String fields (jobAlerts, companyProfileType)
-  if (typeof val === 'string') return val !== 'none' && val !== '';
+  if (val !== undefined && val !== null) {
+    if (typeof val === 'boolean') {
+      if (val === true) return true;
+      // val === false → fall through to dynamic check below
+    } else if (typeof val === 'number') {
+      if (val >= 0) return true; // 0 = unlimited = enabled; positive = N uses = enabled
+    } else if (typeof val === 'string') {
+      if (val !== 'none' && val !== '' && val !== 'None') return true;
+    }
+  }
+
+  // 2. Fallback: check dynamic features[] array (admin may have set it there)
+  if (Array.isArray(plan.features) && plan.features.length > 0) {
+    const dynamicEntry = DYNAMIC_FEATURE_NAMES[featureKey];
+    if (dynamicEntry) {
+      const aliases = Array.isArray(dynamicEntry) ? dynamicEntry : [dynamicEntry];
+      const dynMatch = plan.features.find(
+        f => f.isActive && aliases.some(alias => f.name?.toLowerCase() === alias.toLowerCase())
+      );
+      if (dynMatch) return true;
+    }
+  }
+
   return false;
 };
 
@@ -37,7 +81,9 @@ const PERKS = {
   hasAnalyticsDashboard:    ['Job post performance', 'Candidate funnel metrics', 'Time-to-hire tracking', 'Source attribution'],
   hasCandidateDBExport:     ['Export to CSV / Excel', 'Bulk profile download', 'Filter before export', 'Scheduled exports'],
   hasBulkMessaging:         ['Message up to 500 candidates', 'Template library', 'Open-rate analytics', 'Personalization tokens'],
-  hasVideoInterview:        ['Integrated video rooms', 'Recording & transcripts', 'Invite candidates via link', 'Panel interview support'],
+  hasVideoInterview:        ['Schedule video interviews', 'Invite candidates via meeting link', 'Track interview status', 'Manage upcoming interviews'],
+  hasPriorityListing:       ['Golden star badge on all job cards', 'Jobs listed at top of search results', 'Highlighted as Priority Hiring Partner', 'Increased candidate visibility'],
+  hasAICandidateMatching:   ['AI-scored candidate ranking', 'Skills + experience matching', 'Location & job type fit analysis', 'Sorted by match percentage'],
   hasTeamCollaboration:     ['Shared job pipelines', 'Role-based permissions', 'Internal notes & tags', 'Activity feed'],
   hasBulkApplicantManagement: ['Batch accept / reject', 'Multi-job applicant view', 'Smart filters', 'One-click status update'],
   hasInterviewScheduling:   ['Calendar sync (Google/Outlook)', 'Auto-reminders', 'Self-schedule links', 'Interviewer availability'],
@@ -58,6 +104,8 @@ const NAMES = {
   hasCandidateDBExport: 'Candidate Export',
   hasBulkMessaging: 'Bulk Messaging',
   hasVideoInterview: 'Video Interview',
+  hasPriorityListing: 'Priority Listing',
+  hasAICandidateMatching: 'AI Candidate Matching',
   hasTeamCollaboration: 'Team Collaboration',
   hasBulkApplicantManagement: 'Bulk Applicant Management',
   hasInterviewScheduling: 'Interview Scheduling',

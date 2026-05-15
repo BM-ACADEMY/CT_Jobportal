@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import PricingCard from '../../components/subscription/PricingCard';
+import CheckoutModal from '../../components/subscription/CheckoutModal';
 
 const JOBSEEKER_FEATURES = [
   { label: 'Resume Builder', key: 'hasResumeBuilder' },
@@ -51,7 +52,9 @@ const SubscriptionPage = () => {
   const { user, refreshUser } = useAuth();
   const [plans, setPlans] = useState([]);
   const [globalFeatures, setGlobalFeatures] = useState([]);
+  const [gstPercentage, setGstPercentage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [checkoutPlan, setCheckoutPlan] = useState(null);
   const [autoRenew, setAutoRenew] = useState(!!user?.autoRenew);
   const [savingAutoRenew, setSavingAutoRenew] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
@@ -62,12 +65,14 @@ const SubscriptionPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [plansRes, featuresRes] = await Promise.all([
+        const [plansRes, featuresRes, settingsRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/subscriptions`),
           axios.get(`${API_BASE_URL}/subscriptions/features`),
+          axios.get(`${API_BASE_URL}/settings`),
         ]);
         setPlans(plansRes.data.filter(p => p.isActive && p.role === 'jobseeker'));
         setGlobalFeatures(featuresRes.data.filter(f => f.role === 'jobseeker'));
+        setGstPercentage(settingsRes.data.gstPercentage || 0);
       } catch {
         toast.error('Failed to load plans');
       } finally {
@@ -129,7 +134,15 @@ const SubscriptionPage = () => {
     }
   };
 
-  const handleUpgrade = async (plan) => {
+  const handleUpgrade = (plan) => {
+    if (plan.price === 0) {
+      handleProceedPayment(plan);
+      return;
+    }
+    setCheckoutPlan(plan);
+  };
+
+  const handleProceedPayment = async (plan, quantity = 1, selectedAutoRenew = true) => {
     try {
       const token = localStorage.getItem('token');
 
@@ -140,11 +153,13 @@ const SubscriptionPage = () => {
           razorpay_order_id: `free_order_${Date.now()}`,
           razorpay_signature: 'free_signature',
           isFree: true,
-          autoRenew,
+          quantity: 1,
+          autoRenew: selectedAutoRenew,
         }, { headers: { Authorization: `Bearer ${token}` } });
 
         if (res.data.success) {
           toast.success('Subscription updated');
+          setCheckoutPlan(null);
           refreshUser();
         }
         return;
@@ -152,16 +167,19 @@ const SubscriptionPage = () => {
 
       const orderRes = await axios.post(`${API_BASE_URL}/payments/create-order`, {
         planId: plan._id,
+        quantity,
       }, { headers: { Authorization: `Bearer ${token}` } });
 
       const { orderId, amount, currency } = orderRes.data;
+
+      setCheckoutPlan(null);
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount,
         currency,
         name: 'CareerPoint',
-        description: `Upgrade to ${plan.name}`,
+        description: `${plan.name} — ${quantity > 1 ? `${quantity}× ` : ''}${plan.duration}`,
         order_id: orderId,
         handler: async (response) => {
           try {
@@ -170,7 +188,8 @@ const SubscriptionPage = () => {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               planId: plan._id,
-              autoRenew,
+              quantity,
+              autoRenew: selectedAutoRenew,
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             if (verifyRes.data.success) {
@@ -192,18 +211,23 @@ const SubscriptionPage = () => {
     }
   };
 
-  const buildPlanFeatures = (plan) => [
-    ...JOBSEEKER_FEATURES,
-    ...globalFeatures.map(gf => {
-      const featureInPlan = (plan.features || []).find(f => f.name === gf.name);
-      return {
-        label: gf.name,
-        isDynamic: true,
-        isActive: !!featureInPlan?.isActive,
-        value: featureInPlan?.value ?? null,
-      };
-    }),
-  ];
+  const buildPlanFeatures = (plan) => {
+    const staticLabels = new Set(JOBSEEKER_FEATURES.map(f => f.label.toLowerCase()));
+    return [
+      ...JOBSEEKER_FEATURES,
+      ...globalFeatures
+        .filter(gf => !staticLabels.has(gf.name.toLowerCase()))
+        .map(gf => {
+          const featureInPlan = (plan.features || []).find(f => f.name === gf.name);
+          return {
+            label: gf.name,
+            isDynamic: true,
+            isActive: !!featureInPlan?.isActive,
+            value: featureInPlan?.value ?? null,
+          };
+        }),
+    ];
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 pb-20 pt-4">
@@ -213,6 +237,17 @@ const SubscriptionPage = () => {
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Premium Plans</h1>
         <p className="text-sm text-slate-500 mt-1">Unlock advanced tools to accelerate your job search.</p>
       </div>
+
+      {/* Checkout summary modal */}
+      {checkoutPlan && (
+        <CheckoutModal
+          plan={checkoutPlan}
+          plans={plans}
+          gstPercentage={gstPercentage}
+          onClose={() => setCheckoutPlan(null)}
+          onProceed={handleProceedPayment}
+        />
+      )}
 
       {/* Cancel confirmation modal */}
       {cancelConfirm && (
@@ -374,6 +409,7 @@ const SubscriptionPage = () => {
                 onAction={handleUpgrade}
                 onCancel={!isOnFreePlan ? handleCancel : undefined}
                 isPopular={idx === Math.floor(plans.length / 2)}
+                gstPercentage={gstPercentage}
               />
             ))}
           </div>

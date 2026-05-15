@@ -246,10 +246,24 @@ const PostJob = () => {
     };
 
     const [draftLoading, setDraftLoading] = useState(false);
+    const [quota, setQuota] = useState(null);
+
+    useEffect(() => {
+        const fetchQuota = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/jobs/quota`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setQuota(res.data);
+            } catch { /* quota display is non-critical */ }
+        };
+        fetchQuota();
+    }, [jobs]);
 
     const handleSubmit = async (e, status = 'active') => {
         if (e) e.preventDefault();
-        
+
         if (!user?.company) {
             toast.error("Complete your company profile in settings before posting a job");
             return;
@@ -258,17 +272,6 @@ const PostJob = () => {
         const loadingSetter = status === 'draft' ? setDraftLoading : setLoading;
         loadingSetter(true);
         try {
-            // Check Job Limit for Active postings (only for new jobs)
-            if (status === 'active' && !editingJobId) {
-                const limit = user?.subscription?.jobPostingLimit || 5; // Default 5 if not set
-                const activeJobsCount = jobs.filter(j => j.status === 'active').length;
-                
-                if (limit > 0 && activeJobsCount >= limit) {
-                    toast.error(`Job limit reached! Your ${user?.subscription?.name || 'current'} plan allows only ${limit} active postings.`);
-                    loadingSetter(false);
-                    return;
-                }
-            }
 
             if (editingJobId) {
                 await axios.put(`${API_JOBS_URL}/${editingJobId}`, { ...formData, status });
@@ -318,10 +321,22 @@ const PostJob = () => {
                                 Job <span className="text-emerald-600">Postings</span>
                             </h1>
                             <p className="text-muted-foreground text-sm mt-1">Manage and track your active recruitment opportunities</p>
+                            {quota && !quota.unlimited && (
+                                <div className={`mt-2 inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full ${
+                                    quota.used >= quota.limit ? 'bg-red-50 text-red-600' :
+                                    quota.used >= quota.limit * 0.8 ? 'bg-amber-50 text-amber-600' :
+                                    'bg-emerald-50 text-emerald-700'
+                                }`}>
+                                    <Briefcase className="w-3 h-3" />
+                                    {quota.used}/{quota.limit} job postings used
+                                    {quota.used >= quota.limit && ' — Limit reached'}
+                                </div>
+                            )}
                         </div>
-                        <Button 
+                        <Button
                             onClick={() => setViewMode('create')}
-                            className="rounded-lg font-semibold px-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
+                            disabled={quota && !quota.unlimited && quota.used >= quota.limit}
+                            className="rounded-lg font-semibold px-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all disabled:opacity-50"
                         >
                             <Plus className="w-4 h-4 mr-2" /> Post a New Job
                         </Button>

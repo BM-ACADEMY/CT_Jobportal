@@ -15,6 +15,22 @@ const paymentSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  baseAmount: {
+    type: Number,
+    default: 0
+  },
+  quantity: {
+    type: Number,
+    default: 1
+  },
+  gstPercentage: {
+    type: Number,
+    default: 0
+  },
+  gstAmount: {
+    type: Number,
+    default: 0
+  },
   currency: {
     type: String,
     default: 'INR'

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import {
   Plus, Trash2, Settings2, User, Users, Building2,
   ListPlus, X, Check, Pencil, ChevronDown, ChevronUp, Infinity,
-  Tag, Hash, Clock, ToggleLeft, Zap, AlertCircle, RefreshCw
+  Tag, Hash, Clock, ToggleLeft, Zap, AlertCircle, RefreshCw, Percent
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,8 @@ const STATIC_FEATURES = {
     { key: 'hasCandidateDBExport', label: 'Candidate DB Export', type: 'boolean' },
     { key: 'hasBulkMessaging', label: 'Bulk Messaging', type: 'boolean' },
     { key: 'hasVideoInterview', label: 'Video Interview', type: 'boolean' },
+    { key: 'hasPriorityListing', label: 'Priority Listing', type: 'boolean' },
+    { key: 'hasAICandidateMatching', label: 'AI Candidate Matching', type: 'boolean' },
   ],
   company: [
     { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
@@ -755,6 +757,76 @@ const StaticFeatureInput = ({ field, form, onChange }) => {
   return null;
 };
 
+// ── GST Settings Panel ────────────────────────────────────────────────────────
+const GstSettingsPanel = () => {
+  const [gst, setGst] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/settings`).then(res => {
+      setGst(String(res.data.gstPercentage ?? 0));
+    }).catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    const val = parseFloat(gst);
+    if (isNaN(val) || val < 0 || val > 100) {
+      toast.error('GST must be between 0 and 100');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await axios.patch(
+        `${API}/settings`,
+        { gstPercentage: val },
+        { headers: authHeader() }
+      );
+      setGst(String(res.data.gstPercentage));
+      toast.success('GST rate updated');
+    } catch {
+      toast.error('Failed to save GST rate');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center gap-5">
+      <div className="flex items-center gap-3 flex-1">
+        <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+          <Percent size={18} className="text-amber-600" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-800">GST Rate</p>
+          <p className="text-xs text-slate-400 font-medium mt-0.5">Applied on top of plan base price at checkout</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <Input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={gst}
+            onChange={e => setGst(e.target.value)}
+            className="h-10 w-28 rounded-xl border-slate-200 text-sm pr-8 text-right font-bold"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">%</span>
+        </div>
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="h-10 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs uppercase tracking-widest gap-2"
+        >
+          {saving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const ManageSubscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -836,6 +908,9 @@ const ManageSubscriptions = () => {
           <Plus size={15} /> New Plan
         </Button>
       </div>
+
+      {/* GST Settings */}
+      <GstSettingsPanel />
 
       {/* Role Tabs */}
       <Tabs value={activeRole} onValueChange={setActiveRole} className="space-y-6">

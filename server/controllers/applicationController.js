@@ -84,6 +84,72 @@ exports.updateApplicationStatus = async (req, res) => {
   }
 };
 
+exports.revokeApplication = async (req, res) => {
+  try {
+    const application = await Application.findOne({ _id: req.params.id, applicant: req.user.id });
+    if (!application) return res.status(404).json({ msg: 'Application not found' });
+
+    const revocable = ['pending', 'reviewed'];
+    if (!revocable.includes(application.status)) {
+      return res.status(400).json({ msg: `Applications with status "${application.status}" cannot be revoked` });
+    }
+
+    application.status = 'withdrawn';
+    await application.save();
+
+    await Job.findByIdAndUpdate(application.job, { $inc: { applicantsCount: -1 } });
+
+    res.json({ msg: 'Application revoked successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+exports.exportApplicants = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const User = require('../models/User');
+    const user = await User.findById(userId).populate('subscription');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    if (!user.subscription?.hasCandidateDBExport) {
+      return res.status(403).json({ msg: 'Candidate DB export requires a paid plan.', requiresUpgrade: true });
+    }
+
+    const { jobId } = req.params;
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ msg: 'Job not found' });
+
+    const applications = await Application.find({ job: jobId })
+      .populate('applicant', 'name email profile')
+      .sort({ createdAt: -1 });
+
+    // Build CSV
+    const rows = [['Name', 'Email', 'Location', 'Skills', 'Status', 'Applied Date']];
+    for (const app of applications) {
+      const c = app.applicant;
+      rows.push([
+        c?.name || '',
+        c?.email || '',
+        c?.profile?.location || '',
+        (c?.profile?.skills || []).join('; '),
+        app.status,
+        new Date(app.createdAt).toLocaleDateString('en-IN')
+      ]);
+    }
+
+    const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="applicants-${jobId}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    console.error('Export Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 exports.trackDownload = async (req, res) => {
   try {
     const userId = req.user.id;

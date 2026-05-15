@@ -29,15 +29,43 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from '../../context/AuthContext';
+import { hasFeature } from '@/components/subscription/FeatureGate';
 
 const Applicants = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  const canExport = hasFeature(user, 'hasCandidateDBExport');
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/applications/export/${jobId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `applicants-${jobId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Applicants exported to CSV');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
@@ -169,9 +197,21 @@ const Applicants = () => {
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto">
+          {canExport && (
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              disabled={exporting}
+              className="rounded-xl border-slate-200 bg-white gap-2 font-bold text-xs text-slate-600 h-10 px-4 shrink-0"
+              title="Export applicants to CSV"
+            >
+              {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              Export CSV
+            </Button>
+          )}
           <div className="relative flex-1 md:w-64">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input 
+            <Input
               placeholder="Search directory..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

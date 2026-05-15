@@ -8,10 +8,27 @@ const Application = require('../models/Application');
 const createJob = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).populate('subscription');
 
     if (!user || !user.company) {
       return res.status(400).json({ msg: 'You must be associated with a company to post jobs' });
+    }
+
+    // Enforce job posting limit
+    const plan = user.subscription;
+    if (plan && plan.activeJobPostings > 0) {
+      const activeCount = await Job.countDocuments({
+        company: user.company,
+        status: { $in: ['active', 'closed'] }
+      });
+      if (activeCount >= plan.activeJobPostings) {
+        return res.status(403).json({
+          msg: `Job posting limit reached. Your plan allows ${plan.activeJobPostings} job postings. Upgrade to post more.`,
+          requiresUpgrade: true,
+          limit: plan.activeJobPostings,
+          used: activeCount
+        });
+      }
     }
 
     const {
@@ -174,15 +191,31 @@ const getAllJobs = async (req, res) => {
 
     // 3. Find jobs where recruiter is NOT in blockedIds and company is NOT in blockedIds
     // Note: We also check if the company exists and status is active
-    const jobs = await Job.find({ 
+    const jobs = await Job.find({
       status: 'active',
       recruiter: { $nin: blockedIds },
       company: { $nin: blockedIds }
     })
       .populate('company', 'name logo location website')
+      .populate({
+        path: 'recruiter',
+        select: 'subscription',
+        populate: { path: 'subscription', select: 'hasPriorityListing' }
+      })
       .sort({ createdAt: -1 });
 
-    res.json(jobs);
+    // Sort: priority listing recruiters first, then by date
+    const prioritized = jobs.filter(j => j.recruiter?.subscription?.hasPriorityListing);
+    const regular = jobs.filter(j => !j.recruiter?.subscription?.hasPriorityListing);
+    const sorted = [...prioritized, ...regular];
+
+    // Add isPriority flag
+    const result = sorted.map(j => ({
+      ...j.toObject(),
+      isPriority: !!j.recruiter?.subscription?.hasPriorityListing
+    }));
+
+    res.json(result);
   } catch (err) {
     console.error('Get All Jobs Error:', err);
     res.status(500).json({ msg: 'Server error while fetching jobs' });
@@ -356,6 +389,249 @@ const getRecruiterAnalytics = async (req, res) => {
   }
 };
 
+// @desc    Search candidates (jobseekers) with daily limit enforcement
+// @route   GET /api/jobs/candidates/search
+// @access  Private (Recruiter/Company)
+const searchCandidates = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate('subscription');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const plan = user.subscription;
+    const limit = plan?.candidateSearchPerDay || 0;
+
+    // Reset daily counter if date has changed
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastSearchDate = user.searchUsedDate ? new Date(user.searchUsedDate) : null;
+    if (lastSearchDate) lastSearchDate.setHours(0, 0, 0, 0);
+
+    if (!lastSearchDate || lastSearchDate < today) {
+      user.searchUsed = 0;
+      user.searchUsedDate = new Date();
+    }
+
+    if (limit > 0 && user.searchUsed >= limit) {
+      return res.status(403).json({
+        msg: `Daily search limit reached. Your plan allows ${limit} candidate profile views per day. Resets at midnight.`,
+        requiresUpgrade: true,
+        limit,
+        used: user.searchUsed
+      });
+    }
+
+    const { q = '', skills = '', location = '', page = 1 } = req.query;
+    const perPage = 20;
+    const skip = (parseInt(page) - 1) * perPage;
+
+    const query = { 'role': { $exists: true } };
+    const andConditions = [];
+
+    if (q) {
+      andConditions.push({
+        $or: [
+          { name: { $regex: q, $options: 'i' } },
+          { 'profile.headline': { $regex: q, $options: 'i' } },
+          { 'profile.preferredRole': { $regex: q, $options: 'i' } }
+        ]
+      });
+    }
+    if (skills) {
+      const skillList = skills.split(',').map(s => s.trim()).filter(Boolean);
+      andConditions.push({ 'profile.skills': { $in: skillList } });
+    }
+    if (location) {
+      andConditions.push({ 'profile.location': { $regex: location, $options: 'i' } });
+    }
+
+    if (andConditions.length > 0) query.$and = andConditions;
+
+    // Only search jobseekers
+    const Role = require('../models/Role');
+    const seekerRole = await Role.findOne({ name: 'jobseeker' });
+    if (seekerRole) query.role = seekerRole._id;
+
+    const candidates = await User.find(query)
+      .select('name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification')
+      .skip(skip)
+      .limit(perPage)
+      .lean();
+
+    const total = await User.countDocuments(query);
+
+    res.json({ candidates, total, limit, used: user.searchUsed, remaining: limit === 0 ? null : limit - user.searchUsed });
+  } catch (err) {
+    console.error('Search Candidates Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    View a candidate profile (counts as one search)
+// @route   GET /api/jobs/candidates/:candidateId/profile
+// @access  Private (Recruiter/Company)
+const viewCandidateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate('subscription');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const plan = user.subscription;
+    const limit = plan?.candidateSearchPerDay || 0;
+
+    // Reset daily counter if date has changed
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastSearchDate = user.searchUsedDate ? new Date(user.searchUsedDate) : null;
+    if (lastSearchDate) lastSearchDate.setHours(0, 0, 0, 0);
+
+    if (!lastSearchDate || lastSearchDate < today) {
+      user.searchUsed = 0;
+      user.searchUsedDate = new Date();
+    }
+
+    if (limit > 0 && user.searchUsed >= limit) {
+      return res.status(403).json({
+        msg: `Daily search limit reached. Your plan allows ${limit} candidate profile views per day.`,
+        requiresUpgrade: true,
+        limit,
+        used: user.searchUsed
+      });
+    }
+
+    const candidate = await User.findById(req.params.candidateId)
+      .select('name avatar email profile recruiterProfile')
+      .lean();
+
+    if (!candidate) return res.status(404).json({ msg: 'Candidate not found' });
+
+    // Increment search count
+    user.searchUsed = (user.searchUsed || 0) + 1;
+    user.searchUsedDate = new Date();
+    await user.save();
+
+    res.json({ candidate, used: user.searchUsed, limit, remaining: limit === 0 ? null : limit - user.searchUsed });
+  } catch (err) {
+    console.error('View Candidate Profile Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    AI candidate matching for a job
+// @route   GET /api/jobs/:jobId/matched-candidates
+// @access  Private (Recruiter/Company)
+const getAICandidateMatches = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate('subscription');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const plan = user.subscription;
+    if (!plan?.hasAICandidateMatching) {
+      return res.status(403).json({ msg: 'AI candidate matching requires a paid plan.', requiresUpgrade: true });
+    }
+
+    const job = await Job.findById(req.params.jobId);
+    if (!job) return res.status(404).json({ msg: 'Job not found' });
+
+    // Fetch jobseekers who applied for this job
+    const applications = await Application.find({ job: job._id })
+      .populate({
+        path: 'applicant',
+        select: 'name avatar profile'
+      });
+
+    const jobSkills = (job.skillsRequired || []).map(s => s.toLowerCase());
+    const jobLocation = (job.location || '').toLowerCase();
+    const jobType = (job.jobType || '').toLowerCase();
+    const jobWorkMode = (job.workMode || '').toLowerCase();
+    const jobExperience = job.experience || '';
+
+    const scored = applications.map(app => {
+      const candidate = app.applicant;
+      if (!candidate) return null;
+
+      const profile = candidate.profile || {};
+      const candidateSkills = (profile.skills || []).map(s => s.toLowerCase());
+      const candidateLocation = (profile.location || '').toLowerCase();
+
+      let score = 0;
+      const breakdown = {};
+
+      // Skills match (up to 50 points)
+      if (jobSkills.length > 0) {
+        const matchedSkills = jobSkills.filter(s => candidateSkills.includes(s));
+        const skillScore = Math.round((matchedSkills.length / jobSkills.length) * 50);
+        score += skillScore;
+        breakdown.skills = { matched: matchedSkills, total: jobSkills.length, score: skillScore };
+      }
+
+      // Location match (20 points)
+      if (jobLocation && candidateLocation) {
+        const locationMatch = candidateLocation.includes(jobLocation) || jobLocation.includes(candidateLocation);
+        if (locationMatch) { score += 20; breakdown.location = true; }
+        else breakdown.location = false;
+      }
+
+      // Work mode match (15 points)
+      const candidatePrefs = profile.jobPreferences || {};
+      if (jobWorkMode && candidatePrefs.locationTypes) {
+        const modeMatch = candidatePrefs.locationTypes.some(m => m.toLowerCase() === jobWorkMode);
+        if (modeMatch) { score += 15; breakdown.workMode = true; }
+        else breakdown.workMode = false;
+      }
+
+      // Job type match (15 points)
+      if (jobType && candidatePrefs.employmentTypes) {
+        const typeMatch = candidatePrefs.employmentTypes.some(t => t.toLowerCase() === jobType);
+        if (typeMatch) { score += 15; breakdown.jobType = true; }
+        else breakdown.jobType = false;
+      }
+
+      return {
+        applicationId: app._id,
+        applicationStatus: app.status,
+        candidate: {
+          _id: candidate._id,
+          name: candidate.name,
+          avatar: candidate.avatar,
+          headline: profile.headline,
+          skills: profile.skills,
+          location: profile.location,
+          experience: profile.experience,
+          qualification: profile.qualification
+        },
+        matchScore: Math.min(score, 100),
+        breakdown
+      };
+    }).filter(Boolean).sort((a, b) => b.matchScore - a.matchScore);
+
+    res.json({ job: { title: job.title, skillsRequired: job.skillsRequired }, matches: scored });
+  } catch (err) {
+    console.error('AI Match Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Get job posting quota for current recruiter
+// @route   GET /api/jobs/quota
+// @access  Private (Recruiter/Company)
+const getJobQuota = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate('subscription');
+    if (!user || !user.company) return res.json({ limit: 0, used: 0 });
+
+    const plan = user.subscription;
+    const limit = plan?.activeJobPostings || 0;
+    const used = await Job.countDocuments({ company: user.company, status: { $in: ['active', 'closed'] } });
+
+    res.json({ limit, used, unlimited: limit === 0 });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   createJob,
   getCompanyJobs,
@@ -364,6 +640,10 @@ module.exports = {
   deleteJob,
   getAllJobs,
   getMatchingJobs,
-  getRecruiterAnalytics
+  getRecruiterAnalytics,
+  searchCandidates,
+  viewCandidateProfile,
+  getAICandidateMatches,
+  getJobQuota
 };
 

@@ -6,6 +6,22 @@ import { Link } from 'react-router-dom';
 import { useSocket } from '@/context/SocketContext';
 import axios from 'axios';
 
+const getOtherParticipant = (participants, currentUserId) => {
+  const id = currentUserId?.toString();
+  return (
+    participants.find(p => {
+      const pid = p._id?.toString() || p.id?.toString() || p?.toString();
+      return pid !== id;
+    }) || participants.find(p => p) || participants[0]
+  );
+};
+
+const displayName = (participant) =>
+  participant?.role === 'admin' ? 'CT-Portal' : (participant?.name || 'Unknown');
+
+const displayRole = (participant) =>
+  participant?.role === 'admin' ? 'CT-Portal' : (participant?.role || 'User');
+
 const Messages = () => {
   const { user } = useAuth();
   const socket = useSocket();
@@ -258,8 +274,10 @@ const Messages = () => {
                 </div>
               ) : (
                 conversations.map(c => {
-                  const currentUserId = user?._id || user?.id;
-                  const recipient = c.participants.find(p => (p._id?.toString() || p.id?.toString()) !== currentUserId?.toString()) || c.participants[0];
+                  const currentUserId = user?._id?.toString() || user?.id?.toString();
+                  const recipient = getOtherParticipant(c.participants, currentUserId);
+                  const rName = displayName(recipient);
+                  const rRole = displayRole(recipient);
                   return (
                     <button
                       key={c._id}
@@ -267,7 +285,7 @@ const Messages = () => {
                       onMouseEnter={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         setTooltipPos({ top: rect.top, left: rect.right + 8 });
-                        setHoveredConv({ id: c._id, recipient });
+                        setHoveredConv({ id: c._id, recipient, rName, rRole });
                       }}
                       onMouseLeave={() => setHoveredConv(null)}
                       className={`w-full text-left p-4 border-b border-slate-50 hover:bg-white transition-all ${active?._id === c._id ? 'bg-white shadow-sm z-10' : ''}`}
@@ -275,13 +293,13 @@ const Messages = () => {
                       <div className="flex items-start gap-3">
                         <div className="relative shrink-0">
                           <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                            {recipient?.avatar ? <img src={recipient.avatar} alt={recipient.name} className="w-full h-full object-cover" /> : recipient?.name[0]}
+                            {recipient?.avatar ? <img src={recipient.avatar} alt={rName} className="w-full h-full object-cover" /> : rName[0]}
                           </div>
                           <Circle size={8} className="absolute -bottom-0.5 -right-0.5 fill-emerald-500 text-emerald-500 border-2 border-white rounded-full" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className={`text-xs truncate ${unreadCounts[c._id] > 0 ? 'font-extrabold text-slate-900' : 'font-bold text-slate-900'}`}>{recipient?.name}</p>
+                            <p className={`text-xs truncate ${unreadCounts[c._id] > 0 ? 'font-extrabold text-slate-900' : 'font-bold text-slate-900'}`}>{rName}</p>
                             <div className="flex items-center gap-1 shrink-0 ml-1">
                               {unreadCounts[c._id] > 0 && (
                                 <span className="min-w-[18px] h-[18px] px-1 bg-emerald-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
@@ -311,16 +329,18 @@ const Messages = () => {
               <>
                 <div className="p-4 border-b border-slate-100 flex items-center gap-3 bg-white">
                   {(() => {
-                    const currentUserId = user?._id || user?.id;
-                    const recipient = active.participants.find(p => (p._id?.toString() || p.id?.toString()) !== currentUserId?.toString()) || active.participants[0];
+                    const currentUserId = user?._id?.toString() || user?.id?.toString();
+                    const recipient = getOtherParticipant(active.participants, currentUserId);
+                    const rName = displayName(recipient);
+                    const rRole = displayRole(recipient);
                     return (
                       <>
                         <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
-                          {recipient?.avatar ? <img src={recipient.avatar} alt={recipient.name} className="w-full h-full object-cover" /> : recipient?.name[0]}
+                          {recipient?.avatar ? <img src={recipient.avatar} alt={rName} className="w-full h-full object-cover" /> : rName[0]}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-900 truncate">{recipient?.name}</p>
-                          <p className="text-[11px] text-slate-500 truncate font-medium capitalize">{recipient?.role || 'User'}</p>
+                          <p className="text-sm font-bold text-slate-900 truncate">{rName}</p>
+                          <p className="text-[11px] text-slate-500 truncate font-medium capitalize">{rRole}</p>
                         </div>
                       </>
                     )
@@ -474,12 +494,12 @@ const Messages = () => {
       >
         <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
           {hoveredConv.recipient?.avatar
-            ? <img src={hoveredConv.recipient.avatar} alt={hoveredConv.recipient.name} className="w-full h-full object-cover" />
-            : hoveredConv.recipient?.name?.[0]}
+            ? <img src={hoveredConv.recipient.avatar} alt={hoveredConv.rName} className="w-full h-full object-cover" />
+            : hoveredConv.rName?.[0]}
         </div>
         <div>
-          <p className="text-sm font-bold text-slate-900 whitespace-nowrap">{hoveredConv.recipient?.name}</p>
-          <p className="text-[11px] text-slate-500 capitalize whitespace-nowrap">{hoveredConv.recipient?.role || 'User'}</p>
+          <p className="text-sm font-bold text-slate-900 whitespace-nowrap">{hoveredConv.rName}</p>
+          <p className="text-[11px] text-slate-500 capitalize whitespace-nowrap">{hoveredConv.rRole}</p>
         </div>
       </div>,
       document.body

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History
+  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +29,7 @@ const coreMenus = {
     { icon: LayoutDashboard, label: 'Overview',     path: '/company' },
     { icon: List,            label: 'My Jobs',      path: '/company/jobs' },
     { icon: Briefcase,       label: 'Post Job',     path: '/company/post-job' },
+    { icon: ClipboardList,   label: 'Requests',     path: '/company/requests' },
     { icon: MessageCircle,   label: 'Messages',     path: '/company/messages' },
     { icon: CreditCard,      label: 'Subscription', path: '/company/subscription' },
     { icon: UserCog,         label: 'Settings',     path: '/company/settings' },
@@ -38,6 +39,7 @@ const coreMenus = {
     { icon: LayoutDashboard, label: 'Overview',     path: '/company' },
     { icon: List,            label: 'My Jobs',      path: '/company/jobs' },
     { icon: Briefcase,       label: 'Post Job',     path: '/company/post-job' },
+    { icon: ClipboardList,   label: 'Requests',     path: '/company/requests' },
     { icon: MessageCircle,   label: 'Messages',     path: '/company/messages' },
     { icon: CreditCard,      label: 'Subscription', path: '/company/subscription' },
     { icon: UserCog,         label: 'Settings',     path: '/company/settings' },
@@ -49,6 +51,7 @@ const coreMenus = {
     { icon: Building2,       label: 'Companies',      path: '/admin/companies' },
     { icon: Briefcase,       label: 'Job Inventory',  path: '/admin/jobs' },
     { icon: CreditCard,      label: 'Subscriptions',  path: '/admin/subscriptions' },
+    { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests' },
     { icon: History,         label: 'Payment History', path: '/admin/payment-history' },
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
   ],
@@ -75,19 +78,21 @@ const premiumMenus = {
     { icon: BookOpen,      label: 'AI Resume Review',    path: '/jobseeker/ai-resume-review',    featureKey: 'hasAiResumeReview' },
   ],
   recruiter: [
-    { icon: Layers,   label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
-    { icon: BarChart2, label: 'Analytics',     path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
-    { icon: Mail,     label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
-    { icon: Video,    label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasVideoInterview' },
-    { icon: Activity, label: 'Scheduling',     path: '/company/interview-scheduling', featureKey: 'hasInterviewScheduling' },
+    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasVideoInterview' },
+    { icon: Activity,  label: 'Scheduling',     path: '/company/interview-scheduling', featureKey: 'hasInterviewScheduling' },
+    { icon: Sparkles,  label: 'AI Matching',    path: '/company/ai-matching',          featureKey: 'hasAICandidateMatching' },
   ],
   company: [
-    { icon: Layers,     label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
-    { icon: BarChart2,  label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
-    { icon: UserCheck,  label: 'Team',           path: '/company/team',                 featureKey: 'hasTeamCollaboration' },
-    { icon: Mail,       label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
-    { icon: Video,      label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasVideoInterview' },
-    { icon: Activity,   label: 'Scheduling',     path: '/company/interview-scheduling', featureKey: 'hasInterviewScheduling' },
+    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: UserCheck, label: 'Team',           path: '/company/team',                 featureKey: 'hasTeamCollaboration' },
+    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasVideoInterview' },
+    { icon: Activity,  label: 'Scheduling',     path: '/company/interview-scheduling', featureKey: 'hasInterviewScheduling' },
+    { icon: Sparkles,  label: 'AI Matching',    path: '/company/ai-matching',          featureKey: 'hasAICandidateMatching' },
   ],
   org_employee: [
     { icon: Video,     label: 'Video Interview', path: '/employee/video-interview',     featureKey: 'hasVideoInterview' },

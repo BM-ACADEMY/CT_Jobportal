@@ -15,6 +15,8 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const requestRoutes = require('./routes/requests');
+const settingsRoutes = require('./routes/settingsRoutes');
+const interviewRoutes = require('./routes/interviewRoutes');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
 const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
@@ -97,6 +99,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/interviews', interviewRoutes);
 
 
 // MongoDB Connection

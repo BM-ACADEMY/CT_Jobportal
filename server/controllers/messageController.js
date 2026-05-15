@@ -180,10 +180,60 @@ const uploadFile = async (req, res) => {
   }
 };
 
+// @desc    Bulk message multiple candidates (recruiter only)
+// @route   POST /api/messages/bulk
+const sendBulkMessage = async (req, res) => {
+  try {
+    const senderId = req.user.id;
+    const sender = await User.findById(senderId).populate('subscription');
+    if (!sender) return res.status(404).json({ msg: 'User not found' });
+
+    if (!sender.subscription?.hasBulkMessaging) {
+      return res.status(403).json({ msg: 'Bulk messaging requires a paid plan.', requiresUpgrade: true });
+    }
+
+    const { recipientIds, subject, content } = req.body;
+    if (!Array.isArray(recipientIds) || recipientIds.length === 0) {
+      return res.status(400).json({ msg: 'No recipients provided' });
+    }
+    if (!content) return res.status(400).json({ msg: 'Message content is required' });
+
+    const results = { sent: 0, failed: 0 };
+
+    for (const recipientId of recipientIds) {
+      try {
+        let conversation = await Conversation.findOne({
+          participants: { $all: [senderId, recipientId] }
+        });
+
+        if (!conversation) {
+          conversation = new Conversation({ participants: [senderId, recipientId] });
+          await conversation.save();
+        }
+
+        const messageContent = subject ? `**${subject}**\n\n${content}` : content;
+        const msg = new Message({ conversation: conversation._id, sender: senderId, content: messageContent });
+        await msg.save();
+
+        await Conversation.findByIdAndUpdate(conversation._id, { lastMessage: msg._id, updatedAt: Date.now() });
+        results.sent++;
+      } catch {
+        results.failed++;
+      }
+    }
+
+    res.json({ msg: `Messages sent to ${results.sent} candidate(s).`, ...results });
+  } catch (err) {
+    console.error('Bulk message error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   getOrCreateConversation,
   getConversations,
   getMessages,
   sendMessage,
-  uploadFile
+  uploadFile,
+  sendBulkMessage
 };

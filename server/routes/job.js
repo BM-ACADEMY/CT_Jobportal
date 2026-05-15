@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getMatchingJobs, getRecruiterAnalytics } = require('../controllers/jobController');
+const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getMatchingJobs, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getAICandidateMatches, getJobQuota } = require('../controllers/jobController');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
 
 // Public route to get all jobs
@@ -17,6 +17,10 @@ router.post('/', createJob);
 router.get('/company-jobs', getCompanyJobs);
 router.get('/company-jobs-stats', getCompanyJobsWithStats);
 router.get('/analytics', getRecruiterAnalytics);
+router.get('/quota', getJobQuota);
+router.get('/candidates/search', searchCandidates);
+router.get('/candidates/:candidateId/profile', viewCandidateProfile);
+router.get('/:jobId/matched-candidates', getAICandidateMatches);
 router.put('/:id', updateJob);
 router.delete('/:id', deleteJob);
 

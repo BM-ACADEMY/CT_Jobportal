@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Search, MapPin, Briefcase, IndianRupee, Clock, Loader2,
-  SlidersHorizontal, X, ArrowRight, Building2, ChevronDown, ChevronUp
+  SlidersHorizontal, X, ArrowRight, Building2, ChevronDown, ChevronUp, Star
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -342,7 +342,14 @@ const Jobs = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                               <div className="min-w-0">
-                                <h3 className="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition-colors truncate">{job.title}</h3>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition-colors truncate">{job.title}</h3>
+                                  {job.isPriority && (
+                                    <span title="Priority Hiring Partner" className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                                      <Star size={9} className="fill-amber-500 text-amber-500" /> Priority
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-slate-500 text-sm font-medium mt-0.5 flex items-center gap-1.5">
                                   <Building2 size={13} className="text-slate-400" />
                                   {job.company?.name}

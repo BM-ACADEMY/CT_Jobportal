@@ -42,6 +42,8 @@ import JobSeekerSubscription from '../pages/jobseeker/Subscription';
 import CompanySubscription from '../pages/company/Subscription';
 import PaymentHistory from '../pages/shared/PaymentHistory';
 import AdminPaymentHistory from '../pages/admin/PaymentHistory';
+import ManageRequests from '../pages/admin/ManageRequests';
+import AssignedRequests from '../pages/company/AssignedRequests';
 
 // Jobseeker feature pages
 import ResumeBuilder from '../pages/jobseeker/features/ResumeBuilder';
@@ -62,6 +64,7 @@ import BulkMessaging from '../pages/company/features/BulkMessaging';
 import VideoInterview from '../pages/company/features/VideoInterview';
 import TeamCollaboration from '../pages/company/features/TeamCollaboration';
 import InterviewScheduling from '../pages/company/features/InterviewScheduling';
+import AICandidateMatching from '../pages/company/features/AICandidateMatching';
 import MyJobs from '../pages/company/MyJobs';
 
 // Org Employee pages
@@ -255,12 +258,14 @@ const AppRoutes = () => {
           }
         />
         <Route path="/company/jobs" element={<PrivateRoute roles={['recruiter', 'company']}><MyJobs /></PrivateRoute>} />
+        <Route path="/company/requests" element={<PrivateRoute roles={['recruiter', 'company']}><AssignedRequests /></PrivateRoute>} />
         <Route path="/company/ats-pipeline" element={<PrivateRoute roles={['recruiter', 'company']}><AtsPipeline /></PrivateRoute>} />
         <Route path="/company/analytics" element={<PrivateRoute roles={['recruiter', 'company']}><Analytics /></PrivateRoute>} />
         <Route path="/company/bulk-messaging" element={<PrivateRoute roles={['recruiter', 'company']}><BulkMessaging /></PrivateRoute>} />
         <Route path="/company/video-interview" element={<PrivateRoute roles={['recruiter', 'company']}><VideoInterview /></PrivateRoute>} />
         <Route path="/company/team" element={<PrivateRoute roles={['recruiter', 'company']}><TeamCollaboration /></PrivateRoute>} />
         <Route path="/company/interview-scheduling" element={<PrivateRoute roles={['recruiter', 'company']}><InterviewScheduling /></PrivateRoute>} />
+        <Route path="/company/ai-matching" element={<PrivateRoute roles={['recruiter', 'company']}><AICandidateMatching /></PrivateRoute>} />
         <Route path="/company/messages" element={<PrivateRoute roles={['recruiter', 'company']}><Messages /></PrivateRoute>} />
         <Route path="/company/payment-history" element={<PrivateRoute roles={['recruiter', 'company']}><PaymentHistory /></PrivateRoute>} />
         <Route
@@ -334,6 +339,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminPaymentHistory />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/requests"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageRequests />
             </PrivateRoute>
           }
         />
