@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { MessageCircle, Send, Search, Circle, Loader2, Smile, Paperclip, X, FileText, Download, Image as ImageIcon, AlertCircle, Sparkles } from 'lucide-react';
+import { MessageCircle, Send, Search, Circle, Loader2, Smile, Paperclip, X, FileText, Download, Image as ImageIcon, AlertCircle, Sparkles, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSocket } from '@/context/SocketContext';
 import axios from 'axios';
 
@@ -25,6 +25,8 @@ const displayRole = (participant) =>
 const Messages = () => {
   const { user } = useAuth();
   const socket = useSocket();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -62,6 +64,19 @@ const Messages = () => {
     };
     fetchConversations();
   }, []);
+
+  // Handle selecting conversation from navigation state
+  useEffect(() => {
+    const targetId = location.state?.conversationId;
+    if (targetId && conversations.length > 0) {
+      const target = conversations.find(c => c._id === targetId);
+      if (target) {
+        setActive(target);
+        // Clear state to avoid re-selecting on other updates if not intended
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [conversations, location.state]);
 
   useEffect(() => {
     if (active) {
@@ -217,13 +232,22 @@ const Messages = () => {
   const Content = (
     <>
     <div className="flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
-      <div className="flex items-center gap-2 mb-4 shrink-0">
+      <div className="flex items-center gap-4 mb-4 shrink-0">
+        <button 
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all bg-white shadow-sm"
+          title="Go Back"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div className="flex items-center gap-2">
         <div className="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center">
           <MessageCircle size={16} className="text-violet-600" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-slate-900">Direct Messaging</h1>
           <p className="text-sm text-slate-500">Chat with {user.role === 'jobseeker' ? 'recruiters and hiring managers' : 'candidates and teammates'}.</p>
+        </div>
         </div>
       </div>
 

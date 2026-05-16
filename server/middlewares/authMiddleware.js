@@ -1,6 +1,7 @@
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_123';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.header('Authorization');
@@ -16,7 +17,8 @@ const verifyToken = (req, res, next) => {
     req.user = decoded.user || decoded;
     next();
   } catch (err) {
-    res.status(401).json({ msg: 'Token is not valid' });
+    console.error(`JWT Verification Error: ${err.message}`, { token: token.substring(0, 10) + '...' });
+    res.status(401).json({ msg: 'Token is not valid', error: err.message });
   }
 };
 
@@ -44,6 +46,7 @@ const optionalVerifyToken = (req, res, next) => {
     next();
   } catch (err) {
     // If token is invalid, we still proceed but without req.user
+    console.warn(`Optional JWT Verification Failed: ${err.message}`);
     next();
   }
 };

@@ -102,6 +102,15 @@ const updateRecruiterProfile = async (req, res) => {
         company.logo = `/uploads/${req.files['logo'][0].filename}`;
       }
 
+      // Handle gallery images from companyData
+      if (companyData.gallery_images && Array.isArray(companyData.gallery_images)) {
+        company.gallery_images = companyData.gallery_images;
+      }
+
+      if (companyData.norms_conditions !== undefined) {
+        company.norms_conditions = companyData.norms_conditions;
+      }
+
       await company.save();
       user.company = company._id;
     }
@@ -178,6 +187,23 @@ const inviteTeamMember = async (req, res) => {
         await currentUser.save();
       } else {
         return res.status(400).json({ msg: 'Please complete your company profile in Settings before inviting members.' });
+      }
+    }
+
+    // Check user seats limit
+    const subscription = currentUser.subscription;
+    if (subscription) {
+      const currentMemberCount = await User.countDocuments({ 
+        $or: [
+          { company: currentUser.company },
+          { employerCompany: currentUser.company }
+        ]
+      });
+      
+      if (currentMemberCount >= subscription.userSeats) {
+        return res.status(400).json({ 
+          msg: `Seat limit reached. Your plan allows only ${subscription.userSeats} seat(s). Please upgrade your subscription.` 
+        });
       }
     }
 
@@ -260,6 +286,24 @@ const addOrgEmployee = async (req, res) => {
         await adminUser.save();
       } else {
         return res.status(400).json({ msg: 'Please complete your company profile in Settings before adding employees.' });
+      }
+    }
+
+    // Check user seats limit
+    const userWithSub = await User.findById(req.user.id).populate('subscription');
+    const subscription = userWithSub?.subscription;
+    if (subscription) {
+      const currentMemberCount = await User.countDocuments({ 
+        $or: [
+          { company: adminUser.company },
+          { employerCompany: adminUser.company }
+        ]
+      });
+      
+      if (currentMemberCount >= subscription.userSeats) {
+        return res.status(400).json({ 
+          msg: `Seat limit reached. Your plan allows only ${subscription.userSeats} seat(s). Please upgrade your subscription.` 
+        });
       }
     }
 

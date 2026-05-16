@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Briefcase, Plus, Edit2, Trash2, Users, Eye, Search,
-  MapPin, Clock, Loader2, MoreVertical, ToggleLeft, ToggleRight
+  MapPin, Clock, Loader2, MoreVertical, ToggleLeft, ToggleRight, AlertTriangle, Sparkles
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -26,13 +27,22 @@ const MyJobs = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [quota, setQuota] = useState(null);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
     fetchJobs();
+    fetchQuota();
   }, []);
+
+  const fetchQuota = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/jobs/quota`, { headers });
+      setQuota(res.data);
+    } catch { /* non-critical */ }
+  };
 
   const fetchJobs = async () => {
     try {
@@ -93,13 +103,34 @@ const MyJobs = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Job Listings</h1>
           <p className="text-sm text-slate-500 mt-0.5">Manage all your posted positions and applicants.</p>
+          {quota && !quota.unlimited && (
+            <div className={`mt-2 inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full ${
+              quota.used >= quota.limit ? 'bg-rose-50 text-rose-600' :
+              quota.used >= quota.limit * 0.8 ? 'bg-amber-50 text-amber-700' :
+              'bg-emerald-50 text-emerald-700'
+            }`}>
+              <Briefcase size={11} />
+              {quota.used}/{quota.limit} job postings used
+              {quota.used >= quota.limit && ' — Limit reached'}
+            </div>
+          )}
         </div>
-        <Button
-          onClick={() => navigate('/company/post-job')}
-          className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest gap-2"
-        >
-          <Plus size={14} /> Post New Job
-        </Button>
+        <div className="flex items-center gap-2">
+          {quota && !quota.unlimited && quota.used >= quota.limit && (
+            <Link to="/company/subscription">
+              <Button variant="outline" className="h-10 px-4 rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs gap-1.5">
+                <Sparkles size={13} /> Upgrade
+              </Button>
+            </Link>
+          )}
+          <Button
+            onClick={() => navigate('/company/post-job')}
+            disabled={quota && !quota.unlimited && quota.used >= quota.limit}
+            className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest gap-2 disabled:opacity-50"
+          >
+            <Plus size={14} /> Post New Job
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

@@ -10,7 +10,8 @@ const DYNAMIC_FEATURE_NAMES = {
   hasResumeBuilder:          'Resume Builder',
   hasProfileBoost:           'Profile Boost',
   hasProfileViewInsights:    'Profile View Insights',
-  hasMessageRecruiters:      'Message Recruiters',
+  hasMessageRecruiters:      ['Message Recruiters', 'Direct Messaging', 'Messages', 'Messaging'],
+  hasRequests:               ['Requests', 'Assigned Requests'],
   hasCareerCounselling:      'Career Counselling',
   hasInterviewPrep:          'Interview Prep',
   hasPriorityBadge:          'Priority Badge',
@@ -40,6 +41,9 @@ export const hasFeature = (user, featureKey) => {
   // Expired subscription — skip this check for free/lifetime plans
   const isFree = plan.price === 0 || plan.duration === 'Lifetime';
   if (!isFree && user.subscriptionExpiry && new Date(user.subscriptionExpiry) < new Date()) return false;
+
+  // Custom logic for Team Collaboration based on seats
+  if (featureKey === 'hasTeamCollaboration' && plan.userSeats > 1) return true;
 
   // 1. Check static schema field — only short-circuit on truthy values.
   // A static `false` falls through so the dynamic features[] can still grant access.
@@ -112,6 +116,8 @@ const NAMES = {
   hasDedicatedOnboarding: 'Dedicated Onboarding',
   hasSalaryBenchmarking: 'Salary Benchmarking',
   hasAiResumeReview: 'AI Resume Review',
+  hasRequests: 'Service Requests',
+  hasMessaging: 'Premium Messaging',
 };
 
 const LockedScreen = ({ featureKey, featureName, description, subscriptionPath }) => {

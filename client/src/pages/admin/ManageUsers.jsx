@@ -34,6 +34,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+// Note: Dialog kept for the Edit modal
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,8 +56,6 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
-  // Modal states
-  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -143,17 +142,8 @@ const ManageUsers = () => {
     }
   };
 
-  const handleViewDetails = async (user) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${user._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSelectedUser(res.data);
-      setViewModalOpen(true);
-    } catch (err) {
-      toast.error('Failed to load user details');
-    }
+  const handleViewDetails = (user) => {
+    navigate(`/admin/users/${user._id}`);
   };
 
   const handleEditClick = (user) => {
@@ -194,7 +184,7 @@ const ManageUsers = () => {
         { recipientId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      navigate('/admin/messages');
+      navigate('/admin/messages', { state: { conversationId: res.data._id } });
     } catch (err) {
       console.error(err);
       toast.error("Failed to start conversation");
@@ -324,9 +314,9 @@ const ManageUsers = () => {
           <TabsTrigger value="recruiter" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
             Recruiters
           </TabsTrigger>
-          <TabsTrigger value="company" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
+          {/* <TabsTrigger value="company" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
             Organizations
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
@@ -343,133 +333,13 @@ const ManageUsers = () => {
               <TabsContent value="recruiter" className="m-0">
                 <UserTable data={filterUsersByRole('recruiter')} roleLabel="Recruiter" />
               </TabsContent>
-              <TabsContent value="company" className="m-0">
+              {/* <TabsContent value="company" className="m-0">
                 <UserTable data={filterUsersByRole('company')} roleLabel="Company Admin" />
-              </TabsContent>
+              </TabsContent> */}
             </>
           )}
         </Card>
       </Tabs>
-
-      {/* Detailed Inspection Modal - Elegant Style */}
-      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="sm:max-w-3xl rounded-[24px] p-0 border-slate-200 shadow-2xl overflow-hidden bg-white">
-          {selectedUser && (
-            <div className="flex flex-col">
-              {/* Profile Header Block */}
-              <div className="p-10 border-b border-slate-100 bg-slate-50/30">
-                <div className="flex items-center gap-8">
-                  <Avatar className="h-24 w-24 rounded-[24px] border border-slate-200 shadow-sm bg-white p-1">
-                    <AvatarImage src={selectedUser.avatar} className="rounded-[20px]" />
-                    <AvatarFallback className="bg-slate-100 text-slate-400 text-3xl font-bold rounded-[20px] uppercase">
-                      {selectedUser.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{selectedUser.name}</h2>
-                      <Badge variant="outline" className="px-2.5 py-0.5 bg-emerald-50 text-emerald-600 border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
-                        {selectedUser.role?.name}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-6">
-                       <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                          <Mail size={14} className="text-slate-400" /> {selectedUser.email}
-                       </div>
-                       {selectedUser.profile?.location && (
-                         <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                            <MapPin size={14} className="text-slate-400" /> {selectedUser.profile.location}
-                         </div>
-                       )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Data Grid Section */}
-              <div className="p-10 overflow-y-auto space-y-12 max-h-[60vh] custom-scrollbar">
-                {/* Information Card - Mimicking reference image */}
-                <Card className="p-8 rounded-[20px] border-slate-100 shadow-sm bg-white space-y-8">
-                   <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                         <h3 className="text-base font-bold text-slate-900">Personal Information</h3>
-                         <p className="text-xs text-slate-500">Global identity and contact metadata.</p>
-                      </div>
-                      <Badge className={selectedUser.isVerified ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-orange-600 border-orange-100'}>
-                         {selectedUser.isVerified ? 'Verified Account' : 'Pending Verification'}
-                      </Badge>
-                   </div>
-
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Full Identity Name</Label>
-                         <div className="flex items-center gap-3 py-2 border-b border-slate-50 group">
-                            <UserIcon size={18} className="text-slate-300 group-hover:text-emerald-600 transition-colors" />
-                            <span className="text-sm font-bold text-slate-700">{selectedUser.name}</span>
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Digital Mail Address</Label>
-                         <div className="flex items-center gap-3 py-2 border-b border-slate-50 group">
-                            <Mail size={18} className="text-slate-300 group-hover:text-emerald-600 transition-colors" />
-                            <span className="text-sm font-bold text-slate-700">{selectedUser.email}</span>
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Telecommunications</Label>
-                         <div className="flex items-center gap-3 py-2 border-b border-slate-50 group">
-                            <Phone size={18} className="text-slate-300 group-hover:text-emerald-600 transition-colors" />
-                            <span className="text-sm font-bold text-slate-700">{selectedUser.profile?.phone || 'N/A'}</span>
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Geographical Data</Label>
-                         <div className="flex items-center gap-3 py-2 border-b border-slate-50 group">
-                            <MapPin size={18} className="text-slate-300 group-hover:text-emerald-600 transition-colors" />
-                            <span className="text-sm font-bold text-slate-700">{selectedUser.profile?.location || 'Unspecified'}</span>
-                         </div>
-                      </div>
-                   </div>
-                </Card>
-
-                {selectedUser.profile?.bio && (
-                  <section className="space-y-4 px-2">
-                    <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Professional Narrative</Label>
-                    <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                      {selectedUser.profile.bio}
-                    </p>
-                  </section>
-                )}
-
-                {selectedUser.profile?.resumeUrl && (
-                  <section className="space-y-6">
-                    <div className="p-6 rounded-[20px] border border-slate-100 bg-slate-50/50 flex items-center justify-between group hover:border-emerald-200 transition-all">
-                       <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-white text-emerald-600 flex items-center justify-center rounded-xl shadow-sm border border-slate-100">
-                             <FileText size={24} />
-                          </div>
-                          <div>
-                             <p className="text-sm font-bold text-slate-900 tracking-tight">Academic Resume</p>
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Verified Document</p>
-                          </div>
-                       </div>
-                       <Button variant="outline" className="rounded-xl h-10 px-6 font-bold text-xs border-slate-200 hover:bg-white hover:text-emerald-600 transition-all" asChild>
-                          <a href={selectedUser.profile.resumeUrl} target="_blank" rel="noreferrer">
-                             <ExternalLink size={14} className="mr-2" /> View Asset
-                          </a>
-                       </Button>
-                    </div>
-                  </section>
-                )}
-              </div>
-
-              <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-end">
-                <Button variant="ghost" className="rounded-xl font-bold text-xs h-11 px-8 text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-tight" onClick={() => setViewModalOpen(false)}>Close Inspection</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Edit User Modal - Elegant Style */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>

@@ -58,8 +58,6 @@ const subscriptionSchema = new mongoose.Schema({
   // Organization specific
   userSeats: { type: Number, default: 1 },
   companyProfileType: { type: String, enum: ['No', 'Basic', 'Branded', 'Full Custom'], default: 'Basic' },
-  hasTeamCollaboration: { type: Boolean, default: false },
-  teamCollaborationCount: { type: Number, default: 0 }, // 0 for unlimited
   hasBulkApplicantManagement: { type: Boolean, default: false },
   hasInterviewScheduling: { type: Boolean, default: false },
   hasDedicatedOnboarding: { type: Boolean, default: false },

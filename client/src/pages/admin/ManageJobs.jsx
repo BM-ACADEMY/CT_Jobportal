@@ -48,7 +48,7 @@ const ManageJobs = () => {
 
   const filteredJobs = (Array.isArray(jobs) ? jobs : []).filter(job => 
     (job.title && job.title.toLowerCase().includes(search.toLowerCase())) || 
-    (job.company?.companyName && job.company.companyName.toLowerCase().includes(search.toLowerCase()))
+    (job.company?.name && job.company.name.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -133,11 +133,11 @@ const ManageJobs = () => {
                         </div>
                       </td>
                       <td className="p-6">
-                        <div className="text-xs font-bold text-slate-600 tracking-tight">{job.company?.companyName || 'Unidentified'}</div>
+                        <div className="text-xs font-bold text-slate-600 tracking-tight">{job.company?.name || job.company?.display_name || job.recruiter?.name || 'Unknown'}</div>
                       </td>
                       <td className="p-6">
                         <span className="inline-flex items-center px-3 py-1 rounded-lg border border-slate-100 text-[9px] font-bold uppercase tracking-tight text-slate-400 bg-slate-50 group-hover:bg-white transition-colors">
-                          {job.employmentType}
+                          {job.jobType}
                         </span>
                       </td>
                       <td className="p-6 text-center">

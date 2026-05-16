@@ -303,6 +303,26 @@ const updateAutoRenew = async (req, res) => {
   }
 };
 
+// @desc    Search user by email
+// @route   GET /api/user/search
+const searchUser = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ msg: 'Email is required' });
+
+    const user = await User.findOne({ email: email.toLowerCase() })
+      .select('name email avatar role')
+      .populate('role', 'name');
+    
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    console.error('Search User Error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   updateProfile,
   uploadResume,
@@ -312,5 +332,6 @@ module.exports = {
   toggleBlockEntity,
   trackProfileView,
   getProfileViewers,
-  updateAutoRenew
+  updateAutoRenew,
+  searchUser
 };

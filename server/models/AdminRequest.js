@@ -5,7 +5,7 @@ const adminRequestSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['counselling', 'interview_prep', 'salary_benchmark']
+    enum: ['counselling', 'interview_prep', 'salary_benchmark', 'bulk_application', 'website_request']
   },
   status: {
     type: String,
@@ -24,6 +24,13 @@ const adminRequestSchema = new mongoose.Schema({
   // Salary benchmarking fields
   jobRole: String,
   companyName: String,
+  // Bulk application fields
+  jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },
+  count: { type: Number, default: 0 },
+  // Website request fields
+  websiteDetails: String,
+  websiteGoal: String,
+  targetAudience: String,
   // Admin notes
   adminNotes: String,
   // Assignment to recruiter/company

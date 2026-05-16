@@ -105,7 +105,7 @@ const ScheduleModal = ({ jobs, onClose, onScheduled }) => {
           ) : (
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {applicants.length === 0 ? (
-                <p className="text-sm text-slate-400">{selectedJob ? 'No shortlisted/reviewed candidates' : 'Select a job first'}</p>
+                <p className="text-sm text-slate-400">{selectedJob ? 'No eligible candidates found for this job' : 'Select a job first'}</p>
               ) : applicants.map(app => (
                 <button
                   key={app._id}
@@ -242,7 +242,7 @@ const VideoInterview = () => {
 
   return (
     <FeatureGate
-      featureKey="hasVideoInterview"
+      featureKey="hasInterviewScheduling"
       featureName="Video Interview"
       description="Schedule and manage video interviews with candidates directly from the portal."
       subscriptionPath="/company/subscription"
@@ -265,7 +265,7 @@ const VideoInterview = () => {
               </div>
               <h1 className="text-xl font-bold text-slate-900">Video Interviews</h1>
             </div>
-            <p className="text-sm text-slate-500">Schedule and manage interviews with your shortlisted candidates.</p>
+            <p className="text-sm text-slate-500">Schedule and manage interviews with your applicants and candidates.</p>
           </div>
           <Button
             onClick={() => setShowScheduleModal(true)}

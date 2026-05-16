@@ -136,7 +136,7 @@ const getSchedulableApplicants = async (req, res) => {
     }
 
     const { jobId } = req.params;
-    const applications = await Application.find({ job: jobId, status: { $in: ['reviewed', 'shortlisted'] } })
+    const applications = await Application.find({ job: jobId, status: { $in: ['pending', 'reviewed', 'shortlisted'] } })
       .populate('applicant', 'name email avatar profile.headline')
       .lean();
 

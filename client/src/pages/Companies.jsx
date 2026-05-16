@@ -297,9 +297,19 @@ const CompanyCard = ({ item, onClick }) => {
             <Briefcase size={11} />
             {item.openPositions || 0} open roles
           </span>
-          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 group-hover:text-emerald-600 group-hover:gap-1.5 transition-all">
-            View Profile <ArrowRight size={11} />
-          </span>
+          {isCompany && item.subscription?.companyProfileType !== 'No' ? (
+            <Link 
+              to={`/company-profile/${item._id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 hover:gap-1.5 transition-all"
+            >
+              View Detailed Profile <ArrowRight size={11} />
+            </Link>
+          ) : (
+            <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 group-hover:text-emerald-600 group-hover:gap-1.5 transition-all">
+              Quick View <ArrowRight size={11} />
+            </span>
+          )}
         </div>
       </div>
     </motion.div>

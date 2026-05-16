@@ -296,7 +296,10 @@ const forgotPassword = async (req, res) => {
     const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Naukri Clone', html: htmlContent });
 
     if (!emailSent) {
-      return res.status(500).json({ msg: 'Failed to send password reset email. Please try again later.' });
+      return res.json({ 
+        msg: 'OTP generated but email failed to send. Check the server console for the OTP code.',
+        emailSent: false 
+      });
     }
 
     res.json({ msg: 'Password reset OTP sent to email' });
@@ -340,8 +343,21 @@ const resetPassword = async (req, res) => {
 // @route   GET /api/auth/me
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password').populate(['role', 'subscription']);
+    let user = await User.findById(req.user.id).select('-password').populate(['role', 'subscription']);
+    
+    // If not found in User collection, check Admin collection
     if (!user) {
+      const Admin = require('../models/Admin');
+      const admin = await Admin.findById(req.user.id).select('-password');
+      if (admin) {
+        return res.json({
+          id: admin._id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role, // Admins have role string directly
+          avatar: '',
+        });
+      }
       return res.status(404).json({ msg: 'User not found' });
     }
 
@@ -431,7 +447,10 @@ const resendOtp = async (req, res) => {
     });
 
     if (!emailSent) {
-      return res.status(500).json({ msg: 'Failed to send new OTP. Please try again.' });
+      return res.json({ 
+        msg: 'New OTP generated but email failed to send. Check the server console for the code.',
+        emailSent: false 
+      });
     }
 
     res.json({ msg: 'New OTP has been sent to your email.' });

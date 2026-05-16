@@ -120,7 +120,10 @@ const deleteCompany = async (req, res) => {
 // @route   GET /api/admin/jobs
 const getJobs = async (req, res) => {
   try {
-    const jobs = await Job.find().populate('company').sort({ createdAt: -1 });
+    const jobs = await Job.find()
+      .populate('company')
+      .populate('recruiter', 'name email')
+      .sort({ createdAt: -1 });
     res.json(jobs);
   } catch (err) {
     console.error('Get Jobs Error:', err.message);

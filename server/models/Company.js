@@ -133,6 +133,14 @@ const companySchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  gallery_images: [{
+    type: String,
+    default: ''
+  }],
+  norms_conditions: {
+    type: String,
+    trim: true
+  },
   subscription_tier: {
     type: String,
     enum: ['Free', 'Basic', 'Pro', 'Enterprise'],

@@ -215,6 +215,7 @@ const getAdminRequests = async (req, res) => {
     const requests = await AdminRequest.find(filter)
       .populate('user', 'name email avatar')
       .populate('assignedTo', 'name email role companyName')
+      .populate('jobId', 'title')
       .sort({ createdAt: -1 });
 
     res.json(requests);
@@ -325,7 +326,76 @@ const updateAssignedRequest = async (req, res) => {
   }
 };
 
+// @desc    Submit bulk application request (Company/Recruiter)
+// @route   POST /api/requests/bulk-application
+const submitBulkApplicationRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('subscription');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const plan = user.subscription;
+    if (!plan || !plan.hasBulkApplicantManagement) {
+      return res.status(403).json({ msg: 'Bulk applicant management is not included in your plan.' });
+    }
+
+    const { jobId, count, adminNotes } = req.body;
+    if (!jobId || !count) {
+      return res.status(400).json({ msg: 'Job ID and count are required.' });
+    }
+
+    const request = new AdminRequest({
+      user: req.user.id,
+      type: 'bulk_application',
+      jobId,
+      count,
+      adminNotes
+    });
+    await request.save();
+
+    res.status(201).json({ msg: 'Bulk application request submitted. Admin will process it soon.' });
+  } catch (err) {
+    console.error('Bulk Application Request Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Submit website creation request (Company/Recruiter)
+// @route   POST /api/requests/website-request
+const submitWebsiteRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('subscription');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const plan = user.subscription;
+    // Check if companyProfileType is NOT 'No'
+    if (!plan || !plan.companyProfileType || plan.companyProfileType === 'No') {
+      return res.status(403).json({ msg: 'Website creation feature is not included in your plan. Please upgrade.' });
+    }
+
+    const { websiteDetails, websiteGoal, targetAudience, adminNotes } = req.body;
+    if (!websiteDetails || !websiteGoal || !targetAudience) {
+      return res.status(400).json({ msg: 'Website details, goal, and target audience are required.' });
+    }
+
+    const request = new AdminRequest({
+      user: req.user.id,
+      type: 'website_request',
+      websiteDetails,
+      websiteGoal,
+      targetAudience,
+      adminNotes
+    });
+    await request.save();
+
+    res.status(201).json({ msg: 'Website creation request submitted. Our team will review your requirements and reach out shortly.' });
+  } catch (err) {
+    console.error('Website Request Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
+  submitBulkApplicationRequest,
   submitCounsellingRequest,
   submitInterviewPrepRequest,
   submitSalaryBenchmarkRequest,
@@ -339,4 +409,5 @@ module.exports = {
   getAssignees,
   getAssignedRequests,
   updateAssignedRequest,
+  submitWebsiteRequest
 };

@@ -17,6 +17,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const requestRoutes = require('./routes/requests');
 const settingsRoutes = require('./routes/settingsRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
+const collaborationRoutes = require('./routes/collaborationRoutes');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
 const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
@@ -53,6 +54,16 @@ io.on('connection', (socket) => {
   socket.on('send_message', (data) => {
     // data: { roomId, content, senderId, timestamp, attachment }
     io.to(data.roomId).emit('receive_message', data);
+  });
+
+  socket.on('join_group', (groupId) => {
+    socket.join(groupId);
+    console.log(`User ${socket.id} joined group: ${groupId}`);
+  });
+
+  socket.on('send_group_message', (data) => {
+    // data: { groupId, message }
+    io.to(data.groupId).emit('receive_group_message', data.message);
   });
 
   socket.on('disconnect', () => {
@@ -101,6 +112,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/interviews', interviewRoutes);
+app.use('/api/collaboration', collaborationRoutes);
 
 
 // MongoDB Connection

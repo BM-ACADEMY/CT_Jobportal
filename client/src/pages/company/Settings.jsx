@@ -115,7 +115,9 @@ const RecruiterSettings = () => {
             tax_id_ein: user?.company?.tax_id_ein || '',
             admin_email: user?.company?.admin_email || '',
             subscription_tier: user?.company?.subscription_tier || 'Free',
-            account_status: user?.company?.account_status || 'Pending'
+            account_status: user?.company?.account_status || 'Pending',
+            gallery_images: user?.company?.gallery_images || [],
+            norms_conditions: user?.company?.norms_conditions || ''
         }
     });
 
@@ -183,7 +185,9 @@ const RecruiterSettings = () => {
                         tax_id_ein: data.company?.tax_id_ein || '',
                         admin_email: data.company?.admin_email || '',
                         subscription_tier: data.company?.subscription_tier || 'Free',
-                        account_status: data.company?.account_status || 'Pending'
+                        account_status: data.company?.account_status || 'Pending',
+                        gallery_images: data.company?.gallery_images || [],
+                        norms_conditions: data.company?.norms_conditions || ''
                     }
                 });
             } catch (err) {
@@ -433,6 +437,9 @@ const RecruiterSettings = () => {
                             </TabsTrigger>
                         </>
                     )}
+                    <TabsTrigger value="branding" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                        Branding
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* ── TAB: PERSONAL PROFILE ── */}
@@ -1413,6 +1420,110 @@ const RecruiterSettings = () => {
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                {/* ── TAB: BRANDING & MULTIMEDIA ── */}
+                <TabsContent value="branding" className="space-y-8 outline-none mt-4">
+                    <div className="grid grid-cols-1 gap-8">
+                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                            <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
+                                <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                        <Plus className="w-5 h-5" />
+                                    </div>
+                                    Company Gallery & Media
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-8 space-y-8">
+                                <div className="space-y-4">
+                                    <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Gallery Images (URLs)</Label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                        {(formData.companyData.gallery_images || []).map((img, idx) => (
+                                            <div key={idx} className="relative group rounded-xl overflow-hidden aspect-video border border-slate-100 bg-slate-50">
+                                                <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                                                {isEditing && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            const next = [...formData.companyData.gallery_images];
+                                                            next.splice(idx, 1);
+                                                            setFormData({...formData, companyData: {...formData.companyData, gallery_images: next}});
+                                                        }}
+                                                        className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {isEditing && (
+                                            <button 
+                                                onClick={() => {
+                                                    const url = prompt('Enter Image URL');
+                                                    if (url) {
+                                                        setFormData({
+                                                            ...formData, 
+                                                            companyData: {
+                                                                ...formData.companyData, 
+                                                                gallery_images: [...(formData.companyData.gallery_images || []), url]
+                                                            }
+                                                        });
+                                                    }
+                                                }}
+                                                className="flex flex-col items-center justify-center aspect-video rounded-xl border-2 border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all text-slate-400 hover:text-emerald-600"
+                                            >
+                                                <Plus size={24} className="mb-2" />
+                                                <span className="text-[10px] font-bold uppercase tracking-wider">Add Image</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="space-y-4 pt-6 border-t border-slate-50">
+                                    <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Company Video (YouTube/Vimeo URL)</Label>
+                                    {!isEditing ? (
+                                        <DisplayField label="Video URL" value={formData.companyData.video_intro_url} icon={Globe} />
+                                    ) : (
+                                        <div className="relative">
+                                            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                                            <Input 
+                                                value={formData.companyData.video_intro_url} 
+                                                onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, video_intro_url: e.target.value}})}
+                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                placeholder="https://youtube.com/watch?v=..."
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                            <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
+                                <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                        <ShieldCheck className="w-5 h-5" />
+                                    </div>
+                                    Norms & Conditions
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-8">
+                                <div className="space-y-4">
+                                    <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Company Policies & Norms</Label>
+                                    {!isEditing ? (
+                                        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 min-h-[150px] whitespace-pre-wrap text-sm text-slate-600 font-medium">
+                                            {formData.companyData.norms_conditions || 'No norms specified.'}
+                                        </div>
+                                    ) : (
+                                        <textarea 
+                                            className="w-full min-h-[200px] p-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
+                                            value={formData.companyData.norms_conditions}
+                                            onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, norms_conditions: e.target.value}})}
+                                            placeholder="Specify your company norms, work culture rules, or conditions..."
+                                        />
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
             </Tabs>
 

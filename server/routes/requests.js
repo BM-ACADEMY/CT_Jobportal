@@ -15,6 +15,8 @@ const {
   getAssignees,
   getAssignedRequests,
   updateAssignedRequest,
+  submitBulkApplicationRequest,
+  submitWebsiteRequest,
 } = require('../controllers/requestController');
 
 router.use(verifyToken);
@@ -26,6 +28,9 @@ router.get('/my-sessions', authorizeRoles('jobseeker'), getMySessions);
 router.get('/my-interview-prep', authorizeRoles('jobseeker'), getMyInterviewPrep);
 router.patch('/interview-prep/:id/cancel', authorizeRoles('jobseeker'), cancelMyInterviewPrep);
 router.patch('/counselling/:id/cancel', authorizeRoles('jobseeker'), cancelMySession);
+
+router.post('/bulk-application', authorizeRoles('recruiter', 'company'), submitBulkApplicationRequest);
+router.post('/website-request', authorizeRoles('recruiter', 'company'), submitWebsiteRequest);
 
 router.get('/admin', isAdmin, getAdminRequests);
 router.get('/admin/assignees', isAdmin, getAssignees);

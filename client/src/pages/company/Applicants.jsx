@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  Users, 
-  ChevronLeft, 
-  Mail, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Users,
+  ChevronLeft,
+  Mail,
+  Clock,
+  CheckCircle,
+  XCircle,
   ExternalLink,
   Loader2,
   Search,
   Filter,
   MoreVertical,
   Download,
-  MessageSquare
+  MessageSquare,
+  Lock,
+  Sparkles
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   DropdownMenu, 
@@ -143,14 +146,18 @@ const Applicants = () => {
   const handleStartConversation = async (recipientId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(`${API_BASE_URL}/messages/conversation`, 
+      const res = await axios.post(`${API_BASE_URL}/messages/conversation`,
         { recipientId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      navigate('/company/messages');
+      navigate('/company/messages', { state: { conversationId: res.data._id } });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to start conversation");
+      if (err.response?.status === 403) {
+        toast.error(err.response.data?.msg || 'Messaging not available on your plan. Upgrade to message candidates.');
+      } else {
+        toast.error('Failed to start conversation');
+      }
     }
   };
 
@@ -197,7 +204,7 @@ const Applicants = () => {
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {canExport && (
+          {canExport ? (
             <Button
               variant="outline"
               onClick={handleExport}
@@ -208,6 +215,18 @@ const Applicants = () => {
               {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
               Export CSV
             </Button>
+          ) : (
+            <Link to="/company/subscription">
+              <Button
+                variant="outline"
+                className="rounded-xl border-slate-200 bg-slate-50 gap-2 font-bold text-xs text-slate-400 h-10 px-4 shrink-0 cursor-pointer hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
+                title="Upgrade your plan to export applicants as CSV"
+              >
+                <Lock size={13} />
+                Export CSV
+                <Sparkles size={12} className="text-emerald-400" />
+              </Button>
+            </Link>
           )}
           <div className="relative flex-1 md:w-64">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

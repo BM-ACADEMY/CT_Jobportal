@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import {
-  ClipboardList, Mic, Star, Search, RefreshCw, ChevronLeft, ChevronRight,
-  X, UserCheck, Loader2, AlertCircle, CheckCircle2, Send, Clock
+  X, UserCheck, Loader2, AlertCircle, CheckCircle2, Send, Clock, Layout, Users, Star, Mic, ClipboardList,
+  RefreshCw, Search, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ const TYPE_CONFIG = {
   counselling:    { label: 'Career Counselling', icon: Star,         color: 'bg-rose-50 text-rose-700 border-rose-200' },
   interview_prep: { label: 'Interview Prep',     icon: Mic,          color: 'bg-teal-50 text-teal-700 border-teal-200' },
   salary_benchmark: { label: 'Salary Benchmark', icon: ClipboardList, color: 'bg-violet-50 text-violet-700 border-violet-200' },
+  // website_request:  { label: 'Website Request',   icon: Layout,        color: 'bg-emerald-50 text-teal-700 border-emerald-200' },
+  bulk_application: { label: 'Bulk Application', icon: Users,           color: 'bg-blue-50 text-blue-700 border-blue-200' },
 };
 
 const STATUS_CONFIG = {
@@ -46,9 +48,10 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
   }, []);
 
   const filtered = assignees.filter(a =>
-    a.name?.toLowerCase().includes(search.toLowerCase()) ||
+    (a.name?.toLowerCase().includes(search.toLowerCase()) ||
     a.email?.toLowerCase().includes(search.toLowerCase()) ||
-    a.companyName?.toLowerCase().includes(search.toLowerCase())
+    a.companyName?.toLowerCase().includes(search.toLowerCase())) &&
+    a.role !== 'company'
   );
 
   const handleAssign = async () => {
@@ -104,6 +107,19 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
             <>
               <p><span className="font-bold text-slate-700">Role:</span> {request.jobRole}</p>
               <p><span className="font-bold text-slate-700">Company:</span> {request.companyName}</p>
+            </>
+          )}
+          {request.type === 'website_request' && (
+            <>
+              <p><span className="font-bold text-slate-700">Website Details:</span> {request.websiteDetails}</p>
+              <p><span className="font-bold text-slate-700">Goal:</span> {request.websiteGoal}</p>
+              <p><span className="font-bold text-slate-700">Audience:</span> {request.targetAudience}</p>
+            </>
+          )}
+          {request.type === 'bulk_application' && (
+            <>
+              <p><span className="font-bold text-slate-700">Job:</span> {request.jobId?.title || 'Unknown'}</p>
+              <p><span className="font-bold text-slate-700">Target Count:</span> {request.count}</p>
             </>
           )}
         </div>
@@ -267,6 +283,8 @@ const TABS = [
   { key: 'counselling',     label: 'Career Counselling' },
   { key: 'interview_prep',  label: 'Interview Prep' },
   { key: 'salary_benchmark', label: 'Salary Benchmark' },
+  // { key: 'website_request',  label: 'Website Requests' },
+  { key: 'bulk_application', label: 'Bulk Applications' },
 ];
 
 const STATUS_TABS = [
@@ -311,7 +329,10 @@ const ManageRequests = () => {
       r.user?.name?.toLowerCase().includes(q) ||
       r.user?.email?.toLowerCase().includes(q) ||
       r.bookingName?.toLowerCase().includes(q) ||
-      r.skills?.toLowerCase().includes(q)
+      r.skills?.toLowerCase().includes(q) ||
+      r.websiteDetails?.toLowerCase().includes(q) ||
+      r.jobId?.title?.toLowerCase().includes(q) ||
+      r.companyName?.toLowerCase().includes(q)
     );
   });
 
@@ -478,6 +499,12 @@ const ManageRequests = () => {
                         )}
                         {r.type === 'salary_benchmark' && (
                           <span className="truncate block">{r.jobRole} @ {r.companyName}</span>
+                        )}
+                        {r.type === 'website_request' && (
+                          <span className="truncate block">{r.websiteDetails}</span>
+                        )}
+                        {r.type === 'bulk_application' && (
+                          <span className="truncate block">{r.count} Applicants for {r.jobId?.title || 'Job'}</span>
                         )}
                       </td>
                       {/* Status */}

@@ -152,11 +152,11 @@ const LoginPage = () => {
           </div>
 
           {/* Role Toggle */}
-          <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
+          <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
             {[
               { key: 'jobseeker', label: 'Seeker', Icon: Briefcase, color: 'text-emerald-600', bg: 'bg-emerald-50' },
               { key: 'recruiter', label: 'Recruiter', Icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { key: 'company', label: 'Company', Icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              // { key: 'company', label: 'Company', Icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
             ].map(role => {
               const active = selectedRole === role.key;
               return (

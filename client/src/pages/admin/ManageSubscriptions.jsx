@@ -19,7 +19,7 @@ const API = import.meta.env.VITE_API_BASE_URL;
 const ROLES = [
   { id: 'jobseeker', label: 'Job Seekers', icon: User, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
   { id: 'recruiter', label: 'Recruiters', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  { id: 'company', label: 'Organizations', icon: Building2, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
+  // { id: 'company', label: 'Organizations', icon: Building2, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
 ];
 
 // Static schema fields per role — always present regardless of feature catalog
@@ -33,6 +33,7 @@ const STATIC_FEATURES = {
     { key: 'hasCareerCounselling', label: 'Career Counselling', type: 'boolean' },
     { key: 'careerCounsellingCount', label: 'Counselling Sessions', type: 'count', unit: 'sessions' },
     { key: 'hasInterviewPrep', label: 'Interview Prep', type: 'boolean' },
+    { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
     { key: 'hasPriorityBadge', label: 'Priority Badge', type: 'boolean' },
   ],
   recruiter: [
@@ -45,15 +46,20 @@ const STATIC_FEATURES = {
     { key: 'hasVideoInterview', label: 'Video Interview', type: 'boolean' },
     { key: 'hasPriorityListing', label: 'Priority Listing', type: 'boolean' },
     { key: 'hasAICandidateMatching', label: 'AI Candidate Matching', type: 'boolean' },
+    { key: 'hasRequests', label: 'Service Requests', type: 'boolean' },
+    { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
+    { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean', hint: 'Auto-enabled if seats > 1' },
   ],
-  company: [
-    { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
-    { key: 'companyProfileType', label: 'Company Profile Type', type: 'select', options: ['No', 'Basic', 'Branded', 'Full Custom'] },
-    { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean' },
-    { key: 'hasBulkApplicantManagement', label: 'Bulk Applicant Management', type: 'boolean' },
-    { key: 'hasInterviewScheduling', label: 'Interview Scheduling', type: 'boolean' },
-    { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
-  ],
+  // company: [
+  //   { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
+  //   // { key: 'companyProfileType', label: 'Company Profile Type', type: 'select', options: ['No', 'Basic', 'Branded', 'Full Custom'] },
+  //   { key: 'hasBulkApplicantManagement', label: 'Bulk Applicant Management', type: 'boolean' },
+  //   { key: 'hasInterviewScheduling', label: 'Interview Scheduling', type: 'boolean' },
+  //   { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean', hint: 'Auto-enabled if seats > 1' },
+  //   { key: 'hasRequests', label: 'Service Requests', type: 'boolean' },
+  //   { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
+  //   { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
+  // ],
 };
 
 const DEFAULT_FORM = {
@@ -65,7 +71,6 @@ const DEFAULT_FORM = {
   hasATSPipeline: false, hasAnalyticsDashboard: false, hasCandidateDBExport: false,
   hasBulkMessaging: false, hasVideoInterview: false,
   userSeats: 1, companyProfileType: 'Basic',
-  hasTeamCollaboration: false,
   hasBulkApplicantManagement: false, hasInterviewScheduling: false, hasDedicatedOnboarding: false,
   features: [],
 };

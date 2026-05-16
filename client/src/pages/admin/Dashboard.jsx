@@ -38,7 +38,7 @@ const AdminDashboard = () => {
         {[
           { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
           { label: 'Job Inventory', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-          { label: 'Organizations', value: loading ? '...' : stats.companies, icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
+          // { label: 'Organizations', value: loading ? '...' : stats.companies, icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
           { label: 'Uptime', value: '99.9%', icon: ShieldCheck, color: 'text-amber-600', bg: 'bg-amber-50/50' }
         ].map((stat, i) => (
           <Card key={i} className="rounded-[24px] border-slate-200 shadow-sm bg-white hover:border-emerald-200 transition-all duration-300">
@@ -77,7 +77,7 @@ const AdminDashboard = () => {
                 { msg: 'Global system synchronization finalized', time: '12:30 PM', status: 'SUCCESS' },
                 { msg: 'Administrative session authorized: Root Admin', time: '11:45 AM', status: 'SECURITY' },
                 { msg: 'Relational database integrity verified', time: '10:15 AM', status: 'STABLE' },
-                { msg: 'New organization registration request: TechCorp', time: '09:30 AM', status: 'PENDING' },
+                // { msg: 'New organization registration request: TechCorp', time: '09:30 AM', status: 'PENDING' },
                 { msg: 'Automated backup sequence initiated', time: '08:00 AM', status: 'SYSTEM' },
               ].map((log, i) => (
                 <div key={i} className="p-4 bg-slate-50/50 hover:bg-slate-50 rounded-xl transition-all flex items-center justify-between group border border-transparent hover:border-slate-100">
