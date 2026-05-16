@@ -13,7 +13,11 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: function() { return !this.googleId && !this.githubId && !this.linkedinId; },
+  },
+  isSocialIncomplete: {
+    type: Boolean,
+    default: false,
   },
   role: {
     type: mongoose.Schema.Types.ObjectId,
@@ -90,6 +94,18 @@ const userSchema = new mongoose.Schema({
       visibility: { type: String, default: 'Everyone' }
     }
   },
+  isAdminBlocked: {
+    type: Boolean,
+    default: false
+  },
+  blockedEntities: [{
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: 'onModel'
+  }],
+  onModel: {
+    type: String,
+    enum: ['User', 'Company']
+  },
   recruiterProfile: {
     jobTitle: { type: String, default: '' },
     phone: { type: String, default: '' },
@@ -127,10 +143,49 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
   },
+  employerCompany: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company'
+  },
   savedJobs: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Job'
-  }]
+  }],
+  subscription: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subscription'
+  },
+  subscriptionExpiry: {
+    type: Date
+  },
+  autoRenew: {
+    type: Boolean,
+    default: false
+  },
+  downloadsUsed: {
+    type: Number,
+    default: 0
+  },
+  searchUsed: {
+    type: Number,
+    default: 0
+  },
+  jobsUsed: {
+    type: Number,
+    default: 0
+  },
+  messagesUsed: {
+    type: Number,
+    default: 0
+  },
+  counsellingSessionsUsed: {
+    type: Number,
+    default: 0
+  },
+  searchUsedDate: {
+    type: Date,
+    default: null
+  }
 }, { timestamps: true });
 
   module.exports = mongoose.model('User', userSchema);

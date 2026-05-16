@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
-import { Briefcase, MapPin, Clock, DollarSign, Users, FileText, Plus, X, Sparkles, LayoutGrid, Send, Trash2, Target, ChevronLeft, ArrowRight, ExternalLink, Loader2 } from 'lucide-react';
+import { Briefcase, MapPin, Clock, DollarSign, Users, FileText, Plus, X, Sparkles, LayoutGrid, Send, Trash2, Target, ChevronLeft, ArrowRight, ExternalLink, Loader2, Lock, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -246,10 +247,24 @@ const PostJob = () => {
     };
 
     const [draftLoading, setDraftLoading] = useState(false);
+    const [quota, setQuota] = useState(null);
+
+    useEffect(() => {
+        const fetchQuota = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/jobs/quota`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setQuota(res.data);
+            } catch { /* quota display is non-critical */ }
+        };
+        fetchQuota();
+    }, [jobs]);
 
     const handleSubmit = async (e, status = 'active') => {
         if (e) e.preventDefault();
-        
+
         if (!user?.company) {
             toast.error("Complete your company profile in settings before posting a job");
             return;
@@ -258,6 +273,7 @@ const PostJob = () => {
         const loadingSetter = status === 'draft' ? setDraftLoading : setLoading;
         loadingSetter(true);
         try {
+
             if (editingJobId) {
                 await axios.put(`${API_JOBS_URL}/${editingJobId}`, { ...formData, status });
                 toast.success(status === 'draft' ? "Draft updated!" : "Position published successfully!");
@@ -306,14 +322,50 @@ const PostJob = () => {
                                 Job <span className="text-emerald-600">Postings</span>
                             </h1>
                             <p className="text-muted-foreground text-sm mt-1">Manage and track your active recruitment opportunities</p>
+                            {quota && !quota.unlimited && (
+                                <div className={`mt-2 inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full ${
+                                    quota.used >= quota.limit ? 'bg-rose-50 text-rose-600' :
+                                    quota.used >= quota.limit * 0.8 ? 'bg-amber-50 text-amber-600' :
+                                    'bg-emerald-50 text-emerald-700'
+                                }`}>
+                                    <Briefcase className="w-3 h-3" />
+                                    {quota.used}/{quota.limit} job postings used
+                                    {quota.used >= quota.limit && ' — Limit reached'}
+                                </div>
+                            )}
                         </div>
-                        <Button 
+                        <Button
                             onClick={() => setViewMode('create')}
-                            className="rounded-lg font-semibold px-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
+                            disabled={quota && !quota.unlimited && quota.used >= quota.limit}
+                            className="rounded-lg font-semibold px-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all disabled:opacity-50"
                         >
                             <Plus className="w-4 h-4 mr-2" /> Post a New Job
                         </Button>
                     </div>
+
+                    {/* Job posting limit reached banner */}
+                    {quota && !quota.unlimited && quota.used >= quota.limit && (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-xl border border-rose-200 bg-rose-50">
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center shrink-0">
+                                    <AlertTriangle size={16} className="text-rose-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-rose-800">Job posting limit reached ({quota.used}/{quota.limit})</p>
+                                    <p className="text-xs text-rose-600 mt-0.5">
+                                        Your current plan allows {quota.limit} job posting{quota.limit > 1 ? 's' : ''}. Delete an existing job to free up a slot, or upgrade your plan for more.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <Link to="/company/subscription">
+                                    <Button size="sm" className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs gap-1.5 h-9 px-4">
+                                        <Sparkles size={12} /> Upgrade Plan
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {jobs.map((job) => (

@@ -69,7 +69,7 @@ const ForgotPasswordPage = () => {
       <div className="bg-background w-full max-w-[440px] rounded-[32px] shadow-xl border border-border p-8 md:p-10 relative overflow-hidden">
         
         {/* Top Decorative gradient abstract strip */}
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-indigo-500 to-violet-500" />
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500" />
 
         {/* Back Button */}
         {step === 'email' && (
@@ -87,8 +87,8 @@ const ForgotPasswordPage = () => {
         {/* ── STEP 1: REQUEST EMAIL ── */}
         {step === 'email' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-              <KeyRound size={24} className="text-primary" />
+            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 shadow-sm">
+              <KeyRound size={24} className="text-emerald-600" />
             </div>
             <h1 className="text-2xl font-black text-foreground mb-2 tracking-tight">Forgot Password?</h1>
             <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8">
@@ -111,7 +111,7 @@ const ForgotPasswordPage = () => {
               <Button 
                 disabled={loading}
                 onClick={handleSendEmail}
-                className="h-14 w-full rounded-2xl text-base font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 {loading ? 'Sending...' : 'Reset Password'}
               </Button>
@@ -122,8 +122,8 @@ const ForgotPasswordPage = () => {
         {/* ── STEP 2: VERIFY AND SET NEW PASSWORD ── */}
         {step === 'otp' && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="w-14 h-14 bg-violet-500/10 rounded-2xl flex items-center justify-center mb-6">
-              <ShieldCheck size={24} className="text-violet-500" />
+            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 shadow-sm">
+              <ShieldCheck size={24} className="text-emerald-600" />
             </div>
             <h1 className="text-2xl font-black text-foreground mb-2 tracking-tight">Set New Password</h1>
             <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8">
@@ -174,7 +174,7 @@ const ForgotPasswordPage = () => {
               <Button 
                 disabled={loading}
                 onClick={handleResetPassword}
-                className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all"
+                className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
               >
                 {loading ? 'Updating...' : 'Update Password'}
               </Button>
@@ -182,7 +182,7 @@ const ForgotPasswordPage = () => {
               <div className="text-center">
                 <button 
                   onClick={() => setStep('email')} 
-                  className="text-xs font-black text-muted-foreground hover:text-foreground transition uppercase tracking-widest"
+                  className="text-xs font-black text-emerald-600 hover:underline transition uppercase tracking-widest"
                 >
                   Change Email Address
                 </button>
@@ -194,7 +194,7 @@ const ForgotPasswordPage = () => {
         {/* ── STEP 3: SUCCESS ── */}
         {step === 'success' && (
           <div className="animate-in zoom-in duration-500 text-center py-6">
-            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-100 shadow-sm">
               <ShieldCheck size={36} className="text-emerald-500" />
             </div>
             <h1 className="text-2xl font-black text-foreground mb-3 tracking-tight">All done!</h1>
@@ -203,7 +203,7 @@ const ForgotPasswordPage = () => {
             </p>
             <Button 
               onClick={() => navigate('/login')}
-              className="h-14 w-full rounded-2xl text-base font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               Continue to Login <ArrowRight size={18} />
             </Button>

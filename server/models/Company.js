@@ -133,15 +133,25 @@ const companySchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  gallery_images: [{
+    type: String,
+    default: ''
+  }],
+  norms_conditions: {
+    type: String,
+    trim: true
+  },
   subscription_tier: {
     type: String,
     enum: ['Free', 'Basic', 'Pro', 'Enterprise'],
     default: 'Free'
   },
-  account_status: {
-    type: String,
-    enum: ['Active', 'Pending', 'Suspended'],
-    default: 'Pending'
+  subscription: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subscription'
+  },
+  subscriptionExpiry: {
+    type: Date
   }
 }, { timestamps: true });
 

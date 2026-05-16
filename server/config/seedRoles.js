@@ -6,7 +6,8 @@ const seedRoles = async () => {
     { name: 'recruiter', description: 'Company HR posting jobs', permissions: ['manage_jobs', 'view_applicants'] },
     { name: 'company', description: 'Direct Corporate Entity', permissions: ['manage_jobs', 'view_applicants', 'manage_company_profile'] },
     { name: 'admin', description: 'Platform Administrator', permissions: ['manage_all'] },
-    { name: 'subadmin', description: 'Content Moderator', permissions: ['moderate_jobs', 'moderate_users'] }
+    { name: 'subadmin', description: 'Content Moderator', permissions: ['moderate_jobs', 'moderate_users'] },
+    { name: 'org_employee', description: 'Organization Employee with company plan access', permissions: ['read_jobs', 'apply_jobs'] }
   ];
 
   try {

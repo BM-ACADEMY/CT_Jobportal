@@ -70,18 +70,18 @@ const Header = () => {
   const config = roleConfig[role] || roleConfig.jobseeker;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-10 h-20 flex items-center justify-between gap-6">
 
         {/* Logo */}
         <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                    <span className="text-primary-foreground font-semibold text-sm">N</span>
+            <Link to="/" className="flex items-center gap-3 group transition-transform active:scale-95">
+                <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20 group-hover:rotate-6 transition-transform">
+                    <span className="text-white font-black text-base">N</span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-xl font-semibold tracking-tight text-foreground leading-none">CT Job Portal</span>
-                    <span className="text-[9px] text-muted-foreground uppercase tracking-widest mt-0.5">Professional</span>
+                    <span className="text-lg font-bold tracking-tight text-slate-900 leading-none">CT Job Portal</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Professional Hub</span>
                 </div>
             </Link>
         </div>
@@ -89,21 +89,21 @@ const Header = () => {
         {/* Search */}
         <div className="hidden xl:flex flex-1 justify-center max-w-md">
             <div className="w-full relative group">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
                 <Input 
-                    placeholder="Search jobs, skills..." 
-                    className="h-10 pl-9 rounded-md bg-muted/40 border-none focus-visible:ring-1 focus-visible:ring-primary/20 text-sm"
+                    placeholder="Identify roles, companies or skillsets..." 
+                    className="h-11 pl-11 rounded-xl bg-slate-50 border-transparent focus:border-emerald-100 focus:bg-white focus:ring-4 focus:ring-emerald-50 transition-all font-medium text-sm"
                 />
             </div>
         </div>
 
         {/* Navigation */}
-        <nav className="hidden lg:flex items-center gap-6">
+        <nav className="hidden lg:flex items-center gap-8">
             {config.navItems?.map((item) => (
                 <Link 
                     key={item.href} 
                     to={item.href}
-                    className="text-sm font-semibold text-slate-500 hover:text-primary transition-colors whitespace-nowrap"
+                    className="text-xs font-bold text-slate-500 hover:text-emerald-600 uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                 >
                     {item.label}
                 </Link>
@@ -111,59 +111,63 @@ const Header = () => {
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 text-muted-foreground">
-                <Bell size={18} />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full" />
+        <div className="flex items-center gap-6">
+            <Button variant="ghost" size="icon" className="relative h-11 w-11 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
+                <Bell size={20} />
+                <span className="absolute top-3 right-3 w-2 h-2 bg-emerald-600 border-2 border-white rounded-full" />
             </Button>
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <div className="flex items-center gap-2 cursor-pointer pl-4 border-l border-border h-8 hover:opacity-80 transition-opacity">
+                    <div className="flex items-center gap-3 cursor-pointer pl-6 border-l border-slate-100 h-10 group transition-all">
                         <div className="hidden sm:flex flex-col items-end leading-none">
-                            <p className="text-sm font-medium text-foreground">{user?.name || 'User'}</p>
-                            <span className={`text-[8px] px-1.5 py-0.5 rounded border mt-0.5 uppercase tracking-wider ${config.color}`}>
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{user?.name || 'Authorized User'}</p>
+                            <span className="text-[8px] px-2 py-0.5 rounded-full border border-slate-100 bg-slate-50/50 mt-1 uppercase tracking-widest font-bold text-slate-400">
                                 {config.label}
                             </span>
                         </div>
-                        <Avatar className="w-8 h-8 rounded-full border">
-                            <AvatarFallback className="bg-muted text-foreground text-xs font-medium">
+                        <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm ring-1 ring-slate-100 group-hover:ring-emerald-100 transition-all">
+                            <AvatarFallback className="bg-emerald-50 text-emerald-600 text-xs font-black">
                                 {user?.name?.[0]?.toUpperCase() || 'U'}
                             </AvatarFallback>
                         </Avatar>
-                        <ChevronDown size={12} className="text-muted-foreground" />
+                        <ChevronDown size={14} className="text-slate-300 group-hover:text-emerald-500 transition-all" />
                     </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 mt-1 rounded-lg border shadow-lg p-1">
-                    <DropdownMenuLabel className="px-3 py-2 font-normal">
-                        <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{user?.name || 'User'}</p>
-                            <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                <DropdownMenuContent align="end" className="w-64 mt-3 rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 p-2 bg-white animate-in slide-in-from-top-2 duration-300">
+                    <DropdownMenuLabel className="px-4 py-4 mb-1">
+                        <div className="flex flex-col space-y-1.5">
+                            <p className="text-sm font-bold text-slate-900">{user?.name || 'User Account'}</p>
+                            <p className="text-[10px] font-medium text-slate-400 truncate">{user?.email}</p>
                         </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                        onClick={() => {
-                            const routes = { 
-                                jobseeker: '/jobseeker/settings', 
-                                recruiter: '/company/settings',
-                                company: '/company/settings'
-                            };
-                            navigate(routes[user?.role] || '/jobseeker/settings');
-                        }}
-                        className="rounded-md px-3 py-2 text-sm cursor-pointer"
-                    >
-                        <Settings className="w-4 h-4 mr-2 text-muted-foreground" />
-                        <span>Settings</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                        onClick={() => { logout(); navigate('/'); }}
-                        className="rounded-md px-3 py-2 text-sm cursor-pointer text-destructive focus:text-destructive"
-                    >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        <span>Logout</span>
-                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-slate-50" />
+                    <div className="p-1 space-y-1">
+                      <DropdownMenuItem 
+                          onClick={() => {
+                              const routes = { 
+                                  jobseeker: '/jobseeker/settings', 
+                                  recruiter: '/company/settings',
+                                  company: '/company/settings'
+                              };
+                              navigate(routes[user?.role] || '/jobseeker/settings');
+                          }}
+                          className="rounded-xl px-4 py-3 text-xs font-bold text-slate-600 cursor-pointer focus:bg-emerald-50 focus:text-emerald-600 transition-all uppercase tracking-widest"
+                      >
+                          <Settings className="w-4 h-4 mr-3" />
+                          <span>Account Settings</span>
+                      </DropdownMenuItem>
+                    </div>
+                    <DropdownMenuSeparator className="bg-slate-50" />
+                    <div className="p-1">
+                      <DropdownMenuItem 
+                          onClick={() => { logout(); navigate('/'); }}
+                          className="rounded-xl px-4 py-3 text-xs font-bold text-rose-500 cursor-pointer focus:bg-rose-50 focus:text-rose-600 transition-all uppercase tracking-widest"
+                      >
+                          <LogOut className="w-4 h-4 mr-3" />
+                          <span>Terminate Session</span>
+                      </DropdownMenuItem>
+                    </div>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>

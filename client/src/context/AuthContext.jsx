@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/auth`;
 
 const getRoleRoute = (role) => {
-  const routes = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', jobseeker: '/jobseeker' };
+  const routes = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', company: '/company', jobseeker: '/jobseeker', org_employee: '/employee' };
   return routes[role] || '/jobseeker';
 };
 
@@ -18,8 +18,24 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (storedUser && token) {
       try {
+        // Hydrate immediately from localStorage so the UI doesn't flash
         setUser(JSON.parse(storedUser));
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Then sync from server — this triggers ensureFreePlan for users with no subscription
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/me`)
+          .then(res => {
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          })
+          .catch(() => {
+            // Token expired or invalid — clear session
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            setUser(null);
+            delete axios.defaults.headers.common['Authorization'];
+          })
+          .finally(() => setLoading(false));
+        return;
       } catch (err) {
         console.error('Error parsing stored user:', err);
         localStorage.removeItem('user');
@@ -29,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       const res = await axios.post(`${API_URL}/login`, { email, password });
       
@@ -46,9 +62,24 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Login failed' };
     }
-  };
+  }, []);
 
-  const register = async (userData) => {
+  const adminLogin = useCallback(async (email, password) => {
+    try {
+      const ADMIN_API_URL = `${import.meta.env.VITE_API_BASE_URL}/admin`;
+      const res = await axios.post(`${ADMIN_API_URL}/login`, { email, password });
+      const { user, token } = res.data;
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      return { success: true, redirect: getRoleRoute(user.role) };
+    } catch (err) {
+      return { success: false, msg: err.response?.data?.msg || 'Admin login failed' };
+    }
+  }, []);
+
+  const register = useCallback(async (userData) => {
     try {
       const res = await axios.post(`${API_URL}/register`, userData);
       
@@ -66,9 +97,9 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Registration failed' };
     }
-  };
+  }, []);
 
-  const verifyOtp = async (email, otp) => {
+  const verifyOtp = useCallback(async (email, otp) => {
     try {
       const res = await axios.post(`${API_URL}/verify-otp`, { email, otp });
       const { user, token } = res.data;
@@ -80,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Invalid or expired OTP' };
     }
-  };
+  }, []);
 
   const forgotPassword = async (email) => {
     try {
@@ -109,29 +140,44 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const completeSocialLogin = (token, userData) => {
+  const completeSocialLogin = useCallback((token, userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     return { success: true, redirect: getRoleRoute(userData.role) };
-  };
+  }, []);
 
-  const updateUser = (newData) => {
-    const updatedUser = { ...user, ...newData };
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-  };
+  const updateUser = useCallback((newData) => {
+    setUser(prevUser => {
+      const updatedUser = { ...prevUser, ...newData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
-  };
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/me`);
+      setUser(res.data);
+      localStorage.setItem('user', JSON.stringify(res.data));
+    } catch (err) {
+      console.error('Error refreshing user:', err);
+    }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, verifyOtp, forgotPassword, resetPassword, resendOtp, completeSocialLogin, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ 
+      user, loading, login, adminLogin, register, verifyOtp, 
+      forgotPassword, resetPassword, logout, completeSocialLogin, refreshUser, updateUser, resendOtp
+    }}>
       {children}
     </AuthContext.Provider>
   );

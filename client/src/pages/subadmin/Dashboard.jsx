@@ -39,7 +39,7 @@ const SubAdminDashboard = () => {
                       <div>
                         <h4 className="text-sm font-black text-foreground group-hover/item:text-orange-600 transition-colors">{item.title}</h4>
                         <div className="flex items-center gap-3 mt-1">
-                          <Badge variant="secondary" className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${item.type === 'Job' ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/30' : 'bg-orange-50 text-orange-600 dark:bg-orange-950/30'} border-none hover:bg-opacity-100 transition-none`}>
+                          <Badge variant="secondary" className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${item.type === 'Job' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30' : 'bg-orange-50 text-orange-600 dark:bg-orange-950/30'} border-none hover:bg-opacity-100 transition-none`}>
                             {item.type}
                           </Badge>
                           <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{item.time}</span>

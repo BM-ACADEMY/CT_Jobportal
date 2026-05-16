@@ -27,6 +27,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import JobApplicationModal from '../components/jobs/JobApplicationModal';
+import ShareModal from '../components/jobs/ShareModal';
 
 const JobDetails = () => {
   const { id } = useParams();
@@ -34,6 +35,7 @@ const JobDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
 
@@ -110,24 +112,46 @@ const JobDetails = () => {
       url: shareUrl,
     };
 
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+    // If native share is available, use it
+    if (navigator.share) {
       navigator.share(shareData).catch((err) => {
+        // If user cancelled (AbortError), don't do anything
+        // Otherwise, open the fallback modal
         if (err.name !== 'AbortError') {
-          copyToClipboard(shareUrl);
+          setIsShareModalOpen(true);
         }
       });
     } else {
-      copyToClipboard(shareUrl);
+      // Fallback: Open our custom premium share modal
+      setIsShareModalOpen(true);
     }
   };
 
   const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(() => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        toast.success("Link copied! Share it with your friends.");
+      }).catch(err => {
+        fallbackCopyToClipboard(text);
+      });
+    } else {
+      fallbackCopyToClipboard(text);
+    }
+  };
+
+  const fallbackCopyToClipboard = (text) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
       toast.success("Link copied! Share it with your friends.");
-    }).catch(err => {
+    } catch (err) {
       console.error('Could not copy text: ', err);
       toast.error("Failed to copy link");
-    });
+    }
+    document.body.removeChild(textArea);
   };
 
   const isJobSaved = user?.savedJobs?.some(savedId => String(savedId) === String(id));
@@ -439,6 +463,14 @@ const JobDetails = () => {
         onClose={() => setIsApplyModalOpen(false)} 
         job={job}
         user={user}
+      />
+
+      <ShareModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        jobTitle={job.title}
+        companyName={job.company?.name}
+        shareUrl={window.location.href}
       />
     </div>
   );

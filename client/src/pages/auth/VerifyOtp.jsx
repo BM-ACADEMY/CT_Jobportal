@@ -80,7 +80,7 @@ const VerifyOtpPage = () => {
       <div className="bg-background w-full max-w-md rounded-[32px] shadow-2xl p-8 md:p-10 border border-border overflow-hidden relative">
         
         {/* Top Decorative gradient abstract strip */}
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
 
         {/* Header Icon */}
         <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-sm">

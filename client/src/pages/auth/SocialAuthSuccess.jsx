@@ -16,6 +16,13 @@ const SocialAuthSuccess = () => {
     if (token && userStr) {
       try {
         const userData = JSON.parse(decodeURIComponent(userStr));
+        
+        if (userData.isSocialIncomplete) {
+          // Redirect to complete profile page instead of logging in
+          navigate(`/complete-social-profile?token=${token}&userId=${userData.id}`);
+          return;
+        }
+
         const result = completeSocialLogin(token, userData);
         if (result.success) {
           navigate(result.redirect);

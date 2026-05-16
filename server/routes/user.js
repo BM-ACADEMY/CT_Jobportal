@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { updateProfile, uploadResume, toggleSaveJob, getSavedJobs, getPublicProfile } = require('../controllers/userController');
+const { updateProfile, uploadResume, toggleSaveJob, getSavedJobs, getPublicProfile, toggleBlockEntity, trackProfileView, getProfileViewers, updateAutoRenew, searchUser } = require('../controllers/userController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
 
@@ -12,5 +12,10 @@ router.post('/resume', upload.single('resume'), uploadResume);
 router.post('/save-job/:jobId', toggleSaveJob);
 router.get('/saved-jobs', getSavedJobs);
 router.get('/profile/:id', getPublicProfile);
+router.post('/block/:id', toggleBlockEntity);
+router.post('/profile/:id/view', trackProfileView);
+router.get('/profile/viewers', getProfileViewers);
+router.patch('/auto-renew', updateAutoRenew);
+router.get('/search', searchUser);
 
 module.exports = router;

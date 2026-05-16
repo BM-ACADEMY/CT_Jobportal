@@ -1,17 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const { createJob, getCompanyJobs, updateJob, deleteJob, getAllJobs } = require('../controllers/jobController');
-const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
+const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getMatchingJobs, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getAICandidateMatches, getJobQuota } = require('../controllers/jobController');
+const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
 
 // Public route to get all jobs
-router.get('/', getAllJobs);
+router.get('/', optionalVerifyToken, getAllJobs);
 
-// All routes below this are protected and for recruiters
+// Route for jobseekers to get matching jobs
+router.get('/matching', verifyToken, authorizeRoles('jobseeker'), getMatchingJobs);
+
+// All routes below this are protected and for recruiters/companies
 router.use(verifyToken);
-router.use(authorizeRoles('recruiter'));
+router.use(authorizeRoles('recruiter', 'company'));
 
 router.post('/', createJob);
 router.get('/company-jobs', getCompanyJobs);
+router.get('/company-jobs-stats', getCompanyJobsWithStats);
+router.get('/analytics', getRecruiterAnalytics);
+router.get('/quota', getJobQuota);
+router.get('/candidates/search', searchCandidates);
+router.get('/candidates/:candidateId/profile', viewCandidateProfile);
+router.get('/:jobId/matched-candidates', getAICandidateMatches);
 router.put('/:id', updateJob);
 router.delete('/:id', deleteJob);
 

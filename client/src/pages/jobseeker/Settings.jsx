@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { 
-  User, Mail, Phone, MapPin, Briefcase, GraduationCap, 
+  User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Plus, X, Upload, FileText, CheckCircle2, Loader2,
-  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2
+  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2, Download
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
+const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
 
 const INDIAN_STATES = [
     "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", 
@@ -44,12 +45,14 @@ const COMMON_CITIES = [
 const DataDisplay = ({ label, value, icon: Icon, isEditing, children }) => {
     if (isEditing) return children;
     return (
-        <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none">{label}</Label>
-            <div className="flex items-center gap-2 min-h-[2.5rem] py-1">
-                {Icon && <Icon size={14} className="text-muted-foreground shrink-0" />}
-                <span className="text-sm font-bold text-foreground">
-                    {value || <span className="opacity-30 font-normal">-</span>}
+        <div className="space-y-1.5">
+            <Label className="text-[9px] text-slate-400 uppercase tracking-[0.15em] font-bold leading-none ml-0.5">{label}</Label>
+            <div className="flex items-center gap-3 min-h-[2.5rem] py-1">
+                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100/50 shrink-0">
+                    {Icon && <Icon size={14} className="text-slate-400" />}
+                </div>
+                <span className="text-sm font-bold text-slate-900">
+                    {value || <span className="text-slate-300 font-medium">Not specified</span>}
                 </span>
             </div>
         </div>
@@ -99,11 +102,11 @@ const Settings = () => {
         try {
             const res = await axios.put(`${API_USER_URL}/profile`, formData);
             updateUser(res.data.user);
-            toast.success("Profile updated successfully!");
+            toast.success("Profile synchronized successfully");
             setIsEditing(false);
         } catch (err) {
             console.error(err);
-            toast.error(err.response?.data?.msg || "Failed to update profile");
+            toast.error(err.response?.data?.msg || "Synchronization failed");
         } finally {
             setLoading(false);
         }
@@ -139,6 +142,28 @@ const Settings = () => {
         setIsEditing(false);
     };
 
+    const handleResumeDownload = async () => {
+        if (!user?.profile?.resumeUrl) return;
+        try {
+            const url = user.profile.resumeUrl.startsWith('http')
+                ? user.profile.resumeUrl
+                : `${API_DOMAIN}${user.profile.resumeUrl}`;
+            const filename = user.profile.resumeName || 'resume.pdf';
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch {
+            toast.error("Failed to download resume");
+        }
+    };
+
     const handleResumeUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -159,7 +184,7 @@ const Settings = () => {
                     profileCompletion: res.data.profileCompletion
                 } 
             });
-            toast.success("Resume uploaded successfully!");
+            toast.success("Asset repository updated");
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.msg || "Upload failed");
@@ -299,125 +324,135 @@ const Settings = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 py-6 animate-in fade-in duration-500">
+        <div className="max-w-5xl mx-auto space-y-10 py-8 px-4 animate-in fade-in duration-500">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                        Profile Settings
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight">
+                        Profile Intelligence
                     </h1>
-                    <p className="text-muted-foreground text-sm mt-1">Manage your professional identity and job seeker preferences</p>
+                    <p className="text-base text-slate-500 font-medium">Manage your professional identity and career roadmap</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex items-center gap-3">
                     {isEditing ? (
-                        <Button 
-                            variant="outline" 
-                            onClick={handleCancel}
-                            className="text-xs uppercase tracking-wider h-10 px-6"
-                        >
-                            Cancel
-                        </Button>
+                        <>
+                            <Button 
+                                variant="ghost" 
+                                onClick={handleCancel}
+                                className="h-11 text-xs font-bold uppercase tracking-widest text-slate-500 px-6"
+                            >
+                                Discard
+                            </Button>
+                            <Button 
+                                onClick={handleSave}
+                                disabled={loading}
+                                className="h-11 px-8 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-sm transition-all"
+                            >
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                                Commit Changes
+                            </Button>
+                        </>
                     ) : (
                         <Button 
                             onClick={() => setIsEditing(true)}
-                            className="text-xs uppercase tracking-wider shadow-sm h-10 px-6"
+                            className="h-11 px-8 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-sm transition-all"
                         >
-                            <Save className="w-4 h-4 mr-2" /> Edit Profile
+                            <Settings2 className="w-4 h-4 mr-2" /> Modify Profile
                         </Button>
                     )}
                 </div>
             </div>
 
             <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="bg-muted p-1 rounded-lg h-auto flex-wrap justify-start border overflow-x-auto">
-                    <TabsTrigger value="basic" className="px-4 py-2 text-xs uppercase tracking-wide">
-                        <User className="w-4 h-4 mr-2" /> Basic Info
+                <TabsList className="bg-slate-50 border border-slate-100 rounded-xl p-1.5 h-auto flex-wrap justify-start overflow-x-auto shadow-sm">
+                    <TabsTrigger value="basic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                        <User className="w-3.5 h-3.5 mr-2" /> Basic Info
                     </TabsTrigger>
-                    <TabsTrigger value="academic" className="px-4 py-2 text-xs uppercase tracking-wide">
-                        <GraduationCap className="w-4 h-4 mr-2" /> Academic
+                    <TabsTrigger value="academic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                        <GraduationCap className="w-3.5 h-3.5 mr-2" /> Academic
                     </TabsTrigger>
-                    <TabsTrigger value="professional" className="px-4 py-2 text-xs uppercase tracking-wide">
-                        <Briefcase className="w-4 h-4 mr-2" /> Professional
+                    <TabsTrigger value="professional" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                        <Briefcase className="w-3.5 h-3.5 mr-2" /> Professional
                     </TabsTrigger>
-                    <TabsTrigger value="resume" className="px-4 py-2 text-xs uppercase tracking-wide">
-                        <FileText className="w-4 h-4 mr-2" /> Resume
+                    <TabsTrigger value="resume" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                        <FileText className="w-3.5 h-3.5 mr-2" /> Asset Repository
                     </TabsTrigger>
-                    <TabsTrigger value="preferences" className="px-4 py-2 text-xs uppercase tracking-wide">
-                        <Settings2 className="w-4 h-4 mr-2" /> Preferences
+                    <TabsTrigger value="preferences" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                        <Settings2 className="w-3.5 h-3.5 mr-2" /> Preferences
                     </TabsTrigger>
                 </TabsList>
 
                 {/* ── TAB: BASIC INFO ── */}
-                <TabsContent value="basic" className="mt-6 space-y-6">
-                    <Card className="rounded-lg border shadow-sm">
-                        <CardHeader className="pb-4 border-b">
-                            <CardTitle className="text-lg font-medium flex items-center gap-2">
-                                <LayoutGrid className="w-4 h-4 text-muted-foreground" /> Personal Information
+                <TabsContent value="basic" className="mt-8 space-y-6">
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-slate-50">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <LayoutGrid className="w-4 h-4 text-emerald-600" /> Identity Foundation
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                                <DataDisplay label="Full Name" value={formData.name} icon={User} isEditing={isEditing}>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Full Name</Label>
+                        <CardContent className="pt-8 p-8 space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                                <DataDisplay label="Full Legal Name" value={formData.name} icon={User} isEditing={isEditing}>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Full Name</Label>
                                         <div className="relative">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input 
                                                 value={formData.name} 
                                                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                                className="pl-10 text-sm h-10" 
+                                                className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                             />
                                         </div>
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Email Address" value={user?.email} icon={Mail} isEditing={false}>
-                                    <div className="space-y-2 opacity-80">
-                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Email Address</Label>
+                                <DataDisplay label="Primary Correspondence" value={user?.email} icon={Mail} isEditing={false}>
+                                    <div className="space-y-1.5 opacity-60">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Email Address</Label>
                                         <div className="relative">
-                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                                            <Input value={user?.email} disabled className="pl-10 text-sm bg-muted/30 h-10" />
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
+                                            <Input value={user?.email} disabled className="pl-11 h-11 rounded-xl bg-slate-100 border-slate-200 font-medium text-sm" />
                                         </div>
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Professional Headline" value={formData.profile.headline} icon={Target} isEditing={isEditing}>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Professional Headline</Label>
+                                <DataDisplay label="Professional Brand" value={formData.profile.headline} icon={Target} isEditing={isEditing}>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Professional Headline</Label>
                                         <div className="relative">
-                                            <Target className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                            <Target className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input 
-                                                placeholder="e.g. Senior Software Engineer" 
+                                                placeholder="e.g. Lead Systems Architect" 
                                                 value={formData.profile.headline}
                                                 onChange={(e) => setFormData({...formData, profile: {...formData.profile, headline: e.target.value}})}
-                                                className="pl-10 text-sm h-10" 
+                                                className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                             />
                                         </div>
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Phone Number" value={formData.profile.phone} icon={Phone} isEditing={isEditing}>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Phone Number</Label>
+                                <DataDisplay label="Contact Vector" value={formData.profile.phone} icon={Phone} isEditing={isEditing}>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
                                         <div className="relative">
-                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input 
                                                 placeholder="+91 00000 00000" 
                                                 value={formData.profile.phone}
                                                 onChange={(e) => setFormData({...formData, profile: {...formData.profile, phone: e.target.value}})}
-                                                className="pl-10 text-sm h-10" 
+                                                className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                             />
                                         </div>
                                     </div>
                                 </DataDisplay>
                             </div>
                             
-                            <DataDisplay label="Bio" value={formData.profile.bio} isEditing={isEditing}>
-                                <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Bio</Label>
+                            <DataDisplay label="Professional Summary" value={formData.profile.bio} isEditing={isEditing}>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Bio</Label>
                                     <textarea 
-                                        className="w-full min-h-[100px] p-3 rounded-md border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                                        placeholder="Brief professional overview..."
+                                        className="w-full min-h-[120px] p-4 rounded-xl border border-slate-100 bg-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300 transition-all"
+                                        placeholder="Articulate your professional journey and value proposition..."
                                         value={formData.profile.bio}
                                         onChange={(e) => setFormData({...formData, profile: {...formData.profile, bio: e.target.value}})}
                                     />
@@ -428,21 +463,21 @@ const Settings = () => {
                 </TabsContent>
 
                 {/* ── TAB: ACADEMIC ── */}
-                <TabsContent value="academic" className="mt-6">
-                     <Card className="rounded-lg border shadow-sm">
-                        <CardHeader className="pb-4 border-b flex flex-row items-center justify-between">
-                            <CardTitle className="text-lg font-medium flex items-center gap-2">
-                                <GraduationCap className="w-4 h-4 text-muted-foreground" /> Education
+                <TabsContent value="academic" className="mt-8">
+                     <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-slate-50 flex flex-row items-center justify-between p-6">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <GraduationCap className="w-4 h-4 text-emerald-600" /> Academic Credentials
                             </CardTitle>
                             {isEditing && (
-                                <Button onClick={addQualification} variant="outline" size="sm" className="text-xs h-8">
-                                    <Plus className="w-3 h-3 mr-1" /> Add
+                                <Button onClick={addQualification} variant="ghost" size="sm" className="h-9 rounded-lg text-emerald-600 font-bold hover:bg-emerald-50 text-[10px] uppercase tracking-widest px-4">
+                                    <Plus className="w-3.5 h-3.5 mr-2" /> Insert Record
                                 </Button>
                             )}
                         </CardHeader>
-                        <CardContent className="pt-6 space-y-4">
+                        <CardContent className="p-8 space-y-6">
                             {formData.profile.qualification.map((item, idx) => (
-                                <div key={idx} className={`p-4 rounded-md border bg-muted/5 relative ${!isEditing && 'bg-background border-none px-0 py-2'}`}>
+                                <div key={idx} className={`group relative ${isEditing ? 'p-6 rounded-2xl border border-slate-100 bg-slate-50/30' : 'bg-white'}`}>
                                     {isEditing && (
                                         <Button 
                                             onClick={() => {
@@ -450,15 +485,15 @@ const Settings = () => {
                                                 newQual.splice(idx, 1);
                                                 setFormData({...formData, profile: {...formData.profile, qualification: newQual}});
                                             }}
-                                            variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive h-7 w-7"
+                                            variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-300 hover:text-rose-600 h-8 w-8 rounded-lg"
                                         >
-                                            <X size={14} />
+                                            <X size={16} />
                                         </Button>
                                     )}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <DataDisplay label="Degree" value={item.degree} isEditing={isEditing}>
-                                            <div className="space-y-1">
-                                                <Label className="text-[10px] uppercase text-muted-foreground tracking-tighter">Degree</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        <DataDisplay label="Qualification Degree" value={item.degree} isEditing={isEditing}>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Degree</Label>
                                                 <Input 
                                                     value={item.degree}
                                                     onChange={(e) => {
@@ -466,13 +501,13 @@ const Settings = () => {
                                                         newQual[idx].degree = e.target.value;
                                                         setFormData({...formData, profile: {...formData.profile, qualification: newQual}});
                                                     }}
-                                                    className="h-9 text-xs" 
+                                                    className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
                                                 />
                                             </div>
                                         </DataDisplay>
-                                        <DataDisplay label="Institution" value={item.institution} isEditing={isEditing}>
-                                            <div className="space-y-1">
-                                                <Label className="text-[10px] uppercase text-muted-foreground tracking-tighter">Institution</Label>
+                                        <DataDisplay label="Academic Institution" value={item.institution} isEditing={isEditing}>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Institution</Label>
                                                 <Input 
                                                     value={item.institution}
                                                     onChange={(e) => {
@@ -480,13 +515,13 @@ const Settings = () => {
                                                         newQual[idx].institution = e.target.value;
                                                         setFormData({...formData, profile: {...formData.profile, qualification: newQual}});
                                                     }}
-                                                    className="h-9 text-xs" 
+                                                    className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
                                                 />
                                             </div>
                                         </DataDisplay>
-                                        <DataDisplay label="Year" value={item.year} isEditing={isEditing}>
-                                            <div className="space-y-1">
-                                                <Label className="text-[10px] uppercase text-muted-foreground tracking-tighter">Year</Label>
+                                        <DataDisplay label="Completion Year" value={item.year} isEditing={isEditing}>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Year</Label>
                                                 <Input 
                                                     value={item.year}
                                                     onChange={(e) => {
@@ -494,17 +529,18 @@ const Settings = () => {
                                                         newQual[idx].year = e.target.value;
                                                         setFormData({...formData, profile: {...formData.profile, qualification: newQual}});
                                                     }}
-                                                    className="h-9 text-xs" 
+                                                    className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
                                                 />
                                             </div>
                                         </DataDisplay>
                                     </div>
-                                    {!isEditing && idx < formData.profile.qualification.length - 1 && <div className="border-b border-border/50 my-4" />}
+                                    {idx < formData.profile.qualification.length - 1 && <div className="h-px bg-slate-50 my-6" />}
                                 </div>
                             ))}
                             {formData.profile.qualification.length === 0 && (
-                                <div className="text-center py-10 text-muted-foreground text-sm italic">
-                                    No education information added yet.
+                                <div className="text-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                    <GraduationCap className="w-10 h-10 mx-auto text-slate-200 mb-3" />
+                                    <p className="text-slate-400 text-sm font-medium">No academic records documented.</p>
                                 </div>
                             )}
                         </CardContent>
@@ -512,21 +548,21 @@ const Settings = () => {
                 </TabsContent>
 
                 {/* ── TAB: PROFESSIONAL ── */}
-                <TabsContent value="professional" className="mt-6 space-y-6">
-                    <Card className="rounded-lg border shadow-sm">
-                        <CardHeader className="pb-4 border-b flex flex-row items-center justify-between">
-                            <CardTitle className="text-lg font-medium flex items-center gap-2">
-                                <Briefcase className="w-4 h-4 text-muted-foreground" /> Work Experience
+                <TabsContent value="professional" className="mt-8 space-y-6">
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-slate-50 flex flex-row items-center justify-between p-6">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <Briefcase className="w-4 h-4 text-emerald-600" /> Professional Dossier
                             </CardTitle>
                             {isEditing && (
-                                <Button onClick={addExperience} variant="outline" size="sm" className="text-xs h-8">
-                                    <Plus className="w-3 h-3 mr-1" /> Add
+                                <Button onClick={addExperience} variant="ghost" size="sm" className="h-9 rounded-lg text-emerald-600 font-bold hover:bg-emerald-50 text-[10px] uppercase tracking-widest px-4">
+                                    <Plus className="w-3.5 h-3.5 mr-2" /> Append Role
                                 </Button>
                             )}
                         </CardHeader>
-                        <CardContent className="pt-6 space-y-4">
+                        <CardContent className="p-8 space-y-8">
                             {formData.profile.experience.map((item, idx) => (
-                                <div key={idx} className={`p-4 rounded-md border bg-muted/5 relative ${!isEditing && 'bg-background border-none px-0 py-2'}`}>
+                                <div key={idx} className={`group relative ${isEditing ? 'p-6 rounded-2xl border border-slate-100 bg-slate-50/30' : 'bg-white'}`}>
                                     {isEditing && (
                                         <Button 
                                             onClick={() => {
@@ -534,16 +570,16 @@ const Settings = () => {
                                                 newExp.splice(idx, 1);
                                                 setFormData({...formData, profile: {...formData.profile, experience: newExp}});
                                             }}
-                                            variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive h-7 w-7"
+                                            variant="ghost" size="icon" className="absolute top-4 right-4 text-slate-300 hover:text-rose-600 h-8 w-8 rounded-lg"
                                         >
-                                            <X size={14} />
+                                            <X size={16} />
                                         </Button>
                                     )}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-4">
-                                            <DataDisplay label="Company" value={item.company} isEditing={isEditing}>
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] uppercase text-muted-foreground tracking-tighter">Company</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="space-y-6">
+                                            <DataDisplay label="Organization Name" value={item.company} isEditing={isEditing}>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Company</Label>
                                                     <Input 
                                                         value={item.company}
                                                         onChange={(e) => {
@@ -551,13 +587,13 @@ const Settings = () => {
                                                             newExp[idx].company = e.target.value;
                                                             setFormData({...formData, profile: {...formData.profile, experience: newExp}});
                                                         }}
-                                                        className="h-9 text-xs" 
+                                                        className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
                                                     />
                                                 </div>
                                             </DataDisplay>
-                                            <DataDisplay label="Role" value={item.role} isEditing={isEditing}>
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] uppercase text-muted-foreground tracking-tighter">Role</Label>
+                                            <DataDisplay label="Designation" value={item.role} isEditing={isEditing}>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Role</Label>
                                                     <Input 
                                                         value={item.role}
                                                         onChange={(e) => {
@@ -565,13 +601,13 @@ const Settings = () => {
                                                             newExp[idx].role = e.target.value;
                                                             setFormData({...formData, profile: {...formData.profile, experience: newExp}});
                                                         }}
-                                                        className="h-9 text-xs" 
+                                                        className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
                                                     />
                                                 </div>
                                             </DataDisplay>
-                                            <DataDisplay label="Duration" value={item.duration} isEditing={isEditing}>
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] uppercase text-muted-foreground tracking-tighter">Duration</Label>
+                                            <DataDisplay label="Tenure Period" value={item.duration} isEditing={isEditing}>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Duration</Label>
                                                     <Input 
                                                         value={item.duration}
                                                         onChange={(e) => {
@@ -579,16 +615,17 @@ const Settings = () => {
                                                             newExp[idx].duration = e.target.value;
                                                             setFormData({...formData, profile: {...formData.profile, experience: newExp}});
                                                         }}
-                                                        className="h-9 text-xs" 
+                                                        className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
                                                     />
                                                 </div>
                                             </DataDisplay>
                                         </div>
-                                        <DataDisplay label="Description" value={item.description} isEditing={isEditing}>
-                                            <div className="space-y-1">
-                                                <Label className="text-[10px] uppercase text-muted-foreground tracking-tighter">Description</Label>
+                                        <DataDisplay label="Role responsibilities" value={item.description} isEditing={isEditing}>
+                                            <div className="space-y-1.5 h-full">
+                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Description</Label>
                                                 <textarea 
-                                                    className="w-full h-full min-h-[100px] p-3 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                                                    className="w-full h-[180px] p-4 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300 transition-all"
+                                                    placeholder="Detail your accomplishments and key contributions..."
                                                     value={item.description}
                                                     onChange={(e) => {
                                                         const newExp = [...formData.profile.experience];
@@ -599,36 +636,36 @@ const Settings = () => {
                                             </div>
                                         </DataDisplay>
                                     </div>
-                                    {!isEditing && idx < formData.profile.experience.length - 1 && <div className="border-b border-border/50 my-4" />}
+                                    {idx < formData.profile.experience.length - 1 && <div className="h-px bg-slate-50 my-8" />}
                                 </div>
                             ))}
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-lg border shadow-sm">
-                        <CardHeader className="pb-4 border-b">
-                            <CardTitle className="text-lg font-medium flex items-center gap-2">
-                                <Target className="w-4 h-4 text-muted-foreground" /> Skills
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-slate-50 p-6">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <Target className="w-4 h-4 text-emerald-600" /> Specialized Skills
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6 space-y-4">
+                        <CardContent className="p-8 space-y-6">
                             {isEditing && (
-                                <div className="flex gap-2">
+                                <div className="flex gap-3">
                                     <Input 
                                         value={newSkill}
                                         onChange={(e) => setNewSkill(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && addSkill()}
-                                        placeholder="Add skill..." 
-                                        className="h-9 text-sm" 
+                                        placeholder="Add specialized competency..." 
+                                        className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                     />
-                                    <Button onClick={addSkill} size="sm" className="h-9">Add</Button>
+                                    <Button onClick={addSkill} className="h-11 rounded-xl bg-slate-900 text-white font-bold text-xs px-6 uppercase tracking-widest">Inject</Button>
                                 </div>
                             )}
-                             <div className="flex flex-wrap gap-2">
+                             <div className="flex flex-wrap gap-2.5">
                                 {formData.profile.skills.map((skill) => (
-                                    <Badge key={skill} variant="secondary" className="px-3 py-1 text-xs rounded-full flex items-center gap-1 font-bold">
+                                    <Badge key={skill} variant="secondary" className="px-4 py-1.5 text-[11px] rounded-lg flex items-center gap-2 font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
                                         {skill}
-                                        {isEditing && <X size={12} className="cursor-pointer text-muted-foreground hover:text-foreground" onClick={() => removeSkill(skill)} />}
+                                        {isEditing && <X size={12} className="cursor-pointer text-emerald-400 hover:text-emerald-600" onClick={() => removeSkill(skill)} />}
                                     </Badge>
                                 ))}
                              </div>
@@ -637,35 +674,38 @@ const Settings = () => {
                 </TabsContent>
 
                 {/* ── TAB: RESUME ── */}
-                <TabsContent value="resume" className="mt-6">
-                    <Card className="rounded-lg border shadow-sm">
-                        <CardHeader className="pb-4 border-b">
-                            <CardTitle className="text-lg font-medium flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-muted-foreground" /> Resume
+                <TabsContent value="resume" className="mt-8">
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-slate-50 p-6">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-emerald-600" /> Asset Repository
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-8">
+                        <CardContent className="p-10">
                             {user?.profile?.resumeUrl ? (
-                                <div className="p-4 rounded-lg border bg-muted/5 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-primary/10 text-primary rounded-md flex items-center justify-center">
-                                            <FileText size={20} />
+                                <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50 flex items-center justify-between shadow-sm">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 bg-white border border-slate-100 text-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+                                            <FileText size={24} />
                                         </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold">{user.profile.resumeName || 'Resume.pdf'}</h4>
-                                            <p className="text-[10px] text-emerald-600 uppercase tracking-wider flex items-center gap-1 mt-0.5 font-bold">
-                                                <CheckCircle2 size={10} /> Active
+                                        <div className="space-y-1">
+                                            <h4 className="text-sm font-bold text-slate-900">{user.profile.resumeName || 'Resume.pdf'}</h4>
+                                            <p className="text-[9px] text-emerald-600 uppercase tracking-widest flex items-center gap-1.5 font-bold">
+                                                <CheckCircle2 size={12} /> Verified Deployment
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                         <Button variant="outline" size="sm" className="text-[10px] font-bold" asChild>
-                                            <a href={`${import.meta.env.VITE_API_DOMAIN}${user.profile.resumeUrl}`} target="_blank" rel="noreferrer">Download</a>
+                                    <div className="flex gap-3">
+                                         <Button variant="outline" size="sm" className="h-10 px-5 rounded-lg text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:bg-white hover:text-emerald-600 transition-all" asChild>
+                                            <a href={`${import.meta.env.VITE_API_DOMAIN}${user.profile.resumeUrl}`} target="_blank" rel="noreferrer">Review</a>
+                                         </Button>
+                                         <Button variant="outline" size="sm" onClick={handleResumeDownload} className="h-10 px-5 rounded-lg text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:bg-white hover:text-emerald-600 transition-all flex items-center gap-1.5">
+                                            <Download size={12} /> Download
                                          </Button>
                                          {isEditing && (
                                             <label className="cursor-pointer">
                                                 <Input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} />
-                                                <div className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
+                                                <div className="h-10 px-5 rounded-lg bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-sm">
                                                     Replace
                                                 </div>
                                             </label>
@@ -676,20 +716,20 @@ const Settings = () => {
                                 isEditing ? (
                                     <label className="cursor-pointer">
                                         <Input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} />
-                                        <div className="border-2 border-dashed rounded-lg p-12 flex flex-col items-center gap-3 hover:bg-muted/50 transition-colors">
-                                            <div className="w-12 h-12 bg-muted text-muted-foreground rounded-full flex items-center justify-center">
-                                                {uploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
+                                        <div className="border-2 border-dashed border-slate-200 rounded-[24px] p-20 flex flex-col items-center gap-4 hover:bg-slate-50 hover:border-emerald-200 transition-all group">
+                                            <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:text-emerald-500 transition-all">
+                                                {uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Upload className="w-8 h-8" />}
                                             </div>
-                                            <div className="text-center">
-                                                <h3 className="text-sm font-medium">Upload Resume</h3>
-                                                <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX up to 5MB</p>
+                                            <div className="text-center space-y-1">
+                                                <h3 className="text-base font-bold text-slate-900">Transmit Resume</h3>
+                                                <p className="text-xs text-slate-400 font-medium">Standard PDF or DOCX architecture (Max 5MB)</p>
                                             </div>
                                         </div>
                                     </label>
                                 ) : (
-                                    <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                                        <FileText className="w-10 h-10 mx-auto text-muted-foreground mb-2 opacity-30" />
-                                        <p className="text-muted-foreground text-xs italic">No resume uploaded.</p>
+                                    <div className="text-center py-20 bg-slate-50/50 border border-dashed border-slate-200 rounded-[24px]">
+                                        <FileText className="w-12 h-12 mx-auto text-slate-200 mb-4" />
+                                        <p className="text-slate-400 text-sm font-medium italic">No assets detected in repository.</p>
                                     </div>
                                 )
                             )}
@@ -698,47 +738,47 @@ const Settings = () => {
                 </TabsContent>
 
                 {/* ── TAB: JOB PREFERENCES ── */}
-                <TabsContent value="preferences" className="mt-6 space-y-6">
-                    <Card className="rounded-lg border shadow-sm">
-                        <CardHeader className="pb-4 border-b">
-                            <CardTitle className="text-lg font-medium flex items-center gap-2">
-                                <Settings2 className="w-4 h-4 text-muted-foreground" /> Job Search Requirements
+                <TabsContent value="preferences" className="mt-8 space-y-6">
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-slate-50 p-6">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <Settings2 className="w-4 h-4 text-emerald-600" /> Strategic Career Vector
                             </CardTitle>
-                            <CardDescription className="text-xs">Specify your ideal career role and conditions</CardDescription>
+                            <CardDescription className="text-xs font-medium text-slate-400">Define your ideal operational conditions and professional requirements</CardDescription>
                         </CardHeader>
-                        <CardContent className="pt-6 space-y-8">
+                        <CardContent className="p-8 space-y-10">
                             
                             {/* Job Titles */}
-                            <div className="space-y-3">
-                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Preferred Job Titles</Label>
+                            <div className="space-y-4">
+                                <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Preferred Professional Designations</Label>
                                 {isEditing && (
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-3">
                                         <Input 
                                             value={newJobTitle}
                                             onChange={(e) => setNewJobTitle(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && addJobTitle()}
-                                            placeholder="Add job title..." 
-                                            className="h-9 text-sm" 
+                                            placeholder="Append target role title..." 
+                                            className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                         />
-                                        <Button onClick={addJobTitle} size="sm" className="h-9">Add</Button>
+                                        <Button onClick={addJobTitle} className="h-11 rounded-xl bg-slate-900 text-white font-bold text-xs px-6 uppercase tracking-widest">Inject</Button>
                                     </div>
                                 )}
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2.5">
                                     {formData.profile.jobPreferences.jobTitles.map((title) => (
-                                        <Badge key={title} variant="outline" className="px-3 py-1 text-xs rounded-full flex items-center gap-1 bg-muted/20 font-bold">
+                                        <Badge key={title} variant="outline" className="px-4 py-1.5 text-[11px] rounded-lg flex items-center gap-2 font-bold bg-white text-slate-600 border-slate-200 shadow-sm">
                                             {title}
-                                            {isEditing && <X size={12} className="cursor-pointer text-muted-foreground" onClick={() => removeJobTitle(title)} />}
+                                            {isEditing && <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-600" onClick={() => removeJobTitle(title)} />}
                                         </Badge>
                                     ))}
-                                    {formData.profile.jobPreferences.jobTitles.length === 0 && !isEditing && <span className="text-sm font-bold opacity-30">-</span>}
+                                    {formData.profile.jobPreferences.jobTitles.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                 {/* Location Types */}
-                                <div className="space-y-3">
-                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Location Types</Label>
-                                    <div className="flex flex-wrap gap-2">
+                                <div className="space-y-4">
+                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Operational Modality</Label>
+                                    <div className="flex flex-wrap gap-2.5">
                                         {['On-site', 'Hybrid', 'Remote'].map((type) => (
                                             <div 
                                                 key={type}
@@ -756,23 +796,22 @@ const Settings = () => {
                                                         }
                                                     });
                                                 }}
-                                                className={`px-4 py-2 rounded-md border text-xs cursor-pointer transition-all font-bold ${
+                                                className={`px-5 py-2.5 rounded-xl border text-[11px] cursor-pointer transition-all font-bold tracking-tight ${
                                                     formData.profile.jobPreferences.locationTypes.includes(type)
-                                                        ? 'border-primary bg-primary/5 text-primary'
-                                                        : 'border-border bg-muted/30 text-muted-foreground'
+                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-600 shadow-sm'
+                                                        : 'border-slate-100 bg-slate-50 text-slate-400'
                                                 } ${!isEditing && 'cursor-default'}`}
                                             >
                                                 {type}
                                             </div>
                                         ))}
-                                        {formData.profile.jobPreferences.locationTypes.length === 0 && !isEditing && <span className="text-sm font-bold opacity-30">-</span>}
                                     </div>
                                 </div>
 
                                 {/* Employment Types */}
-                                <div className="space-y-3">
-                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Employment Types</Label>
-                                    <div className="flex flex-wrap gap-2">
+                                <div className="space-y-4">
+                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Contract Architecture</Label>
+                                    <div className="flex flex-wrap gap-2.5">
                                         {['Full-time', 'Contract', 'Freelance', 'Internship'].map((type) => (
                                             <div 
                                                 key={type}
@@ -790,34 +829,33 @@ const Settings = () => {
                                                         }
                                                     });
                                                 }}
-                                                className={`px-4 py-2 rounded-md border text-xs cursor-pointer transition-all font-bold ${
+                                                className={`px-5 py-2.5 rounded-xl border text-[11px] cursor-pointer transition-all font-bold tracking-tight ${
                                                     formData.profile.jobPreferences.employmentTypes.includes(type)
-                                                        ? 'border-primary bg-primary/5 text-primary'
-                                                        : 'border-border bg-muted/30 text-muted-foreground'
+                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-600 shadow-sm'
+                                                        : 'border-slate-100 bg-slate-50 text-slate-400'
                                                 } ${!isEditing && 'cursor-default'}`}
                                             >
                                                 {type}
                                             </div>
                                         ))}
-                                        {formData.profile.jobPreferences.employmentTypes.length === 0 && !isEditing && <span className="text-sm font-bold opacity-30">-</span>}
                                     </div>
                                 </div>
                             </div>
 
                             {/* On-Site Locations */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Preferred Locations</Label>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center pr-2">
+                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Geographic Targets</Label>
                                     {isEditing && (
-                                        <Button onClick={addOnSiteLocation} variant="ghost" size="sm" className="text-[10px] h-6 font-bold">
-                                            <Plus className="w-3 h-3 mr-1" /> Add Location
+                                        <Button onClick={addOnSiteLocation} variant="ghost" size="sm" className="text-[10px] h-8 font-bold text-emerald-600 hover:bg-emerald-50 rounded-lg uppercase tracking-widest px-3">
+                                            <Plus className="w-3.5 h-3.5 mr-2" /> Add Location
                                         </Button>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {formData.profile.jobPreferences.onSiteLocations.map((loc, idx) => (
-                                        <div key={idx} className={`flex gap-2 items-center p-2 rounded-md border bg-muted/5 ${!isEditing && 'bg-transparent border-none p-0'}`}>
-                                            <div className="grid grid-cols-2 gap-2 flex-1">
+                                        <div key={idx} className={`flex gap-3 items-center p-4 rounded-2xl border bg-slate-50/50 ${!isEditing && 'bg-white border-slate-100'}`}>
+                                            <div className="grid grid-cols-2 gap-3 flex-1">
                                                 {isEditing ? (
                                                     <>
                                                         <select 
@@ -827,7 +865,7 @@ const Settings = () => {
                                                                 next[idx].state = e.target.value;
                                                                 setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, onSiteLocations: next}}});
                                                             }}
-                                                            className="h-8 px-2 rounded-md bg-background border border-border text-[10px] focus:ring-1 focus:ring-primary outline-none"
+                                                            className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900 outline-none focus:border-emerald-300 transition-all"
                                                         >
                                                             <option value="">State</option>
                                                             {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -839,40 +877,40 @@ const Settings = () => {
                                                                 next[idx].city = e.target.value;
                                                                 setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, onSiteLocations: next}}});
                                                             }}
-                                                            className="h-8 px-2 rounded-md bg-background border border-border text-[10px] focus:ring-1 focus:ring-primary outline-none"
+                                                            className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900 outline-none focus:border-emerald-300 transition-all"
                                                         >
                                                             <option value="">City</option>
                                                             {COMMON_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                                                         </select>
                                                     </>
                                                 ) : (
-                                                    <div className="flex gap-1 items-center font-bold text-sm col-span-2">
-                                                        <MapPin size={12} className="text-muted-foreground" />
+                                                    <div className="flex gap-2 items-center font-bold text-sm col-span-2 text-slate-900">
+                                                        <MapPin size={14} className="text-slate-300" />
                                                         {loc.city}, {loc.state}
                                                     </div>
                                                 )}
                                             </div>
                                             {isEditing && (
-                                                <Button onClick={() => removeOnSiteLocation(idx)} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive">
-                                                    <Trash2 size={12} />
+                                                <Button onClick={() => removeOnSiteLocation(idx)} variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-rose-600 rounded-lg">
+                                                    <Trash2 size={16} />
                                                 </Button>
                                             )}
                                         </div>
                                     ))}
-                                    {formData.profile.jobPreferences.onSiteLocations.length === 0 && !isEditing && <span className="text-sm font-bold opacity-30 font-bold">-</span>}
+                                    {formData.profile.jobPreferences.onSiteLocations.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <DataDisplay label="Notice Period" value={formData.profile.jobPreferences.noticePeriod} isEditing={isEditing}>
-                                    <div className="space-y-3">
-                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Notice Period</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <DataDisplay label="Operational Availability" value={formData.profile.jobPreferences.noticePeriod} isEditing={isEditing}>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Notice Period</Label>
                                         <select 
                                             value={formData.profile.jobPreferences.noticePeriod}
                                             onChange={(e) => setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, noticePeriod: e.target.value}}})}
-                                            className="w-full h-10 px-3 rounded-md bg-background border border-border text-sm focus:ring-1 focus:ring-primary outline-none"
+                                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-slate-900 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 transition-all"
                                         >
-                                            <option value="">Select...</option>
+                                            <option value="">Select threshold...</option>
                                             <option value="Immediately available">Immediately available</option>
                                             <option value="15 Days or less">15 Days or less</option>
                                             <option value="30 Days">30 Days</option>
@@ -883,79 +921,81 @@ const Settings = () => {
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Expected Annual Salary" value={formData.profile.jobPreferences.expectedSalary} isEditing={isEditing}>
-                                    <div className="space-y-3">
-                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Expected Annual Salary</Label>
+                                <DataDisplay label="Compensation Baseline" value={formData.profile.jobPreferences.expectedSalary} isEditing={isEditing}>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Expected Annual Salary</Label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">₹</span>
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-sm font-bold">₹</span>
                                             <Input 
-                                                placeholder="e.g. 6.5 Lakhs" 
+                                                placeholder="e.g. 12.5 LPA" 
                                                 value={formData.profile.jobPreferences.expectedSalary}
                                                 onChange={(e) => setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, expectedSalary: e.target.value}}})}
-                                                className="pl-7 h-10 text-sm" 
+                                                className="pl-8 h-11 rounded-xl bg-slate-50 border border-slate-100 font-medium text-sm focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 transition-all" 
                                             />
                                         </div>
                                     </div>
                                 </DataDisplay>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-3">
-                                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Preferred Remote Locations</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                <div className="space-y-4">
+                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Remote Geographic Expansion</Label>
                                     {isEditing && (
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-3">
                                             <Input 
                                                 value={newRemoteLocation}
                                                 onChange={(e) => setNewRemoteLocation(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && addRemoteLocation()}
-                                                placeholder="Add country/region..." 
-                                                className="h-9 text-sm" 
+                                                placeholder="Add territory/region..." 
+                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                             />
-                                            <Button onClick={addRemoteLocation} size="sm" className="h-9">Add</Button>
+                                            <Button onClick={addRemoteLocation} className="h-11 rounded-xl bg-slate-900 text-white font-bold text-xs px-6 uppercase tracking-widest">Inject</Button>
                                         </div>
                                     )}
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-2.5">
                                         {formData.profile.jobPreferences.remoteLocations.map((loc) => (
-                                            <Badge key={loc} variant="outline" className="px-3 py-1 text-[10px] rounded-full flex items-center gap-1 font-bold">
-                                                <Globe size={10} />
+                                            <Badge key={loc} variant="outline" className="px-4 py-1.5 text-[10px] rounded-lg flex items-center gap-2 font-bold bg-slate-50 text-slate-600 border-slate-200">
+                                                <Globe size={12} className="text-slate-300" />
                                                 {loc}
-                                                {isEditing && <X size={10} className="cursor-pointer" onClick={() => removeRemoteLocation(loc)} />}
+                                                {isEditing && <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-600" onClick={() => removeRemoteLocation(loc)} />}
                                             </Badge>
                                         ))}
-                                        {formData.profile.jobPreferences.remoteLocations.length === 0 && !isEditing && <span className="text-sm font-bold opacity-30">-</span>}
+                                        {formData.profile.jobPreferences.remoteLocations.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
                                     </div>
                                 </div>
 
-                                <DataDisplay label="Application Status" value={formData.profile.jobPreferences.startDate} isEditing={isEditing}>
-                                    <div className="space-y-3">
-                                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Application Status</Label>
+                                <DataDisplay label="Engagement Readiness" value={formData.profile.jobPreferences.startDate} isEditing={isEditing}>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Application Status</Label>
                                         <select 
                                             value={formData.profile.jobPreferences.startDate}
                                             onChange={(e) => setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, startDate: e.target.value}}})}
-                                            className="w-full h-10 px-3 rounded-md bg-background border border-border text-sm focus:ring-1 focus:ring-primary outline-none"
+                                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-slate-900 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 transition-all"
                                         >
-                                            <option value="">Select status...</option>
-                                            <option value="Immediately, I am actively applying">Immediately, Active</option>
-                                            <option value="Flexible, I am just browsing">Flexible, Passive</option>
-                                            <option value="Looking for the right opportunity">Looking for right fit</option>
+                                            <option value="">Select engagement level...</option>
+                                            <option value="Immediately, I am actively applying">High Intensity (Active)</option>
+                                            <option value="Flexible, I am just browsing">Low Intensity (Passive)</option>
+                                            <option value="Looking for the right opportunity">Strategic Fit Search</option>
                                         </select>
                                     </div>
                                 </DataDisplay>
                             </div>
 
                             {/* Visibility */}
-                            <div className="p-6 rounded-lg bg-muted/20 border space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <Eye className="w-5 h-5 text-muted-foreground" />
-                                    <div>
-                                        <h4 className="text-sm font-bold">Profile Visibility</h4>
-                                        <p className="text-xs text-muted-foreground">Choose who can see your preferences</p>
+                            <div className="p-8 rounded-[24px] bg-slate-50 border border-slate-100 space-y-6 shadow-sm">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-emerald-600 shadow-sm border border-slate-100">
+                                        <Eye className="w-6 h-6" />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <h4 className="text-base font-bold text-slate-900">Information Privacy Matrix</h4>
+                                        <p className="text-xs text-slate-400 font-medium">Control the exposure of your professional preferences</p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     {[
-                                        { id: 'Everyone', label: 'Everyone', sub: 'Public platform view' },
-                                        { id: 'Recruiters', label: 'Recruiters Only', sub: 'Verified hiring agents' }
+                                        { id: 'Everyone', label: 'Universal Access', sub: 'Standard platform visibility' },
+                                        { id: 'Recruiters', label: 'Restricted Access', sub: 'Verified strategic partners only' }
                                     ].map((opt) => (
                                         <div 
                                             key={opt.id}
@@ -963,19 +1003,19 @@ const Settings = () => {
                                                 if (!isEditing) return;
                                                 setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, visibility: opt.id}}});
                                             }}
-                                            className={`p-4 rounded-md border cursor-pointer transition-all ${
+                                            className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
                                                 formData.profile.jobPreferences.visibility === opt.id
-                                                    ? 'border-primary bg-background shadow-sm'
-                                                    : 'border-border bg-muted/5 opacity-70'
-                                            } ${!isEditing && 'opacity-100 cursor-default'}`}
+                                                    ? 'border-emerald-600 bg-white shadow-md'
+                                                    : 'border-slate-100 bg-white/50 opacity-60'
+                                            } ${!isEditing && 'opacity-100 cursor-default shadow-none'}`}
                                         >
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${formData.profile.jobPreferences.visibility === opt.id ? 'border-primary' : 'border-muted-foreground'}`}>
-                                                    {formData.profile.jobPreferences.visibility === opt.id && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                            <div className="flex items-center gap-3 mb-1.5">
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${formData.profile.jobPreferences.visibility === opt.id ? 'border-emerald-600' : 'border-slate-200'}`}>
+                                                    {formData.profile.jobPreferences.visibility === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-emerald-600" />}
                                                 </div>
-                                                <span className="font-bold text-xs">{opt.label}</span>
+                                                <span className={`font-bold text-sm ${formData.profile.jobPreferences.visibility === opt.id ? 'text-slate-900' : 'text-slate-400'}`}>{opt.label}</span>
                                             </div>
-                                            <p className="text-[10px] text-muted-foreground ml-5">{opt.sub}</p>
+                                            <p className={`text-[10px] uppercase tracking-widest font-bold ml-8 ${formData.profile.jobPreferences.visibility === opt.id ? 'text-emerald-500' : 'text-slate-300'}`}>{opt.sub}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -984,20 +1024,6 @@ const Settings = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
-
-            {/* Save Button */}
-            {isEditing && (
-                <div className="fixed bottom-6 right-6 md:right-12 z-50">
-                    <Button 
-                        onClick={handleSave} 
-                        disabled={loading}
-                        className="h-12 px-8 rounded-full shadow-lg font-bold"
-                    >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                        Save Changes
-                    </Button>
-                </div>
-            )}
         </div>
     );
 };

@@ -27,7 +27,7 @@ async function testConnection() {
     await transporter.verify();
     console.log('✅ Success: Connection established and authenticated!');
     
-    console.log('Sending test email to admin@bmtechx.in...');
+    console.log(`Sending test email to ${process.env.USER_EMAIL}...`);
     await transporter.sendMail({
       from: `"Diagnostic Tool" <${process.env.USER_EMAIL}>`,
       to: process.env.USER_EMAIL,

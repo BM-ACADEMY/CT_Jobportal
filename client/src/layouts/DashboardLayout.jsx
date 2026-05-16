@@ -10,7 +10,7 @@ const DashboardLayout = () => {
       
       <div className="flex-1 w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-8 px-4 sm:px-6 py-8">
         {/* Left Sidebar - Hidden on mobile, fixed width on Desktop */}
-        <aside className="hidden lg:block w-[280px] flex-shrink-0 sticky top-24 h-fit">
+        <aside className="hidden lg:block w-[280px] flex-shrink-0 sticky top-28" style={{ height: 'calc(100vh - 7rem)' }}>
           <Sidebar />
         </aside>
 

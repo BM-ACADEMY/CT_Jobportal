@@ -136,28 +136,30 @@ const RegisterPage = () => {
       {/* ─── Left Panel ─── */}
       <div
         className={`hidden lg:flex w-[42%] flex-shrink-0 relative overflow-hidden flex-col justify-between p-12 transition-all duration-500
-          ${isRecruiter ? 'bg-gradient-to-br from-emerald-900 via-emerald-700 to-green-600' : 'bg-gradient-to-br from-indigo-900 via-indigo-700 to-violet-600'}`}
+          ${isRecruiter 
+            ? 'bg-gradient-to-br from-emerald-900 via-emerald-700 to-green-600' 
+            : 'bg-gradient-to-br from-emerald-800 via-teal-700 to-cyan-600'}`}
       >
         <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5" />
         <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-white/5" />
 
         <Link to="/" className="flex items-center gap-3 no-underline relative z-10">
           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-lg">
-            <span className={`font-black text-lg ${isRecruiter ? 'text-emerald-600' : 'text-indigo-600'}`}>N</span>
+            <span className={`font-black text-lg ${isRecruiter ? 'text-emerald-600' : 'text-emerald-500'}`}>N</span>
           </div>
           <span className="text-white font-black text-2xl tracking-tighter">naukri</span>
         </Link>
 
         <div className="relative z-10">
           <p className={`font-black text-[10px] uppercase tracking-[0.2em] mb-4 
-            ${isRecruiter ? 'text-emerald-200' : 'text-indigo-200'}`}>
+            ${isRecruiter ? 'text-emerald-200' : 'text-teal-200'}`}>
             {isRecruiter ? 'FOR EMPLOYERS' : 'FOR JOB SEEKERS'}
           </p>
           <h2 className="text-white font-black text-4xl leading-tight mb-6">
             {isRecruiter ? (
               <>Find your<br />next great<br /><span className="text-emerald-200">hire today.</span></>
             ) : (
-              <>Start your<br />journey<br /><span className="text-indigo-200">with us.</span></>
+              <>Start your<br />journey<br /><span className="text-teal-200">with us.</span></>
             )}
           </h2>
           <p className="text-white/80 text-sm font-medium leading-relaxed mb-10 max-w-xs">
@@ -179,7 +181,7 @@ const RegisterPage = () => {
               'Real-time application tracking',
             ]).map((text, i) => (
               <div key={i} className="flex items-center gap-3">
-                <CircleCheck size={16} className={isRecruiter ? 'text-emerald-300' : 'text-indigo-300'} />
+                <CircleCheck size={16} className={isRecruiter ? 'text-emerald-300' : 'text-teal-300'} />
                 <span className="text-white/90 text-[13px] font-bold">{text}</span>
               </div>
             ))}
@@ -222,9 +224,9 @@ const RegisterPage = () => {
               {/* Role Toggle */}
               <div className="grid grid-cols-2 gap-3 mb-8">
                 {[
-                  { key: 'jobseeker', label: 'Job Seeker', desc: "I'm looking for a job", Icon: Briefcase, activeColor: 'primary', borderColor: 'border-primary', bgColor: 'bg-primary/5', textColor: 'text-primary' },
+                  { key: 'jobseeker', label: 'Job Seeker', desc: "I'm looking for a job", Icon: Briefcase, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
                   { key: 'recruiter', label: 'Recruiter', desc: "I'm hiring talent", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
-                  { key: 'company', label: 'Company', desc: "Direct organization", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
+                  // { key: 'company', label: 'Company', desc: "Direct organization", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
                 ].map(role => {
                   const active = selectedRole === role.key;
                   return (
@@ -343,8 +345,8 @@ const RegisterPage = () => {
 
                   <p className="text-[11px] text-muted-foreground font-bold leading-relaxed mb-4">
                     By creating an account, you agree to our{' '}
-                    <Link to="#" className="text-primary hover:underline">Terms of Service</Link> and{' '}
-                    <Link to="#" className="text-primary hover:underline">Privacy Policy</Link>.
+                    <Link to="#" className="text-emerald-600 hover:underline">Terms of Service</Link> and{' '}
+                    <Link to="#" className="text-emerald-600 hover:underline">Privacy Policy</Link>.
                   </p>
 
                   <Button
@@ -353,7 +355,7 @@ const RegisterPage = () => {
                     className={`w-full h-14 rounded-2xl text-base font-black transition-all shadow-lg
                       ${isRecruiter 
                         ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20' 
-                        : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'}`}
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98]'}`}
                   >
                     {loading ? 'Processing...' : `Create ${selectedRole === 'company' ? 'Company' : isRecruiter ? 'Recruiter' : 'Job Seeker'} Account`}
                   </Button>
@@ -362,7 +364,7 @@ const RegisterPage = () => {
 
               <p className="text-center text-sm text-muted-foreground font-bold mt-8">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary font-black hover:underline">
+                <Link to="/login" className="text-emerald-600 font-black hover:underline">
                   Sign in
                 </Link>
               </p>
@@ -376,19 +378,19 @@ const RegisterPage = () => {
 
               <div className="grid grid-cols-3 gap-4">
                 <button 
-                  onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`}
+                  onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google?role=${selectedRole}`}
                   className="flex items-center justify-center h-12 rounded-xl border border-border bg-background hover:bg-muted transition-all"
                 >
                   <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-5" />
                 </button>
                 <button 
-                  onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/github`}
+                  onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/github?role=${selectedRole}`}
                   className="flex items-center justify-center h-12 rounded-xl border border-border bg-slate-900 hover:opacity-90 transition-all"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.416-4.041-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 </button>
                 <button 
-                  onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/linkedin`}
+                  onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/linkedin?role=${selectedRole}`}
                   className="flex items-center justify-center h-12 rounded-xl border border-border bg-[#0077b5] hover:opacity-90 transition-all"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
@@ -397,8 +399,8 @@ const RegisterPage = () => {
             </div>
           ) : (
             <div className="animate-in slide-in-from-right-4 duration-500 flex flex-col py-5">
-              <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/30 rounded-2xl flex items-center justify-center mb-8">
-                <ShieldCheck size={32} className="text-primary" />
+              <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl flex items-center justify-center mb-8">
+                <ShieldCheck size={32} className="text-emerald-600" />
               </div>
 
               <div className="mb-10">
@@ -443,7 +445,7 @@ const RegisterPage = () => {
               <Button 
                 onClick={handleVerifyOtp} 
                 disabled={loading}
-                className="h-14 w-full rounded-2xl text-base font-black bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] mb-6"
+                className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] mb-6"
               >
                 {loading ? 'Verifying...' : 'Verify & Continue'}
               </Button>
@@ -454,7 +456,7 @@ const RegisterPage = () => {
                   <button 
                     onClick={handleResend}
                     disabled={timer > 0 || resending}
-                    className={`font-black hover:underline ${timer > 0 || resending ? 'text-muted-foreground/50 cursor-not-allowed' : 'text-primary'}`}
+                    className={`font-black hover:underline ${timer > 0 || resending ? 'text-muted-foreground/50 cursor-not-allowed' : 'text-emerald-600'}`}
                   >
                     {resending ? 'Sending...' : timer > 0 ? `Resend Code in ${timer}s` : 'Resend Code'}
                   </button>
@@ -464,7 +466,7 @@ const RegisterPage = () => {
                   Wrong email?{' '}
                   <button 
                     onClick={() => setStep('form')} 
-                    className="text-primary font-black hover:underline"
+                    className="text-emerald-600 font-black hover:underline"
                   >
                     Go back
                   </button>

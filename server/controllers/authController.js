@@ -2,7 +2,25 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Role = require('../models/Role');
+const Company = require('../models/Company');
+const Subscription = require('../models/Subscription');
 const sendEmail = require('../utils/sendEmail');
+
+// Auto-assign the free plan if the user has no subscription
+const ensureFreePlan = async (user, roleName) => {
+  if (user.subscription || roleName === 'org_employee') return;
+  try {
+    const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: roleName });
+    if (freePlan) {
+      user.subscription = freePlan._id;
+      user.subscriptionExpiry = null;
+      await user.save();
+      await user.populate('subscription');
+    }
+  } catch (e) {
+    console.error('ensureFreePlan error:', e.message);
+  }
+};
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -103,7 +121,7 @@ const verifyOtp = async (req, res) => {
     const { email, otp } = req.body;
     const normalizedEmail = email ? email.toLowerCase() : '';
 
-    const user = await User.findOne({ email: normalizedEmail }).populate('role');
+    const user = await User.findOne({ email: normalizedEmail }).populate(['role', 'subscription']);
     if (!user) {
         return res.status(404).json({ msg: 'User not found' });
     }
@@ -121,6 +139,19 @@ const verifyOtp = async (req, res) => {
     const roleName = user.role.name;
     const token = generateToken(user._id, roleName);
 
+    await ensureFreePlan(user, roleName);
+
+    let subscription = user.subscription;
+    let subscriptionExpiry = user.subscriptionExpiry;
+    let employerCompanyName = null;
+
+    if (roleName === 'org_employee' && user.employerCompany) {
+      const employer = await Company.findById(user.employerCompany).populate('subscription');
+      subscription = employer?.subscription || null;
+      subscriptionExpiry = employer?.subscriptionExpiry || null;
+      employerCompanyName = employer?.name || null;
+    }
+
     res.json({
       token,
       user: {
@@ -129,7 +160,14 @@ const verifyOtp = async (req, res) => {
         email: user.email,
         role: roleName,
         avatar: user.avatar,
-        savedJobs: user.savedJobs || []
+        savedJobs: user.savedJobs || [],
+        subscription,
+        subscriptionExpiry,
+        downloadsUsed: user.downloadsUsed || 0,
+        messagesUsed: user.messagesUsed || 0,
+        counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+        employerCompany: user.employerCompany || null,
+        employerCompanyName,
       }
     });
 
@@ -145,9 +183,13 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).populate('role');
+    const user = await User.findOne({ email }).populate(['role', 'subscription']);
     if (!user) {
       return res.status(400).json({ msg: 'Invalid Credentials' });
+    }
+
+    if (user.isAdminBlocked) {
+      return res.status(403).json({ msg: 'Your account has been blocked by the administrator. Please contact support.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -185,6 +227,19 @@ const loginUser = async (req, res) => {
     const roleName = user.role.name;
     const token = generateToken(user._id, roleName);
 
+    await ensureFreePlan(user, roleName);
+
+    let subscription = user.subscription;
+    let subscriptionExpiry = user.subscriptionExpiry;
+    let employerCompanyName = null;
+
+    if (roleName === 'org_employee' && user.employerCompany) {
+      const employer = await Company.findById(user.employerCompany).populate('subscription');
+      subscription = employer?.subscription || null;
+      subscriptionExpiry = employer?.subscriptionExpiry || null;
+      employerCompanyName = employer?.name || null;
+    }
+
     res.json({
       token,
       user: {
@@ -193,7 +248,14 @@ const loginUser = async (req, res) => {
         email: user.email,
         role: roleName,
         avatar: user.avatar,
-        savedJobs: user.savedJobs || []
+        savedJobs: user.savedJobs || [],
+        subscription,
+        subscriptionExpiry,
+        downloadsUsed: user.downloadsUsed || 0,
+        messagesUsed: user.messagesUsed || 0,
+        counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+        employerCompany: user.employerCompany || null,
+        employerCompanyName,
       }
     });
   } catch (err) {
@@ -234,7 +296,10 @@ const forgotPassword = async (req, res) => {
     const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Naukri Clone', html: htmlContent });
 
     if (!emailSent) {
-      return res.status(500).json({ msg: 'Failed to send password reset email. Please try again later.' });
+      return res.json({ 
+        msg: 'OTP generated but email failed to send. Check the server console for the OTP code.',
+        emailSent: false 
+      });
     }
 
     res.json({ msg: 'Password reset OTP sent to email' });
@@ -278,18 +343,61 @@ const resetPassword = async (req, res) => {
 // @route   GET /api/auth/me
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password').populate('role');
+    let user = await User.findById(req.user.id).select('-password').populate(['role', 'subscription']);
+    
+    // If not found in User collection, check Admin collection
     if (!user) {
+      const Admin = require('../models/Admin');
+      const admin = await Admin.findById(req.user.id).select('-password');
+      if (admin) {
+        return res.json({
+          id: admin._id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role, // Admins have role string directly
+          avatar: '',
+        });
+      }
       return res.status(404).json({ msg: 'User not found' });
     }
-    
+
+    const roleName = user.role.name;
+    await ensureFreePlan(user, roleName);
+
+    // Clear stale expiry for free/lifetime plans
+    if (user.subscription && user.subscription.price === 0 && user.subscriptionExpiry) {
+      user.subscriptionExpiry = null;
+      await user.save();
+    }
+
+    let subscription = user.subscription;
+    let subscriptionExpiry = user.subscriptionExpiry;
+    let employerCompanyName = null;
+
+    if (roleName === 'org_employee' && user.employerCompany) {
+      const employer = await Company.findById(user.employerCompany).populate('subscription');
+      subscription = employer?.subscription || null;
+      subscriptionExpiry = employer?.subscriptionExpiry || null;
+      employerCompanyName = employer?.name || null;
+    }
+
     res.json({
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role.name,
+      role: roleName,
       avatar: user.avatar,
-      savedJobs: user.savedJobs || []
+      savedJobs: user.savedJobs || [],
+      subscription,
+      subscriptionExpiry,
+      autoRenew: user.autoRenew || false,
+      downloadsUsed: user.downloadsUsed || 0,
+      searchUsed: user.searchUsed || 0,
+      jobsUsed: user.jobsUsed || 0,
+      messagesUsed: user.messagesUsed || 0,
+      counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+      employerCompany: user.employerCompany || null,
+      employerCompanyName,
     });
   } catch (err) {
     console.error(err.message);
@@ -339,7 +447,10 @@ const resendOtp = async (req, res) => {
     });
 
     if (!emailSent) {
-      return res.status(500).json({ msg: 'Failed to send new OTP. Please try again.' });
+      return res.json({ 
+        msg: 'New OTP generated but email failed to send. Check the server console for the code.',
+        emailSent: false 
+      });
     }
 
     res.json({ msg: 'New OTP has been sent to your email.' });
@@ -363,13 +474,75 @@ const socialAuthCallback = (req, res) => {
     email: user.email,
     role: roleName,
     avatar: user.avatar,
-    savedJobs: user.savedJobs || []
+    savedJobs: user.savedJobs || [],
+    subscription: user.subscription,
+    subscriptionExpiry: user.subscriptionExpiry,
+    downloadsUsed: user.downloadsUsed || 0,
+    isSocialIncomplete: user.isSocialIncomplete
   }));
 
   // Redirect to frontend with token and user data
   // Using a query param is common for simple SPA social auth
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   res.redirect(`${frontendUrl}/social-auth-success?token=${token}&user=${userData}`);
+};
+
+// @desc    Complete social profile (set role and password)
+const completeSocialProfile = async (req, res) => {
+  try {
+    const { userId, role, password } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    if (!user.isSocialIncomplete) {
+      return res.status(400).json({ msg: 'Profile already completed' });
+    }
+
+    const roleDoc = await Role.findOne({ name: role });
+    if (!roleDoc) {
+      return res.status(400).json({ msg: 'Invalid role specified' });
+    }
+
+    // Password Validation: 6 chars, 1 capital, 1 number, 1 symbol
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/\\|~`\-]).{6,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ 
+        msg: 'Password must be at least 6 characters long and include an uppercase letter, a number, and a special character.' 
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    user.role = roleDoc._id;
+    user.isSocialIncomplete = false;
+    await user.save();
+
+    const populatedUser = await User.findById(userId).populate(['role', 'subscription']);
+    const roleName = populatedUser.role.name;
+    const token = generateToken(user._id, roleName);
+
+    res.json({
+      token,
+      user: {
+        id: populatedUser._id,
+        name: populatedUser.name,
+        email: populatedUser.email,
+        role: roleName,
+        avatar: populatedUser.avatar,
+        savedJobs: populatedUser.savedJobs || [],
+        subscription: populatedUser.subscription,
+        subscriptionExpiry: populatedUser.subscriptionExpiry,
+        downloadsUsed: populatedUser.downloadsUsed || 0
+      }
+    });
+
+  } catch (err) {
+    console.error('Complete Social Profile Error:', err.message);
+    res.status(500).json({ msg: err.message });
+  }
 };
 
 module.exports = {
@@ -381,4 +554,5 @@ module.exports = {
   getUserProfile,
   resendOtp,
   socialAuthCallback,
+  completeSocialProfile,
 };

@@ -46,15 +46,21 @@ const updateProfile = async (req, res) => {
 
     await user.save();
     
+    // Refresh user with populated subscription
+    const updatedUser = await User.findById(userId).populate('subscription');
+    
     res.json({
         msg: 'Profile updated successfully',
         user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            avatar: user.avatar,
-            profile: user.profile,
-            savedJobs: user.savedJobs || []
+            id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            avatar: updatedUser.avatar,
+            profile: updatedUser.profile,
+            savedJobs: updatedUser.savedJobs || [],
+            subscription: updatedUser.subscription,
+            subscriptionExpiry: updatedUser.subscriptionExpiry,
+            downloadsUsed: updatedUser.downloadsUsed || 0
         }
     });
 
@@ -153,7 +159,8 @@ const getSavedJobs = async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     // Filter out any nulls in case a job was deleted
-    const filteredJobs = user.savedJobs.filter(job => job !== null);
+    const jobs = user.savedJobs || [];
+    const filteredJobs = jobs.filter(job => job !== null);
 
     res.json(filteredJobs);
 
@@ -168,7 +175,9 @@ const getSavedJobs = async (req, res) => {
 const getPublicProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).select('name email avatar profile role');
+    const user = await User.findById(id)
+      .select('name email avatar profile role subscription')
+      .populate('subscription', 'hasPriorityBadge hasProfileBoost');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     res.json(user);
@@ -178,10 +187,151 @@ const getPublicProfile = async (req, res) => {
   }
 };
 
+// @desc    Toggle Block User/Company
+// @route   POST /api/user/block/:id
+const toggleBlockEntity = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params; // Entity to block/unblock
+
+    if (userId === id) {
+      return res.status(400).json({ msg: 'You cannot block yourself' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const isBlocked = user.blockedEntities.includes(id);
+
+    if (isBlocked) {
+      // Unblock
+      user.blockedEntities = user.blockedEntities.filter(bid => bid.toString() !== id);
+      await user.save();
+      return res.json({ msg: 'Entity unblocked successfully', blockedEntities: user.blockedEntities });
+    } else {
+      // Block
+      user.blockedEntities.push(id);
+      await user.save();
+      return res.json({ msg: 'Entity blocked successfully', blockedEntities: user.blockedEntities });
+    }
+
+  } catch (err) {
+    console.error('Toggle Block Entity Error:', err.message);
+    res.status(500).json({ msg: 'Server error during block operation' });
+  }
+};
+
+// @desc    Track Profile View
+// @route   POST /api/user/profile/:id/view
+const trackProfileView = async (req, res) => {
+  try {
+    const { id } = req.params; // Viewed user ID
+    const viewerId = req.user.id;
+    const viewerModel = req.user.role === 'jobseeker' ? 'User' : 'Company';
+
+    if (viewerId === id) return res.status(200).json({ msg: 'Self view' });
+
+    const ProfileView = require('../models/ProfileView');
+    
+    // Save the view
+    await ProfileView.create({
+      viewer: viewerId,
+      viewerModel,
+      viewed: id,
+      timestamp: new Date()
+    });
+
+    res.status(200).json({ msg: 'View tracked' });
+  } catch (err) {
+    console.error('Track Profile View Error:', err.message);
+    res.status(500).json({ msg: 'Server error tracking view' });
+  }
+};
+
+// @desc    Get Profile Viewers
+// @route   GET /api/user/profile/viewers
+const getProfileViewers = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const User = require('../models/User');
+    const ProfileView = require('../models/ProfileView');
+    
+    const user = await User.findById(userId).populate('subscription');
+    
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    
+    // Check if user has access to see viewers
+    if (!user.subscription || !user.subscription.hasProfileViewInsights) {
+      return res.status(403).json({ 
+        msg: 'Subscription required to view profile visitors',
+        requiresUpgrade: true 
+      });
+    }
+
+    const viewers = await ProfileView.find({ viewed: userId })
+      .populate({
+        path: 'viewer',
+        select: 'name avatar logo recruiterProfile companyProfile'
+      })
+      .sort({ timestamp: -1 })
+      .limit(50);
+
+    res.json(viewers);
+  } catch (err) {
+    console.error('Get Profile Viewers Error:', err.message);
+    res.status(500).json({ msg: 'Server error fetching viewers' });
+  }
+};
+
+// @desc    Toggle auto-renewal preference
+// @route   PATCH /api/user/auto-renew
+const updateAutoRenew = async (req, res) => {
+  try {
+    const { autoRenew } = req.body;
+    if (typeof autoRenew !== 'boolean') {
+      return res.status(400).json({ msg: 'autoRenew must be a boolean' });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { autoRenew },
+      { new: true }
+    ).select('autoRenew');
+    res.json({ autoRenew: user.autoRenew });
+  } catch (err) {
+    console.error('Update AutoRenew Error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Search user by email
+// @route   GET /api/user/search
+const searchUser = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ msg: 'Email is required' });
+
+    const user = await User.findOne({ email: email.toLowerCase() })
+      .select('name email avatar role')
+      .populate('role', 'name');
+    
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    console.error('Search User Error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   updateProfile,
   uploadResume,
   toggleSaveJob,
   getSavedJobs,
-  getPublicProfile
+  getPublicProfile,
+  toggleBlockEntity,
+  trackProfileView,
+  getProfileViewers,
+  updateAutoRenew,
+  searchUser
 };
