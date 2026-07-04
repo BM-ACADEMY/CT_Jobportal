@@ -195,7 +195,8 @@ const ManageUsers = () => {
     return (Array.isArray(users) ? users : []).filter(user => {
       const matchesRole = user.role?.name === roleName;
       const matchesSearch = user.name?.toLowerCase().includes(search.toLowerCase()) || 
-                           user.email?.toLowerCase().includes(search.toLowerCase());
+                           user.email?.toLowerCase().includes(search.toLowerCase()) ||
+                           user.display_id?.toLowerCase().includes(search.toLowerCase());
       return matchesRole && matchesSearch;
     });
   };
@@ -236,7 +237,10 @@ const ManageUsers = () => {
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{user.email}</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                        {user.email}
+                        {user.display_id && <span className="ml-2 px-1.5 py-0.5 rounded border border-emerald-100 bg-emerald-50 text-emerald-700 tracking-widest">{user.display_id}</span>}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -297,7 +301,7 @@ const ManageUsers = () => {
             <Input
               type="text"
               className="pl-12 h-12 border border-slate-200 rounded-xl focus:border-emerald-600 focus:ring-0 font-medium text-sm bg-white shadow-sm transition-all"
-              placeholder="Search by name or email..."
+              placeholder="Search by name, email, or unique ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -314,9 +318,12 @@ const ManageUsers = () => {
           <TabsTrigger value="recruiter" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
             Recruiters
           </TabsTrigger>
-          {/* <TabsTrigger value="company" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
+          <TabsTrigger value="company" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
             Organizations
-          </TabsTrigger> */}
+          </TabsTrigger>
+          <TabsTrigger value="college" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
+            Colleges
+          </TabsTrigger>
         </TabsList>
 
         <Card className="rounded-[24px] border-slate-200 shadow-sm overflow-hidden bg-white">
@@ -333,9 +340,12 @@ const ManageUsers = () => {
               <TabsContent value="recruiter" className="m-0">
                 <UserTable data={filterUsersByRole('recruiter')} roleLabel="Recruiter" />
               </TabsContent>
-              {/* <TabsContent value="company" className="m-0">
+              <TabsContent value="company" className="m-0">
                 <UserTable data={filterUsersByRole('company')} roleLabel="Company Admin" />
-              </TabsContent> */}
+              </TabsContent>
+              <TabsContent value="college" className="m-0">
+                <UserTable data={filterUsersByRole('college')} roleLabel="College Admin" />
+              </TabsContent>
             </>
           )}
         </Card>

@@ -22,6 +22,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import ImageCropperModal from "@/components/shared/ImageCropperModal";
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
 const getApiUrl = (role) => {
     if (role === 'company') return `${import.meta.env.VITE_API_BASE_URL}/company`;
@@ -54,10 +57,13 @@ const RecruiterSettings = () => {
         value: '',
         onConfirm: () => {}
     });
+    const [cropModal, setCropModal] = useState({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 });
 
     // Form states
     const [formData, setFormData] = useState({
         name: user?.name || '',
+        avatar: user?.avatar || '',
+        coverPic: user?.coverPic || '',
         recruiterProfile: {
             jobTitle: user?.recruiterProfile?.jobTitle || '',
             phone: user?.recruiterProfile?.phone || '',
@@ -128,6 +134,8 @@ const RecruiterSettings = () => {
                 const data = res.data;
                 setFormData({
                     name: data.name || '',
+                    avatar: data.avatar || '',
+                    coverPic: data.coverPic || '',
                     recruiterProfile: {
                         jobTitle: data.recruiterProfile?.jobTitle || '',
                         phone: data.recruiterProfile?.phone || '',
@@ -232,6 +240,46 @@ const RecruiterSettings = () => {
 
     const handleCancel = () => {
         setIsEditing(false);
+    };
+
+    const handleImageSelect = (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = () => {
+            setCropModal({
+                isOpen: true,
+                imageSrc: reader.result,
+                type: type,
+                aspectRatio: type === 'coverPic' ? 21 / 9 : 1
+            });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const handleCropComplete = async (croppedBlob) => {
+        const { type } = cropModal;
+        setCropModal({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 });
+        
+        const uploadData = new FormData();
+        uploadData.append('image', croppedBlob, `${type}.jpg`);
+        
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/upload-image?type=${type === 'coverPic' ? 'cover' : 'profile'}`, uploadData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setFormData(prev => ({
+                ...prev,
+                [type]: res.data.imageUrl
+            }));
+            updateUser({ [type === 'coverPic' ? 'coverPic' : 'avatar']: res.data.imageUrl });
+            toast.success("Image updated successfully");
+        } catch (err) {
+            console.error(err);
+            toast.error("Image upload failed");
+        }
     };
 
     const addSkill = () => {
@@ -408,31 +456,31 @@ const RecruiterSettings = () => {
             </div>
 
             <Tabs defaultValue="personal" className="w-full">
-                <TabsList className="bg-slate-50 border border-slate-100 rounded-xl p-1.5 h-auto flex-wrap justify-start overflow-x-auto shadow-sm gap-1 mb-10">
-                    <TabsTrigger value="personal" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                <TabsList className="bg-slate-50 border border-slate-100 rounded-xl p-1.5 h-auto flex justify-start overflow-x-auto shadow-sm flex-nowrap w-full [&::-webkit-scrollbar]:hidden gap-1 mb-10">
+                    <TabsTrigger value="personal" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Personal
                     </TabsTrigger>
-                    <TabsTrigger value="company" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="company" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Organization
                     </TabsTrigger>
-                    <TabsTrigger value="profile" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="profile" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Detailed
                     </TabsTrigger>
-                    <TabsTrigger value="culture" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="culture" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Culture
                     </TabsTrigger>
-                    <TabsTrigger value="tech" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="tech" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Tech
                     </TabsTrigger>
-                    <TabsTrigger value="legal" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="legal" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Legal
                     </TabsTrigger>
                     {user?.role !== 'company' && (
                         <>
-                            <TabsTrigger value="history" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                            <TabsTrigger value="history" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                                 Experience
                             </TabsTrigger>
-                            <TabsTrigger value="academic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                            <TabsTrigger value="academic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                                 Credentials
                             </TabsTrigger>
                         </>
@@ -446,7 +494,63 @@ const RecruiterSettings = () => {
                 <TabsContent value="personal" className="space-y-8 outline-none mt-4">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <Card className="lg:col-span-2 rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
-                            <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
+                            <div className="relative h-48 sm:h-64 bg-slate-100 group">
+                                {formData.coverPic ? (
+                                    !isEditing ? (
+                                        <Zoom>
+                                            <img 
+                                                src={formData.coverPic.startsWith('http') ? formData.coverPic : `${import.meta.env.VITE_API_DOMAIN}${formData.coverPic}`} 
+                                                className="w-full h-48 sm:h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                                                alt="Cover" 
+                                            />
+                                        </Zoom>
+                                    ) : (
+                                        <img 
+                                            src={formData.coverPic.startsWith('http') ? formData.coverPic : `${import.meta.env.VITE_API_DOMAIN}${formData.coverPic}`} 
+                                            className="w-full h-full object-cover" 
+                                            alt="Cover" 
+                                        />
+                                    )
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-r from-emerald-100 to-teal-50" />
+                                )}
+                                {isEditing && (
+                                    <label className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 px-3 rounded-xl shadow-sm cursor-pointer hover:bg-white transition-all text-[10px] font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2 border border-slate-200/50 hover:border-emerald-200 hover:text-emerald-600">
+                                        <Upload size={14} /> Update Cover
+                                        <Input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e, 'coverPic')} />
+                                    </label>
+                                )}
+                                <div className="absolute -bottom-12 left-8">
+                                    <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-slate-50 shadow-md overflow-hidden flex items-center justify-center">
+                                        {formData.avatar ? (
+                                            !isEditing ? (
+                                                <Zoom>
+                                                    <img 
+                                                        src={formData.avatar.startsWith('http') ? formData.avatar : `${import.meta.env.VITE_API_DOMAIN}${formData.avatar}`} 
+                                                        className="w-24 h-24 sm:w-32 sm:h-32 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                                                        alt="Avatar" 
+                                                    />
+                                                </Zoom>
+                                            ) : (
+                                                <img 
+                                                    src={formData.avatar.startsWith('http') ? formData.avatar : `${import.meta.env.VITE_API_DOMAIN}${formData.avatar}`} 
+                                                    className="w-full h-full object-cover" 
+                                                    alt="Avatar" 
+                                                />
+                                            )
+                                        ) : (
+                                            <User size={48} className="text-slate-300" />
+                                        )}
+                                        {isEditing && (
+                                            <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                                                <Upload size={24} className="text-white" />
+                                                <Input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e, 'avatar')} />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <CardHeader className="pt-16 p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <User className="w-5 h-5" />
@@ -458,6 +562,7 @@ const RecruiterSettings = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                                     {!isEditing ? (
                                         <>
+                                            <DisplayField label={`${user?.role === 'company' ? 'Employer' : 'Recruiter'} ID`} value={user?.display_id || 'Pending Generate'} icon={Target} />
                                             <DisplayField label="Full Name" value={formData.name} icon={User} />
                                             <DisplayField label="Direct Phone" value={formData.recruiterProfile.phone} icon={Phone} />
                                             <DisplayField label="Current Position" value={formData.recruiterProfile.jobTitle} icon={Briefcase} />
@@ -1571,6 +1676,14 @@ const RecruiterSettings = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+            {cropModal.isOpen && (
+                <ImageCropperModal
+                    imageSrc={cropModal.imageSrc}
+                    aspectRatio={cropModal.aspectRatio}
+                    onCropComplete={handleCropComplete}
+                    onCancel={() => setCropModal({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 })}
+                />
+            )}
         </div>
     );
 };

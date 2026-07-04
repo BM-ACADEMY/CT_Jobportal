@@ -94,7 +94,7 @@ const SubscriptionPage = () => {
 
   // When user has no subscription they are implicitly on the free plan
   const freePlan = plans.find(p => p.price === 0);
-  const effectiveCurrentPlanId = currentPlan?._id || freePlan?._id || null;
+  const effectiveCurrentPlanId = isExpired ? freePlan?._id : (currentPlan?._id || freePlan?._id || null);
   const isOnFreePlan = !currentPlan || currentPlan?.price === 0;
 
   const handleCancel = () => setCancelConfirm(true);
@@ -348,7 +348,7 @@ const SubscriptionPage = () => {
       )}
 
       {/* Active Feature Highlights */}
-      {currentPlan && (
+      {currentPlan && !isExpired && (
         <div>
           <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Your Active Features</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

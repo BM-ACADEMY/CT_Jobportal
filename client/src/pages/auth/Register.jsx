@@ -222,11 +222,12 @@ const RegisterPage = () => {
               </div>
 
               {/* Role Toggle */}
-              <div className="grid grid-cols-2 gap-3 mb-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
                 {[
                   { key: 'jobseeker', label: 'Job Seeker', desc: "I'm looking for a job", Icon: Briefcase, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
                   { key: 'recruiter', label: 'Recruiter', desc: "I'm hiring talent", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
-                  // { key: 'company', label: 'Company', desc: "Direct organization", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
+                  { key: 'company', label: 'Company', desc: "Direct organization", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
+                  { key: 'college', label: 'College', desc: "Educational Inst.", Icon: ShieldCheck, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
                 ].map(role => {
                   const active = selectedRole === role.key;
                   return (
@@ -353,11 +354,11 @@ const RegisterPage = () => {
                     type="submit"
                     disabled={loading}
                     className={`w-full h-14 rounded-2xl text-base font-black transition-all shadow-lg
-                      ${isRecruiter 
+                      ${isRecruiter || selectedRole === 'college' || selectedRole === 'company'
                         ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20' 
                         : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98]'}`}
                   >
-                    {loading ? 'Processing...' : `Create ${selectedRole === 'company' ? 'Company' : isRecruiter ? 'Recruiter' : 'Job Seeker'} Account`}
+                    {loading ? 'Processing...' : `Create ${selectedRole === 'company' ? 'Company' : selectedRole === 'college' ? 'College' : isRecruiter ? 'Recruiter' : 'Job Seeker'} Account`}
                   </Button>
                 </form>
               </Form>

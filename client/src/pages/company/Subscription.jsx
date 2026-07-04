@@ -338,7 +338,7 @@ const SubscriptionPage = () => {
                         key={plan._id}
                         plan={plan}
                         features={buildFeatures(plan, 'recruiter')}
-                        currentPlanId={currentPlan?._id}
+                        currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
                         isPopular={idx === 1}
                         gstPercentage={gstPercentage}
@@ -361,7 +361,7 @@ const SubscriptionPage = () => {
                         key={plan._id}
                         plan={plan}
                         features={buildFeatures(plan, 'company')}
-                        currentPlanId={currentPlan?._id}
+                        currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
                         isPopular={idx === 1}
                         gstPercentage={gstPercentage}

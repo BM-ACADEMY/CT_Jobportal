@@ -30,6 +30,17 @@ const resolveFeature = (feature, plan) => {
   }
 
   if (NUMERIC_KEYS.has(key)) {
+    const PARENT_BOOLEAN_KEYS = {
+      careerCounsellingCount: 'hasCareerCounselling',
+      resumeBuilderCount: 'hasResumeBuilder',
+      messageRecruitersCount: 'hasMessageRecruiters'
+    };
+    
+    const parentKey = PARENT_BOOLEAN_KEYS[key];
+    if (parentKey && !plan[parentKey]) {
+      return { enabled: false, displayValue: null };
+    }
+
     const num = Number(rawVal);
     if (num === 0) {
       return { enabled: true, displayValue: 'Unlimited' };

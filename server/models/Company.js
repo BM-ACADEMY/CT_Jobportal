@@ -152,7 +152,20 @@ const companySchema = new mongoose.Schema({
   },
   subscriptionExpiry: {
     type: Date
+  },
+  display_id: {
+    type: String,
+    unique: true,
+    sparse: true
   }
 }, { timestamps: true });
+
+companySchema.pre('save', async function() {
+  if (!this.display_id) {
+    const generateDisplayId = require('../utils/generateDisplayId');
+    const year = new Date().getFullYear();
+    this.display_id = await generateDisplayId('VE', year);
+  }
+});
 
 module.exports = mongoose.model('Company', companySchema);

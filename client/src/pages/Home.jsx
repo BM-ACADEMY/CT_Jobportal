@@ -8,7 +8,7 @@ import {
   Search, Briefcase, Building2, Users, TrendingUp, Star, ArrowRight,
   MapPin, Loader2, Clock, IndianRupee,
   Code2, Stethoscope, BarChart2, Palette, ShoppingBag, GraduationCap,
-  Cpu, HeartHandshake, CheckCircle2, Zap, Shield, Award
+  Cpu, HeartHandshake, CheckCircle2, Zap, Shield, Award, Sparkles
 } from 'lucide-react';
 
 const stats = [
@@ -288,6 +288,58 @@ const HomePage = () => {
                 <p className="text-slate-500 text-sm leading-relaxed">{step.desc}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FREE ASSESSMENT CTA ── */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-1/3 h-full bg-emerald-50 rounded-l-[100px] pointer-events-none opacity-50" />
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-12 bg-white border border-slate-100 rounded-3xl p-10 md:p-16 shadow-xl shadow-slate-200/50">
+            <div className="flex-1 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider mb-6">
+                <Sparkles size={14} /> AI-Powered
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4">
+                Test Your Skills for Free
+              </h2>
+              <p className="text-slate-500 text-lg max-w-xl mb-8 leading-relaxed">
+                Take a quick skill assessment and prove your expertise. Earn verified badges to make your profile stand out to recruiters instantly!
+              </p>
+              <Link to="/free-assessment">
+                <Button className="h-14 px-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold gap-2 transition-transform hover:scale-105 shadow-xl shadow-slate-900/20">
+                  Take Free Assessment <ArrowRight size={18} />
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="flex-1 w-full flex justify-center relative">
+              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-100 to-teal-50 rounded-full blur-3xl opacity-50" />
+              <div className="relative bg-white p-6 rounded-2xl border border-slate-100 shadow-xl w-full max-w-sm transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
+                      <Code2 size={20} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900">React.js</p>
+                      <p className="text-xs font-semibold text-slate-400">Medium Difficulty</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-emerald-100 text-emerald-700 border-none font-bold">Passed</Badge>
+                </div>
+                <div className="space-y-3">
+                  <div className="h-2.5 bg-slate-100 rounded-full w-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 w-[85%] rounded-full" />
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-slate-500">
+                    <span>Score: 85%</span>
+                    <span className="text-emerald-600">Top 15%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

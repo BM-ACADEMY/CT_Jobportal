@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DetailedJobCard from '../../components/jobseeker/DetailedJobCard';
 import RecommendedJobCard from '../../components/jobseeker/RecommendedJobCard';
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles, TrendingUp, CircleCheck, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
+import { useAuth } from '../../context/AuthContext';
+
 const JobSeekerDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [matchingJobs, setMatchingJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +20,7 @@ const JobSeekerDashboard = () => {
     const fetchMatchingJobs = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/jobs/matching`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/jobs/matching`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMatchingJobs(Array.isArray(res.data) ? res.data : []);
@@ -62,6 +67,15 @@ const JobSeekerDashboard = () => {
       
       {/* Main Content Feed */}
       <div className="flex-1 min-w-0 space-y-12">
+        <div className="flex items-center gap-4 bg-emerald-50/50 p-4 rounded-[24px] border border-emerald-100/50">
+          <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center border border-emerald-100">
+            <QrCode className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div>
+             <h2 className="text-lg font-bold text-slate-900 tracking-tight">Welcome back, {user?.name}</h2>
+             <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">ID: {user?.display_id || 'Pending Generate'}</p>
+          </div>
+        </div>
         
         {/* Recommended Jobs */}
         <section className="space-y-6">
@@ -117,7 +131,7 @@ const JobSeekerDashboard = () => {
               </div>
            </div>
 
-           <Button className="shrink-0 h-12 px-8 bg-slate-900 text-white font-bold rounded-xl shadow-sm hover:bg-emerald-600 transition-all text-xs uppercase tracking-widest">
+           <Button onClick={() => navigate('/jobseeker/resume-builder')} className="shrink-0 h-12 px-8 bg-slate-900 text-white font-bold rounded-xl shadow-sm hover:bg-emerald-600 transition-all text-xs uppercase tracking-widest">
              Craft My Resume
            </Button>
         </div>

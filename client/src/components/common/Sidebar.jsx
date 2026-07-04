@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList
+  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,11 +17,10 @@ const coreMenus = {
   jobseeker: [
     { icon: Home,        label: 'Overview',      path: '/jobseeker' },
     { icon: Briefcase,   label: 'Search Jobs',   path: '/jobs' },
-    // { icon: Building2,   label: 'Organizations', path: '/companies' },
+    { icon: Building2,   label: 'Organizations', path: '/companies' },
     { icon: FileText,    label: 'Applications',  path: '/jobseeker/applications' },
     { icon: Star,        label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
     { icon: CreditCard,  label: 'Subscription',  path: '/jobseeker/subscription' },
-    { icon: UserCog,     label: 'Settings',      path: '/jobseeker/settings' },
     { icon: History,     label: 'Payment History', path: '/jobseeker/payment-history' },
   ],
   recruiter: [
@@ -30,7 +29,6 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
     { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
-    { icon: UserCog,         label: 'Settings',          path: '/company/settings' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
   ],
   company: [
@@ -39,7 +37,14 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
     { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
-    { icon: UserCog,         label: 'Settings',          path: '/company/settings' },
+    { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+  ],
+  college: [
+    { icon: LayoutDashboard, label: 'Overview',          path: '/company' },
+    { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
+    { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
+    { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
+    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
   ],
   admin: [
@@ -54,10 +59,9 @@ const coreMenus = {
   org_employee: [
     { icon: Home,           label: 'Overview',      path: '/employee' },
     { icon: Briefcase,      label: 'Search Jobs',   path: '/jobs' },
-    // { icon: Building2,      label: 'Organizations', path: '/companies' },
+    { icon: Building2,      label: 'Organizations', path: '/companies' },
     { icon: FileText,       label: 'Applications',  path: '/employee/applications' },
     { icon: Star,           label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
-    { icon: UserCog,        label: 'Settings',      path: '/employee/settings' },
   ],
 };
 
@@ -79,7 +83,7 @@ const premiumMenus = {
     { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
     { icon: Users,     label: 'Bulk Applications', path: '/company/bulk-applications', featureKey: 'hasBulkApplicantManagement' },
     { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
-    // { icon: Building2, label: 'Company Profile', path: '/company/profile-management',  featureKey: 'companyProfileType' },
+    { icon: Building2, label: 'Company Profile', path: '/company/profile-management',  featureKey: 'companyProfileType' },
     { icon: Sparkles,  label: 'AI Matching',    path: '/company/ai-matching',          featureKey: 'hasAICandidateMatching' },
     { icon: ClipboardList, label: 'Requests',       path: '/company/requests',             featureKey: 'hasRequests' },
     { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
@@ -90,7 +94,18 @@ const premiumMenus = {
     { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
     { icon: Users,     label: 'Bulk Applications', path: '/company/bulk-applications', featureKey: 'hasBulkApplicantManagement' },
     { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
-    // { icon: Building2, label: 'Company Profile', path: '/company/profile-management',  featureKey: 'companyProfileType' },
+    { icon: Building2, label: 'Company Profile', path: '/company/profile-management',  featureKey: 'companyProfileType' },
+    { icon: Sparkles,  label: 'AI Matching',    path: '/company/ai-matching',          featureKey: 'hasAICandidateMatching' },
+    { icon: ClipboardList, label: 'Requests',       path: '/company/requests',             featureKey: 'hasRequests' },
+    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
+  ],
+  college: [
+    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Users,     label: 'Bulk Applications', path: '/company/bulk-applications', featureKey: 'hasBulkApplicantManagement' },
+    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+    { icon: ShieldCheck, label: 'College Profile', path: '/company/profile-management',  featureKey: 'companyProfileType' },
     { icon: Sparkles,  label: 'AI Matching',    path: '/company/ai-matching',          featureKey: 'hasAICandidateMatching' },
     { icon: ClipboardList, label: 'Requests',       path: '/company/requests',             featureKey: 'hasRequests' },
     { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
@@ -159,6 +174,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const role = user?.role || 'jobseeker';
+  const profileCompletion = user?.profile?.profileCompletion || 0;
 
   const coreItems = coreMenus[role] || coreMenus.jobseeker;
   const premiumItems = premiumMenus[role] || [];
@@ -188,11 +204,27 @@ const Sidebar = () => {
       </div>
 
       {/* User card */}
-      <div className="px-6 py-8">
-        <div className="p-4 rounded-2xl border border-slate-100 flex items-center gap-4 bg-slate-50/30 group hover:bg-white hover:border-emerald-100 hover:shadow-md hover:shadow-emerald-600/5 transition-all duration-300 cursor-pointer">
+      <div className="px-6 pt-8 pb-4">
+        <div onClick={() => {
+            const routes = { 
+                jobseeker: '/jobseeker/settings', 
+                recruiter: '/company/settings',
+                company: '/company/settings',
+                college: '/company/settings',
+                admin: '/admin/settings',
+                subadmin: '/subadmin/settings',
+                org_employee: '/employee/settings'
+            };
+            navigate(routes[role] || '/jobseeker/settings');
+        }} className="p-4 rounded-2xl border border-slate-100 flex items-center gap-4 bg-slate-50/30 group hover:bg-white hover:border-emerald-100 hover:shadow-md hover:shadow-emerald-600/5 transition-all duration-300 cursor-pointer">
           <div className="relative">
             <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm bg-white">
-              <AvatarImage src={user?.avatar} />
+              {user?.avatar && (
+                  <AvatarImage 
+                      src={user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`} 
+                      className="object-cover" 
+                  />
+              )}
               <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold text-xs">
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </AvatarFallback>
@@ -206,6 +238,42 @@ const Sidebar = () => {
           <ChevronRight size={14} className="text-slate-300 group-hover:text-emerald-500 transition-colors" />
         </div>
       </div>
+
+      {/* Profile Completion for Jobseekers */}
+      {role === 'jobseeker' && (
+        <div className="px-6 pb-6">
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 rounded-2xl p-4 border border-emerald-100/50 shadow-sm relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-200/20 rounded-full blur-xl pointer-events-none" />
+            <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-teal-200/20 rounded-full blur-xl pointer-events-none" />
+            
+            <div className="flex items-center justify-between mb-2.5 relative z-10">
+              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                <Activity size={12} className="text-emerald-600" />
+                Profile Score
+              </span>
+              <span className="text-xs font-black text-emerald-700">{profileCompletion}%</span>
+            </div>
+            
+            <div className="h-1.5 w-full bg-emerald-100/60 rounded-full overflow-hidden relative z-10 mb-2.5">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${profileCompletion}%` }}
+              />
+            </div>
+            
+            <p className="text-[10px] font-medium text-emerald-700/80 leading-relaxed relative z-10">
+              {profileCompletion === 100 
+                ? "Excellent! Your profile is fully optimized for top recruiters."
+                : "Reach 100% to boost your visibility to recruiters by up to 3x."}
+            </p>
+            {profileCompletion < 100 && (
+              <button onClick={() => navigate('/jobseeker/settings')} className="mt-2.5 w-full py-1.5 rounded-lg bg-white/60 hover:bg-white text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200/50 relative z-10">
+                Complete Profile
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Core nav */}
       <div className="flex-1 px-4">

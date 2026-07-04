@@ -18,6 +18,7 @@ const requestRoutes = require('./routes/requests');
 const settingsRoutes = require('./routes/settingsRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
 const collaborationRoutes = require('./routes/collaborationRoutes');
+const assessmentRoutes = require('./routes/assessmentRoutes');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
 const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
@@ -113,6 +114,7 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/collaboration', collaborationRoutes);
+app.use('/api/assessments', assessmentRoutes);
 
 
 // MongoDB Connection
@@ -142,3 +144,5 @@ app.get('/', (req, res) => {
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Triggering restart for .env reload

@@ -43,8 +43,29 @@ const Applicants = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [calculatingMatch, setCalculatingMatch] = useState({});
 
   const canExport = hasFeature(user, 'hasCandidateDBExport');
+
+  const handleCalculateMatch = async (applicationId) => {
+    try {
+      setCalculatingMatch(prev => ({ ...prev, [applicationId]: true }));
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API_BASE_URL}/applications/${applicationId}/calculate-match`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setApplicants(prev => prev.map(app => 
+        app._id === applicationId ? { ...app, matchAnalysis: res.data.matchAnalysis } : app
+      ));
+      toast.success('AI Match Analysis Complete');
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.msg || 'Failed to calculate match');
+    } finally {
+      setCalculatingMatch(prev => ({ ...prev, [applicationId]: false }));
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -283,14 +304,59 @@ const Applicants = () => {
                   </div>
                 </div>
 
-                {/* Answers Section */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 bg-slate-50/50 rounded-2xl p-5 border border-slate-100/50">
-                  {app.answers?.slice(0, 4).map((ans, idx) => (
-                    <div key={idx} className="space-y-1">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">{ans.questionText}</p>
-                      <p className="text-xs font-bold text-slate-700 line-clamp-1">{Array.isArray(ans.answer) ? ans.answer.join(', ') : ans.answer || '—'}</p>
+                <div className="flex-1 space-y-4">
+                  {/* AI Match Section */}
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50/30 rounded-2xl p-4 border border-emerald-100/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={16} className="text-emerald-500" />
+                        <h5 className="text-xs font-bold text-emerald-900 uppercase tracking-widest">AI Match Analysis</h5>
+                      </div>
+                      {app.matchAnalysis && app.matchAnalysis.matchPercentage !== undefined ? (
+                        <Badge className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-widest border-none ${app.matchAnalysis.matchPercentage >= 75 ? 'bg-emerald-100 text-emerald-700' : app.matchAnalysis.matchPercentage >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
+                          {app.matchAnalysis.matchPercentage}% Match
+                        </Badge>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCalculateMatch(app._id)}
+                          disabled={calculatingMatch[app._id]}
+                          className="h-7 px-3 text-[10px] font-bold uppercase tracking-widest bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-all"
+                        >
+                          {calculatingMatch[app._id] ? <Loader2 size={12} className="animate-spin mr-1" /> : null}
+                          {calculatingMatch[app._id] ? 'Calculating...' : 'Calculate'}
+                        </Button>
+                      )}
                     </div>
-                  ))}
+                    {app.matchAnalysis && app.matchAnalysis.matchPercentage !== undefined && (
+                      <div className="space-y-2 mt-3">
+                        <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                          {app.matchAnalysis.verdict}
+                        </p>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {app.matchAnalysis.matchedSkills?.slice(0, 3).map((skill, i) => (
+                            <span key={i} className="px-2 py-1 bg-white border border-emerald-100 text-emerald-600 rounded-md text-[9px] font-bold uppercase tracking-wider">✓ {skill}</span>
+                          ))}
+                          {app.matchAnalysis.missingSkills?.slice(0, 2).map((skill, i) => (
+                            <span key={i} className="px-2 py-1 bg-white border border-rose-100 text-rose-500 rounded-md text-[9px] font-bold uppercase tracking-wider">× {skill}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Answers Section */}
+                  {app.answers?.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 bg-slate-50/50 rounded-2xl p-4 border border-slate-100/50">
+                      {app.answers?.slice(0, 2).map((ans, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">{ans.questionText}</p>
+                          <p className="text-xs font-bold text-slate-700 line-clamp-1">{Array.isArray(ans.answer) ? ans.answer.join(', ') : ans.answer || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions Section */}

@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  coverPic: {
+    type: String,
+    default: '',
+  },
   isVerified: {
     type: Boolean,
     default: false,
@@ -185,7 +189,27 @@ const userSchema = new mongoose.Schema({
   searchUsedDate: {
     type: Date,
     default: null
+  },
+  display_id: {
+    type: String,
+    unique: true,
+    sparse: true
   }
 }, { timestamps: true });
+
+userSchema.pre('save', async function() {
+  if (!this.display_id && this.role) {
+    const Role = mongoose.model('Role');
+    const roleDoc = await Role.findById(this.role);
+    let prefix = 'VC'; // default for candidate
+    if (roleDoc) {
+      if (['recruiter', 'company', 'org_employee'].includes(roleDoc.name)) prefix = 'VE';
+      else if (roleDoc.name === 'college') prefix = 'VG';
+    }
+    const generateDisplayId = require('../utils/generateDisplayId');
+    const year = new Date().getFullYear();
+    this.display_id = await generateDisplayId(prefix, year);
+  }
+});
 
   module.exports = mongoose.model('User', userSchema);

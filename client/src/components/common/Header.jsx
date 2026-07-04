@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -127,6 +127,12 @@ const Header = () => {
                             </span>
                         </div>
                         <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm ring-1 ring-slate-100 group-hover:ring-emerald-100 transition-all">
+                            {user?.avatar && (
+                                <AvatarImage 
+                                    src={user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`} 
+                                    className="object-cover" 
+                                />
+                            )}
                             <AvatarFallback className="bg-emerald-50 text-emerald-600 text-xs font-black">
                                 {user?.name?.[0]?.toUpperCase() || 'U'}
                             </AvatarFallback>
@@ -148,7 +154,11 @@ const Header = () => {
                               const routes = { 
                                   jobseeker: '/jobseeker/settings', 
                                   recruiter: '/company/settings',
-                                  company: '/company/settings'
+                                  company: '/company/settings',
+                                  college: '/company/settings',
+                                  admin: '/admin/settings',
+                                  subadmin: '/subadmin/settings',
+                                  org_employee: '/employee/settings'
                               };
                               navigate(routes[user?.role] || '/jobseeker/settings');
                           }}

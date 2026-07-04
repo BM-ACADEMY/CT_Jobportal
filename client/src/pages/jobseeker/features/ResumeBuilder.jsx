@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
+import AIGenerateModal from './AIGenerateModal';
 
 // ─── LocalStorage ─────────────────────────────────────────────────────────────
 const STORE_KEY = 'ct_resumes_v1';
@@ -907,8 +908,9 @@ const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate }) => {
 };
 
 // ─── Resume List ──────────────────────────────────────────────────────────────
-const ResumeList = ({ onNew, onEdit }) => {
-  const [resumes, setResumes] = useState(load);
+const ResumeList = ({ onNew, onEdit, limit, setLimitError, onAIGenerate }) => {
+  const [resumes, setResumes] = useState(() => load().sort((a, b) => b.updatedAt - a.updatedAt));
+  const [showAIModal, setShowAIModal] = useState(false);
 
   const handleDelete = (id) => {
     if (!confirm('Delete this resume? This cannot be undone.')) return;
@@ -916,12 +918,19 @@ const ResumeList = ({ onNew, onEdit }) => {
     setResumes(updated); save(updated);
   };
   const handleDuplicate = (id) => {
+    if (resumes.length >= limit) {
+      setLimitError(`Your plan allows up to ${limit === Infinity ? 'unlimited' : limit} resume${limit > 1 ? 's' : ''}. Delete an existing one or upgrade to create more.`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const src = resumes.find(r => r.id === id);
     if (!src) return;
     const copy = { ...src, id: mkId(), name: src.name + ' (Copy)', createdAt: Date.now(), updatedAt: Date.now() };
-    const updated = [...resumes, copy];
+    const updated = [copy, ...resumes];
     setResumes(updated); save(updated);
   };
+  
+  const visibleResumes = resumes.slice(0, limit);
 
   return (
     <div className="space-y-8 pb-12">
@@ -941,41 +950,61 @@ const ResumeList = ({ onNew, onEdit }) => {
         </button>
       </div>
 
-      {resumes.length === 0 ? (
+      {visibleResumes.length === 0 ? (
         <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-10 text-center">
           <div className="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Sparkles size={26} className="text-emerald-400" />
           </div>
           <h2 className="text-lg font-bold text-white mb-2">No resumes yet</h2>
           <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">Create your first professional resume with live preview and instant PDF download.</p>
-          <button onClick={onNew}
-            className="inline-flex items-center gap-2 h-11 px-7 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-emerald-900/30">
-            <FileText size={15} /> Craft My Resume
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button onClick={onNew}
+              className="inline-flex items-center gap-2 h-11 px-6 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg">
+              <FileText size={15} /> Build Manually
+            </button>
+            <button onClick={() => setShowAIModal(true)}
+              className="inline-flex items-center gap-2 h-11 px-6 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-emerald-900/30">
+              <Sparkles size={15} /> Generate with AI
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {resumes.map(r => (
+          {visibleResumes.map(r => (
             <ResumeCard key={r.id} resume={r} onEdit={onEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} />
           ))}
-          <button onClick={onNew} className="rounded-2xl border-2 border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 transition-all flex flex-col items-center justify-center min-h-[220px] gap-2 text-slate-400 hover:text-emerald-600">
+          <button onClick={() => setShowAIModal(true)} className="rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50 hover:border-emerald-300 transition-all flex flex-col items-center justify-center min-h-[220px] gap-2 text-emerald-600 hover:text-emerald-700">
+            <Sparkles size={24} />
+            <span className="text-xs font-bold uppercase tracking-widest">Generate with AI</span>
+          </button>
+          <button onClick={onNew} className="rounded-2xl border-2 border-dashed border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex flex-col items-center justify-center min-h-[220px] gap-2 text-slate-400 hover:text-slate-600">
             <Plus size={24} />
-            <span className="text-xs font-bold">New Resume</span>
+            <span className="text-xs font-bold uppercase tracking-widest">New Resume</span>
           </button>
         </div>
+      )}
+      
+      {showAIModal && (
+        <AIGenerateModal 
+          onClose={() => setShowAIModal(false)}
+          onSuccess={(data) => {
+            setShowAIModal(false);
+            onAIGenerate(data);
+          }}
+        />
       )}
     </div>
   );
 };
 
 // ─── Editor ───────────────────────────────────────────────────────────────────
-const Editor = ({ resumeId, onBack }) => {
+const Editor = ({ resumeId, initialData, onBack }) => {
   const allResumes = load();
   const existing = resumeId ? allResumes.find(r => r.id === resumeId) : null;
   const stableId = useRef(resumeId || mkId());
 
-  const [name, setName] = useState(existing?.name || 'My Resume');
-  const [data, setData] = useState(existing?.data || BLANK_DATA);
+  const [name, setName] = useState(existing?.name || initialData?.personal?.title || 'My Resume');
+  const [data, setData] = useState(existing?.data || initialData || BLANK_DATA);
   const [style, setStyle] = useState(() => mergeStyle(existing?.style));
   const [activeSection, setActiveSection] = useState('personal');
   const [leftTab, setLeftTab] = useState('content');
@@ -1113,23 +1142,45 @@ const ResumeBuilder = () => {
   const { user } = useAuth();
   const [view, setView] = useState('list');
   const [editingId, setEditingId] = useState(null);
+  const [aiData, setAiData] = useState(null);
   const [limitError, setLimitError] = useState('');
 
+  const getLimit = () => {
+    const plan = user?.subscription;
+    if (!plan || (plan.price !== 0 && plan.duration !== 'Lifetime' && user?.subscriptionExpiry && new Date(user.subscriptionExpiry) < new Date())) {
+      return 1;
+    }
+    const limit = plan.resumeBuilderCount ?? 1;
+    return limit === 0 ? Infinity : limit;
+  };
+
+  const limit = getLimit();
+
   const handleNew = () => {
-    const limit = user?.subscription?.resumeBuilderCount ?? 0;
-    if (limit > 0) {
-      const existing = load();
-      if (existing.length >= limit) {
-        setLimitError(`Your plan allows up to ${limit} resume${limit > 1 ? 's' : ''}. Delete an existing one or upgrade to create more.`);
-        return;
-      }
+    const existing = load();
+    if (existing.length >= limit) {
+      setLimitError(`Your plan allows up to ${limit === Infinity ? 'unlimited' : limit} resume${limit > 1 ? 's' : ''}. Delete an existing one or upgrade to create more.`);
+      return;
     }
     setLimitError('');
     setEditingId(null);
+    setAiData(null);
     setView('editor');
   };
 
-  const goHome = () => { setView('list'); setEditingId(null); setLimitError(''); };
+  const handleAIGenerate = (generatedData) => {
+    const existing = load();
+    if (existing.length >= limit) {
+      setLimitError(`Your plan allows up to ${limit === Infinity ? 'unlimited' : limit} resume${limit > 1 ? 's' : ''}. Delete an existing one or upgrade to create more.`);
+      return;
+    }
+    setLimitError('');
+    setEditingId(null);
+    setAiData(generatedData);
+    setView('editor');
+  };
+
+  const goHome = () => { setView('list'); setEditingId(null); setAiData(null); setLimitError(''); };
 
   return (
     <FeatureGate
@@ -1144,8 +1195,8 @@ const ResumeBuilder = () => {
         </div>
       )}
       {view === 'list'
-        ? <ResumeList onNew={handleNew} onEdit={(id) => { setLimitError(''); setEditingId(id); setView('editor'); }} />
-        : <Editor resumeId={editingId} onBack={goHome} />
+        ? <ResumeList onNew={handleNew} onEdit={(id) => { setLimitError(''); setEditingId(id); setAiData(null); setView('editor'); }} limit={limit} setLimitError={setLimitError} onAIGenerate={handleAIGenerate} />
+        : <Editor resumeId={editingId} initialData={aiData} onBack={goHome} />
       }
     </FeatureGate>
   );
