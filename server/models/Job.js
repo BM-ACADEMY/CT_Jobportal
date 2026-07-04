@@ -82,7 +82,20 @@ const jobSchema = new mongoose.Schema({
     options: [String],
     isRequired: { type: Boolean, default: true },
     isStandard: { type: Boolean, default: false }
-  }]
+  }],
+  display_id: {
+    type: String,
+    unique: true,
+    sparse: true
+  }
 }, { timestamps: true });
+
+jobSchema.pre('save', async function() {
+  if (!this.display_id) {
+    const generateDisplayId = require('../utils/generateDisplayId');
+    const year = new Date().getFullYear();
+    this.display_id = await generateDisplayId('VJ', year);
+  }
+});
 
 module.exports = mongoose.model('Job', jobSchema);

@@ -5,6 +5,8 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const Company = require('../models/Company');
 const Job = require('../models/Job');
+const Application = require('../models/Application');
+const sendEmail = require('../utils/sendEmail');
 
 const generateToken = (id, roleName) => {
   return jwt.sign(
@@ -30,6 +32,68 @@ const loginAdmin = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid Credentials' });
     }
 
+    if (admin.twoFactorAuth && admin.twoFactorAuth.enabled) {
+      // Generate 4-digit OTP
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      admin.twoFactorAuth.otp = otp;
+      admin.twoFactorAuth.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+      await admin.save();
+
+      // Send Email
+      const emailOptions = {
+        email: admin.email,
+        subject: 'Admin Login 2FA OTP',
+        html: `<p>Your 4-digit Admin Login OTP is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
+      };
+      await sendEmail(emailOptions);
+
+      return res.json({ require2FA: true, adminId: admin._id });
+    }
+
+    const token = generateToken(admin._id, admin.role);
+    admin.lastLogin = new Date();
+    await admin.save();
+
+    res.json({
+      token,
+      user: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        avatar: admin.profilePicture,
+        admin_id: admin.admin_id,
+        twoFactorAuth: admin.twoFactorAuth
+      }
+    });
+  } catch (err) {
+    console.error('Admin Login Error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Verify Admin OTP
+// @route   POST /api/admin/login-verify-otp
+const verifyAdminLoginOTP = async (req, res) => {
+  try {
+    const { adminId, otp } = req.body;
+
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return res.status(400).json({ msg: 'Invalid Admin' });
+    }
+
+    if (!admin.twoFactorAuth || admin.twoFactorAuth.otp !== otp || admin.twoFactorAuth.otpExpires < new Date()) {
+      return res.status(400).json({ msg: 'Invalid or expired OTP' });
+    }
+
+    // Clear OTP
+    admin.twoFactorAuth.otp = undefined;
+    admin.twoFactorAuth.otpExpires = undefined;
+    admin.lastLogin = new Date();
+    await admin.save();
+
     const token = generateToken(admin._id, admin.role);
 
     res.json({
@@ -39,11 +103,13 @@ const loginAdmin = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
-        avatar: '', // Fallback since admins don't currently have avatars
+        avatar: admin.profilePicture,
+        admin_id: admin.admin_id,
+        twoFactorAuth: admin.twoFactorAuth
       }
     });
   } catch (err) {
-    console.error('Admin Login Error:', err.message);
+    console.error('Verify Admin OTP Error:', err.message);
     res.status(500).send('Server Error');
   }
 };
@@ -150,6 +216,27 @@ const getUserDetails = async (req, res) => {
   }
 };
 
+// @desc    Get user applications
+// @route   GET /api/admin/users/:id/applications
+const getUserApplications = async (req, res) => {
+  try {
+    const applications = await Application.find({ applicant: req.params.id })
+      .populate({
+        path: 'job',
+        select: 'title display_id location workMode jobType status',
+        populate: {
+          path: 'company',
+          select: 'name logo_url'
+        }
+      })
+      .sort({ createdAt: -1 });
+    res.json(applications);
+  } catch (err) {
+    console.error('Get User Applications Error:', err);
+    res.status(500).json({ msg: 'Server Error', error: err.message });
+  }
+};
+
 // @desc    Update user
 // @route   PUT /api/admin/users/:id
 const updateUser = async (req, res) => {
@@ -242,6 +329,91 @@ const deleteJob = async (req, res) => {
   }
 };
 
+// @desc    Update Admin Profile
+// @route   PUT /api/admin/profile
+const updateAdminProfile = async (req, res) => {
+  try {
+    const { name, email, profilePicture } = req.body;
+    const admin = await Admin.findById(req.user.id);
+    
+    if (!admin) return res.status(404).json({ msg: 'Admin not found' });
+    
+    if (name) admin.name = name;
+    if (profilePicture) admin.profilePicture = profilePicture;
+    
+    if (email && email.toLowerCase() !== admin.email) {
+      const existing = await Admin.findOne({ email: email.toLowerCase() });
+      if (existing) return res.status(400).json({ msg: 'Email already in use' });
+      
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+      admin.pendingEmail = email.toLowerCase();
+      
+      if (!admin.twoFactorAuth) admin.twoFactorAuth = {};
+      admin.twoFactorAuth.otp = otp;
+      admin.twoFactorAuth.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+      
+      await sendEmail({
+        email: email.toLowerCase(),
+        subject: 'Admin Email Change OTP',
+        html: `<p>Your 4-digit OTP to confirm email change is: <strong>${otp}</strong>. Expires in 10 mins.</p>`
+      });
+      
+      await admin.save();
+      return res.json({ msg: 'OTP sent to new email', requireEmailOTP: true });
+    }
+    
+    await admin.save();
+    res.json(admin);
+  } catch (err) {
+    console.error('Update Admin Profile Error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Verify Admin Email OTP
+// @route   POST /api/admin/verify-email-otp
+const verifyAdminEmailOTP = async (req, res) => {
+  try {
+    const { otp } = req.body;
+    const admin = await Admin.findById(req.user.id);
+    
+    if (!admin || !admin.pendingEmail) return res.status(400).json({ msg: 'No pending email change' });
+    if (!admin.twoFactorAuth || admin.twoFactorAuth.otp !== otp || admin.twoFactorAuth.otpExpires < new Date()) {
+      return res.status(400).json({ msg: 'Invalid or expired OTP' });
+    }
+    
+    admin.email = admin.pendingEmail;
+    admin.pendingEmail = undefined;
+    admin.twoFactorAuth.otp = undefined;
+    admin.twoFactorAuth.otpExpires = undefined;
+    await admin.save();
+    
+    res.json({ msg: 'Email updated successfully', admin });
+  } catch (err) {
+    console.error('Verify Admin Email OTP Error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Toggle Admin 2FA
+// @route   PATCH /api/admin/2fa
+const toggleAdmin2FA = async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.user.id);
+    if (!admin) return res.status(404).json({ msg: 'Admin not found' });
+    
+    if (!admin.twoFactorAuth) admin.twoFactorAuth = { enabled: false };
+    admin.twoFactorAuth.enabled = !admin.twoFactorAuth.enabled;
+    admin.markModified('twoFactorAuth');
+    await admin.save();
+    
+    res.json({ enabled: admin.twoFactorAuth.enabled, msg: `2FA ${admin.twoFactorAuth.enabled ? 'enabled' : 'disabled'}` });
+  } catch (err) {
+    console.error('Toggle Admin 2FA Error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 module.exports = {
   loginAdmin,
   getDashboardStats,
@@ -254,5 +426,10 @@ module.exports = {
   getCompanies,
   deleteCompany,
   getJobs,
-  deleteJob
+  deleteJob,
+  verifyAdminLoginOTP,
+  updateAdminProfile,
+  verifyAdminEmailOTP,
+  toggleAdmin2FA,
+  getUserApplications
 };

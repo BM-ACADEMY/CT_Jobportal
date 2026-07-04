@@ -50,6 +50,32 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  const [applicationsOpen, setApplicationsOpen] = useState(false);
+  const [applications, setApplications] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+
+  const fetchApplications = async () => {
+    try {
+      setAppsLoading(true);
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${id}/applications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setApplications(res.data);
+    } catch (err) {
+      toast.error('Failed to load applications');
+    } finally {
+      setAppsLoading(false);
+    }
+  };
+
+  const handleOpenApplications = () => {
+    const el = document.getElementById('applications-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -59,6 +85,9 @@ const UserProfile = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUser(res.data);
+        if (res.data.role?.name === 'jobseeker') {
+          fetchApplications();
+        }
       } catch (err) {
         toast.error('Failed to load user profile');
         navigate('/admin/users');
@@ -142,6 +171,11 @@ const UserProfile = () => {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{user.name}</h1>
+                  {user.display_id && (
+                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-black tracking-wider px-2 py-0.5">
+                      {user.display_id}
+                    </Badge>
+                  )}
                   {user.isAdminBlocked && (
                     <Badge className="bg-red-50 text-red-600 border-red-100 text-[9px] font-bold uppercase">Blocked</Badge>
                   )}
@@ -172,6 +206,16 @@ const UserProfile = () => {
 
             {/* Action buttons */}
             <div className="flex items-center gap-2 shrink-0">
+              {isJobseeker && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenApplications}
+                  className="rounded-xl h-10 px-5 font-bold text-xs border-emerald-200 text-emerald-600 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 transition-all gap-2"
+                >
+                  <Briefcase size={14} /> Applied Jobs
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -368,6 +412,72 @@ const UserProfile = () => {
                   </div>
                 )}
               </div>
+            </Card>
+          )}
+
+          {/* Job Applications Inline Section */}
+          {isJobseeker && (
+            <Card className="p-8 rounded-[24px] border-slate-200 shadow-sm bg-white" id="applications-section">
+              <SectionTitle>Job Applications</SectionTitle>
+              {appsLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-4">
+                  <Loader2 className="animate-spin h-8 w-8 text-slate-400" />
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading applications...</p>
+                </div>
+              ) : applications.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm font-medium text-slate-500">This user hasn't applied to any jobs yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {applications.map(app => (
+                    <div key={app._id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-emerald-200 hover:bg-white transition-all group">
+                      <div className="flex items-start gap-4">
+                        {app.job?.company?.logo_url ? (
+                          <img src={app.job.company.logo_url} alt="logo" className="w-12 h-12 rounded-lg object-contain bg-white border border-slate-200 p-1 shrink-0 shadow-sm" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
+                            <Building2 size={20} className="text-slate-400" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1">{app.job?.title || 'Unknown Job'}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs font-semibold text-slate-500">{app.job?.company?.name || 'Unknown Company'}</p>
+                            {app.job?.display_id && (
+                              <Badge className="bg-slate-100 text-slate-500 text-[9px] uppercase hover:bg-slate-100 font-bold px-1.5 py-0 border-slate-200">
+                                {app.job.display_id}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {app.job?.location && <span className="flex items-center gap-1"><MapPin size={10} /> {app.job.location}</span>}
+                            {app.job?.workMode && <span className="flex items-center gap-1"><Globe size={10} /> {app.job.workMode}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col md:items-end gap-2 shrink-0">
+                        <Badge className={
+                          app.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          app.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                          app.status === 'shortlisted' ? 'bg-violet-50 text-violet-700 border-violet-200' :
+                          'bg-blue-50 text-blue-700 border-blue-200'
+                        }>
+                          <span className="text-[10px] font-bold uppercase">{app.status}</span>
+                        </Badge>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs font-bold w-full md:w-auto hover:bg-slate-100"
+                          onClick={() => window.open(`/jobs/${app.job?._id}`, '_blank')}
+                        >
+                          View Job <ExternalLink size={12} className="ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
           )}
         </div>

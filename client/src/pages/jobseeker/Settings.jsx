@@ -14,6 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import ImageCropperModal from "@/components/shared/ImageCropperModal";
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
 const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
@@ -64,10 +67,13 @@ const Settings = () => {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [cropModal, setCropModal] = useState({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 });
 
     // Form states
     const [formData, setFormData] = useState({
         name: user?.name || '',
+        avatar: user?.avatar || '',
+        coverPic: user?.coverPic || '',
         profile: {
             headline: user?.profile?.headline || '',
             phone: user?.profile?.phone || '',
@@ -97,6 +103,39 @@ const Settings = () => {
     const [newJobTitle, setNewJobTitle] = useState('');
     const [newRemoteLocation, setNewRemoteLocation] = useState('');
 
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                name: user?.name || '',
+                avatar: user?.avatar || '',
+                coverPic: user?.coverPic || '',
+                profile: {
+                    headline: user?.profile?.headline || '',
+                    phone: user?.profile?.phone || '',
+                    location: user?.profile?.location || '',
+                    bio: user?.profile?.bio || '',
+                    skills: user?.profile?.skills || [],
+                    qualification: user?.profile?.qualification || [],
+                    experience: user?.profile?.experience || [],
+                    interestedDomain: user?.profile?.interestedDomain || [],
+                    shifts: user?.profile?.shifts || [],
+                    preferredRole: user?.profile?.preferredRole || '',
+                    jobPreferences: user?.profile?.jobPreferences || {
+                        jobTitles: [],
+                        locationTypes: [],
+                        onSiteLocations: [],
+                        noticePeriod: '',
+                        expectedSalary: '',
+                        remoteLocations: [],
+                        startDate: '',
+                        employmentTypes: [],
+                        visibility: 'Everyone'
+                    }
+                }
+            });
+        }
+    }, [user]);
+
     const handleSave = async () => {
         setLoading(true);
         try {
@@ -115,6 +154,8 @@ const Settings = () => {
     const handleCancel = () => {
         setFormData({
             name: user?.name || '',
+            avatar: user?.avatar || '',
+            coverPic: user?.coverPic || '',
             profile: {
                 headline: user?.profile?.headline || '',
                 phone: user?.profile?.phone || '',
@@ -140,6 +181,46 @@ const Settings = () => {
             }
         });
         setIsEditing(false);
+    };
+
+    const handleImageSelect = (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = () => {
+            setCropModal({
+                isOpen: true,
+                imageSrc: reader.result,
+                type: type,
+                aspectRatio: type === 'coverPic' ? 21 / 9 : 1
+            });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const handleCropComplete = async (croppedBlob) => {
+        const { type } = cropModal;
+        setCropModal({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 });
+        
+        const uploadData = new FormData();
+        uploadData.append('image', croppedBlob, `${type}.jpg`);
+        
+        try {
+            const res = await axios.post(`${API_USER_URL}/upload-image?type=${type === 'coverPic' ? 'cover' : 'profile'}`, uploadData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setFormData(prev => ({
+                ...prev,
+                [type]: res.data.imageUrl
+            }));
+            await refreshUser();
+            toast.success("Image updated successfully");
+        } catch (err) {
+            console.error(err);
+            toast.error("Image upload failed");
+        }
     };
 
     const handleResumeDownload = async () => {
@@ -364,20 +445,20 @@ const Settings = () => {
             </div>
 
             <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="bg-slate-50 border border-slate-100 rounded-xl p-1.5 h-auto flex-wrap justify-start overflow-x-auto shadow-sm">
-                    <TabsTrigger value="basic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                <TabsList className="bg-slate-50 border border-slate-100 rounded-xl p-1.5 h-auto flex justify-start overflow-x-auto shadow-sm flex-nowrap w-full [&::-webkit-scrollbar]:hidden gap-1">
+                    <TabsTrigger value="basic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <User className="w-3.5 h-3.5 mr-2" /> Basic Info
                     </TabsTrigger>
-                    <TabsTrigger value="academic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="academic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <GraduationCap className="w-3.5 h-3.5 mr-2" /> Academic
                     </TabsTrigger>
-                    <TabsTrigger value="professional" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="professional" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <Briefcase className="w-3.5 h-3.5 mr-2" /> Professional
                     </TabsTrigger>
-                    <TabsTrigger value="resume" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="resume" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <FileText className="w-3.5 h-3.5 mr-2" /> Asset Repository
                     </TabsTrigger>
-                    <TabsTrigger value="preferences" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="preferences" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <Settings2 className="w-3.5 h-3.5 mr-2" /> Preferences
                     </TabsTrigger>
                 </TabsList>
@@ -385,7 +466,63 @@ const Settings = () => {
                 {/* ── TAB: BASIC INFO ── */}
                 <TabsContent value="basic" className="mt-8 space-y-6">
                     <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
-                        <CardHeader className="pb-4 border-b border-slate-50">
+                        <div className="relative h-48 sm:h-64 bg-slate-100 group">
+                            {formData.coverPic ? (
+                                !isEditing ? (
+                                    <Zoom>
+                                        <img 
+                                            src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} 
+                                            className="w-full h-48 sm:h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                                            alt="Cover" 
+                                        />
+                                    </Zoom>
+                                ) : (
+                                    <img 
+                                        src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} 
+                                        className="w-full h-full object-cover" 
+                                        alt="Cover" 
+                                    />
+                                )
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-r from-emerald-100 to-teal-50" />
+                            )}
+                                {isEditing && (
+                                <label className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 px-3 rounded-xl shadow-sm cursor-pointer hover:bg-white transition-all text-[10px] font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2 border border-slate-200/50 hover:border-emerald-200 hover:text-emerald-600">
+                                    <Upload size={14} /> Update Cover
+                                    <Input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e, 'coverPic')} />
+                                </label>
+                            )}
+                            <div className="absolute -bottom-12 left-8">
+                                <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-slate-50 shadow-md overflow-hidden flex items-center justify-center">
+                                    {formData.avatar ? (
+                                        !isEditing ? (
+                                            <Zoom>
+                                                <img 
+                                                    src={formData.avatar.startsWith('http') ? formData.avatar : `${API_DOMAIN}${formData.avatar}`} 
+                                                    className="w-24 h-24 sm:w-32 sm:h-32 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                                                    alt="Avatar" 
+                                                />
+                                            </Zoom>
+                                        ) : (
+                                            <img 
+                                                src={formData.avatar.startsWith('http') ? formData.avatar : `${API_DOMAIN}${formData.avatar}`} 
+                                                className="w-full h-full object-cover" 
+                                                alt="Avatar" 
+                                            />
+                                        )
+                                    ) : (
+                                        <User size={48} className="text-slate-300" />
+                                    )}
+                                    {isEditing && (
+                                        <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                                            <Upload size={24} className="text-white" />
+                                            <Input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e, 'avatar')} />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <CardHeader className="pt-16 pb-4 border-b border-slate-50">
                             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                                 <LayoutGrid className="w-4 h-4 text-emerald-600" /> Identity Foundation
                             </CardTitle>
@@ -412,6 +549,16 @@ const Settings = () => {
                                         <div className="relative">
                                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input value={user?.email} disabled className="pl-11 h-11 rounded-xl bg-slate-100 border-slate-200 font-medium text-sm" />
+                                        </div>
+                                    </div>
+                                </DataDisplay>
+
+                                <DataDisplay label="Candidate ID (Unique Identifier)" value={user?.display_id || 'Pending Generate'} icon={Target} isEditing={false}>
+                                    <div className="space-y-1.5 opacity-60">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Candidate ID</Label>
+                                        <div className="relative">
+                                            <Target className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
+                                            <Input value={user?.display_id || 'Pending Generate'} disabled className="pl-11 h-11 rounded-xl bg-slate-100 border-slate-200 font-medium text-sm" />
                                         </div>
                                     </div>
                                 </DataDisplay>
@@ -1024,6 +1171,14 @@ const Settings = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
+            {cropModal.isOpen && (
+                <ImageCropperModal
+                    imageSrc={cropModal.imageSrc}
+                    aspectRatio={cropModal.aspectRatio}
+                    onCropComplete={handleCropComplete}
+                    onCancel={() => setCropModal({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 })}
+                />
+            )}
         </div>
     );
 };

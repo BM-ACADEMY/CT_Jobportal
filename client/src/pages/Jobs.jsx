@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 
 const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote', 'Freelance'];
 const SALARY_RANGES = [
@@ -37,16 +38,26 @@ const Jobs = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [showAllTypes, setShowAllTypes] = useState(false);
+  const [activeTab, setActiveTab] = useState('all'); // 'all' or 'matched'
+  
+  const { user } = useAuth();
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/jobs`)
+    setLoading(true);
+    const endpoint = activeTab === 'matched' && user && user.role === 'jobseeker' 
+      ? `${API_BASE_URL}/jobs/matching` 
+      : `${API_BASE_URL}/jobs`;
+      
+    const headers = activeTab === 'matched' ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {};
+
+    axios.get(endpoint, { headers })
       .then(res => setJobs(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, activeTab, user]);
 
   const salaryRange = SALARY_RANGES[selectedSalary];
 
@@ -273,10 +284,29 @@ const Jobs = () => {
             )}
 
             {/* Sort + Mobile Filter bar */}
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm font-semibold text-slate-500">
-                Showing <span className="text-slate-900 font-bold">{filteredJobs.length}</span> results
-              </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-4">
+                {user && user.role === 'jobseeker' && (
+                  <div className="flex bg-slate-200/50 p-1 rounded-xl">
+                    <button
+                      onClick={() => setActiveTab('all')}
+                      className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      All Jobs
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('matched')}
+                      className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${activeTab === 'matched' ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/25' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      <Star size={12} className={activeTab === 'matched' ? 'fill-white' : ''} />
+                      For You
+                    </button>
+                  </div>
+                )}
+                <p className="text-sm font-semibold text-slate-500 hidden md:block">
+                  Showing <span className="text-slate-900 font-bold">{filteredJobs.length}</span> results
+                </p>
+              </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setMobileFiltersOpen(true)}

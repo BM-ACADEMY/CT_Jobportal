@@ -31,6 +31,10 @@ const MyApplications = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [revokeTarget, setRevokeTarget] = useState(null); // { id, title }
   const [revoking, setRevoking] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => { setCurrentPage(1); }, [search, statusFilter]);
 
   const fetchApplications = async () => {
     try {
@@ -75,6 +79,9 @@ const MyApplications = () => {
     const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedApplications = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const stats = {
     total: applications.length,
@@ -201,7 +208,7 @@ const MyApplications = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map(app => {
+          {paginatedApplications.map(app => {
             const cfg = STATUS_CONFIG[app.status] || STATUS_CONFIG.pending;
             const job = app.job;
             const salary = job?.salary?.isRangeHidden
@@ -283,6 +290,31 @@ const MyApplications = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6">
+          <Button
+            variant="outline"
+            disabled={currentPage === 1}
+            onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="h-9 px-4 rounded-xl border-slate-200 text-xs font-bold gap-2"
+          >
+            Previous
+          </Button>
+          <span className="text-xs font-bold text-slate-500">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            disabled={currentPage === totalPages}
+            onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="h-9 px-4 rounded-xl border-slate-200 text-xs font-bold gap-2"
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>

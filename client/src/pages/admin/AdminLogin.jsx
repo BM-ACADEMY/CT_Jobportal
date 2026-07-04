@@ -8,8 +8,11 @@ const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [adminId, setAdminId] = useState('');
   
-  const { adminLogin } = useAuth();
+  const { adminLogin, verifyAdminOtp } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -17,13 +20,27 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      const res = await adminLogin(email, password);
-      
-      if (res.success) {
-        toast.success('Welcome back, Admin');
-        navigate(res.redirect);
+      if (showOtpInput) {
+        const res = await verifyAdminOtp(adminId, otp);
+        if (res.success) {
+          toast.success('Welcome back, Admin');
+          navigate(res.redirect);
+        } else {
+          toast.error(res.msg || 'OTP verification failed');
+        }
       } else {
-        toast.error(res.msg || 'Login failed');
+        const res = await adminLogin(email, password);
+        
+        if (res.success && res.require2FA) {
+          setAdminId(res.adminId);
+          setShowOtpInput(true);
+          toast.success('OTP sent to your email');
+        } else if (res.success) {
+          toast.success('Welcome back, Admin');
+          navigate(res.redirect);
+        } else {
+          toast.error(res.msg || 'Login failed');
+        }
       }
     } catch (err) {
       toast.error('An unexpected error occurred');
@@ -55,37 +72,59 @@ const AdminLogin = () => {
       <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-white py-10 px-4 shadow-xl shadow-slate-200/50 border border-slate-100 sm:rounded-[32px] sm:px-12">
           <form className="space-y-8" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                Identity Credentials
-              </label>
-              <div className="mt-1">
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-4 h-12 border border-slate-200 bg-white rounded-xl shadow-sm placeholder-slate-300 text-slate-900 focus:outline-none focus:ring-0 focus:border-emerald-600 sm:text-sm transition-all font-medium"
-                  placeholder="admin@ct.com"
-                />
-              </div>
-            </div>
+            {!showOtpInput ? (
+              <>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                    Identity Credentials
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="appearance-none block w-full px-4 h-12 border border-slate-200 bg-white rounded-xl shadow-sm placeholder-slate-300 text-slate-900 focus:outline-none focus:ring-0 focus:border-emerald-600 sm:text-sm transition-all font-medium"
+                      placeholder="admin@ct.com"
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                Secure Password
-              </label>
-              <div className="mt-1">
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-4 h-12 border border-slate-200 bg-white rounded-xl shadow-sm placeholder-slate-300 text-slate-900 focus:outline-none focus:ring-0 focus:border-emerald-600 sm:text-sm transition-all font-medium"
-                  placeholder="••••••••"
-                />
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                    Secure Password
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="appearance-none block w-full px-4 h-12 border border-slate-200 bg-white rounded-xl shadow-sm placeholder-slate-300 text-slate-900 focus:outline-none focus:ring-0 focus:border-emerald-600 sm:text-sm transition-all font-medium"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                  2FA OTP Verification
+                </label>
+                <p className="text-xs text-slate-500 mb-2 ml-1">Enter the 4-digit OTP sent to your email.</p>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    required
+                    maxLength={4}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="appearance-none block w-full px-4 h-12 border border-slate-200 bg-white rounded-xl shadow-sm placeholder-slate-300 text-slate-900 focus:outline-none focus:ring-0 focus:border-emerald-600 sm:text-lg text-center tracking-widest font-mono transition-all font-bold"
+                    placeholder="0000"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="pt-2">
               <button

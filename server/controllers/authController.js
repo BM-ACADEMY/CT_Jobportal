@@ -160,6 +160,8 @@ const verifyOtp = async (req, res) => {
         email: user.email,
         role: roleName,
         avatar: user.avatar,
+        coverPic: user.coverPic,
+        profile: user.profile,
         savedJobs: user.savedJobs || [],
         subscription,
         subscriptionExpiry,
@@ -168,6 +170,7 @@ const verifyOtp = async (req, res) => {
         counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
         employerCompany: user.employerCompany || null,
         employerCompanyName,
+        display_id: user.display_id,
       }
     });
 
@@ -248,6 +251,8 @@ const loginUser = async (req, res) => {
         email: user.email,
         role: roleName,
         avatar: user.avatar,
+        coverPic: user.coverPic,
+        profile: user.profile,
         savedJobs: user.savedJobs || [],
         subscription,
         subscriptionExpiry,
@@ -256,6 +261,7 @@ const loginUser = async (req, res) => {
         counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
         employerCompany: user.employerCompany || null,
         employerCompanyName,
+        display_id: user.display_id,
       }
     });
   } catch (err) {
@@ -355,7 +361,9 @@ const getUserProfile = async (req, res) => {
           name: admin.name,
           email: admin.email,
           role: admin.role, // Admins have role string directly
-          avatar: '',
+          avatar: admin.profilePicture || '',
+          admin_id: admin.admin_id,
+          twoFactorAuth: admin.twoFactorAuth
         });
       }
       return res.status(404).json({ msg: 'User not found' });
@@ -387,6 +395,8 @@ const getUserProfile = async (req, res) => {
       email: user.email,
       role: roleName,
       avatar: user.avatar,
+      coverPic: user.coverPic,
+      profile: user.profile,
       savedJobs: user.savedJobs || [],
       subscription,
       subscriptionExpiry,
@@ -474,11 +484,13 @@ const socialAuthCallback = (req, res) => {
     email: user.email,
     role: roleName,
     avatar: user.avatar,
+    coverPic: user.coverPic,
     savedJobs: user.savedJobs || [],
     subscription: user.subscription,
     subscriptionExpiry: user.subscriptionExpiry,
     downloadsUsed: user.downloadsUsed || 0,
-    isSocialIncomplete: user.isSocialIncomplete
+    isSocialIncomplete: user.isSocialIncomplete,
+    display_id: user.display_id
   }));
 
   // Redirect to frontend with token and user data
@@ -532,10 +544,13 @@ const completeSocialProfile = async (req, res) => {
         email: populatedUser.email,
         role: roleName,
         avatar: populatedUser.avatar,
+        coverPic: populatedUser.coverPic,
+        profile: populatedUser.profile,
         savedJobs: populatedUser.savedJobs || [],
         subscription: populatedUser.subscription,
         subscriptionExpiry: populatedUser.subscriptionExpiry,
-        downloadsUsed: populatedUser.downloadsUsed || 0
+        downloadsUsed: populatedUser.downloadsUsed || 0,
+        display_id: populatedUser.display_id
       }
     });
 

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import {
   Plus, Trash2, Settings2, User, Users, Building2,
   ListPlus, X, Check, Pencil, ChevronDown, ChevronUp, Infinity,
-  Tag, Hash, Clock, ToggleLeft, Zap, AlertCircle, RefreshCw, Percent
+  Tag, Hash, Clock, ToggleLeft, Zap, AlertCircle, RefreshCw, Percent, ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,8 @@ const API = import.meta.env.VITE_API_BASE_URL;
 const ROLES = [
   { id: 'jobseeker', label: 'Job Seekers', icon: User, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
   { id: 'recruiter', label: 'Recruiters', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  // { id: 'company', label: 'Organizations', icon: Building2, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
+  { id: 'company', label: 'Organizations', icon: Building2, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
+  { id: 'college', label: 'Colleges', icon: ShieldCheck, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
 ];
 
 // Static schema fields per role — always present regardless of feature catalog
@@ -50,16 +51,25 @@ const STATIC_FEATURES = {
     { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
     { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean', hint: 'Auto-enabled if seats > 1' },
   ],
-  // company: [
-  //   { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
-  //   // { key: 'companyProfileType', label: 'Company Profile Type', type: 'select', options: ['No', 'Basic', 'Branded', 'Full Custom'] },
-  //   { key: 'hasBulkApplicantManagement', label: 'Bulk Applicant Management', type: 'boolean' },
-  //   { key: 'hasInterviewScheduling', label: 'Interview Scheduling', type: 'boolean' },
-  //   { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean', hint: 'Auto-enabled if seats > 1' },
-  //   { key: 'hasRequests', label: 'Service Requests', type: 'boolean' },
-  //   { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
-  //   { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
-  // ],
+  company: [
+    { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
+    // { key: 'companyProfileType', label: 'Company Profile Type', type: 'select', options: ['No', 'Basic', 'Branded', 'Full Custom'] },
+    { key: 'hasBulkApplicantManagement', label: 'Bulk Applicant Management', type: 'boolean' },
+    { key: 'hasInterviewScheduling', label: 'Interview Scheduling', type: 'boolean' },
+    { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean', hint: 'Auto-enabled if seats > 1' },
+    { key: 'hasRequests', label: 'Service Requests', type: 'boolean' },
+    { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
+    { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
+  ],
+  college: [
+    { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
+    { key: 'hasBulkApplicantManagement', label: 'Bulk Applicant Management', type: 'boolean' },
+    { key: 'hasInterviewScheduling', label: 'Interview Scheduling', type: 'boolean' },
+    { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean', hint: 'Auto-enabled if seats > 1' },
+    { key: 'hasRequests', label: 'Service Requests', type: 'boolean' },
+    { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
+    { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
+  ],
 };
 
 const DEFAULT_FORM = {
@@ -325,9 +335,18 @@ const PlanCard = ({ plan, roleFeatures, onEdit, onDelete, onToggleDynamicFeature
   const [expanded, setExpanded] = useState(false);
   const staticFields = STATIC_FEATURES[plan.role] || [];
 
+  const getParentKey = (key) => ({
+    careerCounsellingCount: 'hasCareerCounselling',
+    resumeBuilderCount: 'hasResumeBuilder',
+    messageRecruitersCount: 'hasMessageRecruiters'
+  }[key]);
+
   const enabledStaticCount = staticFields.filter(f => {
+    const parentKey = getParentKey(f.key);
+    if (parentKey && !plan[parentKey]) return false;
+
     if (f.type === 'boolean') return !!plan[f.key];
-    if (f.type === 'count') return plan[f.key] > 0;
+    if (f.type === 'count') return true;
     if (f.type === 'select') return plan[f.key] && plan[f.key] !== 'None';
     return false;
   }).length;
@@ -394,13 +413,21 @@ const PlanCard = ({ plan, roleFeatures, onEdit, onDelete, onToggleDynamicFeature
               {staticFields.map(f => {
                 let enabled = false;
                 let display = '';
-                if (f.type === 'boolean') { enabled = !!plan[f.key]; }
-                else if (f.type === 'count') {
+                const parentKey = getParentKey(f.key);
+
+                if (parentKey && !plan[parentKey]) {
+                  enabled = false;
+                } else if (f.type === 'boolean') { 
+                  enabled = !!plan[f.key]; 
+                } else if (f.type === 'count') {
                   const v = plan[f.key];
                   enabled = true; 
                   display = v === 0 ? 'Unlimited' : `${v}`;
+                } else if (f.type === 'select') { 
+                  enabled = plan[f.key] && plan[f.key] !== 'None'; 
+                  display = plan[f.key]; 
                 }
-                else if (f.type === 'select') { enabled = plan[f.key] && plan[f.key] !== 'None'; display = plan[f.key]; }
+                
                 return (
                   <div key={f.key} className="flex items-center gap-2.5">
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${enabled ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-300'}`}>

@@ -1,24 +1,37 @@
 const User = require('../models/User');
+const fs = require('fs');
+const path = require('path');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Helper to calculate profile completion
 const calculateCompletion = (user) => {
   let score = 0;
   const profile = user.profile || {};
+  const prefs = profile.jobPreferences || {};
 
-  // Basic info (name is always there)
-  score += 10; 
+  // Base points
+  score += 5; 
 
   if (user.avatar) score += 5;
   if (profile.headline) score += 10;
   if (profile.phone) score += 5;
   if (profile.location) score += 5;
   if (profile.bio) score += 10;
-  if (profile.skills && profile.skills.length > 0) score += 10;
-  if (profile.qualification && profile.qualification.length > 0) score += 10;
-  if (profile.experience && profile.experience.length > 0) score += 15;
-  if (profile.resumeUrl) score += 10;
-  if (profile.preferredRole || (profile.interestedDomain && profile.interestedDomain.length > 0)) score += 10;
+  
+  if (profile.skills && profile.skills.length > 0) score += 15;
+  if (profile.qualification && profile.qualification.length > 0) score += 15;
+  if (profile.experience && profile.experience.length > 0) score += 10;
+  if (profile.resumeUrl) score += 20;
+  
+  if (profile.preferredRole || (profile.interestedDomain && profile.interestedDomain.length > 0) || (prefs.jobTitles && prefs.jobTitles.length > 0)) {
+    score += 10;
+  }
+  
+  if ((prefs.locationTypes && prefs.locationTypes.length > 0) || (prefs.employmentTypes && prefs.employmentTypes.length > 0)) {
+    score += 10;
+  }
 
+  // Maximum possible is 120, capped at 100 so freshers (no experience) can still reach 100%.
   return Math.min(score, 100);
 };
 
@@ -34,12 +47,15 @@ const updateProfile = async (req, res) => {
 
     // Merge profile updates
     if (updates.profile) {
-       user.profile = { ...user.profile.toObject(), ...updates.profile };
+       for (const key in updates.profile) {
+           user.set(`profile.${key}`, updates.profile[key]);
+       }
     }
     
     // Check for direct field updates like name
     if (updates.name) user.name = updates.name;
-    if (updates.avatar) user.avatar = updates.avatar;
+    if (updates.avatar !== undefined) user.avatar = updates.avatar;
+    if (updates.coverPic !== undefined) user.coverPic = updates.coverPic;
 
     // Recalculate completion
     user.profile.profileCompletion = calculateCompletion(user);
@@ -56,6 +72,7 @@ const updateProfile = async (req, res) => {
             name: updatedUser.name,
             email: updatedUser.email,
             avatar: updatedUser.avatar,
+            coverPic: updatedUser.coverPic,
             profile: updatedUser.profile,
             savedJobs: updatedUser.savedJobs || [],
             subscription: updatedUser.subscription,
@@ -102,6 +119,52 @@ const uploadResume = async (req, res) => {
   } catch (err) {
     console.error('Resume Upload Error:', err.message);
     res.status(500).json({ msg: 'Server error during resume upload' });
+  }
+};
+
+// @desc    Upload Image (Profile/Cover)
+// @route   POST /api/user/upload-image
+const uploadImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ msg: 'No image uploaded' });
+    }
+    
+    const type = req.query.type === 'cover' ? 'cover' : 'profile';
+    const userId = req.user.id;
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    
+    const targetDir = path.join(__dirname, '..', 'uploads', type);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    
+    const targetFilename = `${userId}${ext}`;
+    const targetPath = path.join(targetDir, targetFilename);
+    const relativeUrl = `/uploads/${type}/${targetFilename}`;
+    
+    // Find the user to get old image path and delete it
+    const user = await User.findById(userId);
+    if (user) {
+       const oldUrl = type === 'profile' ? user.avatar : user.coverPic;
+       if (oldUrl && oldUrl.startsWith(`/uploads/${type}/`)) {
+          const oldFilename = oldUrl.split('/').pop();
+          if (oldFilename !== targetFilename) {
+             const oldPath = path.join(targetDir, oldFilename);
+             if (fs.existsSync(oldPath)) {
+                fs.unlinkSync(oldPath);
+             }
+          }
+       }
+    }
+    
+    // Move the uploaded file to targetPath
+    fs.renameSync(req.file.path, targetPath);
+    
+    res.json({ imageUrl: relativeUrl });
+  } catch (err) {
+    console.error('Image Upload Error:', err.message);
+    res.status(500).json({ msg: 'Server error during image upload' });
   }
 };
 
@@ -323,6 +386,68 @@ const searchUser = async (req, res) => {
   }
 };
 
+// @desc    Generate AI Resume
+// @route   POST /api/user/generate-resume
+const generateAIResume = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { desiredPosition, experienceLevel, skills, additionalInfo } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const prompt = `
+      You are an expert ATS-friendly Resume Writer. The user wants to generate a professional resume tailored for the position of "${desiredPosition || 'Professional'}".
+      Experience Level: ${experienceLevel || 'Mid-Level'}
+      Skills: ${skills || 'Relevant industry skills'}
+      Additional Info: ${additionalInfo || 'None'}
+      User Name: ${user.name || 'John Doe'}
+      User Email: ${user.email || 'email@example.com'}
+
+      Generate a comprehensive, ATS-optimized resume in strictly JSON format. It must have the following structure exactly:
+      {
+        "personal": { "name": "${user.name || 'John Doe'}", "title": "${desiredPosition || 'Professional'}", "email": "${user.email || 'email@example.com'}", "phone": "", "location": "", "linkedin": "", "website": "" },
+        "summary": "A strong 3-4 sentence professional summary focusing on the desired position, optimized for ATS...",
+        "experience": [
+          { "id": "exp1", "company": "Company Name", "role": "Role", "start": "Jan 2020", "end": "Present", "current": true, "bullets": "• Bullet 1\\n• Bullet 2" }
+        ],
+        "education": [
+          { "id": "edu1", "school": "University Name", "degree": "Degree", "field": "Field of Study", "start": "2015", "end": "2019", "gpa": "" }
+        ],
+        "skills": ["Skill 1", "Skill 2", "Skill 3"],
+        "projects": [
+          { "id": "proj1", "name": "Project Name", "tech": "Tech Stack", "link": "", "description": "Project description" }
+        ],
+        "certifications": []
+      }
+
+      Generate realistic placeholder content based on the provided skills and experience level if specific details are not provided. Use strong action verbs and include keywords that will be helpful to find this desired position. Ensure the JSON is perfectly valid. Do not use markdown.
+    `;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.7
+      }
+    });
+
+    const resultObj = await model.generateContent(prompt);
+    let responseText = resultObj.response.text();
+    
+    // Strip markdown formatting if present
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    const result = JSON.parse(responseText);
+
+    res.json(result);
+  } catch (err) {
+    console.error('AI Resume Generation Error:', err);
+    res.status(500).json({ msg: 'Failed to generate AI resume', error: err.message });
+  }
+};
+
 module.exports = {
   updateProfile,
   uploadResume,
@@ -333,5 +458,7 @@ module.exports = {
   trackProfileView,
   getProfileViewers,
   updateAutoRenew,
-  searchUser
+  searchUser,
+  uploadImage,
+  generateAIResume
 };

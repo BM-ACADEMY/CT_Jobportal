@@ -20,7 +20,27 @@ const applicationSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'reviewed', 'shortlisted', 'rejected', 'accepted', 'withdrawn'],
     default: 'pending'
+  },
+  matchAnalysis: {
+    matchPercentage: Number,
+    matchedSkills: [String],
+    missingSkills: [String],
+    verdict: String,
+    lastCalculated: Date
+  },
+  display_id: {
+    type: String,
+    unique: true,
+    sparse: true
   }
 }, { timestamps: true });
+
+applicationSchema.pre('save', async function() {
+  if (!this.display_id) {
+    const generateDisplayId = require('../utils/generateDisplayId');
+    const year = new Date().getFullYear();
+    this.display_id = await generateDisplayId('VA', year);
+  }
+});
 
 module.exports = mongoose.model('Application', applicationSchema);

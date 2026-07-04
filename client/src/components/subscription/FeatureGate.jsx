@@ -30,17 +30,41 @@ const DYNAMIC_FEATURE_NAMES = {
   hasDedicatedOnboarding:    ['Dedicated Onboarding', 'Onboarding'],
 };
 
+const FREE_TIER_DEFAULTS = {
+  jobseeker: {
+    hasResumeBuilder: true,
+    resumeBuilderCount: 1,
+    jobAlerts: 'Monthly',
+    hasMessageRecruiters: true,
+    messageRecruitersCount: 1,
+    hasCareerCounselling: true,
+    careerCounsellingCount: 0,
+  },
+  recruiter: {
+    activeJobPostings: 2,
+    candidateSearchPerDay: 10,
+    userSeats: 1,
+    companyProfileType: 'Basic'
+  },
+  company: {
+    activeJobPostings: 2,
+    candidateSearchPerDay: 10,
+    userSeats: 1,
+    companyProfileType: 'Basic'
+  }
+};
+
 /**
  * Checks if a specific feature key is active on the user's subscription.
  * Checks both static schema fields and the dynamic features[] array.
  */
 export const hasFeature = (user, featureKey) => {
-  const plan = user?.subscription;
-  if (!plan) return false;
+  let plan = user?.subscription;
 
-  // Expired subscription — skip this check for free/lifetime plans
-  const isFree = plan.price === 0 || plan.duration === 'Lifetime';
-  if (!isFree && user.subscriptionExpiry && new Date(user.subscriptionExpiry) < new Date()) return false;
+  // Expired subscription — fallback to free tier defaults
+  if (!plan || (plan.price !== 0 && plan.duration !== 'Lifetime' && user.subscriptionExpiry && new Date(user.subscriptionExpiry) < new Date())) {
+    plan = FREE_TIER_DEFAULTS[user?.role] || {};
+  }
 
   // Custom logic for Team Collaboration based on seats
   if (featureKey === 'hasTeamCollaboration' && plan.userSeats > 1) return true;

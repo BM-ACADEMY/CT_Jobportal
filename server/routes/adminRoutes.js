@@ -12,12 +12,18 @@ const {
   getCompanies,
   deleteCompany,
   getJobs,
-  deleteJob
+  deleteJob,
+  verifyAdminLoginOTP,
+  updateAdminProfile,
+  verifyAdminEmailOTP,
+  toggleAdmin2FA,
+  getUserApplications
 } = require('../controllers/adminController');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 
 // Public route for admin login
 router.post('/login', loginAdmin);
+router.post('/login-verify-otp', verifyAdminLoginOTP);
 
 // Protected routes (Admin only)
 router.use(verifyToken);
@@ -25,8 +31,14 @@ router.use(authorizeRoles('admin'));
 
 router.get('/dashboard-stats', getDashboardStats);
 
+// Admin Settings
+router.put('/profile', updateAdminProfile);
+router.post('/verify-email-otp', verifyAdminEmailOTP);
+router.patch('/2fa', toggleAdmin2FA);
+
 router.get('/users', getUsers);
 router.get('/users/:id', getUserDetails);
+router.get('/users/:id/applications', getUserApplications);
 router.get('/roles', getRoles);
 router.put('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);

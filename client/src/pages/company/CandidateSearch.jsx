@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   Search, MapPin, Briefcase, User, Loader2, Sparkles,
-  AlertTriangle, ChevronRight, Filter, X
+  AlertTriangle, ChevronRight, Filter, X, GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,21 @@ const API = import.meta.env.VITE_API_BASE_URL;
 const CandidateSearch = () => {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
+  const [qReq, setQReq] = useState(false);
+  
   const [skills, setSkills] = useState('');
+  const [skillsReq, setSkillsReq] = useState(false);
+  
   const [location, setLocation] = useState('');
+  const [locationReq, setLocationReq] = useState(false);
+  
+  const [degree, setDegree] = useState('');
+  const [degreeReq, setDegreeReq] = useState(false);
+  
+  const [experienceRole, setExperienceRole] = useState('');
+  const [experienceRoleReq, setExperienceRoleReq] = useState(false);
+  
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -37,9 +50,11 @@ const CandidateSearch = () => {
     setLimitReached(false);
     try {
       const params = new URLSearchParams();
-      if (q.trim()) params.set('q', q.trim());
-      if (skills.trim()) params.set('skills', skills.trim());
-      if (location.trim()) params.set('location', location.trim());
+      if (q.trim()) { params.set('q', q.trim()); params.set('qReq', qReq); }
+      if (skills.trim()) { params.set('skills', skills.trim()); params.set('skillsReq', skillsReq); }
+      if (location.trim()) { params.set('location', location.trim()); params.set('locationReq', locationReq); }
+      if (degree.trim()) { params.set('degree', degree.trim()); params.set('degreeReq', degreeReq); }
+      if (experienceRole.trim()) { params.set('experienceRole', experienceRole.trim()); params.set('experienceRoleReq', experienceRoleReq); }
 
       const res = await axios.get(`${API}/jobs/candidates/search?${params}`, { headers });
       setResults(res.data.candidates || []);
@@ -120,8 +135,12 @@ const CandidateSearch = () => {
               value={q}
               onChange={e => setQ(e.target.value)}
               placeholder="Name, headline, role..."
-              className="pl-9 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
+              className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
             />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
+              <input type="checkbox" checked={qReq} onChange={e => setQReq(e.target.checked)} id="req-q" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
+              <label htmlFor="req-q" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
+            </div>
           </div>
           <div className="relative">
             <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -129,8 +148,12 @@ const CandidateSearch = () => {
               value={skills}
               onChange={e => setSkills(e.target.value)}
               placeholder="Skills (comma-separated)"
-              className="pl-9 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
+              className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
             />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
+              <input type="checkbox" checked={skillsReq} onChange={e => setSkillsReq(e.target.checked)} id="req-skills" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
+              <label htmlFor="req-skills" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
+            </div>
           </div>
           <div className="relative">
             <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -138,29 +161,82 @@ const CandidateSearch = () => {
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="Location"
-              className="pl-9 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
+              className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
             />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
+              <input type="checkbox" checked={locationReq} onChange={e => setLocationReq(e.target.checked)} id="req-loc" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
+              <label htmlFor="req-loc" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
+            </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            type="submit"
-            disabled={loading || atLimit}
-            className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 h-10 px-6 disabled:opacity-50"
-          >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-            Search Candidates
-          </Button>
-          {(q || skills || location) && (
+
+        {showAdvanced && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 mt-2">
+            <div className="relative">
+              <GraduationCap size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={degree}
+                onChange={e => setDegree(e.target.value)}
+                placeholder="Degree / Qualification (e.g. B.Tech)"
+                className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
+                <input type="checkbox" checked={degreeReq} onChange={e => setDegreeReq(e.target.checked)} id="req-deg" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
+                <label htmlFor="req-deg" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
+              </div>
+            </div>
+            <div className="relative">
+              <Briefcase size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={experienceRole}
+                onChange={e => setExperienceRole(e.target.value)}
+                placeholder="Past Experience Role (e.g. Manager)"
+                className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
+                <input type="checkbox" checked={experienceRoleReq} onChange={e => setExperienceRoleReq(e.target.checked)} id="req-exp" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
+                <label htmlFor="req-exp" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              disabled={loading || atLimit}
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 h-10 px-6 disabled:opacity-50"
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              Search Candidates
+            </Button>
             <Button
               type="button"
               variant="outline"
-              onClick={() => { setQ(''); setSkills(''); setLocation(''); setResults([]); setSearched(false); setLimitReached(false); }}
-              className="rounded-xl border-slate-200 text-slate-500 h-10 px-4 text-xs font-bold gap-1.5"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="rounded-xl border-slate-200 text-slate-600 h-10 px-4 text-xs font-bold gap-1.5"
             >
-              <X size={13} /> Clear
+              <Filter size={13} /> {showAdvanced ? 'Hide Advanced' : 'Advanced Filters'}
             </Button>
-          )}
+            {(q || skills || location || degree || experienceRole) && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { 
+                  setQ(''); setQReq(false);
+                  setSkills(''); setSkillsReq(false);
+                  setLocation(''); setLocationReq(false);
+                  setDegree(''); setDegreeReq(false);
+                  setExperienceRole(''); setExperienceRoleReq(false);
+                  setResults([]); setSearched(false); setLimitReached(false); 
+                }}
+                className="rounded-xl border-slate-200 text-slate-500 hover:bg-slate-50 h-10 px-4 text-xs font-bold gap-1.5"
+              >
+                <X size={13} /> Clear
+              </Button>
+            )}
+          </div>
         </div>
       </form>
 

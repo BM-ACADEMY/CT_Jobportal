@@ -22,7 +22,8 @@ import {
   Bookmark,
   CheckCircle2,
   Zap,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -36,6 +37,8 @@ const JobDetails = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [matchAnalysis, setMatchAnalysis] = useState(null);
+  const [isCalculatingMatch, setIsCalculatingMatch] = useState(false);
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
 
@@ -101,6 +104,27 @@ const JobDetails = () => {
       toast.error("Failed to save job");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCalculateMatch = async () => {
+    if (!user || user.role !== 'jobseeker') {
+      toast.error("Only candidates can check their match score");
+      return;
+    }
+    setIsCalculatingMatch(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/jobs/${id}/pre-match`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMatchAnalysis(res.data.matchAnalysis);
+      toast.success("Match score calculated!");
+    } catch (error) {
+      console.error('Error calculating match:', error);
+      toast.error("Failed to calculate AI match score");
+    } finally {
+      setIsCalculatingMatch(false);
     }
   };
 
@@ -280,6 +304,42 @@ const JobDetails = () => {
         
         {/* Left Column: Details */}
         <div className="lg:col-span-2 space-y-12">
+
+          {/* AI Match Banner (if jobseeker) */}
+          {user && user.role === 'jobseeker' && (
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50/30 rounded-2xl p-6 border border-emerald-100/50 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={20} className="text-emerald-500" />
+                  <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-widest">AI Profile Match</h3>
+                </div>
+                {matchAnalysis ? (
+                  <p className="text-slate-700 text-sm font-medium leading-relaxed">{matchAnalysis.verdict}</p>
+                ) : (
+                  <p className="text-slate-600 text-sm font-medium leading-relaxed">See how well your skills align with this role before applying.</p>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-4 shrink-0">
+                {matchAnalysis ? (
+                  <div className="text-center">
+                    <Badge className={`px-4 py-1 rounded-lg font-bold text-sm uppercase tracking-widest border-none ${matchAnalysis.matchPercentage >= 75 ? 'bg-emerald-100 text-emerald-700' : matchAnalysis.matchPercentage >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
+                      {matchAnalysis.matchPercentage}% Match
+                    </Badge>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleCalculateMatch}
+                    disabled={isCalculatingMatch}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-12 px-6 shadow-sm transition-all"
+                  >
+                    {isCalculatingMatch ? <Loader2 size={18} className="animate-spin mr-2" /> : <Sparkles size={18} className="mr-2" />}
+                    {isCalculatingMatch ? 'Analyzing...' : 'Check Match'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
           
           {/* Quick Info Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

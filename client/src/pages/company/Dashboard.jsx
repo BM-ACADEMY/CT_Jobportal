@@ -48,8 +48,13 @@ const CompanyDashboard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight">
+          <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight flex items-center gap-3">
             Recruitment Overview
+            {user?.display_id && (
+                <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold tracking-widest text-[10px] uppercase">
+                    ID: {user.display_id}
+                </Badge>
+            )}
           </h1>
           <p className="text-base text-slate-500 font-medium">
             Welcome back, <span className="text-slate-700 font-bold">{user?.name || 'Recruiter'}</span>. Here's your hiring summary.

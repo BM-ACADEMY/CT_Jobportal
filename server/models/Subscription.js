@@ -26,7 +26,7 @@ const subscriptionSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['jobseeker', 'recruiter', 'company']
+    enum: ['jobseeker', 'recruiter', 'company', 'college']
   },
 
   // Job Seeker specific

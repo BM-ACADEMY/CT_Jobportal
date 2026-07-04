@@ -85,6 +85,18 @@ const FREE_PLANS = [
     hasBulkApplicantManagement: false,
     hasDedicatedOnboarding: false,
   },
+  {
+    name: 'Free',
+    price: 0,
+    currency: 'INR',
+    duration: 'Lifetime',
+    role: 'college',
+    isActive: true,
+
+    activeJobPostings: 0,
+    candidateSearchPerDay: 0,
+    userSeats: 1,
+  },
 ];
 
 const seedSubscriptions = async () => {
@@ -116,7 +128,7 @@ const migrateUsersToFreePlan = async () => {
 
     // Build a role→freePlan map to avoid repeated DB queries
     const freePlanCache = {};
-    for (const roleName of ['jobseeker', 'recruiter', 'company', 'org_employee', 'admin', 'subadmin']) {
+    for (const roleName of ['jobseeker', 'recruiter', 'company', 'org_employee', 'admin', 'subadmin', 'college']) {
       const plan = await Subscription.findOne({ price: 0, isActive: true, role: roleName });
       if (plan) freePlanCache[roleName] = plan._id;
     }

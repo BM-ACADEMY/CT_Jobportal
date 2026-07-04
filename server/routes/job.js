@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getMatchingJobs, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getAICandidateMatches, getJobQuota } = require('../controllers/jobController');
+const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getAICandidateMatches, getJobQuota } = require('../controllers/jobController');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
 
 // Public route to get all jobs
@@ -8,6 +8,9 @@ router.get('/', optionalVerifyToken, getAllJobs);
 
 // Route for jobseekers to get matching jobs
 router.get('/matching', verifyToken, authorizeRoles('jobseeker'), getMatchingJobs);
+
+// Calculate AI match before applying
+router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), calculatePreMatch);
 
 // All routes below this are protected and for recruiters/companies
 router.use(verifyToken);

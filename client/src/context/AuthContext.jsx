@@ -68,6 +68,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const ADMIN_API_URL = `${import.meta.env.VITE_API_BASE_URL}/admin`;
       const res = await axios.post(`${ADMIN_API_URL}/login`, { email, password });
+      
+      if (res.data.require2FA) {
+        return { success: true, require2FA: true, adminId: res.data.adminId };
+      }
+      
       const { user, token } = res.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
@@ -76,6 +81,21 @@ export const AuthProvider = ({ children }) => {
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Admin login failed' };
+    }
+  }, []);
+
+  const verifyAdminOtp = useCallback(async (adminId, otp) => {
+    try {
+      const ADMIN_API_URL = `${import.meta.env.VITE_API_BASE_URL}/admin`;
+      const res = await axios.post(`${ADMIN_API_URL}/login-verify-otp`, { adminId, otp });
+      const { user, token } = res.data;
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      return { success: true, redirect: getRoleRoute(user.role) };
+    } catch (err) {
+      return { success: false, msg: err.response?.data?.msg || 'Invalid or expired OTP' };
     }
   }, []);
 
@@ -175,7 +195,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ 
-      user, loading, login, adminLogin, register, verifyOtp, 
+      user, loading, login, adminLogin, verifyAdminOtp, register, verifyOtp, 
       forgotPassword, resetPassword, logout, completeSocialLogin, refreshUser, updateUser, resendOtp
     }}>
       {children}

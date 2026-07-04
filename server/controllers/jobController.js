@@ -245,12 +245,13 @@ const getMatchingJobs = async (req, res) => {
     let query = { status: 'active' };
     let orConditions = [];
 
-    // 1. Match by skills
+    // 1. Match by skills (flexible regex match)
     if (skills && skills.length > 0) {
-      orConditions.push({ skillsRequired: { $in: skills } });
+      const skillRegexes = skills.map(skill => new RegExp(skill.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+      orConditions.push({ skillsRequired: { $in: skillRegexes } });
     }
 
-    // 2. Match by Job Titles / Preferred Role
+    // 2. Match by Job Titles / Preferred Role (flexible keyword match)
     const titles = [];
     if (jobPreferences?.jobTitles && jobPreferences.jobTitles.length > 0) {
       titles.push(...jobPreferences.jobTitles);
@@ -258,34 +259,26 @@ const getMatchingJobs = async (req, res) => {
     if (preferredRole) titles.push(preferredRole);
     
     if (titles.length > 0) {
-      // Escape special characters for regex
-      const escapedTitles = titles.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      orConditions.push({ title: { $regex: escapedTitles.join('|'), $options: 'i' } });
-    }
-
-    // 3. Match by Location
-    const locations = [];
-    if (location) locations.push(location);
-    if (jobPreferences?.onSiteLocations && jobPreferences.onSiteLocations.length > 0) {
-      jobPreferences.onSiteLocations.forEach(loc => {
-        if (loc.city) locations.push(loc.city);
+      const keywords = new Set();
+      titles.forEach(t => {
+        t.split(/\s+/).forEach(word => {
+          // Only use significant keywords
+          if (word.length > 2 && !['and', 'the', 'for', 'with'].includes(word.toLowerCase())) {
+            keywords.add(word);
+          }
+        });
       });
-    }
-    
-    if (locations.length > 0) {
-      const escapedLocations = locations.map(l => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      orConditions.push({ location: { $regex: escapedLocations.join('|'), $options: 'i' } });
-    }
-
-    // 4. Match by Employment Type
-    if (jobPreferences?.employmentTypes && jobPreferences.employmentTypes.length > 0) {
-      orConditions.push({ jobType: { $in: jobPreferences.employmentTypes } });
+      
+      if (keywords.size > 0) {
+        const escapedKeywords = Array.from(keywords).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        orConditions.push({ title: { $regex: escapedKeywords.join('|'), $options: 'i' } });
+      }
     }
 
-    // 5. Match by Work Mode
-    if (jobPreferences?.locationTypes && jobPreferences.locationTypes.length > 0) {
-      orConditions.push({ workMode: { $in: jobPreferences.locationTypes } });
-    }
+    // 3. (Removed Location, Employment Type, and Work Mode from $or conditions)
+    // Using them as $or conditions was causing irrelevant jobs (like Accountant) 
+    // to match a Developer just because they both shared "Full-time" or "Remote".
+    // A true match should be based primarily on Skills or Job Title.
 
     if (orConditions.length > 0) {
       query.$or = orConditions;
@@ -421,31 +414,63 @@ const searchCandidates = async (req, res) => {
       });
     }
 
-    const { q = '', skills = '', location = '', page = 1 } = req.query;
+    const { 
+      q = '', qReq = 'false', 
+      skills = '', skillsReq = 'false', 
+      location = '', locationReq = 'false', 
+      degree = '', degreeReq = 'false', 
+      experienceRole = '', experienceRoleReq = 'false', 
+      page = 1 
+    } = req.query;
+    
     const perPage = 20;
     const skip = (parseInt(page) - 1) * perPage;
 
     const query = { 'role': { $exists: true } };
-    const andConditions = [];
+    const compulsory = [];
+    const optional = [];
 
     if (q) {
-      andConditions.push({
+      const cond = {
         $or: [
           { name: { $regex: q, $options: 'i' } },
           { 'profile.headline': { $regex: q, $options: 'i' } },
-          { 'profile.preferredRole': { $regex: q, $options: 'i' } }
+          { 'profile.preferredRole': { $regex: q, $options: 'i' } },
+          { 'profile.experience.company': { $regex: q, $options: 'i' } },
+          { 'profile.experience.role': { $regex: q, $options: 'i' } },
+          { 'profile.qualification.degree': { $regex: q, $options: 'i' } },
+          { 'profile.qualification.institution': { $regex: q, $options: 'i' } }
         ]
-      });
+      };
+      if (qReq === 'true') compulsory.push(cond); else optional.push(cond);
     }
     if (skills) {
       const skillList = skills.split(',').map(s => s.trim()).filter(Boolean);
-      andConditions.push({ 'profile.skills': { $in: skillList } });
+      const cond = { 'profile.skills': { $all: skillList.map(s => new RegExp(s, 'i')) } };
+      if (skillsReq === 'true') compulsory.push(cond); else optional.push(cond);
     }
     if (location) {
-      andConditions.push({ 'profile.location': { $regex: location, $options: 'i' } });
+      const cond = { 'profile.location': { $regex: location, $options: 'i' } };
+      if (locationReq === 'true') compulsory.push(cond); else optional.push(cond);
+    }
+    if (degree) {
+      const cond = { 'profile.qualification.degree': { $regex: degree, $options: 'i' } };
+      if (degreeReq === 'true') compulsory.push(cond); else optional.push(cond);
+    }
+    if (experienceRole) {
+      const cond = { 'profile.experience.role': { $regex: experienceRole, $options: 'i' } };
+      if (experienceRoleReq === 'true') compulsory.push(cond); else optional.push(cond);
     }
 
-    if (andConditions.length > 0) query.$and = andConditions;
+    const finalAnd = [];
+    if (compulsory.length > 0) {
+      finalAnd.push(...compulsory);
+    }
+    if (optional.length > 0) {
+      finalAnd.push({ $or: optional });
+    }
+
+    if (finalAnd.length > 0) query.$and = finalAnd;
 
     // Only search jobseekers
     const Role = require('../models/Role');
@@ -632,6 +657,81 @@ const getJobQuota = async (req, res) => {
   }
 };
 
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// @desc    Calculate match score before applying
+// @route   GET /api/jobs/:jobId/pre-match
+// @access  Private (Jobseeker)
+const calculatePreMatch = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { jobId } = req.params;
+
+    const candidate = await User.findById(userId);
+    const job = await Job.findById(jobId);
+
+    if (!candidate || !job) {
+      return res.status(404).json({ msg: 'Candidate or Job not found' });
+    }
+
+    const candidateProfile = {
+      name: candidate.name || 'Unknown Candidate',
+      skills: candidate.profile?.skills || [],
+      experience: candidate.profile?.experience || [],
+      education: candidate.profile?.education || [],
+      headline: candidate.profile?.headline || '',
+    };
+
+    const jobRequirement = {
+      title: job.title,
+      description: job.description,
+      skillsRequired: job.skillsRequired || [],
+      experienceLevel: job.experienceLevel || '',
+      jobType: job.jobType || ''
+    };
+
+    const prompt = `
+      You are an expert HR recruitment AI. Analyze the match compatibility between the candidate profile and the job description provided below.
+      
+      Candidate Profile:
+      ${JSON.stringify(candidateProfile)}
+      
+      Job Description:
+      ${JSON.stringify(jobRequirement)}
+      
+      Provide a match analysis in JSON format containing ONLY these exactly named keys:
+      1. "matchPercentage": A number between 0 and 100.
+      2. "matchedSkills": Array of strings of skills the candidate has that match the job.
+      3. "missingSkills": Array of strings of critical skills the job requires but the candidate lacks.
+      4. "verdict": A short summary justifying the score.
+    `;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.2
+      }
+    });
+
+    const resultObj = await model.generateContent(prompt);
+    const responseText = resultObj.response.text();
+    const result = JSON.parse(responseText);
+
+    res.json({ matchAnalysis: result });
+  } catch (err) {
+    console.error('Pre-Match Calculation Error:', err);
+    if (err.status === 503) {
+      return res.status(503).json({ msg: 'AI service is currently experiencing high demand. Please try again in a few moments.' });
+    }
+    if (err.status === 429) {
+      return res.status(429).json({ msg: 'AI service quota exceeded or rate limited. Please try again later.' });
+    }
+    res.status(500).json({ msg: 'Failed to process match analysis' });
+  }
+};
+
 module.exports = {
   createJob,
   getCompanyJobs,
@@ -644,6 +744,6 @@ module.exports = {
   searchCandidates,
   viewCandidateProfile,
   getAICandidateMatches,
-  getJobQuota
+  getJobQuota,
+  calculatePreMatch
 };
-

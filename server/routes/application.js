@@ -17,5 +17,6 @@ router.get('/job/:jobId', authorizeRoles('recruiter', 'company'), getJobApplican
 router.put('/:id/status', authorizeRoles('recruiter', 'company'), updateApplicationStatus);
 router.post('/:id/track-download', authorizeRoles('recruiter', 'company'), trackDownload);
 router.get('/export/:jobId', authorizeRoles('recruiter', 'company'), exportApplicants);
+router.post('/:id/calculate-match', authorizeRoles('recruiter', 'company', 'admin'), require('../controllers/applicationController').calculateApplicationMatch);
 
 module.exports = router;
