@@ -441,7 +441,7 @@ const UserProfile = () => {
                           </div>
                         )}
                         <div>
-                          <h4 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1">{app.job?.title || 'Unknown Job'}</h4>
+                          <h4 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1">{app.job?.title || 'This job has been removed'}</h4>
                           <div className="flex items-center gap-2 mt-1">
                             <p className="text-xs font-semibold text-slate-500">{app.job?.company?.name || 'Unknown Company'}</p>
                             {app.job?.display_id && (
@@ -465,14 +465,18 @@ const UserProfile = () => {
                         }>
                           <span className="text-[10px] font-bold uppercase">{app.status}</span>
                         </Badge>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-8 text-xs font-bold w-full md:w-auto hover:bg-slate-100"
-                          onClick={() => window.open(`/jobs/${app.job?._id}`, '_blank')}
-                        >
-                          View Job <ExternalLink size={12} className="ml-1" />
-                        </Button>
+                        {app.job ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 text-xs font-bold w-full md:w-auto hover:bg-slate-100"
+                            onClick={() => navigate(`/job/${app.job._id}`)}
+                          >
+                            View Job <ExternalLink size={12} className="ml-1" />
+                          </Button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md border border-red-100 mt-1 uppercase">Job Removed</span>
+                        )}
                       </div>
                     </div>
                   ))}
