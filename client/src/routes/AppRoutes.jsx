@@ -33,6 +33,11 @@ import ManageUsers from '../pages/admin/ManageUsers';
 import UserProfile from '../pages/admin/UserProfile';
 import ManageJobs from '../pages/admin/ManageJobs';
 import ManageSubscriptions from '../pages/admin/ManageSubscriptions';
+import ManageRenewals from '../pages/admin/ManageRenewals';
+import ManageRefunds from '../pages/admin/ManageRefunds';
+import ManageBuyers from '../pages/admin/ManageBuyers';
+import BuyerDetails from '../pages/admin/BuyerDetails';
+import ManagePayPer from '../pages/admin/ManagePayPer';
 import AdminSettings from '../pages/admin/AdminSettings';
 import CompanyDashboard from '../pages/company/Dashboard';
 import RecruiterSettings from '../pages/company/Settings';
@@ -49,6 +54,7 @@ import AdminPaymentHistory from '../pages/admin/PaymentHistory';
 import ManageRequests from '../pages/admin/ManageRequests';
 import AssignedRequests from '../pages/company/AssignedRequests';
 import CompanyProfileManagement from '../pages/company/features/CompanyProfileManagement';
+import PayPerFeatures from '../pages/shared/PayPerFeatures';
 
 // Jobseeker feature pages
 import ResumeBuilder from '../pages/jobseeker/features/ResumeBuilder';
@@ -73,9 +79,15 @@ import AICandidateMatching from '../pages/company/features/AICandidateMatching';
 import BulkApplicantManagement from '../pages/company/features/BulkApplicantManagement';
 import MyJobs from '../pages/company/MyJobs';
 import CandidateSearch from '../pages/company/CandidateSearch';
+import RaiseTicket from '../pages/tickets/RaiseTicket';
+import MyTickets from '../pages/tickets/MyTickets';
+import AdminTickets from '../pages/admin/AdminTickets';
 
 // Org Employee pages
 import EmployeeDashboard from '../pages/employee/Dashboard';
+
+import WriteReview from '../pages/shared/WriteReview';
+import ManageReviews from '../pages/admin/ManageReviews';
 
 
 
@@ -232,7 +244,7 @@ const AppRoutes = () => {
         <Route path="/jobseeker/salary-benchmarking" element={<PrivateRoute roles={['jobseeker']}><SalaryBenchmarking /></PrivateRoute>} />
         <Route path="/jobseeker/ai-resume-review" element={<PrivateRoute roles={['jobseeker']}><AiResumeReview /></PrivateRoute>} />
         <Route path="/jobseeker/payment-history" element={<PrivateRoute roles={['jobseeker']}><PaymentHistory /></PrivateRoute>} />
-
+        <Route path="/jobseeker/pay-per-features" element={<PrivateRoute roles={['jobseeker']}><PayPerFeatures /></PrivateRoute>} />
 
         <Route
           path="/company/settings"
@@ -281,6 +293,7 @@ const AppRoutes = () => {
         <Route path="/company/ai-matching" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasAICandidateMatching" subscriptionPath="/company/subscription"><AICandidateMatching /></FeatureGate></PrivateRoute>} />
         <Route path="/company/messages" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><Messages /></PrivateRoute>} />
         <Route path="/company/payment-history" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><PaymentHistory /></PrivateRoute>} />
+        <Route path="/company/pay-per-features" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><PayPerFeatures /></PrivateRoute>} />
         <Route
           path="/company/*"
           element={
@@ -332,10 +345,62 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/admin/subscriptions"
+          path="/admin/jobs/:jobId/applicants"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <Applicants />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/subscriptions/plans"
           element={
             <PrivateRoute roles={['admin']}>
               <ManageSubscriptions />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/subscriptions"
+          element={<Navigate to="/admin/subscriptions/plans" replace />}
+        />
+        <Route
+          path="/admin/subscriptions/renewals"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageRenewals />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/subscriptions/refunds"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageRefunds />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/subscriptions/buyers"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageBuyers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/subscriptions/buyers/:id"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <BuyerDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/subscriptions/pay-per"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManagePayPer />
             </PrivateRoute>
           }
         />
@@ -368,6 +433,47 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminSettings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/tickets"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminTickets />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/reviews"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageReviews />
+            </PrivateRoute>
+          }
+        />
+        {/* Ticket routes – all authenticated users */}
+        <Route
+          path="/tickets/raise"
+          element={
+            <PrivateRoute roles={['jobseeker','recruiter','company','college','org_employee','admin']}>
+              <RaiseTicket />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/tickets/my"
+          element={
+            <PrivateRoute roles={['jobseeker','recruiter','company','college','org_employee','admin']}>
+              <MyTickets />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/write-review"
+          element={
+            <PrivateRoute roles={['jobseeker','recruiter','company','college','org_employee']}>
+              <WriteReview />
             </PrivateRoute>
           }
         />

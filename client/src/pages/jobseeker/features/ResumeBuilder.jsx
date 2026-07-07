@@ -302,7 +302,7 @@ const ProjForm = ({ items, upd, add, rm }) => (
           <button onClick={() => rm(p.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={13} /></button>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div><FL>Name *</FL><FI value={p.name} onChange={x => upd(p.id, 'name', x.target.value)} placeholder="CareerPoint Portal" /></div>
+          <div><FL>Name *</FL><FI value={p.name} onChange={x => upd(p.id, 'name', x.target.value)} placeholder="Velaivaaipu" /></div>
           <div><FL>Tech Stack</FL><FI value={p.tech} onChange={x => upd(p.id, 'tech', x.target.value)} placeholder="React, Node.js, MongoDB" /></div>
           <div className="col-span-2"><FL>Link</FL><FI value={p.link} onChange={x => upd(p.id, 'link', x.target.value)} placeholder="github.com/user/project" /></div>
         </div>

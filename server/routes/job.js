@@ -1,31 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getAICandidateMatches, getJobQuota } = require('../controllers/jobController');
+// Trigger nodemon restart
+const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getJobById, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getAICandidateMatches, getJobQuota, cloneJob } = require('../controllers/jobController');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
 
-// Public route to get all jobs
-router.get('/', optionalVerifyToken, getAllJobs);
-
-// Route for jobseekers to get matching jobs
+// --- Jobseeker Routes ---
 router.get('/matching', verifyToken, authorizeRoles('jobseeker'), getMatchingJobs);
-
-// Calculate AI match before applying
 router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), calculatePreMatch);
 
-// All routes below this are protected and for recruiters/companies
-router.use(verifyToken);
-router.use(authorizeRoles('recruiter', 'company'));
+// --- Recruiter / Company Routes ---
+router.post('/', verifyToken, authorizeRoles('recruiter', 'company'), createJob);
+router.get('/company-jobs', verifyToken, authorizeRoles('recruiter', 'company'), getCompanyJobs);
+router.get('/company-jobs-stats', verifyToken, authorizeRoles('recruiter', 'company'), getCompanyJobsWithStats);
+router.get('/analytics', verifyToken, authorizeRoles('recruiter', 'company'), getRecruiterAnalytics);
+router.get('/quota', verifyToken, authorizeRoles('recruiter', 'company'), getJobQuota);
+router.get('/candidates/search', verifyToken, authorizeRoles('recruiter', 'company'), searchCandidates);
+router.get('/candidates/:candidateId/profile', verifyToken, authorizeRoles('recruiter', 'company'), viewCandidateProfile);
+router.get('/:jobId/matched-candidates', verifyToken, authorizeRoles('recruiter', 'company'), getAICandidateMatches);
+router.post('/:id/clone', verifyToken, authorizeRoles('recruiter', 'company'), cloneJob);
+router.put('/:id', verifyToken, authorizeRoles('recruiter', 'company'), updateJob);
+router.delete('/:id', verifyToken, authorizeRoles('recruiter', 'company'), deleteJob);
 
-router.post('/', createJob);
-router.get('/company-jobs', getCompanyJobs);
-router.get('/company-jobs-stats', getCompanyJobsWithStats);
-router.get('/analytics', getRecruiterAnalytics);
-router.get('/quota', getJobQuota);
-router.get('/candidates/search', searchCandidates);
-router.get('/candidates/:candidateId/profile', viewCandidateProfile);
-router.get('/:jobId/matched-candidates', getAICandidateMatches);
-router.put('/:id', updateJob);
-router.delete('/:id', deleteJob);
+// --- Public / General Routes ---
+router.get('/', optionalVerifyToken, getAllJobs);
+router.get('/:id', optionalVerifyToken, getJobById);
 
 module.exports = router;
 

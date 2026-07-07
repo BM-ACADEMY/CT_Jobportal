@@ -27,12 +27,14 @@ export const AuthProvider = ({ children }) => {
             setUser(res.data);
             localStorage.setItem('user', JSON.stringify(res.data));
           })
-          .catch(() => {
-            // Token expired or invalid — clear session
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            setUser(null);
-            delete axios.defaults.headers.common['Authorization'];
+          .catch((err) => {
+            // Only clear session if token is explicitly invalid/expired (401 or 403)
+            if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+              localStorage.removeItem('user');
+              localStorage.removeItem('token');
+              setUser(null);
+              delete axios.defaults.headers.common['Authorization'];
+            }
           })
           .finally(() => setLoading(false));
         return;

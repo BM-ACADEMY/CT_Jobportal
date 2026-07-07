@@ -74,6 +74,7 @@ const Settings = () => {
         name: user?.name || '',
         avatar: user?.avatar || '',
         coverPic: user?.coverPic || '',
+        isPhoneVisible: user?.isPhoneVisible ?? true,
         profile: {
             headline: user?.profile?.headline || '',
             phone: user?.profile?.phone || '',
@@ -109,6 +110,7 @@ const Settings = () => {
                 name: user?.name || '',
                 avatar: user?.avatar || '',
                 coverPic: user?.coverPic || '',
+                isPhoneVisible: user?.isPhoneVisible ?? true,
                 profile: {
                     headline: user?.profile?.headline || '',
                     phone: user?.profile?.phone || '',
@@ -156,6 +158,7 @@ const Settings = () => {
             name: user?.name || '',
             avatar: user?.avatar || '',
             coverPic: user?.coverPic || '',
+            isPhoneVisible: user?.isPhoneVisible ?? true,
             profile: {
                 headline: user?.profile?.headline || '',
                 phone: user?.profile?.phone || '',
@@ -578,9 +581,36 @@ const Settings = () => {
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Contact Vector" value={formData.profile.phone} icon={Phone} isEditing={isEditing}>
+                                <DataDisplay 
+                                    label="Contact Vector" 
+                                    value={
+                                        <div className="flex items-center gap-2">
+                                            {formData.profile.phone}
+                                            {formData.profile.phone && (
+                                                <Badge variant="outline" className={`text-[9px] uppercase tracking-widest px-2 py-0 h-5 ${formData.isPhoneVisible ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-500 bg-slate-100 border-slate-200'}`}>
+                                                    {formData.isPhoneVisible ? 'Visible' : 'Hidden'}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    } 
+                                    icon={Phone} 
+                                    isEditing={isEditing}
+                                >
                                     <div className="space-y-1.5">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
+                                        <div className="flex items-center justify-between ml-1">
+                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Phone Number</Label>
+                                            <div 
+                                                className="flex items-center gap-2 cursor-pointer group" 
+                                                onClick={() => setFormData({...formData, isPhoneVisible: !formData.isPhoneVisible})}
+                                            >
+                                                <span className={`text-[9px] uppercase font-bold tracking-widest transition-colors ${formData.isPhoneVisible ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                                    {formData.isPhoneVisible ? 'Visible to others' : 'Hidden'}
+                                                </span>
+                                                <div className={`w-8 h-4 rounded-full transition-colors relative ${formData.isPhoneVisible ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                                    <div className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full shadow-sm transition-transform ${formData.isPhoneVisible ? 'translate-x-4' : 'translate-x-0'}`} />
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div className="relative">
                                             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input 

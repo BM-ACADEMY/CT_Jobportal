@@ -19,6 +19,9 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
 const collaborationRoutes = require('./routes/collaborationRoutes');
 const assessmentRoutes = require('./routes/assessmentRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const payPerRoutes = require('./routes/payPerRoutes');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
 const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
@@ -112,9 +115,12 @@ app.use('/api/public', publicRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/collaboration', collaborationRoutes);
 app.use('/api/assessments', assessmentRoutes);
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/pay-per', payPerRoutes);
 
 
 // MongoDB Connection
@@ -138,11 +144,35 @@ mongoose.connect(MONGODB_URI)
   });
 
 app.get('/', (req, res) => {
-  res.send('Job Portal API is running...');
+  res.send('Velaivaaipu API is running...');
 });
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-// Triggering restart for .env reload
+// Graceful shutdown handlers to prevent EADDRINUSE and zombie processes on nodemon restarts.
+const gracefulShutdown = (signal) => {
+  console.log(`Received ${signal}. Shutting down gracefully...`);
+  server.close(() => {
+    console.log('HTTP server closed.');
+    mongoose.connection.close(false).then(() => {
+      console.log('MongoDB connection closed.');
+      process.exit(0);
+    });
+  });
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+process.once('SIGUSR2', () => {
+  console.log('Received SIGUSR2 (nodemon restart). Closing server...');
+  server.close(() => {
+    console.log('HTTP server closed on nodemon restart.');
+    mongoose.connection.close(false).then(() => {
+      console.log('MongoDB connection closed on nodemon restart. Re-emitting SIGUSR2...');
+      process.kill(process.pid, 'SIGUSR2');
+    });
+  });
+});

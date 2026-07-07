@@ -194,7 +194,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true
-  }
+  },
+  isPhoneVisible: {
+    type: Boolean,
+    default: true
+  },
+  purchasedFeatures: [{
+    featureId: { type: mongoose.Schema.Types.ObjectId, ref: 'PayPerFeature' },
+    featureKey: { type: String, required: true },
+    isActive: { type: Boolean, default: true },
+    usageLeft: { type: Number, default: 0 },
+    expiresAt: { type: Date }
+  }]
 }, { timestamps: true });
 
 userSchema.pre('save', async function() {

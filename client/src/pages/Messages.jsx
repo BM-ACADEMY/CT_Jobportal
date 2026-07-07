@@ -17,10 +17,10 @@ const getOtherParticipant = (participants, currentUserId) => {
 };
 
 const displayName = (participant) =>
-  participant?.role === 'admin' ? 'CT-Portal' : (participant?.name || 'Unknown');
+  participant?.role === 'admin' ? 'Velaivaaipu Support' : (participant?.name || 'Unknown');
 
 const displayRole = (participant) =>
-  participant?.role === 'admin' ? 'CT-Portal' : (participant?.role || 'User');
+  participant?.role === 'admin' ? 'Platform Support' : (participant?.role || 'User');
 
 const Messages = () => {
   const { user } = useAuth();

@@ -33,12 +33,14 @@ const generateInvoiceHTML = (payment, user) => {
   const invoiceNo   = payment.razorpay_payment_id || payment._id?.slice(-8).toUpperCase();
   const orderId     = payment.razorpay_order_id   || '—';
   const date        = new Date(payment.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  const planName    = payment.plan?.name   || 'Subscription Plan';
-  const duration    = payment.plan?.duration || 'N/A';
-  const method      = payment.paymentMethod || 'Razorpay';
-  const statusLabel = STATUS_CONFIG[payment.status]?.label || payment.status;
-  const userName    = user?.name  || '—';
-  const userEmail   = user?.email || '—';
+  const isPayPer      = payment.paymentType === 'pay-per-feature';
+  const planName      = isPayPer ? (payment.payPerFeature?.name || 'A-la-carte Feature') : (payment.plan?.name || 'Subscription Plan');
+  const duration      = isPayPer ? (payment.payPerFeature?.days ? `${payment.payPerFeature.days} Days` : 'N/A') : (payment.plan?.duration || 'N/A');
+  const description   = isPayPer ? 'Pay-Per Feature Unlock' : 'Velaivaaipu Premium Access';
+  const method        = payment.paymentMethod || 'Razorpay';
+  const statusLabel   = STATUS_CONFIG[payment.status]?.label || payment.status;
+  const userName      = user?.name  || '—';
+  const userEmail     = user?.email || '—';
 
   const baseAmt   = payment.baseAmount   || payment.amount || 0;
   const gstPct    = payment.gstPercentage || 0;
@@ -112,7 +114,7 @@ const generateInvoiceHTML = (payment, user) => {
 <body>
   <div class="header">
     <div class="brand">
-      <span class="brand-name">CT Job Portal</span>
+      <span class="brand-name">Velaivaaipu</span>
       <span class="brand-sub">Professional Hub</span>
     </div>
     <div class="invoice-label">
@@ -151,7 +153,7 @@ const generateInvoiceHTML = (payment, user) => {
       <tbody>
         <tr>
           <td>1</td>
-          <td><strong>Subscription — ${planName}</strong><br/><span style="font-size:11px;color:#94a3b8;">CT Job Portal Premium Access</span></td>
+          <td><strong>${isPayPer ? 'Feature' : 'Subscription'} — ${planName}</strong><br/><span style="font-size:11px;color:#94a3b8;">${description}</span></td>
           <td>${planName}</td>
           <td>${duration}</td>
           <td class="right"><strong>${isFree ? '₹0 (Free)' : fmtINR(baseAmt)}</strong></td>
@@ -169,7 +171,7 @@ const generateInvoiceHTML = (payment, user) => {
   </div>
 
   <div class="footer">
-    <p>CT Job Portal &bull; Professional Hub<br/>Thank you for your subscription.</p>
+    <p>Velaivaaipu &bull; Professional Hub<br/>Thank you for your subscription.</p>
     <p class="thanks">Payment Verified ✓</p>
   </div>
 
@@ -214,8 +216,10 @@ const PaymentHistory = () => {
   };
 
   const filteredPayments = payments.filter(p => {
+    const isPayPer = p.paymentType === 'pay-per-feature';
+    const itemName = isPayPer ? p.payPerFeature?.name : p.plan?.name;
     const matchesSearch =
-      p.plan?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      itemName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.razorpay_payment_id?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -301,8 +305,14 @@ const PaymentHistory = () => {
                             <Receipt size={17} />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-slate-900 leading-tight">{payment.plan?.name || 'N/A'}</p>
-                            <p className="text-[10px] text-slate-400 font-medium mt-0.5 capitalize">{payment.plan?.duration || '—'} Plan</p>
+                            <p className="text-sm font-bold text-slate-900 leading-tight">
+                              {payment.paymentType === 'pay-per-feature' ? (payment.payPerFeature?.name || 'A-la-carte Feature') : (payment.plan?.name || 'N/A')}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-medium mt-0.5 capitalize">
+                              {payment.paymentType === 'pay-per-feature' 
+                                ? (payment.payPerFeature?.days ? `${payment.payPerFeature.days} Days` : 'Feature') 
+                                : (payment.plan?.duration ? `${payment.plan.duration} Plan` : '— Plan')}
+                            </p>
                           </div>
                         </div>
                       </td>

@@ -14,7 +14,7 @@ const CONTACT_CARDS = [
     icon: Mail,
     title: 'Email Us',
     desc: 'We typically reply within 24 hours.',
-    value: 'support@careerpoint.in',
+    value: 'support@velaivaaipu.in',
     color: 'text-emerald-600',
     bg: 'bg-emerald-50',
   },
@@ -37,7 +37,7 @@ const CONTACT_CARDS = [
 ];
 
 const FAQS = [
-  { q: 'How do I post a job on CareerPoint?', a: 'Register or log in as a company or recruiter, then go to your dashboard and click "Post a Job". Fill in the details and your listing goes live instantly.' },
+  { q: 'How do I post a job on Velaivaaipu?', a: 'Register or log in as a company or recruiter, then go to your dashboard and click "Post a Job". Fill in the details and your listing goes live instantly.' },
   { q: 'Is it free to create a job seeker account?', a: 'Yes! Creating a job seeker account is completely free. We also offer premium subscription plans with advanced features for faster job discovery.' },
   { q: 'How do subscription plans work?', a: 'Subscription plans unlock premium features like resume builder, profile boost, direct messaging with recruiters, and career counselling. Plans are billed monthly, quarterly, or yearly.' },
   { q: 'How can I contact a recruiter directly?', a: 'With a premium subscription, you can message recruiters directly from their job listings or company profiles. Upgrade your plan to unlock this feature.' },

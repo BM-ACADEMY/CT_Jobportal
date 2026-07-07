@@ -77,10 +77,10 @@ const Header = () => {
         <div className="flex items-center">
             <Link to="/" className="flex items-center gap-3 group transition-transform active:scale-95">
                 <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20 group-hover:rotate-6 transition-transform">
-                    <span className="text-white font-black text-base">N</span>
+                    <span className="text-white font-black text-base">V</span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-lg font-bold tracking-tight text-slate-900 leading-none">CT Job Portal</span>
+                    <span className="text-lg font-bold tracking-tight text-slate-900 leading-none">Velaivaaipu</span>
                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Professional Hub</span>
                 </div>
             </Link>

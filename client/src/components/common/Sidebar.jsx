@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck
+  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,7 +21,10 @@ const coreMenus = {
     { icon: FileText,    label: 'Applications',  path: '/jobseeker/applications' },
     { icon: Star,        label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
     { icon: CreditCard,  label: 'Subscription',  path: '/jobseeker/subscription' },
+    { icon: ShoppingBag, label: 'Pay-per Features', path: '/jobseeker/pay-per-features' },
     { icon: History,     label: 'Payment History', path: '/jobseeker/payment-history' },
+    { icon: Headphones,  label: 'Tickets & Queries', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   recruiter: [
     { icon: LayoutDashboard, label: 'Overview',          path: '/company' },
@@ -29,7 +32,10 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
     { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
+    { icon: ShoppingBag,     label: 'Pay-per Features',  path: '/company/pay-per-features' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   company: [
     { icon: LayoutDashboard, label: 'Overview',          path: '/company' },
@@ -37,7 +43,10 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
     { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
+    { icon: ShoppingBag,     label: 'Pay-per Features',  path: '/company/pay-per-features' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   college: [
     { icon: LayoutDashboard, label: 'Overview',          path: '/company' },
@@ -45,16 +54,31 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
     { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
+    { icon: ShoppingBag,     label: 'Pay-per Features',  path: '/company/pay-per-features' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   admin: [
     { icon: LayoutDashboard, label: 'Command Center', path: '/admin' },
     { icon: Users,           label: 'Users Account',  path: '/admin/users' },
     { icon: Briefcase,       label: 'Job Inventory',  path: '/admin/jobs' },
-    { icon: CreditCard,      label: 'Subscriptions',  path: '/admin/subscriptions' },
+    {
+      icon: CreditCard,
+      label: 'Subscriptions',
+      path: '/admin/subscriptions',
+      children: [
+        { label: 'Plans', path: '/admin/subscriptions/plans' },
+        { label: 'Renewals', path: '/admin/subscriptions/renewals' },
+        { label: 'Buyers', path: '/admin/subscriptions/buyers' },
+        { label: 'Pay-per System', path: '/admin/subscriptions/pay-per' }
+      ]
+    },
     { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests' },
     { icon: History,         label: 'Payment History', path: '/admin/payment-history' },
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
+    { icon: Headphones,      label: 'Tickets & Queries', path: '/admin/tickets' },
+    { icon: MessageSquareQuote, label: 'Manage Reviews', path: '/admin/reviews' },
   ],
   org_employee: [
     { icon: Home,           label: 'Overview',      path: '/employee' },
@@ -62,6 +86,8 @@ const coreMenus = {
     { icon: Building2,      label: 'Organizations', path: '/companies' },
     { icon: FileText,       label: 'Applications',  path: '/employee/applications' },
     { icon: Star,           label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
+    { icon: Headphones,     label: 'Tickets & Queries', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
 };
 
@@ -138,6 +164,60 @@ const NavItem = ({ item, active }) => {
   );
 };
 
+const CollapsibleNavItem = ({ item, location }) => {
+  const [isOpen, setIsOpen] = React.useState(() => {
+    return (item.children || []).some(child => location.pathname === child.path || location.pathname.startsWith(child.path + '/'));
+  });
+
+  const Icon = item.icon;
+  const isAnyChildActive = (item.children || []).some(child => location.pathname === child.path || location.pathname.startsWith(child.path + '/'));
+
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full group flex items-center gap-4 px-5 py-3.5 transition-all rounded-xl relative text-left
+          ${isAnyChildActive
+            ? 'bg-slate-50/50 text-slate-800 font-bold'
+            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+      >
+        <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all
+          ${isAnyChildActive ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 group-hover:text-slate-900'}`}>
+          <Icon size={16} strokeWidth={isAnyChildActive ? 2.5 : 1.5} />
+        </div>
+        <span className="text-[11px] uppercase font-bold tracking-widest flex-1">{item.label}</span>
+        <ChevronRight
+          size={14}
+          className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90 text-emerald-600' : ''}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="pl-6 pr-2 py-1 space-y-1 border-l-2 border-slate-100 ml-9">
+          {(item.children || []).map(child => {
+            const childActive = location.pathname === child.path || location.pathname.startsWith(child.path + '/');
+            return (
+              <Link
+                key={child.path}
+                to={child.path}
+                className={`group flex items-center gap-2.5 px-3 py-2 transition-all rounded-lg text-xs font-semibold
+                  ${childActive
+                    ? 'text-emerald-700 font-bold bg-emerald-50/50'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+              >
+                <span className="flex-1 text-[10px] uppercase tracking-wider">{child.label}</span>
+                {childActive && <div className="w-1 h-1 bg-emerald-600 rounded-full" />}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PremiumNavItem = ({ item, active, unlocked }) => {
   const Icon = item.icon;
   return (
@@ -195,7 +275,7 @@ const Sidebar = () => {
             <Activity size={16} strokeWidth={2.5} />
           </div>
           <span className="font-bold text-sm tracking-tight text-slate-900">
-            CT <span className="text-emerald-600">Portal</span>
+            Velaivaai<span className="text-emerald-600">pu</span>
           </span>
         </div>
         <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border-slate-100 text-slate-400 bg-slate-50/50">
@@ -282,9 +362,16 @@ const Sidebar = () => {
             <div className="w-1 h-1 bg-emerald-600 rounded-full" />
             Control Desk
           </div>
-          {coreItems.map(item => (
-            <NavItem key={item.path} item={item} active={isActive(item.path)} />
-          ))}
+          {coreItems.map(item => {
+            if (item.children) {
+              return (
+                <CollapsibleNavItem key={item.path} item={item} location={location} />
+              );
+            }
+            return (
+              <NavItem key={item.path} item={item} active={isActive(item.path)} />
+            );
+          })}
         </div>
 
         {/* Premium Features section */}

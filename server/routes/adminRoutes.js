@@ -17,7 +17,8 @@ const {
   updateAdminProfile,
   verifyAdminEmailOTP,
   toggleAdmin2FA,
-  getUserApplications
+  getUserApplications,
+  extendSubscription
 } = require('../controllers/adminController');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 
@@ -39,6 +40,7 @@ router.patch('/2fa', toggleAdmin2FA);
 router.get('/users', getUsers);
 router.get('/users/:id', getUserDetails);
 router.get('/users/:id/applications', getUserApplications);
+router.patch('/users/:id/extend-subscription', extendSubscription);
 router.get('/roles', getRoles);
 router.put('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);

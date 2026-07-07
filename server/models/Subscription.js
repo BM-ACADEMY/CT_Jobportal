@@ -43,6 +43,7 @@ const subscriptionSchema = new mongoose.Schema({
   messageRecruitersCount: { type: Number, default: 0 }, // 0 = unlimited
   hasSalaryBenchmarking: { type: Boolean, default: false },
   hasAiResumeReview: { type: Boolean, default: false },
+  hasJobMatchAnalysis: { type: Boolean, default: false },
 
   // Recruiter specific
   activeJobPostings: { type: Number, default: 0 }, // 0 for unlimited

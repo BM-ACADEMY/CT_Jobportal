@@ -29,10 +29,10 @@ const categories = [
   { label: 'Non-Profit', count: '5K Jobs', icon: HeartHandshake, color: 'bg-pink-50 text-pink-700 border-pink-100', hover: 'hover:bg-pink-100' },
 ];
 
-const testimonials = [
-  { name: 'Priya Sharma', role: 'Software Engineer @ Google', text: 'Found my dream job in just 2 weeks. The AI-powered recommendations were incredibly accurate for my skill set!', rating: 5, avatar: 'PS' },
-  { name: 'Rahul Mehta', role: 'Product Manager @ Flipkart', text: 'The platform\'s reach is unmatched. I received 20+ interview calls within days of uploading my resume.', rating: 5, avatar: 'RM' },
-  { name: 'Sneha Patel', role: 'UI/UX Designer @ Swiggy', text: 'Super easy to use. The detailed job filters helped me find exactly what I was looking for in just days.', rating: 5, avatar: 'SP' },
+const defaultTestimonials = [
+  { user: { name: 'Priya Sharma', role: { name: 'Jobseeker' } }, comment: 'Found my dream job in just 2 weeks. The AI-powered recommendations were incredibly accurate for my skill set!', rating: 5, avatar: 'PS' },
+  { user: { name: 'Rahul Mehta', role: { name: 'Recruiter' } }, comment: 'The platform\'s reach is unmatched. I received 20+ interview calls within days of uploading my resume.', rating: 5, avatar: 'RM' },
+  { user: { name: 'Sneha Patel', role: { name: 'Jobseeker' } }, comment: 'Super easy to use. The detailed job filters helped me find exactly what I was looking for in just days.', rating: 5, avatar: 'SP' },
 ];
 
 const howItWorks = [
@@ -45,6 +45,7 @@ const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
   const [jobs, setJobs] = useState([]);
+  const [reviews, setReviews] = useState(defaultTestimonials);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -56,6 +57,14 @@ const HomePage = () => {
       .then(res => setJobs(res.data.slice(0, 6)))
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    axios.get(`${API_BASE_URL}/reviews/approved`)
+      .then(res => {
+        if (res.data && res.data.length > 0) {
+          setReviews(res.data);
+        }
+      })
+      .catch(() => {});
   }, [API_BASE_URL]);
 
   const handleSearch = (e) => {
@@ -473,7 +482,7 @@ const HomePage = () => {
             <p className="text-slate-400 mt-3 font-medium">Join 50,000+ professionals who found their career path through us.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
+            {reviews.slice(0, 6).map((review, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 24 }}
@@ -483,16 +492,22 @@ const HomePage = () => {
                 className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/8 transition-all"
               >
                 <div className="flex gap-1 mb-5">
-                  {[...Array(t.rating)].map((_, j) => <Star key={j} size={14} fill="#fbbf24" className="text-amber-400" />)}
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} size={14} className={j < (review.rating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-600'} />
+                  ))}
                 </div>
-                <p className="text-slate-300 text-sm leading-relaxed mb-8 font-medium">"{t.text}"</p>
+                <p className="text-slate-300 text-sm leading-relaxed mb-8 font-medium">"{review.comment}"</p>
                 <div className="flex items-center gap-4 pt-5 border-t border-white/10">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-slate-900 font-bold text-sm shrink-0">
-                    {t.avatar}
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-slate-900 font-bold text-sm shrink-0 overflow-hidden">
+                    {review.user?.avatar ? (
+                      <img src={review.user.avatar.startsWith('http') ? review.user.avatar : `${API_DOMAIN}${review.user.avatar}`} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={`https://ui-avatars.com/api/?name=${review.user?.name}&background=0D8ABC&color=fff`} alt="Avatar" className="w-full h-full object-cover" />
+                    )}
                   </div>
                   <div>
-                    <p className="text-white font-bold text-sm">{t.name}</p>
-                    <p className="text-emerald-400 text-[11px] font-semibold mt-0.5">{t.role}</p>
+                    <p className="text-white font-bold text-sm">{review.user?.name}</p>
+                    <p className="text-emerald-400 text-[11px] font-semibold mt-0.5 capitalize">{review.user?.role?.name || 'User'}</p>
                   </div>
                 </div>
               </motion.div>
@@ -554,9 +569,9 @@ const HomePage = () => {
             <div className="md:col-span-2">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                  <span className="text-slate-900 font-black text-lg">C</span>
+                  <span className="text-slate-900 font-black text-lg">V</span>
                 </div>
-                <span className="text-white font-bold text-2xl tracking-tight">careerpoint</span>
+                <span className="text-white font-bold text-2xl tracking-tight">Velaivaaipu</span>
               </div>
               <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-xs">
                 India's most trusted job portal connecting visionary companies with exceptional talent across the nation.
@@ -584,7 +599,7 @@ const HomePage = () => {
             </div>
           </div>
           <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-slate-600 text-xs font-semibold">© {new Date().getFullYear()} CareerPoint India. All Rights Reserved.</p>
+            <p className="text-slate-600 text-xs font-semibold">© {new Date().getFullYear()} Velaivaaipu. All Rights Reserved.</p>
             <div className="flex gap-6">
               <Link to="#" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Privacy Policy</Link>
               <Link to="#" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Terms of Service</Link>

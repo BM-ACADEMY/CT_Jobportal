@@ -83,6 +83,48 @@ const createJob = async (req, res) => {
   }
 };
 
+// @desc    Clone a job
+// @route   POST /api/jobs/:id/clone
+// @access  Private (Recruiter)
+const cloneJob = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user || !user.company) {
+      return res.status(400).json({ msg: 'You must be associated with a company to clone jobs' });
+    }
+
+    const jobToClone = await Job.findById(req.params.id);
+    if (!jobToClone) {
+      return res.status(404).json({ msg: 'Job not found' });
+    }
+
+    // Verify ownership
+    if (jobToClone.recruiter.toString() !== userId && (!user.company || jobToClone.company.toString() !== user.company.toString())) {
+      return res.status(403).json({ msg: 'Not authorized to clone this job' });
+    }
+
+    const newJobData = { ...jobToClone.toObject() };
+    delete newJobData._id;
+    delete newJobData.display_id;
+    delete newJobData.createdAt;
+    delete newJobData.updatedAt;
+    delete newJobData.__v;
+    newJobData.applicantsCount = 0;
+    newJobData.status = 'draft';
+    newJobData.isCloned = true;
+
+    const newJob = new Job(newJobData);
+    const savedJob = await newJob.save();
+
+    res.status(201).json({ msg: 'Job cloned successfully', job: savedJob });
+  } catch (err) {
+    console.error('Clone Job Error:', err);
+    res.status(500).json({ msg: 'Server error while cloning job' });
+  }
+};
+
 // @desc    Get all jobs for current company
 // @route   GET /api/jobs/company
 // @access  Private (Recruiter)
@@ -219,6 +261,34 @@ const getAllJobs = async (req, res) => {
   } catch (err) {
     console.error('Get All Jobs Error:', err);
     res.status(500).json({ msg: 'Server error while fetching jobs' });
+  }
+};
+
+// @desc    Get job by ID
+// @route   GET /api/jobs/:id
+// @access  Public (conditionally shows inactive jobs to admins/owners)
+const getJobById = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('company', 'name logo location website')
+      .populate('recruiter', 'name email');
+
+    if (!job) {
+      return res.status(404).json({ msg: 'Job not found' });
+    }
+
+    // Allow viewing inactive/closed jobs if user is admin, subadmin, or the recruiter who posted it
+    const isOwner = req.user && req.user.id === job.recruiter?._id?.toString();
+    const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'subadmin');
+
+    if (job.status !== 'active' && !isOwner && !isAdmin) {
+      return res.status(404).json({ msg: 'Job is no longer active' });
+    }
+
+    res.json(job);
+  } catch (err) {
+    console.error('Get Job By ID Error:', err);
+    res.status(500).json({ msg: 'Server error while fetching job' });
   }
 };
 
@@ -739,11 +809,13 @@ module.exports = {
   updateJob,
   deleteJob,
   getAllJobs,
+  getJobById,
   getMatchingJobs,
   getRecruiterAnalytics,
   searchCandidates,
   viewCandidateProfile,
   getAICandidateMatches,
   getJobQuota,
-  calculatePreMatch
+  calculatePreMatch,
+  cloneJob
 };

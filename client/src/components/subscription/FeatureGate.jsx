@@ -26,8 +26,8 @@ const DYNAMIC_FEATURE_NAMES = {
   hasAICandidateMatching:    ['AI Candidate Matching', 'AI candidate matching', 'AI Matching'],
   hasTeamCollaboration:      ['Team Collaboration', 'Team'],
   hasBulkApplicantManagement: ['Bulk Applicant Management', 'Bulk Applicant'],
-  hasInterviewScheduling:    ['Interview Scheduling', 'Schedule', 'Scheduling'],
   hasDedicatedOnboarding:    ['Dedicated Onboarding', 'Onboarding'],
+  hasJobMatchAnalysis:       ['Job Match Analysis', 'Skill Gap Analysis', 'Job Match'],
 };
 
 const FREE_TIER_DEFAULTS = {
@@ -59,6 +59,8 @@ const FREE_TIER_DEFAULTS = {
  * Checks both static schema fields and the dynamic features[] array.
  */
 export const hasFeature = (user, featureKey) => {
+  if (user?.role === 'admin' || user?.role === 'subadmin') return true;
+
   let plan = user?.subscription;
 
   // Expired subscription — fallback to free tier defaults
@@ -93,6 +95,14 @@ export const hasFeature = (user, featureKey) => {
       );
       if (dynMatch) return true;
     }
+  }
+
+  // 3. Fallback: check user.purchasedFeatures (Pay Per System)
+  if (Array.isArray(user?.purchasedFeatures) && user.purchasedFeatures.length > 0) {
+    const purchasedMatch = user.purchasedFeatures.find(
+      f => f.featureKey === featureKey && f.isActive
+    );
+    if (purchasedMatch) return true;
   }
 
   return false;

@@ -173,7 +173,10 @@ const CompanyDashboard = () => {
                         {job.title?.[0] || 'J'}
                       </div>
                       <div className="space-y-0.5 min-w-0">
-                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors tracking-tight truncate">{job.title}</h4>
+                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors tracking-tight truncate">
+                          {job.title}
+                          {job.isCloned && <span className="ml-1 text-blue-500 font-semibold text-[10px]">(Cloned)</span>}
+                        </h4>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
                           {job.workMode || job.jobType || 'Full-time'} · {new Date(job.createdAt).toLocaleDateString()}
                         </p>

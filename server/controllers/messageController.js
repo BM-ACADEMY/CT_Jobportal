@@ -1,6 +1,7 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const Ticket = require('../models/Ticket');
 
 const RECRUITER_ROLES = ['recruiter', 'company', 'org_employee'];
 
@@ -10,21 +11,46 @@ const getOrCreateConversation = async (req, res) => {
   try {
     const { recipientId } = req.body;
     const senderId = req.user.id;
+    const senderRole = req.user.role;
 
-    // Check if conversation already exists
+    // Check if conversation already exists — always allow continuing existing chats
     let conversation = await Conversation.findOne({
       participants: { $all: [senderId, recipientId] }
     });
 
     if (conversation) return res.json(conversation);
 
-    // New conversation — enforce message count for jobseekers messaging recruiters/orgs
-    const senderRole = req.user.role;
-    if (senderRole === 'jobseeker') {
-      const recipient = await User.findById(recipientId).populate('role', 'name');
-      const recipientRole = recipient?.role?.name;
+    // ── Ticket gate: non-admin messaging an admin ────────────────────────────
+    if (senderRole !== 'admin') {
+      const recipient = await User.findById(recipientId).select('role');
+      const recipientRoleName =
+        typeof recipient?.role === 'string'
+          ? recipient.role
+          : (await recipient?.populate('role', 'name'))?.role?.name;
 
-      if (RECRUITER_ROLES.includes(recipientRole)) {
+      if (recipientRoleName === 'admin') {
+        // User must have at least one open or in_progress ticket
+        const activeTicket = await Ticket.findOne({
+          user: senderId,
+          status: { $in: ['open', 'in_progress'] }
+        });
+
+        if (!activeTicket) {
+          return res.status(403).json({
+            msg: 'You can only chat with support when you have an active (open or in-progress) support ticket. Please raise a ticket first.',
+            noActiveTicket: true
+          });
+        }
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+    // New conversation — enforce message count for jobseekers messaging recruiters/orgs
+    if (senderRole === 'jobseeker') {
+      const recipientUser = await User.findById(recipientId).populate('role', 'name');
+      const recipientRoleName = recipientUser?.role?.name;
+
+      if (RECRUITER_ROLES.includes(recipientRoleName)) {
         const sender = await User.findById(senderId).populate('subscription');
         const limit = sender?.subscription?.messageRecruitersCount ?? 0;
 
@@ -35,7 +61,6 @@ const getOrCreateConversation = async (req, res) => {
           });
         }
 
-        // Increment counter on new conversation with recruiter/org
         await User.findByIdAndUpdate(senderId, { $inc: { messagesUsed: 1 } });
       }
     }
@@ -55,22 +80,44 @@ const getOrCreateConversation = async (req, res) => {
 const getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
+    const mongoose = require('mongoose');
+    const Admin = require('../models/Admin');
+    
     const conversations = await Conversation.find({
       participants: userId
     })
-    .populate({
-      path: 'participants',
-      select: 'name avatar role',
-      populate: {
-        path: 'role',
-        select: 'name'
-      }
-    })
     .populate('lastMessage')
-    .sort({ updatedAt: -1 });
+    .sort({ updatedAt: -1 })
+    .lean();
 
-    // Aggregate unread counts for all conversations in one query
-    const mongoose = require('mongoose');
+    if (conversations.length === 0) return res.json([]);
+
+    // Extract all unique participant IDs
+    const participantIds = [...new Set(conversations.flatMap(c => c.participants.map(p => p.toString())))];
+
+    // Fetch users and admins
+    const users = await User.find({ _id: { $in: participantIds } }).populate('role', 'name').lean();
+    const admins = await Admin.find({ _id: { $in: participantIds } }).lean();
+
+    const participantMap = {};
+    users.forEach(u => {
+      participantMap[u._id.toString()] = {
+        _id: u._id,
+        name: u.name,
+        avatar: u.avatar,
+        role: u.role?.name || 'User'
+      };
+    });
+    admins.forEach(a => {
+      participantMap[a._id.toString()] = {
+        _id: a._id,
+        name: a.name || 'Velaivaaipu Support',
+        avatar: '',
+        role: 'admin'
+      };
+    });
+
+    // Aggregate unread counts
     const unreadAgg = await Message.aggregate([
       {
         $match: {
@@ -85,16 +132,11 @@ const getConversations = async (req, res) => {
     const unreadMap = {};
     unreadAgg.forEach(item => { unreadMap[item._id.toString()] = item.count; });
 
+    // Map the results
     const result = conversations.map(c => {
-      const conv = c.toObject();
-      if (conv.participants) {
-        conv.participants = conv.participants.map(p => ({
-          ...p,
-          role: p.role?.name || 'User'
-        }));
-      }
       return {
-        ...conv,
+        ...c,
+        participants: c.participants.map(p => participantMap[p.toString()] || p),
         unreadCount: unreadMap[c._id.toString()] || 0
       };
     });

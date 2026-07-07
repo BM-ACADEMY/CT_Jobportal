@@ -9,7 +9,17 @@ const paymentSchema = new mongoose.Schema({
   plan: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Subscription',
-    required: true
+    default: null
+  },
+  payPerFeature: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PayPerFeature',
+    default: null
+  },
+  paymentType: {
+    type: String,
+    enum: ['subscription', 'pay-per-feature'],
+    default: 'subscription'
   },
   amount: {
     type: Number,
@@ -48,7 +58,7 @@ const paymentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['completed', 'failed', 'pending', 'superseded'],
+    enum: ['completed', 'failed', 'pending', 'superseded', 'cancelled', 'refund_pending', 'refunded'],
     default: 'completed'
   },
   paymentMethod: {

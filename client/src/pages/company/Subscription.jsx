@@ -154,7 +154,7 @@ const SubscriptionPage = () => {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount,
         currency,
-        name: 'Job Portal',
+        name: 'Velaivaaipu',
         description: `${plan.name} — ${quantity > 1 ? `${quantity}× ` : ''}${plan.duration}`,
         order_id: orderId,
         handler: async (response) => {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Key, History, Activity, Lock, Users, MonitorSmartphone, Mail, User, Edit2, CheckCircle2 } from 'lucide-react';
+import { Shield, Key, History, Activity, Lock, Users, MonitorSmartphone, Mail, User, Edit2, CheckCircle2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -35,6 +35,72 @@ const AdminSettings = () => {
     name: '',
     email: ''
   });
+  const [billingSettings, setBillingSettings] = useState({
+    billingName: '',
+    gstNumber: '',
+    gstPercentage: 18,
+    address: '',
+    pincode: '',
+    email: '',
+    phone: ''
+  });
+  const [isEditingBilling, setIsEditingBilling] = useState(false);
+  const [tempBillingSettings, setTempBillingSettings] = useState({
+    billingName: '',
+    gstNumber: '',
+    gstPercentage: 18,
+    address: '',
+    pincode: '',
+    email: '',
+    phone: ''
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  useEffect(() => {
+    fetchBillingSettings();
+  }, []);
+
+  const fetchBillingSettings = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/settings`);
+      if (res.data) {
+        const data = {
+          billingName: res.data.billingName || '',
+          gstNumber: res.data.gstNumber || '',
+          gstPercentage: res.data.gstPercentage ?? 18,
+          address: res.data.address || '',
+          pincode: res.data.pincode || '',
+          email: res.data.email || '',
+          phone: res.data.phone || ''
+        };
+        setBillingSettings(data);
+        setTempBillingSettings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching billing settings:', error);
+    }
+  };
+
+  const handleSaveBillingSettings = async (e) => {
+    e.preventDefault();
+    setSavingSettings(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/settings`,
+        tempBillingSettings,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Billing & GST settings updated successfully');
+      setBillingSettings(res.data);
+      setTempBillingSettings(res.data);
+      setIsEditingBilling(false);
+    } catch (error) {
+      toast.error(error.response?.data?.msg || 'Failed to save billing settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
   const [newAvatar, setNewAvatar] = useState(null);
 
   const [passwords, setPasswords] = useState({
@@ -261,6 +327,170 @@ const AdminSettings = () => {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Billing & GST Settings Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CreditCard size={18} className="text-emerald-600" />
+                Platform Billing & GST Settings
+              </CardTitle>
+              {!isEditingBilling && (
+                <Button 
+                  onClick={() => {
+                    setTempBillingSettings({ ...billingSettings });
+                    setIsEditingBilling(true);
+                  }}
+                  variant="outline" 
+                  size="sm"
+                  className="rounded-xl border-slate-200 text-slate-700 font-semibold"
+                >
+                  Edit Settings
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {!isEditingBilling ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Billing Name / Entity Name</label>
+                      <p className="text-sm font-bold text-slate-800">{billingSettings.billingName || 'Not Configured'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">GSTIN (GST Number)</label>
+                      <p className="text-sm font-mono font-bold text-slate-800">{billingSettings.gstNumber || 'Not Configured'}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">GST Percentage (%)</label>
+                      <p className="text-sm font-medium text-slate-800">{billingSettings.gstPercentage}%</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Billing Support Phone</label>
+                      <p className="text-sm font-medium text-slate-800">{billingSettings.phone || 'Not Configured'}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Billing Support Email</label>
+                    <p className="text-sm font-medium text-slate-800">{billingSettings.email || 'Not Configured'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Corporate Address</label>
+                      <p className="text-sm font-medium text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">
+                        {billingSettings.address || 'Not Configured'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pincode</label>
+                      <p className="text-sm font-mono font-bold text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        {billingSettings.pincode || 'Not Configured'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSaveBillingSettings} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Billing Name / Entity Name</label>
+                      <Input 
+                        value={tempBillingSettings.billingName}
+                        onChange={(e) => setTempBillingSettings({ ...tempBillingSettings, billingName: e.target.value })}
+                        placeholder="e.g. Velaivaaipu Tech Private Limited"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">GSTIN (GST Number)</label>
+                      <Input 
+                        value={tempBillingSettings.gstNumber}
+                        onChange={(e) => setTempBillingSettings({ ...tempBillingSettings, gstNumber: e.target.value })}
+                        placeholder="e.g. 33AAECV1209F1Z4"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">GST Percentage (%)</label>
+                      <Input 
+                        type="number"
+                        value={tempBillingSettings.gstPercentage}
+                        onChange={(e) => setTempBillingSettings({ ...tempBillingSettings, gstPercentage: Number(e.target.value) })}
+                        placeholder="18"
+                        min={0}
+                        max={100}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Billing Support Phone</label>
+                      <Input 
+                        value={tempBillingSettings.phone}
+                        onChange={(e) => setTempBillingSettings({ ...tempBillingSettings, phone: e.target.value })}
+                        placeholder="e.g. +91 44 1234 5678"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Billing Support Email</label>
+                    <Input 
+                      type="email"
+                      value={tempBillingSettings.email}
+                      onChange={(e) => setTempBillingSettings({ ...tempBillingSettings, email: e.target.value })}
+                      placeholder="e.g. support@velaivaaipu.com"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2 space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Corporate Address</label>
+                      <textarea
+                        value={tempBillingSettings.address}
+                        onChange={(e) => setTempBillingSettings({ ...tempBillingSettings, address: e.target.value })}
+                        placeholder="Enter complete corporate billing address..."
+                        className="w-full min-h-[80px] p-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pincode</label>
+                      <Input 
+                        value={tempBillingSettings.pincode}
+                        onChange={(e) => setTempBillingSettings({ ...tempBillingSettings, pincode: e.target.value })}
+                        placeholder="e.g. 600020"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsEditingBilling(false)}
+                      className="rounded-xl border-slate-200 text-slate-700"
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={savingSettings} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+                      {savingSettings ? 'Saving...' : 'Save Settings'}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>
