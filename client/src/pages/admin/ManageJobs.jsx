@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Trash2, Search, Loader2, Briefcase, MapPin } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Trash2, Search, Loader2, Briefcase, MapPin, Users } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,16 @@ const ManageJobs = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const recruiterId = searchParams.get('recruiter');
+
   const fetchJobs = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs`);
+      const url = recruiterId 
+        ? `${import.meta.env.VITE_API_BASE_URL}/admin/jobs?recruiter=${recruiterId}`
+        : `${import.meta.env.VITE_API_BASE_URL}/admin/jobs`;
+      const res = await axios.get(url);
       if (Array.isArray(res.data)) {
         setJobs(res.data);
       } else {
@@ -76,11 +83,12 @@ const ManageJobs = () => {
       </div>
 
       {/* Metrics Row - Elegant Style */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
         {[
-          { label: 'Total Listings', value: (jobs || []).length, color: 'text-slate-900', bg: 'bg-slate-50/50' },
-          { label: 'Active Nodes', value: (jobs || []).length, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-          { label: 'Platform Velocity', value: 'Optimal', color: 'text-emerald-600', bg: 'bg-emerald-50/50' }
+          { label: 'Total Jobs Listed', value: (jobs || []).length, color: 'text-slate-900', bg: 'bg-slate-50/50' },
+          { label: 'Active Jobs', value: (jobs || []).filter(j => j.status === 'active').length, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
+          { label: 'Inactive Jobs', value: (jobs || []).filter(j => j.status !== 'active').length, color: 'text-rose-600', bg: 'bg-rose-50/50' },
+          { label: 'Total Applications', value: (jobs || []).reduce((acc, job) => acc + (job.applicantsCount || 0), 0), color: 'text-blue-600', bg: 'bg-blue-50/50' }
         ].map((stat, i) => (
           <Card key={i} className="p-6 rounded-[24px] border-slate-200 shadow-sm bg-white">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -105,13 +113,14 @@ const ManageJobs = () => {
                   <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest">Organization</th>
                   <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest">Classification</th>
                   <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Date</th>
+                  <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Status</th>
                   <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {(filteredJobs || []).length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="p-20 text-center text-slate-400 font-medium text-sm italic">No records identified.</td>
+                    <td colSpan="6" className="p-20 text-center text-slate-400 font-medium text-sm italic">No records identified.</td>
                   </tr>
                 ) : (
                   Array.isArray(filteredJobs) && filteredJobs.map((job) => (
@@ -122,7 +131,7 @@ const ManageJobs = () => {
                             <Briefcase size={18} />
                           </div>
                           <div className="space-y-0.5">
-                            <Link to={`/job/${job._id}`} target="_blank" className="text-sm font-bold text-slate-900 tracking-tight hover:text-emerald-600 transition-colors">
+                            <Link to={`/job/${job._id}`} className="text-sm font-bold text-slate-900 tracking-tight hover:text-emerald-600 transition-colors">
                               {job.title}
                             </Link>
                             <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-tight">
@@ -145,8 +154,28 @@ const ManageJobs = () => {
                             {new Date(job.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                          </span>
                       </td>
+                      <td className="p-6 text-center">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest ${
+                          job.status === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                          job.status === 'closed' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                          job.status === 'inactive' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                          'bg-slate-50 text-slate-500 border border-slate-200'
+                        }`}>
+                          {job.status || 'active'}
+                        </span>
+                      </td>
                       <td className="p-6 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                           <Link to={`/admin/jobs/${job._id}/applicants`}>
+                             <Button
+                               variant="ghost"
+                               size="icon"
+                               className="h-9 w-9 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all rounded-lg"
+                               title="View Applicants"
+                             >
+                               <Users size={16} />
+                             </Button>
+                           </Link>
                            <Button
                              variant="ghost"
                              size="icon"

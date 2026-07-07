@@ -28,7 +28,7 @@ const generateToken = (userId, roleName) => {
   return jwt.sign(
     { id: userId, role: roleName },
     process.env.JWT_SECRET || 'fallback_secret',
-    { expiresIn: '7d' }
+    { expiresIn: '365d' }
   );
 };
 
@@ -408,6 +408,9 @@ const getUserProfile = async (req, res) => {
       counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
       employerCompany: user.employerCompany || null,
       employerCompanyName,
+      purchasedFeatures: user.purchasedFeatures || [],
+      display_id: user.display_id,
+      isPhoneVisible: user.isPhoneVisible,
     });
   } catch (err) {
     console.error(err.message);

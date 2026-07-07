@@ -216,6 +216,16 @@ const UserProfile = () => {
                   <Briefcase size={14} /> Applied Jobs
                 </Button>
               )}
+              {isRecruiter && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/admin/jobs?recruiter=${id}`)}
+                  className="rounded-xl h-10 px-5 font-bold text-xs border-emerald-200 text-emerald-600 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50 transition-all gap-2"
+                >
+                  <Briefcase size={14} /> Posted Jobs
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"

@@ -26,6 +26,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { hasFeature } from '../components/subscription/FeatureGate';
 import { toast } from 'sonner';
 import JobApplicationModal from '../components/jobs/JobApplicationModal';
 import ShareModal from '../components/jobs/ShareModal';
@@ -48,17 +49,18 @@ const JobDetails = () => {
   useEffect(() => {
     const fetchJobDetails = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/jobs`);
-        const foundJob = response.data.find(j => j._id === id);
-        if (foundJob) {
-          setJob(foundJob);
-        } else {
-          toast.error("Job not found");
-          navigate('/jobs');
-        }
+        const token = localStorage.getItem('token');
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await axios.get(`${API_BASE_URL}/jobs/${id}`, config);
+        setJob(response.data);
       } catch (error) {
         console.error('Error fetching job details:', error);
-        toast.error("Failed to load job details");
+        if (error.response?.status === 404) {
+          toast.error(error.response.data.msg || "Job not found or is no longer active");
+          navigate('/jobs');
+        } else {
+          toast.error("Failed to load job details");
+        }
       } finally {
         setLoading(false);
       }
@@ -112,6 +114,13 @@ const JobDetails = () => {
       toast.error("Only candidates can check their match score");
       return;
     }
+    
+    if (!hasFeature(user, 'hasJobMatchAnalysis')) {
+      toast.error("Premium Feature: Please upgrade your plan or purchase Job Match Analysis to use this.");
+      navigate('/jobseeker/subscription');
+      return;
+    }
+
     setIsCalculatingMatch(true);
     try {
       const token = localStorage.getItem('token');
@@ -129,26 +138,8 @@ const JobDetails = () => {
   };
 
   const handleShareJob = () => {
-    const shareUrl = window.location.href;
-    const shareData = {
-      title: job.title,
-      text: `Check out this job opportunity: ${job.title} at ${job.company?.name}`,
-      url: shareUrl,
-    };
-
-    // If native share is available, use it
-    if (navigator.share) {
-      navigator.share(shareData).catch((err) => {
-        // If user cancelled (AbortError), don't do anything
-        // Otherwise, open the fallback modal
-        if (err.name !== 'AbortError') {
-          setIsShareModalOpen(true);
-        }
-      });
-    } else {
-      // Fallback: Open our custom premium share modal
-      setIsShareModalOpen(true);
-    }
+    // Always open the custom premium share modal for a consistent experience
+    setIsShareModalOpen(true);
   };
 
   const copyToClipboard = (text) => {
@@ -209,6 +200,10 @@ const JobDetails = () => {
     <div className="min-h-screen bg-white pb-32">
       {/* ─── HEADER / BREADCRUMB ─── */}
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-12">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-primary transition-colors mb-4 group">
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+          Back
+        </button>
         <nav className="flex items-center gap-2 text-sm font-bold text-slate-400 mb-8">
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <ChevronRight size={14} />
@@ -511,7 +506,7 @@ const JobDetails = () => {
               <h4 className="font-bold text-amber-900 text-sm tracking-tight">Job Safety Tip</h4>
             </div>
             <p className="text-xs font-bold text-amber-800/70 leading-relaxed">
-              Don't provide your bank or credit card details when applying for jobs. CareerPoint does not charge any money from job seekers.
+              Don't provide your bank or credit card details when applying for jobs. Velaivaaipu does not charge any money from job seekers.
             </p>
           </div>
         </div>

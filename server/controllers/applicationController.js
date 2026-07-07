@@ -124,7 +124,7 @@ exports.exportApplicants = async (req, res) => {
     const user = await User.findById(userId).populate('subscription');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    if (!user.subscription?.hasCandidateDBExport) {
+    if (user.role !== 'admin' && !user.subscription?.hasCandidateDBExport) {
       return res.status(403).json({ msg: 'Candidate DB export requires a paid plan.', requiresUpgrade: true });
     }
 
@@ -172,7 +172,7 @@ exports.trackDownload = async (req, res) => {
     const limit = user.subscription?.applicationDownloadLimit || 0;
     const used = user.downloadsUsed || 0;
 
-    if (limit > 0 && used >= limit) {
+    if (user.role !== 'admin' && limit > 0 && used >= limit) {
       return res.status(403).json({ 
         msg: `Download limit reached! Your plan allows only ${limit} downloads.`,
         requiresUpgrade: true 

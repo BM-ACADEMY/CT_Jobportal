@@ -30,7 +30,7 @@ const transporter = nodemailer.createTransport(
 const sendEmail = async (options) => {
   try {
     const mailOptions = {
-      from: `"Naukri Clone" <${process.env.USER_EMAIL}>`,
+      from: `"Velaivaaipu" <${process.env.USER_EMAIL}>`,
       to: options.email,
       subject: options.subject,
       html: options.html,

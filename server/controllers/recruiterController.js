@@ -21,6 +21,7 @@ const getRecruiterProfile = async (req, res) => {
       email: user.email,
       avatar: user.avatar,
       coverPic: user.coverPic,
+      isPhoneVisible: user.isPhoneVisible,
       recruiterProfile: user.recruiterProfile,
       company: user.company,
       subscription: user.subscription,
@@ -48,6 +49,7 @@ const updateRecruiterProfile = async (req, res) => {
     if (name) user.name = name;
     if (req.body.avatar !== undefined) user.avatar = req.body.avatar;
     if (req.body.coverPic !== undefined) user.coverPic = req.body.coverPic;
+    if (req.body.isPhoneVisible !== undefined) user.isPhoneVisible = req.body.isPhoneVisible;
     
     // Handle avatar from file upload if exists
     if (req.files && req.files['avatar']) {
@@ -131,6 +133,7 @@ const updateRecruiterProfile = async (req, res) => {
         email: updatedUser.email,
         avatar: updatedUser.avatar,
         coverPic: updatedUser.coverPic,
+        isPhoneVisible: updatedUser.isPhoneVisible,
         recruiterProfile: updatedUser.recruiterProfile,
         company: updatedUser.company,
         subscription: updatedUser.subscription,

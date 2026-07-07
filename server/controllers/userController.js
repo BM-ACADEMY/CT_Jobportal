@@ -2,6 +2,7 @@ const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const pdfParse = require('pdf-parse');
 
 // Helper to calculate profile completion
 const calculateCompletion = (user) => {
@@ -56,6 +57,7 @@ const updateProfile = async (req, res) => {
     if (updates.name) user.name = updates.name;
     if (updates.avatar !== undefined) user.avatar = updates.avatar;
     if (updates.coverPic !== undefined) user.coverPic = updates.coverPic;
+    if (updates.isPhoneVisible !== undefined) user.isPhoneVisible = updates.isPhoneVisible;
 
     // Recalculate completion
     user.profile.profileCompletion = calculateCompletion(user);
@@ -65,7 +67,7 @@ const updateProfile = async (req, res) => {
     // Refresh user with populated subscription
     const updatedUser = await User.findById(userId).populate('subscription');
     
-    res.json({
+        res.json({
         msg: 'Profile updated successfully',
         user: {
             id: updatedUser._id,
@@ -73,6 +75,7 @@ const updateProfile = async (req, res) => {
             email: updatedUser.email,
             avatar: updatedUser.avatar,
             coverPic: updatedUser.coverPic,
+            isPhoneVisible: updatedUser.isPhoneVisible,
             profile: updatedUser.profile,
             savedJobs: updatedUser.savedJobs || [],
             subscription: updatedUser.subscription,
@@ -239,7 +242,7 @@ const getPublicProfile = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await User.findById(id)
-      .select('name email avatar profile role subscription')
+      .select('name email avatar profile role isPhoneVisible subscription')
       .populate('subscription', 'hasPriorityBadge hasProfileBoost');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
@@ -448,6 +451,84 @@ const generateAIResume = async (req, res) => {
   }
 };
 
+// @desc    Analyze AI Resume
+// @route   POST /api/user/analyze-resume
+const analyzeResume = async (req, res) => {
+  try {
+    const { jobRole, jobDescription } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ msg: 'No resume file uploaded' });
+    }
+
+    let resumeText = '';
+
+    if (req.file.mimetype === 'application/pdf') {
+      const dataBuffer = fs.readFileSync(req.file.path);
+      try {
+        const data = await pdfParse(dataBuffer);
+        resumeText = data.text;
+      } catch (parseErr) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ msg: 'Could not parse the PDF file. It might be corrupted or encrypted.' });
+      }
+    } else {
+      // For Word docs or other text formats, fallback to reading as string if possible, or reject.
+      // For simplicity, we just read file as utf8, though it might be gibberish for DOCX without Mammoth.
+      resumeText = fs.readFileSync(req.file.path, 'utf8');
+    }
+
+    // Clean up the uploaded file to save space
+    fs.unlinkSync(req.file.path);
+
+    const prompt = `
+      You are an expert ATS (Applicant Tracking System) Analyzer and Technical Recruiter.
+      I will provide you with a Job Role, a Job Description (JD), and the Text extracted from a Resume.
+
+      Job Role: ${jobRole}
+      Job Description: ${jobDescription}
+      
+      Resume Text:
+      ${resumeText}
+
+      Please analyze the resume against the job description.
+      Output strictly in JSON format with the following structure:
+      {
+        "score": <number 0-100 representing the ATS match percentage>,
+        "missingKeywords": [<array of strings of important keywords from the JD that are missing in the resume>],
+        "instructions": [<array of 3-5 strings with specific, actionable instructions to improve the resume for this role>]
+      }
+
+      Do not include any markdown formatting or surrounding text, just the raw JSON object.
+    `;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.2
+      }
+    });
+
+    const resultObj = await model.generateContent(prompt);
+    let responseText = resultObj.response.text();
+    
+    // Strip markdown formatting if present
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    const result = JSON.parse(responseText);
+
+    res.json(result);
+  } catch (err) {
+    console.error('AI Resume Analysis Error:', err);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ msg: 'Failed to analyze resume', error: err.message });
+  }
+};
+
 module.exports = {
   updateProfile,
   uploadResume,
@@ -460,5 +541,6 @@ module.exports = {
   updateAutoRenew,
   searchUser,
   uploadImage,
-  generateAIResume
+  generateAIResume,
+  analyzeResume
 };

@@ -13,10 +13,10 @@ router.patch('/:id/revoke', authorizeRoles('jobseeker'), revokeApplication);
 router.post('/apply', applyJob);
 
 // Recruiter routes
-router.get('/job/:jobId', authorizeRoles('recruiter', 'company'), getJobApplicants);
-router.put('/:id/status', authorizeRoles('recruiter', 'company'), updateApplicationStatus);
-router.post('/:id/track-download', authorizeRoles('recruiter', 'company'), trackDownload);
-router.get('/export/:jobId', authorizeRoles('recruiter', 'company'), exportApplicants);
+router.get('/job/:jobId', authorizeRoles('recruiter', 'company', 'admin'), getJobApplicants);
+router.put('/:id/status', authorizeRoles('recruiter', 'company', 'admin'), updateApplicationStatus);
+router.post('/:id/track-download', authorizeRoles('recruiter', 'company', 'admin'), trackDownload);
+router.get('/export/:jobId', authorizeRoles('recruiter', 'company', 'admin'), exportApplicants);
 router.post('/:id/calculate-match', authorizeRoles('recruiter', 'company', 'admin'), require('../controllers/applicationController').calculateApplicationMatch);
 
 module.exports = router;

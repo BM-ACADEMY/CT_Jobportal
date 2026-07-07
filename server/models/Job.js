@@ -87,6 +87,10 @@ const jobSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true
+  },
+  isCloned: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

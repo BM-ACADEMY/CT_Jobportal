@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { updateProfile, uploadResume, uploadImage, toggleSaveJob, getSavedJobs, getPublicProfile, toggleBlockEntity, trackProfileView, getProfileViewers, updateAutoRenew, searchUser, generateAIResume } = require('../controllers/userController');
+const { updateProfile, uploadResume, uploadImage, toggleSaveJob, getSavedJobs, getPublicProfile, toggleBlockEntity, trackProfileView, getProfileViewers, updateAutoRenew, searchUser, generateAIResume, analyzeResume } = require('../controllers/userController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
 
@@ -8,6 +8,7 @@ const upload = require('../middleware/upload');
 router.use(verifyToken);
 
 router.post('/generate-resume', generateAIResume);
+router.post('/analyze-resume', upload.single('resume'), analyzeResume);
 router.put('/profile', updateProfile);
 router.post('/resume', upload.single('resume'), uploadResume);
 router.post('/upload-image', upload.single('image'), uploadImage);

@@ -144,7 +144,7 @@ const PublicProfile = () => {
                   <Mail size={16} className="text-emerald-500" />
                   {profile.email}
                 </div>
-                {profile.profile?.phone && (
+                {(profile.profile?.phone && (profile.isPhoneVisible !== false || (JSON.parse(localStorage.getItem('user') || '{}').role === 'admin' || JSON.parse(localStorage.getItem('user') || '{}').role?.name === 'admin'))) && (
                   <div className="flex items-center gap-2">
                     <Phone size={16} className="text-emerald-500" />
                     {profile.profile.phone}

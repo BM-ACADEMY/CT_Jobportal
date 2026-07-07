@@ -12,7 +12,7 @@ const generateToken = (id, roleName) => {
   return jwt.sign(
     { id, role: roleName },
     process.env.JWT_SECRET || 'fallback_secret',
-    { expiresIn: '7d' }
+    { expiresIn: '365d' }
   );
 };
 
@@ -186,7 +186,11 @@ const deleteCompany = async (req, res) => {
 // @route   GET /api/admin/jobs
 const getJobs = async (req, res) => {
   try {
-    const jobs = await Job.find()
+    const { recruiter } = req.query;
+    const filter = {};
+    if (recruiter) filter.recruiter = recruiter;
+
+    const jobs = await Job.find(filter)
       .populate('company')
       .populate('recruiter', 'name email')
       .sort({ createdAt: -1 });
@@ -414,6 +418,38 @@ const toggleAdmin2FA = async (req, res) => {
   }
 };
 
+// @desc    Extend a user's subscription (Admin only)
+// @route   PATCH /api/admin/users/:id/extend-subscription
+const extendSubscription = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days } = req.body;
+
+    if (!days || isNaN(days) || days <= 0) {
+      return res.status(400).json({ msg: 'Valid days count is required' });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    let currentExpiry = user.subscriptionExpiry ? new Date(user.subscriptionExpiry) : new Date();
+    if (currentExpiry < new Date()) {
+      currentExpiry = new Date();
+    }
+
+    currentExpiry.setDate(currentExpiry.getDate() + Number(days));
+    user.subscriptionExpiry = currentExpiry;
+    await user.save();
+
+    res.json({ success: true, msg: `Subscription extended until ${currentExpiry.toLocaleDateString()}`, subscriptionExpiry: currentExpiry });
+  } catch (err) {
+    console.error('Extend Subscription Error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 module.exports = {
   loginAdmin,
   getDashboardStats,
@@ -431,5 +467,6 @@ module.exports = {
   updateAdminProfile,
   verifyAdminEmailOTP,
   toggleAdmin2FA,
-  getUserApplications
+  getUserApplications,
+  extendSubscription
 };

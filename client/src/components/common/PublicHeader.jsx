@@ -66,10 +66,10 @@ const PublicHeader = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/25 group-hover:scale-105 transition-transform">
-              <span className="text-slate-900 font-black text-base">C</span>
+              <span className="text-slate-900 font-black text-base">V</span>
             </div>
             <span className={`text-xl font-bold tracking-tight transition-colors duration-300 ${logoTextColor}`}>
-              careerpoint
+              Velaivaaipu
             </span>
           </Link>
 

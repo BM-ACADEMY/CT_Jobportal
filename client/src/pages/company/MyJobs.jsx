@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
-  Briefcase, Plus, Edit2, Trash2, Users, Eye, Search,
+  Briefcase, Plus, Edit2, Trash2, Users, Eye, Search, Copy,
   MapPin, Clock, Loader2, MoreVertical, ToggleLeft, ToggleRight, AlertTriangle, Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -68,6 +68,16 @@ const MyJobs = () => {
       setJobs(prev => prev.filter(j => j._id !== jobId));
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Failed to delete job');
+    }
+  };
+
+  const handleClone = async (jobId) => {
+    try {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}/clone`, {}, { headers });
+      toast.success('Job cloned successfully');
+      fetchJobs();
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to clone job');
     }
   };
 
@@ -216,6 +226,7 @@ const MyJobs = () => {
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
                     {job.title}
+                    {job.isCloned && <span className="ml-2 text-blue-500 font-semibold text-[11px]">(Cloned)</span>}
                   </p>
                   <Badge className={`text-[9px] font-bold border px-2 py-0 rounded-full ${STATUS_COLOR[job.status] || STATUS_COLOR.draft}`}>
                     {job.status}
@@ -274,6 +285,12 @@ const MyJobs = () => {
                     className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
                   >
                     <Edit2 size={13} /> Edit Job
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleClone(job._id)}
+                    className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
+                  >
+                    <Copy size={13} /> Clone Job
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleToggleStatus(job)}

@@ -188,6 +188,7 @@ const getPaymentHistory = async (req, res) => {
   try {
     const payments = await Payment.find({ user: req.user.id })
       .populate('plan', 'name price duration')
+      .populate('payPerFeature', 'name cost days usageCount')
       .sort({ createdAt: -1 });
 
     res.json(payments);
@@ -249,10 +250,231 @@ const cancelSubscription = async (req, res) => {
   }
 };
 
+const getRenewals = async (req, res) => {
+  try {
+    const users = await User.find({ subscription: { $ne: null } })
+      .populate('subscription')
+      .select('name email role subscription subscriptionExpiry autoRenew display_id')
+      .sort({ subscriptionExpiry: 1 });
+    const renewals = users.filter(u => u.subscription && u.subscription.price > 0);
+    res.json(renewals);
+  } catch (err) {
+    console.error('Get Renewals Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+const requestRefund = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const payment = await Payment.findOne({ _id: paymentId, user: req.user.id });
+    if (!payment) {
+      return res.status(404).json({ msg: 'Payment record not found' });
+    }
+    if (payment.status !== 'completed') {
+      return res.status(400).json({ msg: 'Only completed payments can be refunded' });
+    }
+    payment.status = 'refund_pending';
+    await payment.save();
+    res.json({ success: true, msg: 'Refund request submitted successfully' });
+  } catch (err) {
+    console.error('Request Refund Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+const getRefunds = async (req, res) => {
+  try {
+    const payments = await Payment.find({ status: { $in: ['refund_pending', 'refunded'] } })
+      .populate('user', 'name email role')
+      .populate('plan', 'name price duration')
+      .sort({ updatedAt: -1 });
+    res.json(payments);
+  } catch (err) {
+    console.error('Get Refunds Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+const approveRefund = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const payment = await Payment.findById(paymentId).populate('user');
+    if (!payment) {
+      return res.status(404).json({ msg: 'Payment record not found' });
+    }
+    if (payment.status !== 'refund_pending') {
+      return res.status(400).json({ msg: 'Refund is not pending' });
+    }
+
+    payment.status = 'refunded';
+    await payment.save();
+
+    // Revoke the user's subscription
+    const user = await User.findById(payment.user._id).populate('role');
+    if (user) {
+      const userRoleName = user.role?.name || 'jobseeker';
+      const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: userRoleName });
+      if (freePlan) {
+        user.subscription = freePlan._id;
+      } else {
+        user.subscription = null;
+      }
+      user.subscriptionExpiry = null;
+      user.autoRenew = false;
+      await user.save();
+    }
+
+    res.json({ success: true, msg: 'Refund approved. Subscription revoked.' });
+  } catch (err) {
+    console.error('Approve Refund Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+const rejectRefund = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      return res.status(404).json({ msg: 'Payment record not found' });
+    }
+    if (payment.status !== 'refund_pending') {
+      return res.status(400).json({ msg: 'Refund is not pending' });
+    }
+
+    payment.status = 'completed';
+    await payment.save();
+
+    res.json({ success: true, msg: 'Refund request rejected' });
+  } catch (err) {
+    console.error('Reject Refund Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+const getBuyers = async (req, res) => {
+  try {
+    const payments = await Payment.find({ status: { $in: ['completed', 'superseded', 'refunded'] } })
+      .populate('user', 'name email role avatar display_id')
+      .populate('plan', 'name price duration')
+      .sort({ createdAt: -1 });
+
+    const buyersMap = {};
+    payments.forEach(p => {
+      if (!p.user) return;
+      const uid = p.user._id.toString();
+      if (!buyersMap[uid]) {
+        buyersMap[uid] = {
+          user: p.user,
+          totalSpent: 0,
+          transactionsCount: 0,
+          lastPurchase: null,
+        };
+      }
+      if (p.status === 'completed' || p.status === 'superseded') {
+        buyersMap[uid].totalSpent += p.amount || 0;
+      }
+      buyersMap[uid].transactionsCount += 1;
+      if (!buyersMap[uid].lastPurchase || new Date(p.createdAt) > new Date(buyersMap[uid].lastPurchase.createdAt)) {
+        buyersMap[uid].lastPurchase = p;
+      }
+    });
+
+    const buyers = Object.values(buyersMap);
+    res.json(buyers);
+  } catch (err) {
+    console.error('Get Buyers Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+const getBuyerDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId)
+      .populate('subscription')
+      .select('name email role avatar display_id subscriptionExpiry autoRenew');
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    const payments = await Payment.find({ user: userId })
+      .populate('plan')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      user,
+      payments
+    });
+  } catch (err) {
+    console.error('Get Buyer Details Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+const sendRenewalReminder = async (req, res) => {
+  try {
+    const { userIds } = req.body;
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ msg: 'No users selected' });
+    }
+
+    const sendEmail = require('../utils/sendEmail');
+    const users = await User.find({ _id: { $in: userIds } }).populate('subscription');
+    
+    if (users.length === 0) {
+      return res.status(404).json({ msg: 'Selected users not found' });
+    }
+
+    const emailPromises = users.map(async (user) => {
+      if (!user.email) return;
+      
+      const planName = user.subscription?.name || 'Premium';
+      const expiryDate = user.subscriptionExpiry 
+        ? new Date(user.subscriptionExpiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+        : 'soon';
+        
+      const htmlContent = `
+        <div style="font-family: sans-serif; padding: 20px; color: #334155; line-height: 1.6;">
+          <h2 style="color: #059669; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">Subscription Renewal Reminder</h2>
+          <p>Dear <strong>${user.name}</strong>,</p>
+          <p>This is a friendly reminder that your active subscription plan <strong>${planName}</strong> is expiring on <strong>${expiryDate}</strong>.</p>
+          <p>To continue enjoying uninterrupted access to premium resume templates, job search tools, bulk recruiter messaging, and other premium features, please renew your subscription package at your earliest convenience.</p>
+          <p>If you have any questions or require support, please reply directly to this email.</p>
+          <br/>
+          <p>Warm regards,<br/><strong>Velaivaaipu Support Team</strong></p>
+        </div>
+      `;
+
+      return sendEmail({
+        email: user.email,
+        subject: `[Velaivaaipu] Renew Your ${planName} Subscription`,
+        html: htmlContent
+      });
+    });
+
+    await Promise.all(emailPromises);
+
+    res.json({ success: true, msg: `Sent reminders to ${users.length} users successfully.` });
+  } catch (err) {
+    console.error('Send Renewal Reminder Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
 module.exports = {
   createOrder,
   verifyPayment,
   getPaymentHistory,
   getAllPayments,
-  cancelSubscription
+  cancelSubscription,
+  getRenewals,
+  requestRefund,
+  getRefunds,
+  approveRefund,
+  rejectRefund,
+  getBuyers,
+  getBuyerDetails,
+  sendRenewalReminder
 };

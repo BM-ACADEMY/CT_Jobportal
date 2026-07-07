@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { Briefcase, MapPin, Clock, DollarSign, Users, FileText, Plus, X, Sparkles, LayoutGrid, Send, Trash2, Target, ChevronLeft, ArrowRight, ExternalLink, Loader2, Lock, AlertTriangle } from 'lucide-react';
@@ -16,6 +16,7 @@ const API_JOBS_URL = `${import.meta.env.VITE_API_BASE_URL}/jobs`;
 const PostJob = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [viewMode, setViewMode] = useState('list'); // 'list', 'create', 'detail'
@@ -126,7 +127,18 @@ const PostJob = () => {
         try {
             setFetching(true);
             const res = await axios.get(`${API_JOBS_URL}/company-jobs`);
-            setJobs(res.data);
+            const fetchedJobs = res.data;
+            setJobs(fetchedJobs);
+
+            const editId = searchParams.get('edit');
+            if (editId) {
+                const jobToEdit = fetchedJobs.find(j => j._id === editId);
+                if (jobToEdit) {
+                    handleEdit(jobToEdit);
+                    searchParams.delete('edit');
+                    setSearchParams(searchParams);
+                }
+            }
         } catch (err) {
             console.error(err);
             toast.error("Failed to fetch jobs");
@@ -265,10 +277,7 @@ const PostJob = () => {
     const handleSubmit = async (e, status = 'active') => {
         if (e) e.preventDefault();
 
-        if (!user?.company) {
-            toast.error("Complete your company profile in settings before posting a job");
-            return;
-        }
+
 
         const loadingSetter = status === 'draft' ? setDraftLoading : setLoading;
         loadingSetter(true);
@@ -389,6 +398,7 @@ const PostJob = () => {
                                     </div>
                                     <CardTitle className="text-lg font-bold group-hover:text-emerald-600 transition-colors pr-12 line-clamp-1">
                                         {job.title}
+                                        {job.isCloned && <span className="ml-2 text-blue-500 font-semibold text-xs">(Cloned)</span>}
                                     </CardTitle>
                                     <CardDescription className="font-medium flex items-center gap-1.5 mt-1">
                                         <MapPin className="w-3.5 h-3.5" /> {job.location || 'Remote'}
@@ -445,7 +455,10 @@ const PostJob = () => {
                                 <ChevronLeft className="w-5 h-5" />
                             </Button>
                             <div>
-                                <h2 className="text-2xl font-bold tracking-tight">{selectedJob.title}</h2>
+                                <h2 className="text-2xl font-bold tracking-tight">
+                                    {selectedJob.title}
+                                    {selectedJob.isCloned && <span className="ml-3 text-blue-500 font-semibold text-sm">(Cloned)</span>}
+                                </h2>
                                 <p className="text-muted-foreground text-sm font-medium">Full specifications and requirements</p>
                             </div>
                         </div>
