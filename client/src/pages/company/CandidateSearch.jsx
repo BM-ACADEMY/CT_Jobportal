@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   Search, MapPin, Briefcase, User, Loader2, Sparkles,
-  AlertTriangle, ChevronRight, Filter, X, GraduationCap
+  AlertTriangle, ChevronRight, Filter, X, GraduationCap, BadgeCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -283,9 +283,14 @@ const CandidateSearch = () => {
               </Avatar>
 
               <div className="flex-1 min-w-0 space-y-1.5">
-                <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                  {candidate.name}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                    {candidate.name}
+                  </p>
+                  {candidate.isPriority && (
+                    <BadgeCheck size={16} className="text-blue-500 fill-blue-50" title="Priority Candidate" />
+                  )}
+                </div>
                 {candidate.profile?.headline && (
                   <p className="text-xs text-slate-500 font-medium">{candidate.profile.headline}</p>
                 )}

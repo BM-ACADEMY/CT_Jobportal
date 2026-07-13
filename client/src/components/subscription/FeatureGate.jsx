@@ -58,8 +58,54 @@ const FREE_TIER_DEFAULTS = {
  * Checks if a specific feature key is active on the user's subscription.
  * Checks both static schema fields and the dynamic features[] array.
  */
-export const hasFeature = (user, featureKey) => {
+const hasFeatureCore = (user, featureKey) => {
   if (user?.role === 'admin' || user?.role === 'subadmin') return true;
+
+  if (featureKey === 'hasAICandidateMatching') {
+    if (user?.aiMatchedJobs && user.aiMatchedJobs.length > 0) return true;
+  }
+
+  // Custom logic for Candidate DB Export limit
+  if (featureKey === 'hasCandidateDBExport') {
+    // 1. Check user.purchasedFeatures (Pay Per System)
+    if (Array.isArray(user?.purchasedFeatures) && user.purchasedFeatures.length > 0) {
+      const now = new Date();
+      const purchasedMatch = user.purchasedFeatures.find(
+        f => f.featureKey === 'hasCandidateDBExport' && 
+             f.isActive && 
+             f.usageLeft > 0 && 
+             (!f.expiresAt || new Date(f.expiresAt) > now)
+      );
+      if (purchasedMatch) return true;
+    }
+
+    // 2. Check subscription plan
+    let plan = user?.subscription;
+    if (!plan || (plan.price !== 0 && plan.duration !== 'Lifetime' && user.subscriptionExpiry && new Date(user.subscriptionExpiry) < new Date())) {
+      plan = FREE_TIER_DEFAULTS[user?.role] || {};
+    }
+    
+    let planHasExport = false;
+    const val = plan[featureKey];
+    if (val === true) {
+      planHasExport = true;
+    } else if (Array.isArray(plan.features) && plan.features.length > 0) {
+      const dynamicEntry = DYNAMIC_FEATURE_NAMES[featureKey];
+      if (dynamicEntry) {
+        const aliases = Array.isArray(dynamicEntry) ? dynamicEntry : [dynamicEntry];
+        planHasExport = plan.features.some(
+          f => f.isActive && aliases.some(alias => f.name?.toLowerCase() === alias.toLowerCase())
+        );
+      }
+    }
+
+    if (planHasExport) {
+      const used = user?.candidateDBExportsUsed || 0;
+      if (used < 1) return true;
+    }
+
+    return false;
+  }
 
   let plan = user?.subscription;
 
@@ -99,13 +145,23 @@ export const hasFeature = (user, featureKey) => {
 
   // 3. Fallback: check user.purchasedFeatures (Pay Per System)
   if (Array.isArray(user?.purchasedFeatures) && user.purchasedFeatures.length > 0) {
+    const now = new Date();
     const purchasedMatch = user.purchasedFeatures.find(
-      f => f.featureKey === featureKey && f.isActive
+      f => f.featureKey === featureKey && 
+           f.isActive && 
+           (!f.expiresAt || new Date(f.expiresAt) > now)
     );
     if (purchasedMatch) return true;
   }
 
   return false;
+};
+
+export const hasFeature = (user, featureKey) => {
+  if (featureKey === 'hasVideoInterview' || featureKey === 'hasInterviewScheduling') {
+    return hasFeatureCore(user, 'hasVideoInterview') || hasFeatureCore(user, 'hasInterviewScheduling');
+  }
+  return hasFeatureCore(user, featureKey);
 };
 
 const PERKS = {

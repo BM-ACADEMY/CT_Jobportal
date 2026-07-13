@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Plus, X, Upload, FileText, CheckCircle2, Loader2,
-  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2, Download
+  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2, Download, BadgeCheck
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +68,21 @@ const Settings = () => {
     const [uploading, setUploading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [cropModal, setCropModal] = useState({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 });
+
+    let isPriority = false;
+    const plan = user?.subscription;
+    if (plan && plan.hasPriorityBadge) {
+        isPriority = true;
+    } else if (plan && Array.isArray(plan.features)) {
+        if (plan.features.some(f => f.isActive && (f.name?.toLowerCase() === 'priority badge' || f.name?.toLowerCase() === 'priority application badge'))) {
+            isPriority = true;
+        }
+    }
+    if (!isPriority && Array.isArray(user?.purchasedFeatures)) {
+        if (user.purchasedFeatures.some(f => f.isActive && f.featureKey === 'hasPriorityBadge' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date()))) {
+            isPriority = true;
+        }
+    }
 
     // Form states
     const [formData, setFormData] = useState({
@@ -532,7 +547,17 @@ const Settings = () => {
                         </CardHeader>
                         <CardContent className="pt-8 p-8 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                                <DataDisplay label="Full Legal Name" value={formData.name} icon={User} isEditing={isEditing}>
+                                <DataDisplay 
+                                    label="Full Legal Name" 
+                                    value={
+                                        <div className="flex items-center gap-2">
+                                            {formData.name}
+                                            {isPriority && <BadgeCheck size={16} className="text-blue-500 fill-blue-50" title="Priority Candidate" />}
+                                        </div>
+                                    } 
+                                    icon={User} 
+                                    isEditing={isEditing}
+                                >
                                     <div className="space-y-1.5">
                                         <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Full Name</Label>
                                         <div className="relative">
@@ -617,6 +642,21 @@ const Settings = () => {
                                                 placeholder="+91 00000 00000" 
                                                 value={formData.profile.phone}
                                                 onChange={(e) => setFormData({...formData, profile: {...formData.profile, phone: e.target.value}})}
+                                                className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                            />
+                                        </div>
+                                    </div>
+                                </DataDisplay>
+
+                                <DataDisplay label="Current Location" value={formData.profile.location} icon={MapPin} isEditing={isEditing}>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Current Location</Label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
+                                            <Input 
+                                                placeholder="e.g. Chennai, Tamil Nadu" 
+                                                value={formData.profile.location}
+                                                onChange={(e) => setFormData({...formData, profile: {...formData.profile, location: e.target.value}})}
                                                 className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                             />
                                         </div>

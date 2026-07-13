@@ -22,6 +22,7 @@ exports.applyJob = async (req, res) => {
   try {
     const { jobId, answers } = req.body;
     const applicantId = req.user.id;
+    const User = require('../models/User');
 
     // Check if already applied
     let existingApplication = await Application.findOne({ job: jobId, applicant: applicantId });
@@ -40,13 +41,69 @@ exports.applyJob = async (req, res) => {
       return res.status(400).json({ msg: 'You have already applied for this job' });
     }
 
+    const user = await User.findById(applicantId).populate('subscription');
+    
+    let isPriority = false;
+    let limit = 0;
+    let source = null;
+    let payPerFeatureIndex = -1;
+
+    const plan = user.subscription;
+    
+    if (plan && plan.hasPriorityBadge) {
+      isPriority = true;
+      source = 'plan';
+      limit = 0;
+    } else if (plan && Array.isArray(plan.features)) {
+      const dynamicFeature = plan.features.find(f => f.isActive && (f.name?.toLowerCase() === 'priority badge' || f.name?.toLowerCase() === 'priority application badge'));
+      if (dynamicFeature) {
+        isPriority = true;
+        source = 'plan';
+        limit = parseInt(dynamicFeature.value) || 0;
+      }
+    }
+
+    if (source === 'plan' && limit > 0) {
+      if ((user.priorityApplicationsUsed || 0) >= limit) {
+        isPriority = false;
+      }
+    }
+
+    if (!isPriority && Array.isArray(user.purchasedFeatures)) {
+      const ppFeatureIndex = user.purchasedFeatures.findIndex(f => 
+        f.isActive && 
+        f.featureKey === 'hasPriorityBadge' && 
+        f.usageLeft > 0 && 
+        (!f.expiresAt || new Date(f.expiresAt) > new Date())
+      );
+      
+      if (ppFeatureIndex !== -1) {
+        isPriority = true;
+        source = 'payper';
+        payPerFeatureIndex = ppFeatureIndex;
+      }
+    }
+
     const application = new Application({
       job: jobId,
       applicant: applicantId,
-      answers
+      answers,
+      isPriority
     });
 
     await application.save();
+
+    if (isPriority) {
+      if (source === 'plan' && limit > 0) {
+        user.priorityApplicationsUsed = (user.priorityApplicationsUsed || 0) + 1;
+      } else if (source === 'payper' && payPerFeatureIndex !== -1) {
+        user.purchasedFeatures[payPerFeatureIndex].usageLeft -= 1;
+        if (user.purchasedFeatures[payPerFeatureIndex].usageLeft <= 0) {
+          user.purchasedFeatures[payPerFeatureIndex].isActive = false;
+        }
+      }
+      await user.save();
+    }
 
     // Increment applicants count in Job model
     await Job.findByIdAndUpdate(jobId, { $inc: { applicantsCount: 1 } });
@@ -83,12 +140,21 @@ exports.getJobApplicants = async (req, res) => {
 exports.updateApplicationStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, isPriority } = req.body;
 
-    const application = await Application.findByIdAndUpdate(id, { status }, { new: true });
+    const updateFields = {};
+    if (status !== undefined) updateFields.status = status;
+    if (isPriority !== undefined) updateFields.isPriority = isPriority;
+
+    const application = await Application.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      { new: true }
+    ).populate('applicant', 'name email profileImage profile');
+
     if (!application) return res.status(404).json({ msg: 'Application not found' });
 
-    res.json({ msg: `Application marked as ${status}`, application });
+    res.json({ msg: 'Application updated successfully', application });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: 'Server error' });
@@ -124,8 +190,61 @@ exports.exportApplicants = async (req, res) => {
     const user = await User.findById(userId).populate('subscription');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    if (user.role !== 'admin' && !user.subscription?.hasCandidateDBExport) {
-      return res.status(403).json({ msg: 'Candidate DB export requires a paid plan.', requiresUpgrade: true });
+    let hasAccess = false;
+    let isPayPer = false;
+    let purchasedFeatureIndex = -1;
+
+    if (user.role === 'admin' || user.role === 'subadmin') {
+      hasAccess = true;
+    } else {
+      // 1. Check pay-per-feature purchasedFeatures first
+      const now = new Date();
+      if (Array.isArray(user.purchasedFeatures)) {
+        purchasedFeatureIndex = user.purchasedFeatures.findIndex(
+          f => f.featureKey === 'hasCandidateDBExport' && 
+               f.isActive && 
+               f.usageLeft > 0 && 
+               (!f.expiresAt || new Date(f.expiresAt) > now)
+        );
+        if (purchasedFeatureIndex !== -1) {
+          hasAccess = true;
+          isPayPer = true;
+        }
+      }
+
+      // 2. If no pay-per-feature credit, check subscription plan
+      if (!hasAccess) {
+        let plan = user.subscription;
+        if (user.subscriptionDetails) {
+          const details = user.subscriptionDetails;
+          const expiry = user.subscriptionExpiry;
+          const isSnapshotValid = details.price === 0 || details.duration === 'Lifetime' || !expiry || new Date(expiry) > now;
+          if (isSnapshotValid) {
+            plan = details;
+          }
+        }
+
+        const isPlanValid = plan && (
+          plan.price === 0 ||
+          plan.duration === 'Lifetime' ||
+          !user.subscriptionExpiry ||
+          new Date(user.subscriptionExpiry) > now
+        );
+
+        if (isPlanValid && plan.hasCandidateDBExport) {
+          const used = user.candidateDBExportsUsed || 0;
+          if (used < 1) {
+            hasAccess = true;
+          }
+        }
+      }
+    }
+
+    if (!hasAccess) {
+      return res.status(403).json({ 
+        msg: 'Candidate DB export limit reached. Your plan or add-on allows only 1 export.', 
+        requiresUpgrade: true 
+      });
     }
 
     const { jobId } = req.params;
@@ -151,6 +270,20 @@ exports.exportApplicants = async (req, res) => {
     }
 
     const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    // Decrement the quota or increment the plan used counter
+    if (user.role !== 'admin' && user.role !== 'subadmin') {
+      if (isPayPer && purchasedFeatureIndex !== -1) {
+        user.purchasedFeatures[purchasedFeatureIndex].usageLeft -= 1;
+        if (user.purchasedFeatures[purchasedFeatureIndex].usageLeft <= 0) {
+          user.purchasedFeatures[purchasedFeatureIndex].isActive = false;
+        }
+        user.markModified('purchasedFeatures');
+      } else {
+        user.candidateDBExportsUsed = (user.candidateDBExportsUsed || 0) + 1;
+      }
+      await user.save();
+    }
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="applicants-${jobId}.csv"`);

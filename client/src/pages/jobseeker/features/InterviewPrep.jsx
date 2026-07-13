@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Briefcase, Mic, CheckCircle2, Send, Loader2, AlertCircle, X, RefreshCw, ChevronLeft, ChevronRight, ClipboardList, CalendarCheck, MonitorPlay, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Briefcase, Mic, CheckCircle2, Send, Loader2, AlertCircle, X, RefreshCw, ChevronLeft, ChevronRight, ClipboardList, CalendarCheck, MonitorPlay, TrendingUp, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import FeatureGate from '@/components/subscription/FeatureGate';
+import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -101,6 +103,31 @@ const RequestModal = ({ onClose, onSuccess }) => {
     </div>
   );
 };
+
+/* ─── Upgrade Modal ──────────────────────────────────────────────────────────── */
+const UpgradeModal = ({ onClose }) => (
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-in slide-in-from-bottom-4">
+      <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <Lock size={24} className="text-amber-600" />
+      </div>
+      <h3 className="text-lg font-bold text-slate-900 mb-2">Limit Reached</h3>
+      <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+        You have no mock interview requests left. Please upgrade your subscription or purchase an add-on to get more mock interviews.
+      </p>
+      <div className="flex gap-3">
+        <Button onClick={onClose} variant="outline" className="flex-1 rounded-xl h-10 text-xs font-bold">
+          Close
+        </Button>
+        <Link to="/jobseeker/subscription" className="flex-1">
+          <Button className="w-full rounded-xl h-10 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20">
+            Upgrade Now
+          </Button>
+        </Link>
+      </div>
+    </div>
+  </div>
+);
 
 /* ─── Requests Table ─────────────────────────────────────────────────────────── */
 const RequestsTable = ({ requests, loading, onCancel }) => {
@@ -288,9 +315,48 @@ const RequestsTable = ({ requests, loading, onCancel }) => {
 
 /* ─── Main Page ─────────────────────────────────────────────────────────────── */
 const InterviewPrep = () => {
+  const { user, refreshUser } = useAuth();
   const [showModal, setShowModal]   = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [requests, setRequests]     = useState([]);
   const [tableLoading, setTableLoading] = useState(true);
+
+  const getRemainingCount = () => {
+    let limit = 0;
+    let used = user?.interviewPrepUsed || 0;
+    let hasPlanFeature = false;
+    
+    const plan = user?.subscription;
+    if (plan && plan.hasInterviewPrep) {
+      hasPlanFeature = true;
+      limit = 0;
+    } else if (plan && Array.isArray(plan.features)) {
+      const dynamicFeature = plan.features.find(f => f.isActive && (f.name?.toLowerCase() === 'interview prep' || f.name?.toLowerCase() === 'interview preparation'));
+      if (dynamicFeature) {
+        hasPlanFeature = true;
+        limit = parseInt(dynamicFeature.value) || 0;
+      }
+    }
+    
+    let planRemaining = 0;
+    if (hasPlanFeature) {
+      planRemaining = limit > 0 ? Math.max(0, limit - used) : 'Unlimited';
+    }
+
+    let ppRemaining = 0;
+    if (Array.isArray(user?.purchasedFeatures)) {
+      user.purchasedFeatures.forEach(f => {
+        if (f.isActive && f.featureKey === 'hasInterviewPrep' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) {
+          ppRemaining += f.usageLeft;
+        }
+      });
+    }
+
+    if (planRemaining === 'Unlimited') return 'Unlimited';
+    return planRemaining + ppRemaining;
+  };
+
+  const remainingCount = getRemainingCount();
 
   const fetchRequests = useCallback(async () => {
     setTableLoading(true);
@@ -308,13 +374,16 @@ const InterviewPrep = () => {
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
+  const handleRequestClick = () => {
+    if (remainingCount === 0 || remainingCount === '0') {
+      setShowUpgradeModal(true);
+    } else {
+      setShowModal(true);
+    }
+  };
+
   return (
-    <FeatureGate
-      featureKey="hasInterviewPrep"
-      featureName="Interview Prep"
-      description="Practice with AI-powered mock interviews, role-specific question banks, and instant feedback to ace your next interview."
-      subscriptionPath="/jobseeker/subscription"
-    >
+    <>
       <div className="space-y-8 pb-12">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -327,12 +396,17 @@ const InterviewPrep = () => {
             </div>
             <p className="text-sm text-slate-500">AI-powered mock interviews and question banks.</p>
           </div>
-          <Button
-            onClick={() => setShowModal(true)}
-            className="h-10 px-5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm gap-2 shrink-0"
-          >
-            <Mic size={15} /> Request Mock Interview
-          </Button>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 bg-teal-50 text-teal-700 px-3 h-10 rounded-xl text-xs font-bold border border-teal-100">
+              {remainingCount} Left
+            </div>
+            <Button
+              onClick={handleRequestClick}
+              className="h-10 px-5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-sm gap-2 shrink-0 shadow-md shadow-teal-500/20"
+            >
+              <Mic size={15} /> Request Mock Interview
+            </Button>
+          </div>
         </div>
 
         {/* SOP */}
@@ -418,10 +492,17 @@ const InterviewPrep = () => {
       {showModal && (
         <RequestModal
           onClose={() => setShowModal(false)}
-          onSuccess={fetchRequests}
+          onSuccess={async () => {
+            if (refreshUser) await refreshUser();
+            fetchRequests();
+          }}
         />
       )}
-    </FeatureGate>
+      
+      {showUpgradeModal && (
+        <UpgradeModal onClose={() => setShowUpgradeModal(false)} />
+      )}
+    </>
   );
 };
 

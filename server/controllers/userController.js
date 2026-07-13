@@ -242,11 +242,19 @@ const getPublicProfile = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await User.findById(id)
-      .select('name email avatar profile role isPhoneVisible subscription')
-      .populate('subscription', 'hasPriorityBadge hasProfileBoost');
+      .select('name email avatar profile role isPhoneVisible subscription purchasedFeatures priorityApplicationsUsed')
+      .populate('subscription');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    res.json(user);
+    const checkPriorityBadge = require('../utils/checkPriorityBadge');
+    const isPriority = checkPriorityBadge(user);
+
+    const userObj = user.toObject();
+    userObj.isPriority = isPriority;
+    delete userObj.purchasedFeatures;
+    delete userObj.priorityApplicationsUsed;
+
+    res.json(userObj);
   } catch (err) {
     console.error('Get Public Profile Error:', err.message);
     res.status(500).json({ msg: 'Server error fetching profile' });
@@ -529,6 +537,69 @@ const analyzeResume = async (req, res) => {
   }
 };
 
+// @desc    Accept company invite
+// @route   POST /api/user/accept-company-invite
+const acceptCompanyInvite = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('pendingCompanyInvite');
+    if (!user || !user.pendingCompanyInvite) {
+      return res.status(400).json({ msg: 'No pending invite found.' });
+    }
+
+    const orgEmployeeRole = await require('../models/Role').findOne({ name: 'org_employee' });
+    if (!orgEmployeeRole) {
+      return res.status(500).json({ msg: 'Role not found' });
+    }
+
+    user.employerCompany = user.pendingCompanyInvite._id;
+    user.company = user.pendingCompanyInvite._id; // Sync it for recruiter role logic
+    user.role = orgEmployeeRole._id;
+    
+    if (!user.companyHistory) user.companyHistory = [];
+    user.companyHistory.forEach(h => {
+      if (h.status === 'Current') {
+        h.status = 'Previous';
+        h.leftAt = new Date();
+      }
+    });
+    user.companyHistory.push({
+      company: user.pendingCompanyInvite._id,
+      status: 'Current',
+      joinedAt: new Date()
+    });
+
+    user.pendingCompanyInvite = undefined;
+    
+    // Add default company profile adminRole if needed
+    if (!user.companyProfile) user.companyProfile = {};
+    if (!user.companyProfile.adminRole) user.companyProfile.adminRole = 'Employee';
+
+    await user.save();
+    res.json({ msg: 'Invite accepted. Your account is now part of the organization.' });
+  } catch (err) {
+    console.error('Accept Invite Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Decline company invite
+// @route   POST /api/user/decline-company-invite
+const declineCompanyInvite = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.pendingCompanyInvite) {
+      return res.status(400).json({ msg: 'No pending invite found.' });
+    }
+
+    user.pendingCompanyInvite = undefined;
+    await user.save();
+    res.json({ msg: 'Invite declined.' });
+  } catch (err) {
+    console.error('Decline Invite Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   updateProfile,
   uploadResume,
@@ -542,5 +613,7 @@ module.exports = {
   searchUser,
   uploadImage,
   generateAIResume,
-  analyzeResume
+  analyzeResume,
+  acceptCompanyInvite,
+  declineCompanyInvite
 };

@@ -32,6 +32,10 @@ const applicationSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true
+  },
+  isPriority: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

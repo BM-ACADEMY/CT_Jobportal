@@ -5,7 +5,7 @@ const adminRequestSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['counselling', 'interview_prep', 'salary_benchmark', 'bulk_application', 'website_request']
+    enum: ['counselling', 'interview_prep', 'salary_benchmark', 'bulk_application', 'website_request', 'ai_resume_review']
   },
   status: {
     type: String,

@@ -147,7 +147,17 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
   },
+  companyHistory: [{
+    company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },
+    status: { type: String, enum: ['Current', 'Previous'], default: 'Current' },
+    joinedAt: { type: Date, default: Date.now },
+    leftAt: { type: Date }
+  }],
   employerCompany: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company'
+  },
+  pendingCompanyInvite: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
   },
@@ -157,16 +167,35 @@ const userSchema = new mongoose.Schema({
   }],
   subscription: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Subscription'
+    ref: 'Subscription',
+    get: function(v) {
+      if (this.subscriptionDetails) {
+        const details = this.subscriptionDetails;
+        const expiry = this.subscriptionExpiry;
+        const isValid = details.price === 0 || details.duration === 'Lifetime' || !expiry || new Date(expiry) > new Date();
+        if (isValid) {
+          return details;
+        }
+      }
+      return v;
+    }
   },
   subscriptionExpiry: {
     type: Date
+  },
+  subscriptionDetails: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
   },
   autoRenew: {
     type: Boolean,
     default: false
   },
   downloadsUsed: {
+    type: Number,
+    default: 0
+  },
+  candidateDBExportsUsed: {
     type: Number,
     default: 0
   },
@@ -183,6 +212,22 @@ const userSchema = new mongoose.Schema({
     default: 0
   },
   counsellingSessionsUsed: {
+    type: Number,
+    default: 0
+  },
+  salaryBenchmarkingUsed: {
+    type: Number,
+    default: 0
+  },
+  interviewPrepUsed: {
+    type: Number,
+    default: 0
+  },
+  aiResumeReviewUsed: {
+    type: Number,
+    default: 0
+  },
+  priorityApplicationsUsed: {
     type: Number,
     default: 0
   },
@@ -204,9 +249,18 @@ const userSchema = new mongoose.Schema({
     featureKey: { type: String, required: true },
     isActive: { type: Boolean, default: true },
     usageLeft: { type: Number, default: 0 },
-    expiresAt: { type: Date }
+    expiresAt: { type: Date },
+    purchasedAt: { type: Date, default: Date.now }
+  }],
+  aiMatchedJobs: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Job'
   }]
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  toJSON: { getters: true },
+  toObject: { getters: true }
+});
 
 userSchema.pre('save', async function() {
   if (!this.display_id && this.role) {

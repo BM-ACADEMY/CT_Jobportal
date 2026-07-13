@@ -196,6 +196,8 @@ const PaymentHistory = () => {
   const [loading, setLoading]           = useState(true);
   const [searchTerm, setSearchTerm]     = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage]   = useState(1);
+  const itemsPerPage = 10;
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -226,6 +228,12 @@ const PaymentHistory = () => {
   });
 
   const activeFilterLabel = FILTER_OPTIONS.find(f => f.key === statusFilter)?.label || 'All Transactions';
+
+  // Reset to page 1 on filter change
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
+
+  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+  const paginatedPayments = filteredPayments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (loading) {
     return (
@@ -293,8 +301,8 @@ const PaymentHistory = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredPayments.length > 0 ? (
-                filteredPayments.map(payment => {
+              {paginatedPayments.length > 0 ? (
+                paginatedPayments.map(payment => {
                   const cfg = STATUS_CONFIG[payment.status] || STATUS_CONFIG.pending;
                   const StatusIcon = cfg.icon;
                   return (
@@ -378,10 +386,30 @@ const PaymentHistory = () => {
       </div>
 
       <div className="flex items-center justify-between px-2">
-        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-          Showing {filteredPayments.length} of {payments.length} transactions
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Showing {paginatedPayments.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, filteredPayments.length)} of {filteredPayments.length} transactions
         </p>
-        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em]">End of List</p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="h-8 px-3 text-[11px] font-bold rounded-lg border-slate-200"
+          >
+            Previous
+          </Button>
+          <span className="text-xs font-bold text-slate-600 px-2">{currentPage} / {Math.max(1, totalPages)}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages || totalPages === 0}
+            className="h-8 px-3 text-[11px] font-bold rounded-lg border-slate-200"
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );

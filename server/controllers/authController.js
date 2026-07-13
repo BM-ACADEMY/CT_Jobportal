@@ -8,11 +8,15 @@ const sendEmail = require('../utils/sendEmail');
 
 // Auto-assign the free plan if the user has no subscription
 const ensureFreePlan = async (user, roleName) => {
-  if (user.subscription || roleName === 'org_employee') return;
+  if (roleName === 'org_employee') return;
+  const hasValidSubscription = user.subscription || (user.subscriptionExpiry && new Date(user.subscriptionExpiry) > new Date());
+  if (hasValidSubscription) return;
+  
   try {
     const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: roleName });
     if (freePlan) {
       user.subscription = freePlan._id;
+      user.subscriptionDetails = freePlan.toObject();
       user.subscriptionExpiry = null;
       await user.save();
       await user.populate('subscription');
@@ -170,7 +174,9 @@ const verifyOtp = async (req, res) => {
         counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
         employerCompany: user.employerCompany || null,
         employerCompanyName,
+        purchasedFeatures: user.purchasedFeatures || [],
         display_id: user.display_id,
+        isPhoneVisible: user.isPhoneVisible,
       }
     });
 
@@ -261,7 +267,9 @@ const loginUser = async (req, res) => {
         counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
         employerCompany: user.employerCompany || null,
         employerCompanyName,
+        purchasedFeatures: user.purchasedFeatures || [],
         display_id: user.display_id,
+        isPhoneVisible: user.isPhoneVisible,
       }
     });
   } catch (err) {
@@ -349,7 +357,9 @@ const resetPassword = async (req, res) => {
 // @route   GET /api/auth/me
 const getUserProfile = async (req, res) => {
   try {
-    let user = await User.findById(req.user.id).select('-password').populate(['role', 'subscription']);
+    let user = await User.findById(req.user.id)
+      .select('-password')
+      .populate(['role', 'subscription', 'pendingCompanyInvite']);
     
     // If not found in User collection, check Admin collection
     if (!user) {
@@ -408,6 +418,7 @@ const getUserProfile = async (req, res) => {
       counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
       employerCompany: user.employerCompany || null,
       employerCompanyName,
+      pendingCompanyInvite: user.pendingCompanyInvite || null,
       purchasedFeatures: user.purchasedFeatures || [],
       display_id: user.display_id,
       isPhoneVisible: user.isPhoneVisible,
@@ -553,7 +564,9 @@ const completeSocialProfile = async (req, res) => {
         subscription: populatedUser.subscription,
         subscriptionExpiry: populatedUser.subscriptionExpiry,
         downloadsUsed: populatedUser.downloadsUsed || 0,
-        display_id: populatedUser.display_id
+        purchasedFeatures: populatedUser.purchasedFeatures || [],
+        display_id: populatedUser.display_id,
+        isPhoneVisible: populatedUser.isPhoneVisible,
       }
     });
 

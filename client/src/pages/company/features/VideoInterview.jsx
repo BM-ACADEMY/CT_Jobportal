@@ -5,6 +5,8 @@ import { Video, Calendar, Link2, Loader2, Briefcase, Clock, X, CheckCircle2, Che
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import FeatureGate from '@/components/subscription/FeatureGate';
+import { JitsiMeeting } from '@jitsi/react-sdk';
+import { useAuth } from '@/context/AuthContext';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -160,8 +162,9 @@ const ScheduleModal = ({ jobs, onClose, onScheduled }) => {
             value={meetingLink}
             onChange={e => setMeetingLink(e.target.value)}
             className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-rose-400"
-            placeholder="https://meet.google.com/..."
+            placeholder="e.g., https://meet.google.com/... (Leave blank for In-Platform Room)"
           />
+          <p className="text-[10px] text-slate-500 mt-1.5">If left blank, a native secure video room will be automatically generated.</p>
         </div>
 
         <div>
@@ -191,12 +194,51 @@ const ScheduleModal = ({ jobs, onClose, onScheduled }) => {
   );
 };
 
+const NativeMeetingRoom = ({ interview, onClose, userName }) => {
+  const roomName = `velaivaaipu-interview-${interview._id}`;
+  
+  return (
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+      <div className="flex items-center justify-between px-6 py-3 bg-slate-900 text-white">
+        <div>
+          <h2 className="text-sm font-bold">Interview with {interview.candidate?.name}</h2>
+          <p className="text-xs text-slate-400">{interview.job?.title}</p>
+        </div>
+        <button onClick={onClose} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 rounded-lg text-xs font-bold text-white transition-colors">
+          End & Close
+        </button>
+      </div>
+      <div className="flex-1 bg-black">
+        <JitsiMeeting
+          domain="meet.jit.si"
+          roomName={roomName}
+          configOverwrite={{
+            startWithAudioMuted: false,
+            startWithVideoMuted: false,
+            disableModeratorIndicator: true,
+            enableEmailInStats: false,
+          }}
+          interfaceConfigOverwrite={{
+            DISABLE_JOIN_LEAVE_NOTIFICATIONS: true
+          }}
+          userInfo={{
+            displayName: userName || "Recruiter"
+          }}
+          getIFrameRef={(iframeRef) => { iframeRef.style.height = '100%'; iframeRef.style.width = '100%'; }}
+        />
+      </div>
+    </div>
+  );
+};
+
 const VideoInterview = () => {
+  const { user } = useAuth();
   const [interviews, setInterviews] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [updating, setUpdating] = useState(null);
+  const [activeMeeting, setActiveMeeting] = useState(null);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
@@ -247,6 +289,14 @@ const VideoInterview = () => {
       description="Schedule and manage video interviews with candidates directly from the portal."
       subscriptionPath="/company/subscription"
     >
+      {activeMeeting && (
+        <NativeMeetingRoom 
+          interview={activeMeeting} 
+          onClose={() => setActiveMeeting(null)} 
+          userName={user?.name}
+        />
+      )}
+
       {showScheduleModal && (
         <ScheduleModal
           jobs={jobs}
@@ -304,7 +354,7 @@ const VideoInterview = () => {
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Upcoming</p>
                 <div className="space-y-3">
                   {upcoming.map(iv => (
-                    <InterviewCard key={iv._id} interview={iv} onAction={handleAction} updating={updating} />
+                    <InterviewCard key={iv._id} interview={iv} onAction={handleAction} updating={updating} onJoinNative={() => setActiveMeeting(iv)} />
                   ))}
                 </div>
               </div>
@@ -316,7 +366,7 @@ const VideoInterview = () => {
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Past & Cancelled</p>
                 <div className="space-y-3">
                   {past.map(iv => (
-                    <InterviewCard key={iv._id} interview={iv} onAction={handleAction} updating={updating} readonly />
+                    <InterviewCard key={iv._id} interview={iv} onAction={handleAction} updating={updating} readonly onJoinNative={() => setActiveMeeting(iv)} />
                   ))}
                 </div>
               </div>
@@ -326,7 +376,7 @@ const VideoInterview = () => {
 
         {/* Features */}
         <div className="grid sm:grid-cols-2 gap-3">
-          {['Schedule interviews with shortlisted candidates', 'Set date, time, and duration', 'Add meeting link (Google Meet, Zoom, etc.)', 'Track scheduled, completed, and cancelled', 'Add notes and instructions per interview', 'Cancel interviews with one click'].map(f => (
+          {['Schedule interviews with shortlisted candidates', 'Native In-Platform Video Rooms', 'Record and save interviews (in-room)', 'Track scheduled, completed, and cancelled', 'Add notes and instructions per interview', 'Cancel interviews with one click'].map(f => (
             <div key={f} className="flex items-center gap-2 text-xs text-slate-600 font-medium">
               <CheckCircle2 size={13} className="text-emerald-500 shrink-0" /> {f}
             </div>
@@ -337,7 +387,7 @@ const VideoInterview = () => {
   );
 };
 
-const InterviewCard = ({ interview, onAction, updating, readonly }) => {
+const InterviewCard = ({ interview, onAction, updating, readonly, onJoinNative }) => {
   const iv = interview;
   const isUpcoming = iv.status === 'scheduled' && new Date(iv.scheduledAt) >= new Date();
   const dt = new Date(iv.scheduledAt);
@@ -356,10 +406,14 @@ const InterviewCard = ({ interview, onAction, updating, readonly }) => {
           </span>
           <span className="text-[10px] text-slate-400">{iv.duration} min</span>
         </div>
-        {iv.meetingLink && (
+        {iv.meetingLink ? (
           <a href={iv.meetingLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-600 hover:underline flex items-center gap-1 mt-0.5">
-            <Link2 size={9} /> Join Meeting
+            <Link2 size={9} /> Join External Meeting
           </a>
+        ) : (
+          <button onClick={() => onJoinNative(iv)} className="text-[10px] text-emerald-600 font-bold hover:underline flex items-center gap-1 mt-0.5">
+            <Video size={10} /> Join Native Room
+          </button>
         )}
       </div>
       <Badge className={`text-[10px] font-bold border-none shrink-0 ${statusStyles[iv.status]}`}>

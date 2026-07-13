@@ -72,6 +72,7 @@ import MyApplications from '../pages/jobseeker/MyApplications';
 import AtsPipeline from '../pages/company/features/AtsPipeline';
 import Analytics from '../pages/company/features/Analytics';
 import BulkMessaging from '../pages/company/features/BulkMessaging';
+import MyTeam from '../pages/company/MyTeam';
 import VideoInterview from '../pages/company/features/VideoInterview';
 import TeamCollaboration from '../pages/company/features/TeamCollaboration';
 import InterviewScheduling from '../pages/company/features/InterviewScheduling';
@@ -280,14 +281,13 @@ const AppRoutes = () => {
         />
         <Route path="/company/jobs" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><MyJobs /></PrivateRoute>} />
         <Route path="/company/candidate-search" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><CandidateSearch /></PrivateRoute>} />
-        <Route path="/company/requests" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasRequests" subscriptionPath="/company/subscription"><AssignedRequests /></FeatureGate></PrivateRoute>} />
+        <Route path="/company/requests" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><AssignedRequests /></PrivateRoute>} />
         <Route path="/company/ats-pipeline" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasATSPipeline" subscriptionPath="/company/subscription"><AtsPipeline /></FeatureGate></PrivateRoute>} />
         <Route path="/company/analytics" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasAnalyticsDashboard" subscriptionPath="/company/subscription"><Analytics /></FeatureGate></PrivateRoute>} />
         <Route path="/company/bulk-messaging" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasBulkMessaging" subscriptionPath="/company/subscription"><BulkMessaging /></FeatureGate></PrivateRoute>} />
         <Route path="/company/bulk-applications" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasBulkApplicantManagement" subscriptionPath="/company/subscription"><BulkApplicantManagement /></FeatureGate></PrivateRoute>} />
         <Route path="/company/profile-management" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><CompanyProfileManagement /></PrivateRoute>} />
-        <Route path="/company/team" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasTeamCollaboration" subscriptionPath="/company/subscription"><TeamCollaboration /></FeatureGate></PrivateRoute>} />
-        <Route path="/company/collaboration" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasTeamCollaboration" subscriptionPath="/company/subscription"><TeamCollaboration /></FeatureGate></PrivateRoute>} />
+        <Route path="/company/team" element={<PrivateRoute roles={['company']}><MyTeam /></PrivateRoute>} />
         <Route path="/company/video-interview" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasInterviewScheduling" subscriptionPath="/company/subscription"><VideoInterview /></FeatureGate></PrivateRoute>} />
         <Route path="/company/interview-scheduling" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasInterviewScheduling" subscriptionPath="/company/subscription"><InterviewScheduling /></FeatureGate></PrivateRoute>} />
         <Route path="/company/ai-matching" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasAICandidateMatching" subscriptionPath="/company/subscription"><AICandidateMatching /></FeatureGate></PrivateRoute>} />

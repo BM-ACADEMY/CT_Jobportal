@@ -129,7 +129,7 @@ const PublicProfile = () => {
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <h1 className="text-4xl font-black tracking-tight">{profile.name}</h1>
                   <CheckCircle2 size={24} className="text-emerald-500" />
-                  {(profile.subscription?.hasPriorityBadge || profile.subscription?.hasProfileBoost) && (
+                  {(profile.isPriority || profile.subscription?.hasProfileBoost) && (
                     <div className="flex items-center gap-1 bg-blue-500/20 border border-blue-400/30 px-2 py-1 rounded-full" title="Priority Member">
                       <Star size={12} className="text-blue-400 fill-blue-400" />
                       <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest">Priority</span>

@@ -7,30 +7,15 @@ import { Button } from '@/components/ui/button';
 
 const DURATION_ORDER = ['Monthly', 'Quarterly', 'Yearly', 'Lifetime'];
 
-const getQuantityOptions = (duration) => {
-  switch (duration) {
-    case 'Monthly':
-      return Array.from({ length: 12 }, (_, i) => ({
-        value: i + 1,
-        label: i === 0 ? '1 Month' : `${i + 1} Months`,
-      }));
-    case 'Quarterly':
-      return Array.from({ length: 4 }, (_, i) => ({
-        value: i + 1,
-        label: i === 0 ? '1 Quarter (3 months)' : `${i + 1} Quarters (${(i + 1) * 3} months)`,
-      }));
-    case 'Yearly':
-      return Array.from({ length: 5 }, (_, i) => ({
-        value: i + 1,
-        label: i === 0 ? '1 Year' : `${i + 1} Years`,
-      }));
-    default:
-      return [{ value: 1, label: duration || '1 Period' }];
-  }
-};
-
 const fmt = (n) =>
   `₹${Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const getDurationLabel = (duration, qty) => {
+  if (duration === 'Monthly') return qty === 1 ? '1 Month' : `${qty} Months`;
+  if (duration === 'Quarterly') return qty === 1 ? '1 Quarter' : `${qty} Quarters`;
+  if (duration === 'Yearly') return qty === 1 ? '1 Year' : `${qty} Years`;
+  return qty === 1 ? `1 ${duration}` : `${qty} ${duration}s`;
+};
 
 const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClose, onProceed }) => {
   const rolePlans = plans
@@ -42,19 +27,32 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
     });
 
   const [selectedPlanId, setSelectedPlanId] = useState(initialPlan._id);
-  const [quantity, setQuantity] = useState(1);
+  const [selectedIdx, setSelectedIdx] = useState(0);
   const [autoRenew, setAutoRenew] = useState(true);
   const [processing, setProcessing] = useState(false);
 
   const selectedPlan = rolePlans.find(p => p._id === selectedPlanId) || initialPlan;
   const isLifetime = selectedPlan.duration === 'Lifetime';
-  const quantityOptions = getQuantityOptions(selectedPlan.duration);
 
-  // Reset quantity to 1 whenever the selected plan changes
-  useEffect(() => { setQuantity(1); }, [selectedPlanId]);
+  // Reset selected option index to 0 whenever selected plan changes
+  useEffect(() => { setSelectedIdx(0); }, [selectedPlanId]);
 
-  const basePerUnit  = selectedPlan.price;
-  const baseTotal    = basePerUnit * quantity;
+  const options = (selectedPlan.pricingOptions && selectedPlan.pricingOptions.length === 3)
+    ? selectedPlan.pricingOptions
+    : [
+        { quantity: 1, price: selectedPlan.price },
+        { quantity: 3, price: Math.round(selectedPlan.price * 3 * 0.95) },
+        { quantity: 12, price: Math.round(selectedPlan.price * 12 * 0.80) }
+      ];
+
+  const selectedOption = options[selectedIdx];
+  const quantity = isLifetime ? 1 : selectedOption.quantity;
+  const baseTotal = isLifetime ? selectedPlan.price : selectedOption.price;
+
+  const originalCost = selectedPlan.price * quantity;
+  const discountAmount = Math.max(0, originalCost - baseTotal);
+  const discountPercentage = originalCost > 0 ? Math.round((discountAmount / originalCost) * 100) : 0;
+
   const gstTotal     = Math.round(baseTotal * gstPercentage) / 100;
   const grandTotal   = baseTotal + gstTotal;
 
@@ -68,11 +66,11 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[88vh] flex flex-col overflow-hidden my-auto border border-slate-100">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
               <ShieldCheck size={16} className="text-emerald-600" />
@@ -91,7 +89,7 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1">
 
           {/* Plan banner */}
           <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
@@ -110,54 +108,74 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
             </div>
           </div>
 
-          {/* Two selectors side-by-side */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Billing cycle selector */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                <Clock size={10} /> Billing Cycle
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedPlanId}
-                  onChange={e => setSelectedPlanId(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 cursor-pointer"
-                >
-                  {rolePlans.map(p => (
-                    <option key={p._id} value={p._id}>
-                      {p.duration} · ₹{p.price.toLocaleString('en-IN')}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Quantity / period multiplier */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                <Tag size={10} /> Duration
-              </label>
-              {isLifetime ? (
-                <div className="h-10 rounded-xl border border-slate-100 bg-slate-50 flex items-center px-3">
-                  <span className="text-xs font-bold text-slate-500">Lifetime</span>
-                </div>
-              ) : (
-                <div className="relative">
-                  <select
-                    value={quantity}
-                    onChange={e => setQuantity(Number(e.target.value))}
-                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 cursor-pointer"
-                  >
-                    {quantityOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                </div>
-              )}
+          {/* Billing Cycle Dropdown */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+              <Clock size={10} /> Choose Plan Cycle
+            </label>
+            <div className="relative">
+              <select
+                value={selectedPlanId}
+                onChange={e => setSelectedPlanId(e.target.value)}
+                className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-800 appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 cursor-pointer"
+              >
+                {rolePlans.map(p => (
+                  <option key={p._id} value={p._id}>
+                    {p.duration} · ₹{p.price.toLocaleString('en-IN')} / base
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
           </div>
+
+          {/* 3 Duration Options (not shown for Lifetime) */}
+          {!isLifetime && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1.5">
+                <Tag size={10} /> Choose Duration
+              </label>
+              <div className="grid grid-cols-3 gap-2.5">
+                {options.map((opt, idx) => {
+                  const isSelected = selectedIdx === idx;
+                  const optQty = opt.quantity;
+                  const optPrice = opt.price;
+                  const normCost = selectedPlan.price * optQty;
+                  const optDiscount = normCost > 0 ? Math.round(((normCost - optPrice) / normCost) * 100) : 0;
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedIdx(idx)}
+                      className={`flex flex-col items-center justify-between p-3.5 rounded-2xl border text-center transition-all ${
+                        isSelected
+                          ? 'border-emerald-500 bg-emerald-50/50 shadow-sm ring-1 ring-emerald-500'
+                          : 'border-slate-100 bg-white hover:bg-slate-50/50'
+                      }`}
+                    >
+                      <div className="space-y-0.5">
+                        <span className={`block text-xs font-black uppercase tracking-tight ${isSelected ? 'text-emerald-700' : 'text-slate-500'}`}>
+                          {getDurationLabel(selectedPlan.duration, optQty)}
+                        </span>
+                      </div>
+
+                      <div className="mt-3.5 space-y-1">
+                        <span className={`block text-xs font-extrabold ${isSelected ? 'text-emerald-800' : 'text-slate-800'}`}>
+                          ₹{optPrice}
+                        </span>
+                        {optDiscount > 0 && (
+                          <span className="inline-block text-[8px] font-black text-emerald-600 bg-emerald-100/70 px-1 py-0.5 rounded-md">
+                            Save {optDiscount}%
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Price breakdown */}
           <div className="rounded-xl border border-slate-100 overflow-hidden">
@@ -171,12 +189,23 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
                   <span className="text-xs font-medium text-slate-600">Plan Cost</span>
                   {quantity > 1 && (
                     <span className="block text-[10px] text-slate-400 mt-0.5">
-                      {fmt(basePerUnit)} × {quantity} {selectedPlan.duration === 'Monthly' ? 'months' : selectedPlan.duration === 'Quarterly' ? 'quarters' : 'years'}
+                      {fmt(selectedPlan.price)} × {quantity}
                     </span>
                   )}
                 </div>
-                <span className="text-sm font-bold text-slate-900">{fmt(baseTotal)}</span>
+                <span className="text-sm font-bold text-slate-900">{fmt(originalCost)}</span>
               </div>
+              {/* Discount */}
+              {discountAmount > 0 && !isLifetime && (
+                <div className="flex items-center justify-between px-4 py-3 bg-rose-50/50">
+                  <span className="text-xs font-semibold text-rose-600">
+                    Option Discount <span className="font-bold">({discountPercentage}%)</span>
+                  </span>
+                  <span className="text-sm font-bold text-rose-600">
+                    - {fmt(discountAmount)}
+                  </span>
+                </div>
+              )}
               {/* GST */}
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-xs font-medium text-slate-600">
@@ -229,11 +258,11 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
         </div>
 
         {/* Actions */}
-        <div className="px-6 pb-6 space-y-2">
+        <div className="px-6 py-4 border-t border-slate-100 bg-white shrink-0 space-y-2">
           <Button
             onClick={handleProceed}
             disabled={processing}
-            className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.01] transition-all disabled:opacity-60 disabled:scale-100"
+            className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.01] transition-all disabled:opacity-60 disabled:scale-100"
           >
             {processing
               ? <><Loader2 size={16} className="animate-spin" /> Processing…</>
@@ -243,7 +272,7 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
           <button
             onClick={onClose}
             disabled={processing}
-            className="w-full h-9 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+            className="w-full h-8 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

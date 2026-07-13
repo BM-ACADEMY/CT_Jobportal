@@ -10,6 +10,25 @@ const fetchGstPercentage = async () => {
   return settings?.gstPercentage || 0;
 };
 
+const getPricingOption = (feature, quantity) => {
+  if (feature.pricingOptions && feature.pricingOptions.length > 0) {
+    const opt = feature.pricingOptions.find(o => o.quantity === quantity);
+    if (opt) {
+      return opt.price;
+    }
+  }
+  
+  // Default fallback calculation:
+  const basePerUnit = feature.cost || 0;
+  const baseTotal = basePerUnit * quantity;
+  let discountPercentage = 0;
+  if (quantity >= 12) discountPercentage = 20;
+  else if (quantity >= 6) discountPercentage = 10;
+  else if (quantity >= 3) discountPercentage = 5;
+  const discountAmount = Math.round(baseTotal * discountPercentage) / 100;
+  return baseTotal - discountAmount;
+};
+
 // @desc    Get all pay-per features (Admin sees all, Users see active for their role)
 exports.getFeatures = async (req, res) => {
   try {
@@ -96,8 +115,14 @@ exports.purchaseCreateOrder = async (req, res) => {
       return res.status(404).json({ msg: 'Feature not found or inactive' });
     }
 
+    const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
+    const baseAmount = getPricingOption(feature, quantity);
+
+    const originalCost = (feature.cost || 0) * quantity;
+    const discountAmount = Math.max(0, originalCost - baseAmount);
+    const discountPercentage = originalCost > 0 ? Math.round((discountAmount / originalCost) * 100) : 0;
+
     const gstPercentage = await fetchGstPercentage();
-    const baseAmount = feature.cost;
     const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
     const totalAmount = baseAmount + gstAmount;
     const amountInPaise = Math.round(totalAmount * 100);
@@ -116,7 +141,10 @@ exports.purchaseCreateOrder = async (req, res) => {
       currency: order.currency,
       featureId: feature._id,
       featureName: feature.name,
+      quantity,
       baseAmount,
+      discountPercentage,
+      discountAmount,
       gstPercentage,
       gstAmount,
       totalAmount,
@@ -137,6 +165,7 @@ exports.purchaseVerify = async (req, res) => {
       razorpay_signature,
       featureId
     } = req.body;
+    const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
 
     // Verify signature
     const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -154,9 +183,11 @@ exports.purchaseVerify = async (req, res) => {
       return res.status(404).json({ msg: 'Feature not found' });
     }
 
-    // Calculate expiry
+    // Calculate expiry (extended by quantity)
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + feature.days);
+    expiresAt.setDate(expiresAt.getDate() + (feature.days * quantity));
+
+    const usageLeft = feature.usageCount > 0 ? (feature.usageCount * quantity) : 0;
 
     // Add to user's purchasedFeatures
     const user = await User.findById(req.user.id);
@@ -164,14 +195,16 @@ exports.purchaseVerify = async (req, res) => {
       featureId: feature._id,
       featureKey: feature.featureKey,
       isActive: true,
-      usageLeft: feature.usageCount || 0,
+      usageLeft,
       expiresAt,
+      purchasedAt: new Date()
     });
     await user.save();
 
+    const baseAmt = getPricingOption(feature, quantity);
+
     // Save payment record
     const gstPct = await fetchGstPercentage();
-    const baseAmt = feature.cost;
     const gstAmt = Math.round(baseAmt * gstPct) / 100;
     const totalAmt = baseAmt + gstAmt;
 
@@ -183,7 +216,7 @@ exports.purchaseVerify = async (req, res) => {
       baseAmount: baseAmt,
       gstPercentage: gstPct,
       gstAmount: gstAmt,
-      quantity: 1,
+      quantity,
       currency: 'INR',
       razorpay_order_id,
       razorpay_payment_id,

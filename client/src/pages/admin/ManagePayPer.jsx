@@ -88,6 +88,13 @@ const ManagePayPer = () => {
 
   const handleOpenModal = (feature = null) => {
     if (feature) {
+      const opts = feature.pricingOptions && feature.pricingOptions.length === 3
+        ? feature.pricingOptions
+        : [
+            { quantity: 1, price: feature.cost || 0 },
+            { quantity: 3, price: Math.round((feature.cost || 0) * 3 * 0.95) },
+            { quantity: 12, price: Math.round((feature.cost || 0) * 12 * 0.80) }
+          ];
       setFormData({
         _id: feature._id,
         name: feature.name,
@@ -97,7 +104,8 @@ const ManagePayPer = () => {
         days: feature.days,
         usageCount: feature.usageCount || 0,
         description: feature.description || '',
-        isActive: feature.isActive
+        isActive: feature.isActive,
+        pricingOptions: opts
       });
       setIsCustomKey(!FEATURE_OPTIONS.some(opt => opt.key === feature.featureKey));
     } else {
@@ -110,7 +118,12 @@ const ManagePayPer = () => {
         days: 30,
         usageCount: 0,
         description: '',
-        isActive: true
+        isActive: true,
+        pricingOptions: [
+          { quantity: 1, price: 0 },
+          { quantity: 3, price: 0 },
+          { quantity: 12, price: 0 }
+        ]
       });
       setIsCustomKey(false);
     }
@@ -143,7 +156,8 @@ const ManagePayPer = () => {
         ...formData,
         cost: Number(formData.cost),
         days: Number(formData.days),
-        usageCount: Number(formData.usageCount) || 0
+        usageCount: Number(formData.usageCount) || 0,
+        pricingOptions: formData.pricingOptions || []
       };
 
       if (formData._id) {
@@ -272,8 +286,8 @@ const ManagePayPer = () => {
       {/* Modal Form */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <Card className="w-full max-w-lg rounded-[24px] shadow-2xl overflow-hidden border-0">
-            <div className="bg-emerald-600 p-6 flex justify-between items-center text-white">
+          <Card className="w-full max-w-lg rounded-[24px] shadow-2xl overflow-hidden border-0 max-h-[90vh] flex flex-col bg-white">
+            <div className="bg-emerald-600 p-6 flex justify-between items-center text-white shrink-0">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 <Sparkles size={18} /> {formData._id ? 'Edit Pay-per Feature' : 'Create Pay-per Feature'}
               </h3>
@@ -281,8 +295,8 @@ const ManagePayPer = () => {
                 <X size={18} />
               </button>
             </div>
-            <CardContent className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+              <CardContent className="p-6 overflow-y-auto flex-1 space-y-5">
                 
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Target Roles</Label>
@@ -405,6 +419,63 @@ const ManagePayPer = () => {
                   </div>
                 </div>
 
+                {/* Pricing Options */}
+                <div className="rounded-2xl border border-slate-100 p-5 space-y-4 bg-slate-50/50">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">3 Purchase Options / Session Pricing</Label>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Required</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    {[0, 1, 2].map((idx) => {
+                      const qtyDefault = idx === 0 ? 1 : idx === 1 ? 3 : 12;
+                      const option = formData.pricingOptions?.[idx] || { quantity: qtyDefault, price: 0 };
+                      
+                      return (
+                        <div key={idx} className="bg-white p-4 rounded-xl border border-slate-100 space-y-3 shadow-sm">
+                          <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Option {idx + 1}</span>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <Label className="text-[9px] font-bold text-slate-400 uppercase block">Quantity</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={option.quantity}
+                              onChange={e => {
+                                const newOpts = [...(formData.pricingOptions || [])];
+                                newOpts[idx] = { ...option, quantity: Math.max(1, parseInt(e.target.value) || 0) };
+                                setFormData({ ...formData, pricingOptions: newOpts });
+                              }}
+                              className="h-9 rounded-lg text-xs"
+                              placeholder={String(qtyDefault)}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <Label className="text-[9px] font-bold text-slate-400 uppercase block">Total Price (₹)</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={option.price || ''}
+                              onChange={e => {
+                                const newOpts = [...(formData.pricingOptions || [])];
+                                newOpts[idx] = { ...option, price: Number(e.target.value) || 0 };
+                                setFormData({ ...formData, pricingOptions: newOpts });
+                              }}
+                              className="h-9 rounded-lg text-xs"
+                              placeholder={String(option.price || 0)}
+                              required
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Description</Label>
                   <textarea 
@@ -415,12 +486,17 @@ const ManagePayPer = () => {
                   />
                 </div>
 
-                <Button type="submit" disabled={saving} className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm mt-2">
+              </CardContent>
+              <div className="p-5 border-t border-slate-100 bg-slate-50/60 shrink-0 flex gap-3">
+                <Button type="button" variant="ghost" onClick={() => setShowModal(false)} className="flex-1 h-12 rounded-xl text-slate-500 font-bold hover:bg-slate-100">
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving} className="flex-1 h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm">
                   {saving ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
                   {saving ? 'Saving...' : formData._id ? 'Save Changes' : 'Create Pay-per Feature'}
                 </Button>
-              </form>
-            </CardContent>
+              </div>
+            </form>
           </Card>
         </div>
       )}

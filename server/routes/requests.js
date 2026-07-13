@@ -7,6 +7,7 @@ const {
   submitSalaryBenchmarkRequest,
   getMySessions,
   getMyInterviewPrep,
+  getMySalaryBenchmarks,
   cancelMySession,
   cancelMyInterviewPrep,
   getAdminRequests,
@@ -17,15 +18,20 @@ const {
   updateAssignedRequest,
   submitBulkApplicationRequest,
   submitWebsiteRequest,
+  submitAiResumeReviewRequest,
+  getMyAiResumeReviews,
 } = require('../controllers/requestController');
 
 router.use(verifyToken);
 
 router.post('/counselling', authorizeRoles('jobseeker'), submitCounsellingRequest);
 router.post('/interview-prep', authorizeRoles('jobseeker'), submitInterviewPrepRequest);
+router.post('/ai-resume-review', authorizeRoles('jobseeker'), submitAiResumeReviewRequest);
 router.post('/salary-benchmark', authorizeRoles('jobseeker'), submitSalaryBenchmarkRequest);
+router.get('/salary-benchmark', authorizeRoles('jobseeker'), getMySalaryBenchmarks);
 router.get('/my-sessions', authorizeRoles('jobseeker'), getMySessions);
 router.get('/my-interview-prep', authorizeRoles('jobseeker'), getMyInterviewPrep);
+router.get('/my-ai-resume-reviews', authorizeRoles('jobseeker'), getMyAiResumeReviews);
 router.patch('/interview-prep/:id/cancel', authorizeRoles('jobseeker'), cancelMyInterviewPrep);
 router.patch('/counselling/:id/cancel', authorizeRoles('jobseeker'), cancelMySession);
 

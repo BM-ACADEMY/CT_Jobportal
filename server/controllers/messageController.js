@@ -230,8 +230,24 @@ const sendBulkMessage = async (req, res) => {
     const sender = await User.findById(senderId).populate('subscription');
     if (!sender) return res.status(404).json({ msg: 'User not found' });
 
-    if (!sender.subscription?.hasBulkMessaging) {
-      return res.status(403).json({ msg: 'Bulk messaging requires a paid plan.', requiresUpgrade: true });
+    let hasAccess = sender.subscription?.hasBulkMessaging;
+    let payPerFeatureIndex = -1;
+
+    // Fallback: Check Pay-Per System
+    if (!hasAccess && sender.purchasedFeatures && sender.purchasedFeatures.length > 0) {
+      const now = new Date();
+      payPerFeatureIndex = sender.purchasedFeatures.findIndex(
+        f => f.featureKey === 'hasBulkMessaging' &&
+             f.isActive &&
+             (!f.expiresAt || new Date(f.expiresAt) > now)
+      );
+      if (payPerFeatureIndex !== -1) {
+        hasAccess = true;
+      }
+    }
+
+    if (!hasAccess) {
+      return res.status(403).json({ msg: 'Bulk messaging requires a paid plan or feature purchase.', requiresUpgrade: true });
     }
 
     const { recipientIds, subject, content } = req.body;
@@ -239,6 +255,15 @@ const sendBulkMessage = async (req, res) => {
       return res.status(400).json({ msg: 'No recipients provided' });
     }
     if (!content) return res.status(400).json({ msg: 'Message content is required' });
+
+    // Ensure they have enough pay-per credits if it's a limited feature
+    if (payPerFeatureIndex !== -1) {
+      const feature = sender.purchasedFeatures[payPerFeatureIndex];
+      // usageLeft > 0 means it is a limited pack (unlimited is stored as 0)
+      if (feature.usageLeft > 0 && feature.usageLeft < recipientIds.length) {
+        return res.status(400).json({ msg: `You only have ${feature.usageLeft} messages left in your pay-per plan. Please select fewer candidates or upgrade.` });
+      }
+    }
 
     const results = { sent: 0, failed: 0 };
 
@@ -261,6 +286,19 @@ const sendBulkMessage = async (req, res) => {
         results.sent++;
       } catch {
         results.failed++;
+      }
+    }
+
+    // Deduct usages if applicable
+    if (payPerFeatureIndex !== -1 && results.sent > 0) {
+      const feature = sender.purchasedFeatures[payPerFeatureIndex];
+      if (feature.usageLeft > 0) {
+        feature.usageLeft -= results.sent;
+        if (feature.usageLeft <= 0) {
+          feature.usageLeft = 0;
+          feature.isActive = false;
+        }
+        await sender.save();
       }
     }
 
