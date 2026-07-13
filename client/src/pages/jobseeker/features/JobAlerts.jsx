@@ -6,7 +6,7 @@ import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 
-const FREQ_LABELS = { instant: 'Instant', daily: 'Daily Digest', weekly: 'Weekly Digest', none: 'Off' };
+const FREQ_LABELS = { instant: 'Instant', daily: 'Daily Digest', weekly: 'Weekly Digest', monthly: 'Monthly Digest', none: 'Off' };
 
 const AlertRow = ({ job }) => (
   <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-white hover:border-emerald-100 hover:shadow-sm transition-all">
@@ -37,7 +37,24 @@ const JobAlerts = () => {
   const { user } = useAuth();
   const [matchingJobs, setMatchingJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const freq = user?.subscription?.jobAlerts || 'daily';
+  const getAlertInfo = () => {
+    if (Array.isArray(user?.purchasedFeatures)) {
+      const ppFeature = user.purchasedFeatures.find(f => 
+        f.isActive && 
+        (f.featureKey === 'hasJobAlerts' || f.featureKey === 'jobAlerts') && 
+        (!f.expiresAt || new Date(f.expiresAt) > new Date())
+      );
+      if (ppFeature) {
+        return { freq: 'daily', source: 'pay_per', expiresAt: ppFeature.expiresAt };
+      }
+    }
+    const subFreq = user?.subscription?.jobAlerts;
+    if (subFreq) return { freq: subFreq.toLowerCase(), source: 'plan' };
+    return { freq: 'monthly', source: 'default' };
+  };
+
+  const alertInfo = getAlertInfo();
+  const freq = alertInfo.freq;
 
   const filterByFrequency = (jobs, frequency) => {
     const now = new Date();
@@ -110,10 +127,16 @@ const JobAlerts = () => {
           <div className="flex-1">
             <p className="text-xs font-bold text-amber-900">Delivery Frequency</p>
             <p className="text-[11px] text-amber-700 mt-0.5">
-              Your plan includes <strong>{FREQ_LABELS[freq]}</strong> alerts
-              {freq === 'daily' && ' — showing jobs posted today'}
-              {freq === 'weekly' && ' — showing jobs from the last 7 days'}
-              {freq === 'monthly' && ' — showing jobs posted this month'}
+              {alertInfo.source === 'pay_per' ? (
+                <>Your add-on gives you <strong>Daily Digest</strong> alerts {alertInfo.expiresAt ? `until ${new Date(alertInfo.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''} — showing jobs posted today.</>
+              ) : (
+                <>
+                  Your plan includes <strong>{FREQ_LABELS[freq]}</strong> alerts
+                  {freq === 'daily' && ' — showing jobs posted today.'}
+                  {freq === 'weekly' && ' — showing jobs from the last 7 days.'}
+                  {freq === 'monthly' && ' — showing jobs posted this month.'}
+                </>
+              )}
             </p>
           </div>
           <Badge className="bg-amber-100 text-amber-700 border-none text-[10px] font-bold">{FREQ_LABELS[freq]}</Badge>

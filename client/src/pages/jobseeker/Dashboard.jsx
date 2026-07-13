@@ -76,6 +76,49 @@ const JobSeekerDashboard = () => {
              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">ID: {user?.display_id || 'Pending Generate'}</p>
           </div>
         </div>
+
+        {user?.pendingCompanyInvite && (
+          <div className="bg-white border-2 border-emerald-500 rounded-3xl p-6 shadow-lg shadow-emerald-500/10 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-4 fade-in">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                {user.pendingCompanyInvite.name?.charAt(0) || 'C'}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Organization Invitation</h3>
+                <p className="text-sm text-slate-500">You have been invited to join <strong>{user.pendingCompanyInvite.name}</strong>'s team.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <Button 
+                onClick={async () => {
+                  try {
+                    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/decline-company-invite`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }});
+                    window.location.reload();
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
+                variant="outline" 
+                className="flex-1 md:flex-none border-rose-200 text-rose-600 hover:bg-rose-50"
+              >
+                Decline
+              </Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/accept-company-invite`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }});
+                    window.location.reload();
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
+                className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+              >
+                Accept Invite
+              </Button>
+            </div>
+          </div>
+        )}
         
         {/* Recommended Jobs */}
         <section className="space-y-6">

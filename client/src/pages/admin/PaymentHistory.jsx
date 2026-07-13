@@ -22,6 +22,8 @@ const AdminPaymentHistory = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -50,6 +52,11 @@ const AdminPaymentHistory = () => {
     p.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.razorpay_payment_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
+
+  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+  const paginatedPayments = filteredPayments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (loading) {
     return (
@@ -119,8 +126,8 @@ const AdminPaymentHistory = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredPayments.length > 0 ? (
-                filteredPayments.map((payment) => (
+              {paginatedPayments.length > 0 ? (
+                paginatedPayments.map((payment) => (
                   <tr key={payment._id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
@@ -215,6 +222,33 @@ const AdminPaymentHistory = () => {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-2">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Showing {paginatedPayments.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, filteredPayments.length)} of {filteredPayments.length} transactions
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="h-8 px-3 text-[11px] font-bold rounded-lg border-slate-200"
+          >
+            Previous
+          </Button>
+          <span className="text-xs font-bold text-slate-600 px-2">{currentPage} / {Math.max(1, totalPages)}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages || totalPages === 0}
+            className="h-8 px-3 text-[11px] font-bold rounded-lg border-slate-200"
+          >
+            Next
+          </Button>
         </div>
       </div>
     </div>

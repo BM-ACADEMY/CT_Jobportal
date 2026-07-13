@@ -172,8 +172,6 @@ const SubscriptionPage = () => {
 
       const { orderId, amount, currency } = orderRes.data;
 
-      setCheckoutPlan(null);
-
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount,
@@ -194,6 +192,7 @@ const SubscriptionPage = () => {
 
             if (verifyRes.data.success) {
               toast.success('Subscription upgraded successfully!');
+              setCheckoutPlan(null);
               refreshUser();
             }
           } catch (err) {

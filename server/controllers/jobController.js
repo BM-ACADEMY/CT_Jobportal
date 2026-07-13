@@ -1,6 +1,7 @@
 const Job = require('../models/Job');
 const User = require('../models/User');
 const Application = require('../models/Application');
+const { getEffectivePlanLimit } = require('../utils/getEffectivePlanLimit');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -8,27 +9,53 @@ const Application = require('../models/Application');
 const createJob = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId).populate('subscription');
+    const user = await User.findById(userId).populate('subscription').populate('role');
 
     if (!user || !user.company) {
       return res.status(400).json({ msg: 'You must be associated with a company to post jobs' });
     }
 
     // Enforce job posting limit
-    const plan = user.subscription;
-    if (plan && plan.activeJobPostings > 0) {
-      const activeCount = await Job.countDocuments({
-        company: user.company,
-        status: { $in: ['active', 'closed'] }
+    const roleName = user.role?.name || 'recruiter';
+
+    // 1. Get limit from active plan (falls back to Free plan if paid plan expired)
+    const planLimit = await getEffectivePlanLimit(user, roleName);
+
+    // 2. Add limits from Pay-Per-Feature add-ons
+    let payPerLimit = 0;
+    if (Array.isArray(user.purchasedFeatures)) {
+      user.purchasedFeatures.forEach(f => {
+        if (f.isActive && f.featureKey === 'activeJobPostings' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) {
+          payPerLimit += f.usageLeft;
+        }
       });
-      if (activeCount >= plan.activeJobPostings) {
-        return res.status(403).json({
-          msg: `Job posting limit reached. Your plan allows ${plan.activeJobPostings} job postings. Upgrade to post more.`,
-          requiresUpgrade: true,
-          limit: plan.activeJobPostings,
-          used: activeCount
-        });
-      }
+    }
+
+    const totalAllowed = planLimit + payPerLimit;
+
+    if (totalAllowed <= 0) {
+      return res.status(403).json({
+        msg: "You don't have active plan to post the job. Please purchase a plan or add-on.",
+        requiresUpgrade: true,
+        limit: 0,
+        used: 0
+      });
+    }
+
+    let activeCountQuery = { company: user.company, status: { $in: ['active', 'closed'] } };
+    if (user.role && user.role.name === 'recruiter') {
+      activeCountQuery.recruiter = userId;
+    }
+
+    const activeCount = await Job.countDocuments(activeCountQuery);
+
+    if (activeCount >= totalAllowed) {
+      return res.status(403).json({
+        msg: `Job posting limit reached. Your allowed limit is ${totalAllowed} job postings. Please upgrade your plan or purchase an add-on to post more.`,
+        requiresUpgrade: true,
+        limit: totalAllowed,
+        used: activeCount
+      });
     }
 
     const {
@@ -166,6 +193,41 @@ const updateJob = async (req, res) => {
 
     // Conditional validation for updates
     const updatedStatus = req.body.status || job.status;
+    
+    // Check limit if moving from draft/inactive to active/closed
+    const currentIsCounting = ['active', 'closed'].includes(job.status);
+    const newIsCounting = ['active', 'closed'].includes(updatedStatus);
+
+    if (!currentIsCounting && newIsCounting) {
+      const fullUser = await User.findById(userId).populate('subscription').populate('role');
+      const fullRoleName = fullUser.role?.name || 'recruiter';
+      const planLimit = await getEffectivePlanLimit(fullUser, fullRoleName);
+      let payPerLimit = 0;
+      if (Array.isArray(fullUser.purchasedFeatures)) {
+        fullUser.purchasedFeatures.forEach(f => {
+          if (f.isActive && f.featureKey === 'activeJobPostings' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) {
+            payPerLimit += f.usageLeft;
+          }
+        });
+      }
+      const totalAllowed = planLimit + payPerLimit;
+
+      let activeCountQuery = { company: fullUser.company, status: { $in: ['active', 'closed'] } };
+      if (fullUser.role && fullUser.role.name === 'recruiter') {
+        activeCountQuery.recruiter = userId;
+      }
+      const activeCount = await Job.countDocuments(activeCountQuery);
+
+      if (activeCount >= totalAllowed) {
+        return res.status(403).json({
+          msg: `Job posting limit reached. Your allowed limit is ${totalAllowed} job postings. Please upgrade your plan or purchase an add-on to post more.`,
+          requiresUpgrade: true,
+          limit: totalAllowed,
+          used: activeCount
+        });
+      }
+    }
+
     if (updatedStatus !== 'draft') {
       const updatedTitle = req.body.title || job.title;
       const updatedDesc = req.body.description || job.description;
@@ -547,11 +609,22 @@ const searchCandidates = async (req, res) => {
     const seekerRole = await Role.findOne({ name: 'jobseeker' });
     if (seekerRole) query.role = seekerRole._id;
 
-    const candidates = await User.find(query)
-      .select('name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification')
+    const candidatesData = await User.find(query)
+      .select('name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification subscription purchasedFeatures priorityApplicationsUsed')
+      .populate('subscription')
       .skip(skip)
       .limit(perPage)
       .lean();
+
+    const checkPriorityBadge = require('../utils/checkPriorityBadge');
+
+    const candidates = candidatesData.map(c => {
+      const isPriority = checkPriorityBadge(c);
+      delete c.subscription;
+      delete c.purchasedFeatures;
+      delete c.priorityApplicationsUsed;
+      return { ...c, isPriority };
+    });
 
     const total = await User.countDocuments(query);
 
@@ -621,13 +694,85 @@ const getAICandidateMatches = async (req, res) => {
     const user = await User.findById(userId).populate('subscription');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    const plan = user.subscription;
-    if (!plan?.hasAICandidateMatching) {
-      return res.status(403).json({ msg: 'AI candidate matching requires a paid plan.', requiresUpgrade: true });
-    }
-
-    const job = await Job.findById(req.params.jobId);
+    const jobId = req.params.jobId;
+    const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ msg: 'Job not found' });
+
+    // Check if AI Matching has already been run for this job
+    const isAlreadyMatched = (user.aiMatchedJobs || []).some(id => id.toString() === jobId);
+
+    if (!isAlreadyMatched) {
+      // 1. Check if the user has an active subscription that enables AI Candidate Matching
+      const plan = user.subscription;
+      const isPlanValid = plan && (plan.price === 0 || plan.duration === 'Lifetime' || !user.subscriptionExpiry || new Date(user.subscriptionExpiry) > new Date());
+      
+      let hasPlanAccess = false;
+      let isPlanUnlimited = false;
+      let planLimit = 0;
+
+      if (isPlanValid) {
+        if (plan.hasAICandidateMatching === true) {
+          hasPlanAccess = true;
+          const dynamicFeature = plan.features?.find(f => 
+            f.isActive && 
+            ['ai candidate matching', 'ai candidate matching', 'ai matching'].includes(f.name?.toLowerCase())
+          );
+          if (!dynamicFeature || !dynamicFeature.value || dynamicFeature.value === 'unlimited' || Number(dynamicFeature.value) === 0) {
+            isPlanUnlimited = true;
+          } else {
+            planLimit = Number(dynamicFeature.value) || 0;
+          }
+        }
+      }
+
+      let authorized = false;
+
+      if (hasPlanAccess) {
+        if (isPlanUnlimited) {
+          authorized = true;
+        } else {
+          // Check if unique jobs matched is less than limit
+          const uniqueJobsCount = user.aiMatchedJobs ? user.aiMatchedJobs.length : 0;
+          if (uniqueJobsCount < planLimit) {
+            authorized = true;
+          }
+        }
+      }
+
+      if (authorized) {
+        // Enrolling this job into matched list
+        if (!user.aiMatchedJobs) user.aiMatchedJobs = [];
+        user.aiMatchedJobs.push(jobId);
+        await user.save();
+      } else {
+        // 2. Check purchasedFeatures (Pay-per-feature credit)
+        const now = new Date();
+        const purchasedMatch = user.purchasedFeatures.find(f => 
+          f.featureKey === 'hasAICandidateMatching' && 
+          f.isActive && 
+          f.usageLeft > 0 && 
+          (!f.expiresAt || new Date(f.expiresAt) > now)
+        );
+
+        if (purchasedMatch) {
+          // Decrement usage credit
+          purchasedMatch.usageLeft -= 1;
+          if (purchasedMatch.usageLeft <= 0) {
+            purchasedMatch.isActive = false;
+          }
+          if (!user.aiMatchedJobs) user.aiMatchedJobs = [];
+          user.aiMatchedJobs.push(jobId);
+          // Mark modified because it is a subdocument inside an array
+          user.markModified('purchasedFeatures');
+          await user.save();
+        } else {
+          return res.status(403).json({ 
+            msg: 'You do not have any active AI Candidate Matching credits left. Please upgrade your plan or purchase more credits.', 
+            requiresUpgrade: true 
+          });
+        }
+      }
+    }
 
     // Fetch jobseekers who applied for this job
     const applications = await Application.find({ job: job._id })
@@ -714,14 +859,29 @@ const getAICandidateMatches = async (req, res) => {
 const getJobQuota = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId).populate('subscription');
+    const user = await User.findById(userId).populate('subscription').populate('role');
     if (!user || !user.company) return res.json({ limit: 0, used: 0 });
 
-    const plan = user.subscription;
-    const limit = plan?.activeJobPostings || 0;
-    const used = await Job.countDocuments({ company: user.company, status: { $in: ['active', 'closed'] } });
+    const roleName = user.role?.name || 'recruiter';
+    const planLimit = await getEffectivePlanLimit(user, roleName);
 
-    res.json({ limit, used, unlimited: limit === 0 });
+    let payPerLimit = 0;
+    if (Array.isArray(user.purchasedFeatures)) {
+      user.purchasedFeatures.forEach(f => {
+        if (f.isActive && f.featureKey === 'activeJobPostings' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) {
+          payPerLimit += f.usageLeft;
+        }
+      });
+    }
+
+    const totalLimit = planLimit + payPerLimit;
+    let activeCountQuery = { company: user.company, status: { $in: ['active', 'closed'] } };
+    if (user.role && user.role.name === 'recruiter') {
+      activeCountQuery.recruiter = userId;
+    }
+    const used = await Job.countDocuments(activeCountQuery);
+
+    res.json({ limit: totalLimit, planLimit, payPerLimit, used, unlimited: false });
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }

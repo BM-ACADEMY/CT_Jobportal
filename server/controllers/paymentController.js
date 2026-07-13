@@ -10,6 +10,25 @@ const fetchGstPercentage = async () => {
   return settings?.gstPercentage || 0;
 };
 
+const getPricingOption = (plan, quantity) => {
+  if (plan.pricingOptions && plan.pricingOptions.length > 0) {
+    const opt = plan.pricingOptions.find(o => o.quantity === quantity);
+    if (opt) {
+      return opt.price;
+    }
+  }
+  
+  // Default fallback calculation:
+  const basePerUnit = plan.price || plan.cost || 0;
+  const baseTotal = basePerUnit * quantity;
+  let discountPercentage = 0;
+  if (quantity >= 12) discountPercentage = 20;
+  else if (quantity >= 6) discountPercentage = 10;
+  else if (quantity >= 3) discountPercentage = 5;
+  const discountAmount = Math.round(baseTotal * discountPercentage) / 100;
+  return baseTotal - discountAmount;
+};
+
 // @desc    Create a Razorpay order
 // @route   POST /api/payments/create-order
 const createOrder = async (req, res) => {
@@ -33,8 +52,11 @@ const createOrder = async (req, res) => {
 
     const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
     const gstPercentage = await fetchGstPercentage();
-    const baseAmountPerUnit = plan.price;
-    const baseAmount = baseAmountPerUnit * quantity;
+    
+    // Look up pricing option configured by admin, with default fallback
+    const baseAmount = getPricingOption(plan, quantity);
+    const baseAmountPerUnit = plan.price || plan.cost || 0;
+
     const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
     const totalAmount = baseAmount + gstAmount;
 
@@ -118,11 +140,13 @@ const verifyPayment = async (req, res) => {
 
     const user = await User.findById(req.user.id);
     user.subscription = plan._id;
+    user.subscriptionDetails = plan.toObject();
     user.subscriptionExpiry = expiryDate;
     if (autoRenew !== undefined) user.autoRenew = !!autoRenew;
 
     // Reset usage stats on new subscription
     user.downloadsUsed = 0;
+    user.candidateDBExportsUsed = 0;
     user.searchUsed = 0;
     user.jobsUsed = 0;
     user.messagesUsed = 0;
@@ -143,7 +167,12 @@ const verifyPayment = async (req, res) => {
     // Create payment record
     try {
       const gstPct = isFree ? 0 : await fetchGstPercentage();
-      const baseAmt = isFree ? 0 : plan.price * quantity;
+      
+      let baseAmt = 0;
+      if (!isFree) {
+        baseAmt = getPricingOption(plan, quantity);
+      }
+
       const gstAmt = isFree ? 0 : Math.round(baseAmt * gstPct) / 100;
       const totalAmt = baseAmt + gstAmt;
 

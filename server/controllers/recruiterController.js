@@ -10,7 +10,9 @@ const sendEmail = require('../utils/sendEmail');
 const getRecruiterProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId).populate(['company', 'subscription']);
+    const user = await User.findById(userId)
+      .populate(['company', 'subscription'])
+      .populate('companyHistory.company');
 
     if (!user) {
       return res.status(404).json({ msg: 'Recruiter not found' });
@@ -164,11 +166,29 @@ const getTeamMembers = async (req, res) => {
       else return res.json([]);
     }
 
-    const members = await User.find({ company: user.company, _id: { $ne: userId } })
-      .select('name email avatar recruiterProfile companyProfile role createdAt')
+    const members = await User.find({ 
+      $or: [
+        { 'companyHistory.company': user.company },
+        { company: user.company }
+      ],
+      _id: { $ne: userId } 
+    })
+      .select('name email avatar recruiterProfile companyProfile role companyHistory createdAt')
       .populate('role', 'name');
 
-    res.json(members);
+    const mappedMembers = members.map(m => {
+      const hist = m.companyHistory?.find(h => h.company && h.company.toString() === user.company.toString());
+      return {
+        _id: m._id,
+        name: m.name,
+        email: m.email,
+        avatar: m.avatar,
+        statusType: hist ? hist.status : 'Current',
+        role: m.role
+      };
+    });
+
+    res.json(mappedMembers);
   } catch (err) {
     console.error('Get Team Error:', err);
     res.status(500).json({ msg: 'Server error' });
@@ -214,8 +234,11 @@ const inviteTeamMember = async (req, res) => {
       }
     }
 
-    const invitee = await User.findOne({ email });
-    if (!invitee) return res.status(404).json({ msg: 'No user found with that email. They must register first.' });
+    const invitee = await User.findOne({ email }).populate('role');
+    if (!invitee) return res.status(404).json({ msg: 'No recruiter found with that email. They must register as a recruiter first.' });
+    if (invitee.role?.name !== 'recruiter') {
+      return res.status(400).json({ msg: 'No recruiter found with that email. Please ensure the user is registered as a recruiter.' });
+    }
 
     invitee.company = currentUser.company;
     invitee.companyProfile = { ...invitee.companyProfile, adminRole: memberRole || 'Member' };
@@ -279,7 +302,7 @@ const getOrgEmployees = async (req, res) => {
   }
 };
 
-// @desc    Add an org employee by email (creates account if needed)
+// @desc    Send an invite to an existing user to join as an org employee
 // @route   POST /api/company/employees
 const addOrgEmployee = async (req, res) => {
   try {
@@ -314,61 +337,44 @@ const addOrgEmployee = async (req, res) => {
       }
     }
 
-    const { email, name, designation } = req.body;
-    if (!email || !name) return res.status(400).json({ msg: 'Email and name are required' });
-
-    const orgEmployeeRole = await Role.findOne({ name: 'org_employee' });
-    if (!orgEmployeeRole) {
-      return res.status(500).json({ msg: 'org_employee role not found. Please run role seeder.' });
-    }
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ msg: 'Email is required' });
 
     const existing = await User.findOne({ email: email.toLowerCase() }).populate('role');
-    if (existing) {
-      if (existing.role.name !== 'org_employee') {
-        return res.status(400).json({ msg: `This email is already registered as a ${existing.role.name}. Use a different email.` });
-      }
-      if (existing.employerCompany && existing.employerCompany.toString() !== adminUser.company.toString()) {
-        return res.status(400).json({ msg: 'This employee already belongs to another organization.' });
-      }
-      existing.employerCompany = adminUser.company;
-      existing.companyProfile = { ...existing.companyProfile, adminRole: designation || 'Employee' };
-      await existing.save();
-      return res.json({ msg: `${email} has been added to your organization.` });
+    if (!existing) {
+      return res.status(404).json({ msg: 'No recruiter found with that email. They must be registered first.' });
     }
 
-    const tempPassword = crypto.randomBytes(8).toString('hex') + 'A1!';
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(tempPassword, salt);
+    if (existing.role?.name !== 'recruiter') {
+      return res.status(400).json({ msg: 'No recruiter found with that email. Please ensure the user is registered as a recruiter.' });
+    }
+
+    if (existing.employerCompany && existing.employerCompany.toString() === adminUser.company.toString()) {
+        return res.status(400).json({ msg: 'This user is already a part of your team.' });
+    }
+
+    if (existing.employerCompany) {
+      return res.status(400).json({ msg: 'This employee already belongs to another organization.' });
+    }
+
+    // Set the invite
+    existing.pendingCompanyInvite = adminUser.company;
+    await existing.save();
 
     const company = await Company.findById(adminUser.company);
 
-    const employee = new User({
-      name,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      role: orgEmployeeRole._id,
-      isVerified: true,
-      employerCompany: adminUser.company,
-      companyProfile: { adminRole: designation || 'Employee' },
-    });
-    await employee.save();
-
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-        <h2 style="color: #1d4ed8;">You've been added to ${company?.name || 'your organization'} on CT Portal</h2>
-        <p>Hi ${name},</p>
-        <p>${company?.name || 'Your organization'} has added you to their team on CT Portal. You can now browse jobs, track applications, and use your organization's tools.</p>
-        <div style="background:#f3f4f6; border-radius:8px; padding:20px; margin:20px 0;">
-          <p style="margin:0;"><strong>Email:</strong> ${email}</p>
-          <p style="margin:8px 0 0;"><strong>Temporary Password:</strong> ${tempPassword}</p>
-        </div>
-        <p style="color:#6b7280; font-size:13px;">Please log in and change your password from Settings.</p>
+        <h2 style="color: #1d4ed8;">You have been invited to join ${company?.name || 'an organization'}</h2>
+        <p>Hi ${existing.name},</p>
+        <p>${company?.name || 'An organization'} has invited you to join their team on CT Portal.</p>
+        <p>Please log in to your account and accept the invite from your dashboard.</p>
       </div>
     `;
 
-    await sendEmail({ email, subject: `You've been added to ${company?.name || 'your organization'} on CT Portal`, html: htmlContent });
+    await sendEmail({ email, subject: `Invitation to join ${company?.name || 'an organization'}`, html: htmlContent });
 
-    res.status(201).json({ msg: `${name} has been added. An invite email with login credentials has been sent.` });
+    res.status(200).json({ msg: `Invite sent to ${email} successfully.` });
   } catch (err) {
     console.error('Add Org Employee Error:', err);
     res.status(500).json({ msg: 'Server error' });
@@ -401,6 +407,158 @@ const removeOrgEmployee = async (req, res) => {
   }
 };
 
+// @desc    Search companies by name or email
+// @route   GET /api/recruiter/search-companies
+const searchCompanies = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) return res.json([]);
+
+    const regex = new RegExp(query, 'i');
+    const companies = await Company.find({
+      $or: [{ name: regex }, { admin_email: regex }]
+    }).select('name logo admin_email display_id');
+
+    res.json(companies);
+  } catch (err) {
+    console.error('Search Companies Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Request to join a company
+// @route   POST /api/recruiter/request-join/:companyId
+const requestJoinCompany = async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const { statusType } = req.body; // 'Current' or 'Previous'
+    const company = await Company.findById(companyId);
+    if (!company) return res.status(404).json({ msg: 'Company not found' });
+
+    if (!company.pendingJoinRequests) company.pendingJoinRequests = [];
+    
+    // Check if already requested
+    if (company.pendingJoinRequests.some(reqItem => reqItem.user.toString() === req.user.id)) {
+      return res.status(400).json({ msg: 'You have already sent a request to this company.' });
+    }
+
+    company.pendingJoinRequests.push({
+      user: req.user.id,
+      statusType: statusType || 'Current'
+    });
+    await company.save();
+
+    res.json({ msg: 'Join request sent successfully.' });
+  } catch (err) {
+    console.error('Request Join Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Get pending join requests for a company
+// @route   GET /api/company/join-requests
+const getJoinRequests = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.company) return res.json([]);
+
+    const company = await Company.findById(user.company).populate('pendingJoinRequests.user', 'name email avatar recruiterProfile display_id');
+    if (!company) return res.json([]);
+
+    // Format response to flat objects for frontend
+    const requests = company.pendingJoinRequests.map(reqItem => ({
+      _id: reqItem.user?._id,
+      name: reqItem.user?.name,
+      email: reqItem.user?.email,
+      avatar: reqItem.user?.avatar,
+      statusType: reqItem.statusType,
+      requestedAt: reqItem.requestedAt
+    })).filter(r => r._id);
+
+    res.json(requests);
+  } catch (err) {
+    console.error('Get Join Requests Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Accept a join request from a recruiter
+// @route   POST /api/company/join-requests/:userId/accept
+const acceptJoinRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const { userId } = req.params;
+
+    const company = await Company.findById(user.company);
+    if (!company) return res.status(404).json({ msg: 'Company not found' });
+
+    // Find the request to get the statusType
+    const joinRequest = company.pendingJoinRequests.find(reqItem => reqItem.user.toString() === userId);
+    const requestedStatusType = joinRequest ? joinRequest.statusType : 'Current';
+
+    // Remove from pending
+    company.pendingJoinRequests = company.pendingJoinRequests.filter(reqItem => reqItem.user.toString() !== userId);
+    await company.save();
+
+    // Update the recruiter
+    const recruiter = await User.findById(userId);
+    if (recruiter) {
+      if (!recruiter.companyHistory) recruiter.companyHistory = [];
+      
+      if (requestedStatusType === 'Current') {
+        // Mark existing current as previous
+        recruiter.companyHistory.forEach(h => {
+          if (h.status === 'Current') {
+            h.status = 'Previous';
+            h.leftAt = new Date();
+          }
+        });
+      }
+      
+      // Add new company
+      recruiter.companyHistory.push({
+        company: company._id,
+        status: requestedStatusType,
+        joinedAt: new Date()
+      });
+
+      if (requestedStatusType === 'Current') {
+        recruiter.company = company._id;
+        if (!recruiter.companyProfile) recruiter.companyProfile = {};
+        recruiter.companyProfile.adminRole = 'Member';
+      }
+      
+      await recruiter.save();
+    }
+
+    res.json({ msg: 'Request accepted successfully.' });
+  } catch (err) {
+    console.error('Accept Join Request Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Reject a join request from a recruiter
+// @route   POST /api/company/join-requests/:userId/reject
+const rejectJoinRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const { userId } = req.params;
+
+    const company = await Company.findById(user.company);
+    if (!company) return res.status(404).json({ msg: 'Company not found' });
+
+    // Remove from pending
+    company.pendingJoinRequests = company.pendingJoinRequests.filter(reqItem => reqItem.user.toString() !== userId);
+    await company.save();
+
+    res.json({ msg: 'Request rejected successfully.' });
+  } catch (err) {
+    console.error('Reject Join Request Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   getRecruiterProfile,
   updateRecruiterProfile,
@@ -410,4 +568,9 @@ module.exports = {
   getOrgEmployees,
   addOrgEmployee,
   removeOrgEmployee,
+  searchCompanies,
+  requestJoinCompany,
+  getJoinRequests,
+  acceptJoinRequest,
+  rejectJoinRequest
 };

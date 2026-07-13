@@ -16,7 +16,8 @@ import {
   Download,
   MessageSquare,
   Lock,
-  Sparkles
+  Sparkles,
+  BadgeCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ import { hasFeature } from '@/components/subscription/FeatureGate';
 const Applicants = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refreshUser } = useAuth();
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -84,8 +85,22 @@ const Applicants = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success('Applicants exported to CSV');
+      
+      // Refresh user context to update purchased features / usageLeft
+      await refreshUser();
     } catch (err) {
-      toast.error(err.response?.data?.msg || 'Export failed');
+      console.error('Export error details:', err);
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          toast.error(json.msg || 'Export failed');
+        } catch (parseErr) {
+          toast.error('Export failed');
+        }
+      } else {
+        toast.error(err.response?.data?.msg || 'Export failed');
+      }
     } finally {
       setExporting(false);
     }
@@ -288,9 +303,14 @@ const Applicants = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-1.5 min-w-0">
-                    <h4 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight truncate">
-                      {app.applicant?.name}
-                    </h4>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight truncate">
+                        {app.applicant?.name}
+                      </h4>
+                      {app.isPriority && (
+                        <BadgeCheck size={16} className="text-blue-500 fill-blue-50 shrink-0" title="Priority Application" />
+                      )}
+                    </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 text-slate-500 font-medium text-xs truncate">
                         <Mail size={12} className="text-slate-300" />

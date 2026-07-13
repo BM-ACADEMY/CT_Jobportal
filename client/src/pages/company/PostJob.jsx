@@ -338,7 +338,10 @@ const PostJob = () => {
                                     'bg-emerald-50 text-emerald-700'
                                 }`}>
                                     <Briefcase className="w-3 h-3" />
-                                    {quota.used}/{quota.limit} job postings used
+                                    {quota.used}/{quota.limit} job postings used 
+                                    <span className="font-normal ml-1 text-[11px] opacity-90">
+                                        (Plan: {quota.planLimit} + Purchased: {quota.payPerLimit})
+                                    </span>
                                     {quota.used >= quota.limit && ' — Limit reached'}
                                 </div>
                             )}
@@ -362,7 +365,7 @@ const PostJob = () => {
                                 <div>
                                     <p className="text-sm font-bold text-rose-800">Job posting limit reached ({quota.used}/{quota.limit})</p>
                                     <p className="text-xs text-rose-600 mt-0.5">
-                                        Your current plan allows {quota.limit} job posting{quota.limit > 1 ? 's' : ''}. Delete an existing job to free up a slot, or upgrade your plan for more.
+                                        Your total limit is {quota.limit} job posting{quota.limit > 1 ? 's' : ''} (Plan: {quota.planLimit}, Purchased: {quota.payPerLimit}). Delete an existing job to free up a slot, or upgrade your plan for more.
                                     </p>
                                 </div>
                             </div>

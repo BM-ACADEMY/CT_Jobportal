@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   Zap,
   Info,
-  Sparkles
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { hasFeature } from '../components/subscription/FeatureGate';
@@ -117,7 +118,7 @@ const JobDetails = () => {
     
     if (!hasFeature(user, 'hasJobMatchAnalysis')) {
       toast.error("Premium Feature: Please upgrade your plan or purchase Job Match Analysis to use this.");
-      navigate('/jobseeker/subscription');
+      navigate('/jobseeker/pay-per-features');
       return;
     }
 
@@ -135,6 +136,23 @@ const JobDetails = () => {
     } finally {
       setIsCalculatingMatch(false);
     }
+  };
+
+  const handleSalaryBenchmarking = () => {
+    if (!user || user.role !== 'jobseeker') {
+      toast.error("Only candidates can use salary benchmarking");
+      return;
+    }
+    
+    if (!hasFeature(user, 'hasSalaryBenchmarking')) {
+      toast.error("Premium Feature: Please upgrade your plan or purchase Salary Benchmarking to use this.");
+      navigate('/jobseeker/pay-per-features');
+      return;
+    }
+
+    navigate('/jobseeker/salary-benchmarking', {
+      state: { jobRole: job.title, companyName: job.company?.name || '' }
+    });
   };
 
   const handleShareJob = () => {
@@ -344,12 +362,23 @@ const JobDetails = () => {
               { label: 'Salary (LPA)', value: formatSalary(job.salary), icon: <IndianRupee size={20} /> },
               { label: 'Work Mode', value: job.workMode || 'In-office', icon: <Building2 size={20} /> },
             ].map((item, i) => (
-              <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-lg p-6 hover:border-primary/20 transition-colors">
-                <div className="text-primary mb-3 bg-white w-10 h-10 rounded-md flex items-center justify-center shadow-sm">
-                  {item.icon}
+              <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-lg p-6 hover:border-primary/20 transition-colors flex flex-col justify-between">
+                <div>
+                  <div className="text-primary mb-3 bg-white w-10 h-10 rounded-md flex items-center justify-center shadow-sm">
+                    {item.icon}
+                  </div>
+                  <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wide mb-1">{item.label}</p>
+                  <p className="text-slate-900 font-semibold tracking-tight">{item.value}</p>
                 </div>
-                <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wide mb-1">{item.label}</p>
-                <p className="text-slate-900 font-semibold tracking-tight">{item.value}</p>
+                {item.label === 'Salary (LPA)' && user?.role === 'jobseeker' && (
+                  <Button 
+                    onClick={handleSalaryBenchmarking} 
+                    variant="outline"
+                    className="mt-4 w-full text-xs h-8 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800"
+                  >
+                    <TrendingUp size={14} className="mr-1.5" /> Benchmark
+                  </Button>
+                )}
               </div>
             ))}
           </div>

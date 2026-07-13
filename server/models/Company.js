@@ -157,7 +157,12 @@ const companySchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true
-  }
+  },
+  pendingJoinRequests: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    statusType: { type: String, enum: ['Current', 'Previous'], default: 'Current' },
+    requestedAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
 
 companySchema.pre('save', async function() {

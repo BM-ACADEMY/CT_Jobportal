@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Briefcase, MapPin, Clock, CheckCircle2, XCircle, Eye, Loader2,
-  Search, Filter, Building2, AlertCircle, FileText, Undo2
+  Search, Filter, Building2, AlertCircle, FileText, Undo2, BadgeCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -237,6 +237,9 @@ const MyApplications = () => {
                     <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
                       {job?.title || 'Job Unavailable'}
                     </p>
+                    {app.isPriority && (
+                      <BadgeCheck size={16} className="text-blue-500 fill-blue-50 shrink-0" title="Priority Application" />
+                    )}
                     <Badge className={`text-[9px] font-bold border px-2 py-0 rounded-full ${cfg.color}`}>
                       {cfg.label}
                     </Badge>

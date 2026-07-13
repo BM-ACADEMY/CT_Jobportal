@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getRecruiterProfile, updateRecruiterProfile, getTeamMembers, inviteTeamMember, removeTeamMember, getOrgEmployees, addOrgEmployee, removeOrgEmployee } = require('../controllers/recruiterController');
+const { getRecruiterProfile, updateRecruiterProfile, getTeamMembers, inviteTeamMember, removeTeamMember, getOrgEmployees, addOrgEmployee, removeOrgEmployee, getJoinRequests, acceptJoinRequest, rejectJoinRequest } = require('../controllers/recruiterController');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
 
@@ -27,5 +27,10 @@ router.delete('/team/:memberId', removeTeamMember);
 router.get('/employees', getOrgEmployees);
 router.post('/employees', addOrgEmployee);
 router.delete('/employees/:employeeId', removeOrgEmployee);
+
+// Join requests routes
+router.get('/join-requests', getJoinRequests);
+router.post('/join-requests/:userId/accept', acceptJoinRequest);
+router.post('/join-requests/:userId/reject', rejectJoinRequest);
 
 module.exports = router;

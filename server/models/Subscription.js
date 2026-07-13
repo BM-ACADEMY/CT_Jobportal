@@ -11,6 +11,10 @@ const subscriptionSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  pricingOptions: [{
+    quantity: { type: Number, required: true },
+    price: { type: Number, required: true }
+  }],
   currency: {
     type: String,
     default: 'INR'
@@ -43,6 +47,7 @@ const subscriptionSchema = new mongoose.Schema({
   messageRecruitersCount: { type: Number, default: 0 }, // 0 = unlimited
   hasSalaryBenchmarking: { type: Boolean, default: false },
   hasAiResumeReview: { type: Boolean, default: false },
+  aiResumeReviewCount: { type: Number, default: 0 },
   hasJobMatchAnalysis: { type: Boolean, default: false },
 
   // Recruiter specific

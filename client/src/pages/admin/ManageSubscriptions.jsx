@@ -83,6 +83,11 @@ const DEFAULT_FORM = {
   userSeats: 1, companyProfileType: 'Basic',
   hasBulkApplicantManagement: false, hasInterviewScheduling: false, hasDedicatedOnboarding: false,
   features: [],
+  pricingOptions: [
+    { quantity: 1, price: 0 },
+    { quantity: 3, price: 0 },
+    { quantity: 12, price: 0 }
+  ],
 };
 
 const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
@@ -540,7 +545,14 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
 
   useEffect(() => {
     if (editingPlan) {
-      setForm({ ...DEFAULT_FORM, ...editingPlan, features: editingPlan.features || [] });
+      const opts = editingPlan.pricingOptions && editingPlan.pricingOptions.length === 3
+        ? editingPlan.pricingOptions
+        : [
+            { quantity: 1, price: editingPlan.price || 0 },
+            { quantity: 3, price: Math.round((editingPlan.price || 0) * 3 * 0.95) },
+            { quantity: 12, price: Math.round((editingPlan.price || 0) * 12 * 0.80) }
+          ];
+      setForm({ ...DEFAULT_FORM, ...editingPlan, pricingOptions: opts, features: editingPlan.features || [] });
       setIsCustomDuration(!['Monthly', 'Quarterly', 'Yearly', 'Lifetime'].includes(editingPlan.duration));
     } else {
       setForm(DEFAULT_FORM);
@@ -645,6 +657,63 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
                 {isCustomDuration && (
                   <Input value={form.duration} onChange={e => set('duration', e.target.value)} placeholder="e.g. 15 Days" className="h-11 rounded-xl border-slate-200 text-sm mt-2" required />
                 )}
+              </div>
+            </div>
+
+            {/* Pricing Options */}
+            <div className="rounded-2xl border border-slate-100 p-5 space-y-4 bg-slate-50/50">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">3 Purchase Options / Duration Pricing</Label>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Required</span>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                {[0, 1, 2].map((idx) => {
+                  const qtyDefault = idx === 0 ? 1 : idx === 1 ? 3 : 12;
+                  const option = form.pricingOptions?.[idx] || { quantity: qtyDefault, price: 0 };
+                  
+                  return (
+                    <div key={idx} className="bg-white p-4 rounded-xl border border-slate-100 space-y-3 shadow-sm">
+                      <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Option {idx + 1}</span>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase block">Quantity</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={option.quantity}
+                          onChange={e => {
+                            const newOpts = [...(form.pricingOptions || [])];
+                            newOpts[idx] = { ...option, quantity: Math.max(1, parseInt(e.target.value) || 0) };
+                            set('pricingOptions', newOpts);
+                          }}
+                          className="h-9 rounded-lg text-xs"
+                          placeholder={String(qtyDefault)}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase block">Total Price (₹)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={option.price || ''}
+                          onChange={e => {
+                            const newOpts = [...(form.pricingOptions || [])];
+                            newOpts[idx] = { ...option, price: Number(e.target.value) || 0 };
+                            set('pricingOptions', newOpts);
+                          }}
+                          className="h-9 rounded-lg text-xs"
+                          placeholder={String(option.price || 0)}
+                          required
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

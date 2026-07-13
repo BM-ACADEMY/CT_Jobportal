@@ -35,8 +35,8 @@ const STAT_CARDS = [
   { key: 'rejected',  label: 'Rejected',  color: 'bg-red-50 border-red-100',         text: 'text-red-700' },
 ];
 
-/* ─── Booking Form ─────────────────────────────────────────────────────────── */
-const BookingForm = ({ onSuccess, sessionsLeft, unlimited }) => {
+/* ─── Request Modal ─────────────────────────────────────────────────────────── */
+const RequestModal = ({ onClose, onSuccess, sessionsLeft, unlimited }) => {
   const { user } = useAuth();
   const [form, setForm] = useState({
     bookingName: user?.name || '',
@@ -47,6 +47,7 @@ const BookingForm = ({ onSuccess, sessionsLeft, unlimited }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -63,6 +64,7 @@ const BookingForm = ({ onSuccess, sessionsLeft, unlimited }) => {
       await axios.post(`${API}/requests/counselling`, form, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
+      setDone(true);
       onSuccess();
     } catch (err) {
       setError(err.response?.data?.msg || 'Failed to submit request. Please try again.');
@@ -72,86 +74,103 @@ const BookingForm = ({ onSuccess, sessionsLeft, unlimited }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="bName" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Full Name *</Label>
-          <Input id="bName" value={form.bookingName} onChange={e => set('bookingName', e.target.value)}
-            placeholder="Your name" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in slide-in-from-bottom-4 overflow-y-auto max-h-[90vh]">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Book Career Counselling</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Fill in your details and preferred time.</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-all">
+            <X size={16} />
+          </button>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bEmail" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Email *</Label>
-          <Input id="bEmail" type="email" value={form.bookingEmail} onChange={e => set('bookingEmail', e.target.value)}
-            placeholder="your@email.com" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bPhone" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Phone</Label>
-          <Input id="bPhone" value={form.bookingPhone} onChange={e => set('bookingPhone', e.target.value)}
-            placeholder="+91 98765 43210" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bDate" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Preferred Date *</Label>
-          <Input id="bDate" type="date" value={form.bookingDate} onChange={e => set('bookingDate', e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="bTime" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Preferred Time *</Label>
-          <Input id="bTime" type="time" value={form.bookingTime} onChange={e => set('bookingTime', e.target.value)}
-            className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
-        </div>
+
+        {done ? (
+          <div className="text-center py-6">
+            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 size={22} className="text-emerald-600" />
+            </div>
+            <p className="text-sm font-bold text-slate-900 mb-1">Session Booked!</p>
+            <p className="text-xs text-slate-500 mb-5">Your session request has been received. Our team will confirm via email shortly.</p>
+            <Button onClick={onClose} variant="outline" className="rounded-xl h-9 px-5 text-xs font-bold">Close</Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="bName" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Full Name *</Label>
+                <Input id="bName" value={form.bookingName} onChange={e => set('bookingName', e.target.value)}
+                  placeholder="Your name" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bEmail" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Email *</Label>
+                <Input id="bEmail" type="email" value={form.bookingEmail} onChange={e => set('bookingEmail', e.target.value)}
+                  placeholder="your@email.com" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bPhone" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Phone</Label>
+                <Input id="bPhone" value={form.bookingPhone} onChange={e => set('bookingPhone', e.target.value)}
+                  placeholder="+91 98765 43210" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bDate" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Preferred Date *</Label>
+                <Input id="bDate" type="date" value={form.bookingDate} onChange={e => set('bookingDate', e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bTime" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Preferred Time *</Label>
+                <Input id="bTime" type="time" value={form.bookingTime} onChange={e => set('bookingTime', e.target.value)}
+                  className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+              </div>
+            </div>
+
+            {error && (
+              <p className="text-xs text-rose-600 font-medium bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                <AlertCircle size={13} className="shrink-0" /> {error}
+              </p>
+            )}
+
+            <Button type="submit" disabled={loading}
+              className="w-full h-11 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm gap-2 shadow-md shadow-rose-500/20">
+              {loading ? <><Loader2 size={15} className="animate-spin" /> Booking…</> : <><Send size={15} /> Book Session</>}
+            </Button>
+
+            {!unlimited && (
+              <p className="text-[11px] text-center text-slate-400 font-medium">
+                {sessionsLeft} session{sessionsLeft !== 1 ? 's' : ''} remaining
+              </p>
+            )}
+          </form>
+        )}
       </div>
-
-      {error && (
-        <p className="text-xs text-rose-600 font-medium bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
-          <AlertCircle size={13} className="shrink-0" /> {error}
-        </p>
-      )}
-
-      <Button type="submit" disabled={loading}
-        className="w-full h-11 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm gap-2 shadow-md shadow-rose-500/20">
-        {loading ? <><Loader2 size={15} className="animate-spin" /> Booking…</> : <><Send size={15} /> Book Session</>}
-      </Button>
-
-      {!unlimited && (
-        <p className="text-[11px] text-center text-slate-400 font-medium">
-          {sessionsLeft} session{sessionsLeft !== 1 ? 's' : ''} remaining on your plan
-        </p>
-      )}
-    </form>
+    </div>
   );
 };
 
-/* ─── Limit / Success views ────────────────────────────────────────────────── */
-const LimitReached = () => (
-  <div className="flex flex-col items-center justify-center min-h-[40vh] text-center px-4">
-    <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-      <AlertCircle size={24} className="text-amber-600" />
+/* ─── Upgrade Modal ──────────────────────────────────────────────────────────── */
+const UpgradeModal = ({ onClose }) => (
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-in slide-in-from-bottom-4">
+      <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <AlertCircle size={24} className="text-amber-600" />
+      </div>
+      <h3 className="text-lg font-bold text-slate-900 mb-2">Limit Reached</h3>
+      <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+        You have no career counselling sessions left. Please upgrade your subscription or purchase an add-on to book more sessions.
+      </p>
+      <div className="flex gap-3">
+        <Button onClick={onClose} variant="outline" className="flex-1 rounded-xl h-10 text-xs font-bold">
+          Close
+        </Button>
+        <Link to="/jobseeker/subscription" className="flex-1">
+          <Button className="w-full rounded-xl h-10 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20">
+            Upgrade Now
+          </Button>
+        </Link>
+      </div>
     </div>
-    <h3 className="text-lg font-bold text-slate-900 mb-2">Session Limit Reached</h3>
-    <p className="text-sm text-slate-500 mb-6 max-w-sm leading-relaxed">
-      You've used all your career counselling sessions on this plan. Upgrade to book more.
-    </p>
-    <Link to="/jobseeker/subscription">
-      <Button className="h-10 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm gap-2 shadow-md shadow-emerald-500/20">
-        <Sparkles size={14} /> Upgrade Plan <ArrowRight size={13} />
-      </Button>
-    </Link>
-  </div>
-);
-
-const SuccessView = ({ onBook }) => (
-  <div className="flex flex-col items-center justify-center min-h-[40vh] text-center px-4">
-    <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-      <CheckCircle2 size={24} className="text-emerald-600" />
-    </div>
-    <h3 className="text-lg font-bold text-slate-900 mb-2">Session Booked!</h3>
-    <p className="text-sm text-slate-500 mb-6 max-w-sm leading-relaxed">
-      Your session request has been received. Our team will confirm via email shortly.
-    </p>
-    <Button variant="outline" onClick={onBook} className="rounded-xl h-10 px-6 text-sm font-bold">
-      Book Another Session
-    </Button>
   </div>
 );
 
@@ -357,16 +376,25 @@ const SessionsTable = ({ sessions, loading, onCancel }) => {
 /* ─── Main Page ─────────────────────────────────────────────────────────────── */
 const CareerCounselling = () => {
   const { user, refreshUser } = useAuth();
-  const [submitted, setSubmitted]       = useState(false);
+  const [showModal, setShowModal]       = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [sessions, setSessions]         = useState([]);
   const [counts, setCounts]             = useState({ booked: 0, accepted: 0, upcoming: 0, completed: 0, rejected: 0 });
   const [sessionsLoading, setSessionsLoading] = useState(true);
 
-  const limit       = user?.subscription?.careerCounsellingCount ?? 0;
-  const unlimited   = limit === 0;
-  const sessionsUsed = user?.counsellingSessionsUsed ?? 0;
-  const sessionsLeft = unlimited ? Infinity : limit - sessionsUsed;
-  const atLimit     = !unlimited && sessionsUsed >= limit;
+  const planLimit = user?.subscription?.careerCounsellingCount || 0;
+  const hasPlanFeature = !!user?.subscription?.hasCareerCounselling || (Array.isArray(user?.subscription?.features) && user.subscription.features.some(f => f.isActive && (f.name?.toLowerCase() === 'career counselling' || f.name?.toLowerCase() === 'career counseling')));
+  
+  const unlimited = hasPlanFeature && planLimit === 0;
+  
+  const planUsed = user?.counsellingSessionsUsed || 0;
+  const planLeft = unlimited ? Infinity : (hasPlanFeature ? Math.max(0, planLimit - planUsed) : 0);
+
+  const payPerFeature = Array.isArray(user?.purchasedFeatures) ? user.purchasedFeatures.find(f => f.featureKey === 'hasCareerCounselling' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) : null;
+  const payPerLeft = payPerFeature ? payPerFeature.usageLeft : 0;
+
+  const sessionsLeft = unlimited ? Infinity : planLeft + payPerLeft;
+  const atLimit = !unlimited && sessionsLeft <= 0;
 
   const fetchSessions = useCallback(async () => {
     setSessionsLoading(true);
@@ -385,10 +413,12 @@ const CareerCounselling = () => {
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
-  const handleBookSuccess = () => {
-    setSubmitted(true);
-    fetchSessions();
-    refreshUser();
+  const handleBookClick = () => {
+    if (atLimit) {
+      setShowUpgradeModal(true);
+    } else {
+      setShowModal(true);
+    }
   };
 
   const handleCancelDone = () => {
@@ -397,12 +427,7 @@ const CareerCounselling = () => {
   };
 
   return (
-    <FeatureGate
-      featureKey="hasCareerCounselling"
-      featureName="Career Counselling"
-      description="Book 1-on-1 sessions with industry experts for career guidance, salary negotiation, and growth roadmapping."
-      subscriptionPath="/jobseeker/subscription"
-    >
+    <>
       <div className="space-y-8 pb-12">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -415,9 +440,16 @@ const CareerCounselling = () => {
             </div>
             <p className="text-sm text-slate-500">Expert 1-on-1 sessions to accelerate your career.</p>
           </div>
-          <div className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-3 text-center shrink-0">
-            <p className="text-lg font-bold text-rose-700">{unlimited ? '∞' : sessionsLeft > 0 ? sessionsLeft : 0}</p>
-            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wide">Sessions Left</p>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 h-10 rounded-xl text-xs font-bold border border-rose-100">
+              {unlimited ? 'Unlimited' : `${sessionsLeft} Left`}
+            </div>
+            <Button
+              onClick={handleBookClick}
+              className="h-10 px-5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm gap-2 shrink-0 shadow-md shadow-rose-500/20"
+            >
+              <Calendar size={15} /> Book Session
+            </Button>
           </div>
         </div>
 
@@ -438,20 +470,6 @@ const CareerCounselling = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Booking form / limit / success */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
-          {submitted ? (
-            <SuccessView onBook={() => setSubmitted(false)} />
-          ) : atLimit ? (
-            <LimitReached />
-          ) : (
-            <>
-              <h3 className="text-sm font-bold text-slate-900 mb-5">Book a Session</h3>
-              <BookingForm onSuccess={handleBookSuccess} sessionsLeft={sessionsLeft} unlimited={unlimited} />
-            </>
-          )}
         </div>
 
         {/* Session Stats */}
@@ -482,7 +500,23 @@ const CareerCounselling = () => {
           <SessionsTable sessions={sessions} loading={sessionsLoading} onCancel={handleCancelDone} />
         </div>
       </div>
-    </FeatureGate>
+
+      {showModal && (
+        <RequestModal
+          onClose={() => setShowModal(false)}
+          sessionsLeft={sessionsLeft}
+          unlimited={unlimited}
+          onSuccess={() => {
+            fetchSessions();
+            refreshUser();
+          }}
+        />
+      )}
+      
+      {showUpgradeModal && (
+        <UpgradeModal onClose={() => setShowUpgradeModal(false)} />
+      )}
+    </>
   );
 };
 
