@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const AdminRequest = require('../models/AdminRequest');
+const Role = require('../models/Role');
 const mongoose = require('mongoose');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -642,10 +643,14 @@ const adminAssignRequest = async (req, res) => {
 // @route   GET /api/requests/assignees
 const getAssignees = async (req, res) => {
   try {
-    const assignees = await User.find({ role: { $in: ['admin', 'subadmin'] } })
-      .select('name email role display_id');
+    const roles = await Role.find({ name: { $in: ['admin', 'subadmin'] } }).select('_id');
+    const roleIds = roles.map(r => r._id);
+    const assignees = await User.find({ role: { $in: roleIds } })
+      .select('name email role display_id')
+      .populate('role', 'name');
     res.json(assignees);
   } catch (err) {
+    console.error('getAssignees Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
