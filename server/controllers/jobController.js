@@ -946,7 +946,8 @@ const calculatePreMatch = async (req, res) => {
     });
 
     const resultObj = await model.generateContent(prompt);
-    const responseText = resultObj.response.text();
+    let responseText = resultObj.response.text();
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
     const result = JSON.parse(responseText);
 
     res.json({ matchAnalysis: result });
