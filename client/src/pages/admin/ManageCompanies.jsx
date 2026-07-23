@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -77,15 +78,23 @@ const ManageCompanies = () => {
     fetchCompanies();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this company? This action cannot be undone.')) return;
-    
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = (id) => setDeleteTarget(id);
+
+  const confirmDelete = async () => {
+    const id = deleteTarget;
+    setDeleting(true);
     try {
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/companies/${id}`);
       toast.success('Company deleted successfully');
       setCompanies(companies.filter(c => c._id !== id));
+      setDeleteTarget(null);
     } catch (err) {
       toast.error('Failed to delete company');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -481,6 +490,17 @@ const ManageCompanies = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete this company?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

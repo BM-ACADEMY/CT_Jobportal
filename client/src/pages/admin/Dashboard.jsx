@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Users, Building2, Briefcase, TrendingUp, ShieldCheck, Activity, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import axios from 'axios';
 
 const AdminDashboard = () => {
@@ -23,34 +24,41 @@ const AdminDashboard = () => {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12">
-      {/* Header - Simple & Professional */}
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight">System Overview</h1>
-          <p className="text-base text-slate-500 font-medium">Platform intelligence and administrative audit telemetry.</p>
+    <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Premium Header Container */}
+      <div className="relative rounded-[32px] bg-slate-900 p-10 text-white shadow-2xl overflow-hidden group">
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+        <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/20 blur-[80px] rounded-full group-hover:bg-indigo-500/30 transition-all duration-700" />
+        
+        <div className="relative z-10 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-indigo-500/20 border border-indigo-500/30 backdrop-blur-md mb-2">
+             <Activity size={12} className="text-indigo-400" />
+             <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Platform Telemetry</span>
+          </div>
+          <h1 className="text-4xl font-black text-white tracking-tight">System Overview</h1>
+          <p className="text-base text-slate-400 font-medium max-w-xl">Real-time intelligence and administrative audit telemetry for infrastructure health monitoring.</p>
         </div>
-        <div className="h-px bg-slate-200 w-full" />
       </div>
       
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-          { label: 'Job Inventory', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-          { label: 'Organizations', value: loading ? '...' : stats.companies, icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-          { label: 'Colleges', value: loading ? '...' : stats.colleges || 0, icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-          { label: 'Uptime', value: '99.9%', icon: ShieldCheck, color: 'text-amber-600', bg: 'bg-amber-50/50' }
-        ].map((stat, i) => (
-          <Card key={i} className="rounded-[24px] border-slate-200 shadow-sm bg-white hover:border-emerald-200 transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 ${stat.bg} ${stat.color} rounded-xl border border-white shadow-sm`}>
-                  <stat.icon size={20} />
+          { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
+          { label: 'Job Inventory', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'hover:border-emerald-200' },
+          { label: 'Organizations', value: loading ? '...' : stats.companies, color: 'text-blue-600', bg: 'bg-blue-50', icon: Building2, border: 'hover:border-blue-200' },
+          { label: 'Colleges', value: loading ? '...' : stats.colleges || 0, color: 'text-violet-600', bg: 'bg-violet-50', icon: ShieldCheck, border: 'hover:border-violet-200' },
+          { label: 'Uptime', value: '99.9%', icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50', border: 'hover:border-amber-200' }
+        ].slice(0, 4).map((stat, i) => (
+          <Card key={i} className={`rounded-[32px] border-slate-200/60 shadow-sm bg-white transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50 ${stat.border}`}>
+            <CardContent className="p-8 relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 w-32 h-32 bg-slate-50 rounded-full opacity-50" />
+              <div className="flex flex-col gap-5 relative z-10">
+                <div className={`w-14 h-14 ${stat.bg} ${stat.color} rounded-2xl border border-white shadow-sm flex items-center justify-center`}>
+                  <stat.icon size={24} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                  <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{stat.value}</p>
+                  <p className={`text-4xl font-black tracking-tight tabular-nums ${stat.color}`}>{stat.value}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -109,40 +117,43 @@ const AdminDashboard = () => {
         </div>
 
         {/* Sidebar Widgets */}
-        <div className="xl:w-[340px] flex flex-col gap-8">
-            <Card className="rounded-[24px] border-slate-900 bg-slate-900 text-white p-8 relative overflow-hidden group h-60 flex flex-col justify-end shadow-xl">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                 <TrendingUp size={100} />
+        <div className="xl:w-[380px] flex flex-col gap-8">
+            <Card className="rounded-[32px] bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8 relative overflow-hidden group h-64 flex flex-col justify-end shadow-2xl shadow-slate-900/10 border-none hover:-translate-y-1 transition-transform duration-500">
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
+                 <TrendingUp size={120} />
               </div>
-              <div className="relative z-10">
-                 <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em] mb-2">Platform Integrity</p>
-                 <h3 className="text-xl font-bold leading-tight tracking-tight">Infrastructure status is currently Optimal.</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent opacity-80" />
+              <div className="relative z-10 space-y-4">
+                 <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-xl backdrop-blur-md">Platform Integrity</Badge>
+                 <h3 className="text-2xl font-black leading-tight tracking-tight">Infrastructure status is currently Optimal.</h3>
                  <div className="flex items-center gap-4 mt-6">
-                    <div className="flex -space-x-2">
+                    <div className="flex -space-x-3">
                        {[1,2,3].map(i => (
-                         <div key={i} className="w-7 h-7 rounded-full border-2 border-slate-900 bg-slate-800" />
+                         <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700/80 backdrop-blur-md shadow-sm" />
                        ))}
                     </div>
-                    <span className="text-xs font-medium text-slate-400">99.98% Uptime</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">99.99% Uptime</span>
                  </div>
               </div>
            </Card>
 
-           <section className="bg-white p-8 rounded-[24px] border border-slate-200 shadow-sm">
-              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Resource telemetry</h4>
+           <section className="bg-white p-8 rounded-[32px] border border-slate-200/60 shadow-sm hover:shadow-lg hover:border-slate-300 transition-all duration-500">
+              <div className="flex items-center justify-between mb-8">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Activity size={12} /> Resource telemetry</h4>
+              </div>
               <div className="space-y-6">
                  {[
-                   { label: 'Compute capacity', val: 78, color: 'bg-emerald-500' },
-                   { label: 'Storage metrics', val: 42, color: 'bg-emerald-600' },
-                   { label: 'Network throughput', val: 12, color: 'bg-emerald-400' }
+                   { label: 'Compute capacity', val: 78, color: 'bg-indigo-500', bg: 'bg-indigo-100' },
+                   { label: 'Storage metrics', val: 42, color: 'bg-emerald-500', bg: 'bg-emerald-100' },
+                   { label: 'Network throughput', val: 12, color: 'bg-blue-400', bg: 'bg-blue-100' }
                  ].map((item, i) => (
-                   <div key={i} className="space-y-2.5">
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-tight text-slate-400">
+                   <div key={i} className="space-y-3">
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
                          <span>{item.label}</span>
-                         <span className="text-slate-900">{item.val}%</span>
+                         <span className="text-slate-900 font-black">{item.val}%</span>
                       </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                         <div className={`h-full ${item.color} rounded-full transition-all duration-1000`} style={{ width: `${item.val}%` }} />
+                      <div className={`h-2.5 ${item.bg} rounded-full overflow-hidden`}>
+                         <div className={`h-full ${item.color} rounded-full transition-all duration-1000 shadow-sm`} style={{ width: `${item.val}%` }} />
                       </div>
                    </div>
                  ))}

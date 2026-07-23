@@ -17,20 +17,31 @@ import {
   MessageSquare,
   Lock,
   Sparkles,
-  BadgeCheck
+  BadgeCheck,
+  Send
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from '../../context/AuthContext';
 import { hasFeature } from '@/components/subscription/FeatureGate';
@@ -45,8 +56,51 @@ const Applicants = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [exporting, setExporting] = useState(false);
   const [calculatingMatch, setCalculatingMatch] = useState({});
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [inviteModal, setInviteModal] = useState({ open: false, applicationIds: [] });
+  const [inviteForm, setInviteForm] = useState({ skill: '', date: '', deadline: '', link: '' });
+  const [sendingInvite, setSendingInvite] = useState(false);
 
   const canExport = hasFeature(user, 'hasCandidateDBExport');
+
+  const toggleSelected = (applicationId) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(applicationId)) next.delete(applicationId);
+      else next.add(applicationId);
+      return next;
+    });
+  };
+
+  const openInviteModal = (applicationIds) => {
+    setInviteForm({ skill: '', date: '', deadline: '', link: '' });
+    setInviteModal({ open: true, applicationIds });
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteForm.skill || !inviteForm.link) {
+      toast.error('Skill/role and test link are required');
+      return;
+    }
+    setSendingInvite(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API_BASE_URL}/applications/invite-assessment`, {
+        applicationIds: inviteModal.applicationIds,
+        ...inviteForm
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(res.data.msg || `Invited ${res.data.sent} candidate(s)`);
+      setInviteModal({ open: false, applicationIds: [] });
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.msg || 'Failed to send invite');
+    } finally {
+      setSendingInvite(false);
+    }
+  };
 
   const handleCalculateMatch = async (applicationId) => {
     try {
@@ -240,6 +294,16 @@ const Applicants = () => {
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto">
+          {selectedIds.size > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => openInviteModal(Array.from(selectedIds))}
+              className="rounded-xl border-emerald-200 bg-emerald-50 gap-2 font-bold text-xs text-emerald-700 h-10 px-4 shrink-0"
+            >
+              <Send size={14} />
+              Invite Selected ({selectedIds.size})
+            </Button>
+          )}
           {canExport ? (
             <Button
               variant="outline"
@@ -297,6 +361,12 @@ const Applicants = () => {
               <div className="p-6 flex flex-col lg:flex-row gap-8">
                 {/* Applicant Profile */}
                 <div className="flex gap-5 lg:w-[30%]">
+                  <Checkbox
+                    checked={selectedIds.has(app._id)}
+                    onCheckedChange={() => toggleSelected(app._id)}
+                    className="mt-1 shrink-0"
+                    title="Select for bulk actions"
+                  />
                   <Avatar className="w-14 h-14 rounded-xl border border-slate-200 group-hover:border-emerald-100 transition-all">
                     <AvatarFallback className="bg-slate-50 text-slate-400 font-bold text-lg">
                       {app.applicant?.name?.[0]?.toUpperCase()}
@@ -402,13 +472,21 @@ const Applicants = () => {
                     >
                       <CheckCircle size={20} />
                     </Button>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       onClick={() => handleStartConversation(app.applicant?._id)}
                       className="w-10 h-10 rounded-xl text-slate-300 hover:text-violet-600 hover:bg-violet-50 transition-all"
                       title="Message Candidate"
                     >
                       <MessageSquare size={20} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => openInviteModal([app._id])}
+                      className="w-10 h-10 rounded-xl text-slate-300 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                      title="Invite to Assessment"
+                    >
+                      <Send size={20} />
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -454,6 +532,64 @@ const Applicants = () => {
           </div>
         )}
       </div>
+
+      <Dialog open={inviteModal.open} onOpenChange={(open) => setInviteModal(prev => ({ ...prev, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite to Assessment</DialogTitle>
+            <DialogDescription>
+              Sending to {inviteModal.applicationIds.length} candidate{inviteModal.applicationIds.length !== 1 ? 's' : ''} via WhatsApp and email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-skill">Skill / Role</Label>
+              <Input
+                id="invite-skill"
+                placeholder="e.g. React.js"
+                value={inviteForm.skill}
+                onChange={(e) => setInviteForm(prev => ({ ...prev, skill: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-date">Test Date</Label>
+                <Input
+                  id="invite-date"
+                  type="date"
+                  value={inviteForm.date}
+                  onChange={(e) => setInviteForm(prev => ({ ...prev, date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-deadline">Deadline</Label>
+                <Input
+                  id="invite-deadline"
+                  type="date"
+                  value={inviteForm.deadline}
+                  onChange={(e) => setInviteForm(prev => ({ ...prev, deadline: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-link">Test Link</Label>
+              <Input
+                id="invite-link"
+                placeholder="https://..."
+                value={inviteForm.link}
+                onChange={(e) => setInviteForm(prev => ({ ...prev, link: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteModal({ open: false, applicationIds: [] })}>Cancel</Button>
+            <Button onClick={handleSendInvite} disabled={sendingInvite} className="gap-2">
+              {sendingInvite ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              Send Invite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -72,6 +72,11 @@ const subscriptionSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Cached Razorpay recurring Plan id, created lazily on first subscription purchase (spec 9.2)
+  razorpayPlanId: {
+    type: String,
+    default: ''
+  },
   features: [{
     name: { type: String, required: true },
     isActive: { type: Boolean, default: true },

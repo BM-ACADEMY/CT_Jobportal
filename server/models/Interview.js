@@ -41,6 +41,11 @@ const interviewSchema = new mongoose.Schema({
     type: String,
     enum: ['scheduled', 'completed', 'cancelled'],
     default: 'scheduled'
+  },
+  // Set once the pre-interview reminder cron has emailed both parties, so it isn't re-sent.
+  reminderSent: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const API_PAY_PER_URL = `${import.meta.env.VITE_API_BASE_URL}/pay-per/features`;
 
@@ -176,14 +177,23 @@ const ManagePayPer = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this pay-per feature?')) return;
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = (id) => setDeleteTarget(id);
+
+  const confirmDelete = async () => {
+    const id = deleteTarget;
+    setDeleting(true);
     try {
       await axios.delete(`${API_PAY_PER_URL}/${id}`, { headers });
       toast.success('Feature deleted successfully');
       setFeatures(features.filter(f => f._id !== id));
+      setDeleteTarget(null);
     } catch (err) {
       toast.error('Failed to delete feature');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -500,6 +510,16 @@ const ManagePayPer = () => {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete this pay-per feature?"
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

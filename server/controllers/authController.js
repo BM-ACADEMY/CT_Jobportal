@@ -4,7 +4,14 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const Company = require('../models/Company');
 const Subscription = require('../models/Subscription');
+const CampusDrive = require('../models/CampusDrive');
 const sendEmail = require('../utils/sendEmail');
+
+// "Manage Drive" is a capability layered on top of whatever role a user already has —
+// surfaced on every user payload so the client can show the sidebar entry regardless of role.
+const hasInchargeDrives = (userId) => CampusDrive.exists({
+  inCharges: { $elemMatch: { user: userId, status: 'accepted' } }
+}).then(Boolean);
 
 // Auto-assign the free plan if the user has no subscription
 const ensureFreePlan = async (user, roleName) => {
@@ -28,6 +35,15 @@ const ensureFreePlan = async (user, roleName) => {
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// Records a new open session on login; capped to the most recent 50 entries.
+const recordLogin = async (user) => {
+  user.lastLoginAt = new Date();
+  user.sessionLogs = user.sessionLogs || [];
+  user.sessionLogs.push({ loginAt: user.lastLoginAt, logoutAt: null, durationMinutes: 0 });
+  if (user.sessionLogs.length > 50) user.sessionLogs = user.sessionLogs.slice(-50);
+  await user.save();
+};
+
 const generateToken = (userId, roleName) => {
   return jwt.sign(
     { id: userId, role: roleName },
@@ -40,7 +56,7 @@ const generateToken = (userId, roleName) => {
 // @route   POST /api/auth/register
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, collegeName, collegeEmail, collegePhone, tpoPhone } = req.body;
     const normalizedEmail = email.toLowerCase();
 
     // Password Validation: 6 chars, 1 capital, 1 number, 1 symbol
@@ -80,9 +96,38 @@ const registerUser = async (req, res) => {
       isVerified: false,
       otp,
       otpExpiry,
+      ...(role === 'college' && tpoPhone ? { profile: { phone: tpoPhone } } : {}),
     });
 
     await user.save();
+
+    if (role === 'college') {
+      const College = require('../models/College');
+      const generateDisplayId = require('../utils/generateDisplayId');
+      const year = new Date().getFullYear();
+      const displayId = await generateDisplayId('VG', year);
+      const college = new College({
+        name: collegeName || `${name}'s Institute`,
+        code: `CAMP-${Date.now().toString().slice(-4)}`,
+        collegeEmail: collegeEmail || '',
+        collegePhone: collegePhone || '',
+        tpoUser: user._id,
+        principalName: name || 'Principal',
+        principalEmail: normalizedEmail,
+        departments: [
+          { name: 'Computer Science', code: 'CS' },
+          { name: 'Information Technology', code: 'IT' },
+          { name: 'Electronics & Communication', code: 'ECE' },
+          { name: 'Mechanical Engineering', code: 'MECH' }
+        ],
+        subscriptionTier: 'campus_free',
+        isActive: true,
+        display_id: displayId
+      });
+      await college.save();
+      user.collegeProfile = { college: college._id, designation: 'TPO' };
+      await user.save();
+    }
 
     // Send OTP Email
     const htmlContent = `
@@ -144,6 +189,7 @@ const verifyOtp = async (req, res) => {
     const token = generateToken(user._id, roleName);
 
     await ensureFreePlan(user, roleName);
+    await recordLogin(user);
 
     let subscription = user.subscription;
     let subscriptionExpiry = user.subscriptionExpiry;
@@ -175,6 +221,7 @@ const verifyOtp = async (req, res) => {
         employerCompany: user.employerCompany || null,
         employerCompanyName,
         purchasedFeatures: user.purchasedFeatures || [],
+        hasInchargeDrives: await hasInchargeDrives(user._id),
         display_id: user.display_id,
         isPhoneVisible: user.isPhoneVisible,
       }
@@ -237,6 +284,7 @@ const loginUser = async (req, res) => {
     const token = generateToken(user._id, roleName);
 
     await ensureFreePlan(user, roleName);
+    await recordLogin(user);
 
     let subscription = user.subscription;
     let subscriptionExpiry = user.subscriptionExpiry;
@@ -268,6 +316,7 @@ const loginUser = async (req, res) => {
         employerCompany: user.employerCompany || null,
         employerCompanyName,
         purchasedFeatures: user.purchasedFeatures || [],
+        hasInchargeDrives: await hasInchargeDrives(user._id),
         display_id: user.display_id,
         isPhoneVisible: user.isPhoneVisible,
       }
@@ -275,6 +324,28 @@ const loginUser = async (req, res) => {
   } catch (err) {
     console.error('Login Error:', err.message);
     res.status(500).json({ msg: err.message, stack: err.stack });
+  }
+};
+
+// @desc    Close the most recent open session (activity/time-tracking)
+// @route   POST /api/auth/logout
+const logoutUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const open = (user.sessionLogs || []).slice().reverse().find(s => !s.logoutAt);
+    if (open) {
+      open.logoutAt = new Date();
+      open.durationMinutes = Math.max(0, Math.round((open.logoutAt - open.loginAt) / 60000));
+    }
+    user.lastLogoutAt = new Date();
+    await user.save();
+
+    res.json({ msg: 'Logged out' });
+  } catch (err) {
+    console.error('Logout Error:', err.message);
+    res.status(500).json({ msg: err.message });
   }
 };
 
@@ -420,6 +491,7 @@ const getUserProfile = async (req, res) => {
       employerCompanyName,
       pendingCompanyInvite: user.pendingCompanyInvite || null,
       purchasedFeatures: user.purchasedFeatures || [],
+      hasInchargeDrives: await hasInchargeDrives(user._id),
       display_id: user.display_id,
       isPhoneVisible: user.isPhoneVisible,
     });
@@ -579,6 +651,7 @@ const completeSocialProfile = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  logoutUser,
   verifyOtp,
   forgotPassword,
   resetPassword,

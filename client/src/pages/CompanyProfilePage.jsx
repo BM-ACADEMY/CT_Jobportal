@@ -58,6 +58,19 @@ const CompanyProfilePage = () => {
 
   const hasFullProfile = company.subscription?.companyProfileType && company.subscription.companyProfileType !== 'No';
 
+  const formatSalary = (salary) => {
+    if (!salary || salary.isRangeHidden) return 'Not Disclosed';
+    if (salary.min && salary.max) return `₹${(salary.min / 100000).toFixed(1)}–${(salary.max / 100000).toFixed(1)} LPA`;
+    if (salary.min) return `₹${(salary.min / 100000).toFixed(1)}+ LPA`;
+    return 'Competitive';
+  };
+
+  const formatExperience = (experience) => {
+    if (!experience || (!experience.min && !experience.max)) return 'Any Experience';
+    if (experience.min && experience.max) return `${experience.min}-${experience.max} Yrs`;
+    return `${experience.min || experience.max}+ Yrs`;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
       {/* Hero / Header */}
@@ -269,8 +282,8 @@ const CompanyProfilePage = () => {
                             </div>
                             <div className="flex items-center gap-6 w-full md:w-auto">
                               <div className="hidden md:block text-right">
-                                <p className="text-sm font-bold text-slate-900">{job.salary || 'Competitive'}</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{job.experienceLevel}</p>
+                                <p className="text-sm font-bold text-slate-900">{formatSalary(job.salary)}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{formatExperience(job.experience)}</p>
                               </div>
                               <Button variant="ghost" size="icon" className="ml-auto md:ml-0 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition-all">
                                 <ChevronRight size={20} />

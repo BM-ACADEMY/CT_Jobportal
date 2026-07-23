@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const API_JOBS_URL = `${import.meta.env.VITE_API_BASE_URL}/jobs`;
 
@@ -232,16 +233,25 @@ const PostJob = () => {
         setViewMode('create');
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to permanently delete this position?")) return;
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = (id) => setDeleteTarget(id);
+
+    const confirmDelete = async () => {
+        const id = deleteTarget;
+        setDeleting(true);
         try {
             await axios.delete(`${API_JOBS_URL}/${id}`);
             toast.success("Job deleted successfully");
+            setDeleteTarget(null);
             fetchJobs();
             if (selectedJob?._id === id) setViewMode('list');
         } catch (err) {
             console.error(err);
             toast.error("Failed to delete job");
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -987,6 +997,16 @@ const PostJob = () => {
                     </div>
                 </form>
             )}
+
+            <ConfirmDialog
+                open={!!deleteTarget}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Permanently delete this position?"
+                confirmLabel="Delete"
+                destructive
+                loading={deleting}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 };

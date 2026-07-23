@@ -6,6 +6,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const ManageJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -41,15 +42,23 @@ const ManageJobs = () => {
     fetchJobs();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) return;
-    
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = (id) => setDeleteTarget(id);
+
+  const confirmDelete = async () => {
+    const id = deleteTarget;
+    setDeleting(true);
     try {
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${id}`);
       toast.success('Job deleted successfully');
       setJobs(jobs.filter(j => j._id !== id));
+      setDeleteTarget(null);
     } catch (err) {
       toast.error('Failed to delete job');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -195,6 +204,17 @@ const ManageJobs = () => {
           </div>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete this job posting?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

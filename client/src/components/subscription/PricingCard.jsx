@@ -102,7 +102,7 @@ const PricingCard = ({
               {plan.name}
             </h3>
             <p className="text-xs text-slate-400 font-medium capitalize">
-              {plan.role === 'jobseeker' ? 'Career' : plan.role === 'recruiter' ? 'Recruiter' : 'Organization'} plan
+              {plan.role === 'jobseeker' ? 'Career' : plan.role === 'recruiter' ? 'Recruiter' : plan.role === 'college' ? 'Campus' : 'Organization'} plan
             </p>
           </div>
           <div className="text-right shrink-0">

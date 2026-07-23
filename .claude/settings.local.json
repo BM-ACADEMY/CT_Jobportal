@@ -2,7 +2,27 @@
   "permissions": {
     "allow": [
       "Bash(node -e \"const pkg = require\\('./node_modules/lucide-react/package.json'\\); console.log\\(pkg.version\\);\")",
-      "Bash(node -e \"const icons = require\\('./node_modules/lucide-react'\\); const matches = Object.keys\\(icons\\).filter\\(k => k.toLowerCase\\(\\).includes\\('linkedin'\\)\\); console.log\\(matches\\);\")"
+      "Bash(node -e \"const icons = require\\('./node_modules/lucide-react'\\); const matches = Object.keys\\(icons\\).filter\\(k => k.toLowerCase\\(\\).includes\\('linkedin'\\)\\); console.log\\(matches\\);\")",
+      "Bash(node -e ' *)",
+      "Bash(npx eslint *)",
+      "Bash(xxd server/routes/skillTestRoutes.js)",
+      "Bash(node --check server/routes/skillTestRoutes.js)",
+      "Bash(timeout 8 node index.js)",
+      "Bash(echo \"---exit $?---\")",
+      "Bash(cat /tmp/server.log | tail -60)",
+      "Read(//tmp/**)",
+      "Bash(tasklist //FI \"IMAGENAME eq node.exe\")",
+      "Bash(node --check utils/pdfGenerator.js)",
+      "Bash(grep -n \"generatePlacementReport,$\" server/controllers/collegeController.js)",
+      "Bash(npm install *)",
+      "Bash(node --check controllers/interviewController.js)",
+      "Bash(node --check models/Interview.js)",
+      "Bash(node --check controllers/applicationController.js)",
+      "Bash(node --check controllers/messageController.js)",
+      "Bash(node -e \"console.log\\(require\\('mongoose/package.json'\\).version\\)\")",
+      "Bash(grep -n \"ConfirmDialog$\\\\|onConfirm={confirmDeleteDrive}\" client/src/pages/college/Drives.jsx)",
+      "Bash(node --check scripts/seedCampusPlans.js)",
+      "Bash(node scripts/seedCampusPlans.js)"
     ]
   }
 }

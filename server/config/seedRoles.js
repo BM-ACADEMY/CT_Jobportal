@@ -8,7 +8,8 @@ const seedRoles = async () => {
     { name: 'admin', description: 'Platform Administrator', permissions: ['manage_all'] },
     { name: 'subadmin', description: 'Content Moderator', permissions: ['moderate_jobs', 'moderate_users'] },
     { name: 'org_employee', description: 'Organization Employee with company plan access', permissions: ['read_jobs', 'apply_jobs'] },
-    { name: 'college', description: 'Educational Institution', permissions: ['manage_students', 'view_jobs'] }
+    { name: 'college', description: 'Educational Institution', permissions: ['manage_students', 'view_jobs'] },
+    { name: 'drive_incharge', description: 'Campus Drive In-Charge', permissions: ['manage_drive_stage'] }
   ];
 
   try {

@@ -29,6 +29,10 @@ const registerSchema = z.object({
     message: "1 uppercase, 1 number, and 1 symbol required"
   }),
   confirmPassword: z.string(),
+  collegeName: z.string().optional(),
+  collegeEmail: z.string().optional(),
+  collegePhone: z.string().optional(),
+  tpoPhone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -58,6 +62,10 @@ const RegisterPage = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      collegeName: "",
+      collegeEmail: "",
+      collegePhone: "",
+      tpoPhone: "",
     },
   });
 
@@ -89,6 +97,12 @@ const RegisterPage = () => {
   const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company';
 
   const onSubmit = async (values) => {
+    if (selectedRole === 'college') {
+      if (!values.collegeName?.trim() || !values.collegeEmail?.trim() || !values.collegePhone?.trim() || !values.tpoPhone?.trim()) {
+        setError('Please fill in College Name, College Email, College Phone, and TPO Phone.');
+        return;
+      }
+    }
     setLoading(true);
     setError('');
     const result = await register({
@@ -96,6 +110,12 @@ const RegisterPage = () => {
       email: values.email,
       password: values.password,
       role: selectedRole,
+      ...(selectedRole === 'college' ? {
+        collegeName: values.collegeName,
+        collegeEmail: values.collegeEmail,
+        collegePhone: values.collegePhone,
+        tpoPhone: values.tpoPhone,
+      } : {}),
     });
     setLoading(false);
     
@@ -264,7 +284,7 @@ const RegisterPage = () => {
                         <FormControl>
                           <div className="relative">
                             <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                            <Input placeholder="Full name" {...field} className="h-12 pl-12 rounded-xl" />
+                            <Input placeholder={selectedRole === 'college' ? 'TPO name' : 'Full name'} {...field} className="h-12 pl-12 rounded-xl" />
                           </div>
                         </FormControl>
                         <FormMessage className="text-[11px] font-bold" />
@@ -280,13 +300,78 @@ const RegisterPage = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                            <Input placeholder="Email address" {...field} className="h-12 pl-12 rounded-xl" />
+                            <Input placeholder={selectedRole === 'college' ? 'TPO email address' : 'Email address'} {...field} className="h-12 pl-12 rounded-xl" />
                           </div>
                         </FormControl>
                         <FormMessage className="text-[11px] font-bold" />
                       </FormItem>
                     )}
                   />
+
+                  {selectedRole === 'college' && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="tpoPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                                <Input placeholder="TPO phone number" {...field} className="h-12 pl-12 rounded-xl" />
+                              </div>
+                            </FormControl>
+                            <FormMessage className="text-[11px] font-bold" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="collegeName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                                <Input placeholder="College name" {...field} className="h-12 pl-12 rounded-xl" />
+                              </div>
+                            </FormControl>
+                            <FormMessage className="text-[11px] font-bold" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="collegeEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                                <Input placeholder="College email address" {...field} className="h-12 pl-12 rounded-xl" />
+                              </div>
+                            </FormControl>
+                            <FormMessage className="text-[11px] font-bold" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="collegePhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                                <Input placeholder="College phone number" {...field} className="h-12 pl-12 rounded-xl" />
+                              </div>
+                            </FormControl>
+                            <FormMessage className="text-[11px] font-bold" />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
 
                   <FormField
                     control={form.control}

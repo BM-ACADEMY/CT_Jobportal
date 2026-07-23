@@ -143,6 +143,10 @@ const userSchema = new mongoose.Schema({
     bio: { type: String, default: '' },
     adminRole: { type: String, default: 'Admin' }
   },
+  collegeProfile: {
+    college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
+    designation: { type: String, default: 'TPO' }
+  },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
@@ -255,8 +259,19 @@ const userSchema = new mongoose.Schema({
   aiMatchedJobs: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Job'
+  }],
+  lastLoginAt: {
+    type: Date
+  },
+  lastLogoutAt: {
+    type: Date
+  },
+  sessionLogs: [{
+    loginAt: { type: Date, default: Date.now },
+    logoutAt: { type: Date, default: null },
+    durationMinutes: { type: Number, default: 0 }
   }]
-}, { 
+}, {
   timestamps: true,
   toJSON: { getters: true },
   toObject: { getters: true }

@@ -86,16 +86,28 @@ const FREE_PLANS = [
     hasDedicatedOnboarding: false,
   },
   {
-    name: 'Free',
+    name: 'Campus Free',
     price: 0,
     currency: 'INR',
     duration: 'Lifetime',
     role: 'college',
     isActive: true,
-
     activeJobPostings: 0,
     candidateSearchPerDay: 0,
     userSeats: 1,
+    // Kept in sync with the full Campus plan matrix in scripts/seedCampusPlans.js (Lite/Pro/Elite
+    // aren't auto-seeded on boot — run that script once per environment to add them).
+    features: [
+      { name: 'Student Capacity', isActive: true, value: 100 },
+      { name: 'CSV Bulk Student Upload', isActive: true, value: true },
+      { name: 'Auto Candidate Account Creation', isActive: true, value: true },
+      { name: 'Co-Branded Certificates', isActive: false, value: 'Platform Only' },
+      { name: 'Automated MoU Generation', isActive: false, value: false },
+      { name: 'WhatsApp Interview Invites', isActive: false, value: false },
+      { name: 'Scheduled Placement Reports', isActive: false, value: 'None' },
+      { name: 'ID Verification Badges', isActive: true, value: 'Manual Queue' },
+      { name: 'Razorpay Auto-Renewal', isActive: false, value: 'N/A' },
+    ]
   },
 ];
 

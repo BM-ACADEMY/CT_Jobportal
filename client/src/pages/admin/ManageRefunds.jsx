@@ -8,6 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const ManageRefunds = () => {
   const [refunds, setRefunds] = useState([]);
@@ -37,35 +38,24 @@ const ManageRefunds = () => {
     }
   };
 
-  const handleApprove = async (id) => {
-    if (!window.confirm('Approve this refund request? This will mark the transaction as refunded and set the user back to the Free plan.')) return;
-    setProcessingId(id);
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API_BASE_URL}/payments/admin/refunds/${id}/approve`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Refund approved and subscription revoked');
-      fetchRefunds();
-    } catch (error) {
-      toast.error(error.response?.data?.msg || 'Failed to approve refund');
-    } finally {
-      setProcessingId(null);
-    }
-  };
+  const [confirmAction, setConfirmAction] = useState(null); // { id, type: 'approve' | 'reject' }
 
-  const handleReject = async (id) => {
-    if (!window.confirm('Reject this refund request? This will mark the transaction as completed again.')) return;
+  const handleApprove = (id) => setConfirmAction({ id, type: 'approve' });
+  const handleReject = (id) => setConfirmAction({ id, type: 'reject' });
+
+  const runConfirmedAction = async () => {
+    const { id, type } = confirmAction;
     setProcessingId(id);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_BASE_URL}/payments/admin/refunds/${id}/reject`, {}, {
+      await axios.post(`${API_BASE_URL}/payments/admin/refunds/${id}/${type}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Refund request rejected');
+      toast.success(type === 'approve' ? 'Refund approved and subscription revoked' : 'Refund request rejected');
+      setConfirmAction(null);
       fetchRefunds();
     } catch (error) {
-      toast.error(error.response?.data?.msg || 'Failed to reject refund');
+      toast.error(error.response?.data?.msg || `Failed to ${type} refund`);
     } finally {
       setProcessingId(null);
     }
@@ -270,6 +260,21 @@ const ManageRefunds = () => {
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        onOpenChange={(open) => !open && setConfirmAction(null)}
+        title={confirmAction?.type === 'approve' ? 'Approve this refund request?' : 'Reject this refund request?'}
+        description={
+          confirmAction?.type === 'approve'
+            ? 'This will mark the transaction as refunded and set the user back to the Free plan.'
+            : 'This will mark the transaction as completed again.'
+        }
+        confirmLabel={confirmAction?.type === 'approve' ? 'Approve' : 'Reject'}
+        destructive={confirmAction?.type === 'reject'}
+        loading={processingId === confirmAction?.id}
+        onConfirm={runConfirmedAction}
+      />
     </div>
   );
 };

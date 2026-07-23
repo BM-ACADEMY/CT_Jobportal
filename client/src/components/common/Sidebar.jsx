@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag
+  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +19,7 @@ const coreMenus = {
     { icon: Briefcase,   label: 'Search Jobs',   path: '/jobs' },
     { icon: Building2,   label: 'Organizations', path: '/companies' },
     { icon: FileText,    label: 'Applications',  path: '/jobseeker/applications' },
+    { icon: GraduationCap, label: 'Campus Drives', path: '/jobseeker/campus-drives' },
     { icon: Star,        label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
     { icon: CreditCard,  label: 'Subscription',  path: '/jobseeker/subscription' },
     { icon: ShoppingBag, label: 'Pay-per Features', path: '/jobseeker/pay-per-features' },
@@ -52,14 +53,14 @@ const coreMenus = {
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   college: [
-    { icon: LayoutDashboard, label: 'Overview',          path: '/company' },
-    { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
-    { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
-    { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
-    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
-    { icon: ShoppingBag,     label: 'Pay-per Features',  path: '/company/pay-per-features' },
-    { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+    { icon: LayoutDashboard, label: 'Overview',          path: '/college' },
+    { icon: Users,           label: 'Students',          path: '/college/students' },
+    { icon: Activity,        label: 'Campus Drives',     path: '/college/drives' },
+    { icon: ShieldCheck,     label: 'ID Verification',   path: '/college/verification' },
+    { icon: FileText,        label: 'Reports & Passkey', path: '/college/reports' },
+    { icon: CreditCard,      label: 'Subscription',      path: '/college/subscription' },
+    { icon: History,         label: 'Payment History',   path: '/college/payment-history' },
+    { icon: Settings,        label: 'Settings & Proof',  path: '/college/settings' },
     { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
@@ -67,6 +68,7 @@ const coreMenus = {
     { icon: LayoutDashboard, label: 'Command Center', path: '/admin' },
     { icon: Users,           label: 'Users Account',  path: '/admin/users' },
     { icon: Briefcase,       label: 'Job Inventory',  path: '/admin/jobs' },
+    { icon: GraduationCap,   label: 'College KYC',    path: '/admin/colleges' },
     {
       icon: CreditCard,
       label: 'Subscriptions',
@@ -104,7 +106,7 @@ const premiumMenus = {
     { icon: Star,          label: 'Career Counselling',  path: '/jobseeker/career-counselling',  featureKey: 'hasCareerCounselling' },
     { icon: Mic,           label: 'Interview Prep',      path: '/jobseeker/interview-prep',      featureKey: 'hasInterviewPrep' },
     { icon: TrendingUp,    label: 'Salary Benchmarking', path: '/jobseeker/salary-benchmarking', featureKey: 'hasSalaryBenchmarking' },
-    { icon: BookOpen,      label: 'AI Resume Review',    path: '/jobseeker/ai-resume-review',    featureKey: 'hasAiResumeReview' },
+    { icon: BookOpen,      label: 'AI Profile Review',    path: '/jobseeker/ai-resume-review',    featureKey: 'hasAiResumeReview' },
     { icon: MessageCircle, label: 'Direct Messages',     path: '/jobseeker/messages',            featureKey: 'hasMessageRecruiters' },
   ],
   recruiter: [
@@ -120,12 +122,10 @@ const premiumMenus = {
     { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
     { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
     { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
+    { icon: ClipboardList, label: 'Campus Drive Requests', path: '/company/drive-requests' },
   ],
   college: [
-    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
-    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
-    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
-    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+    { icon: BarChart2, label: 'Reports',            path: '/college/reports',       featureKey: 'hasAnalyticsDashboard' },
     { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
   ],
   org_employee: [
@@ -248,11 +248,24 @@ const Sidebar = () => {
   const role = user?.role || 'jobseeker';
   const profileCompletion = user?.profile?.profileCompletion || 0;
 
-  const coreItems = coreMenus[role] || coreMenus.jobseeker;
+  const coreItems = [...(coreMenus[role] || [])];
+  
+  // If role is strictly drive_incharge, they get Manage Drive as their only core item
+  if (role === 'drive_incharge') {
+    if (!coreItems.find(i => i.path === '/incharge')) {
+      coreItems.push({ icon: QrCode, label: 'Manage Drive', path: '/incharge' });
+    }
+  } else if (user?.hasInchargeDrives) {
+    // If they have another role but also manage drives, append Manage Drive to their menu
+    if (!coreItems.find(i => i.path === '/incharge')) {
+      coreItems.push({ icon: QrCode, label: 'Manage Drive', path: '/incharge' });
+    }
+  }
+
   const premiumItems = premiumMenus[role] || [];
 
   const isActive = (path) => {
-    const rootRoutes = ['/jobseeker', '/company', '/admin', '/subadmin', '/employee'];
+    const rootRoutes = ['/jobseeker', '/company', '/admin', '/subadmin', '/employee', '/college', '/incharge'];
     if (rootRoutes.includes(path)) return location.pathname === path;
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
@@ -282,7 +295,7 @@ const Sidebar = () => {
                 jobseeker: '/jobseeker/settings', 
                 recruiter: '/company/settings',
                 company: '/company/settings',
-                college: '/company/settings',
+                college: '/college/settings',
                 admin: '/admin/settings',
                 subadmin: '/subadmin/settings',
                 org_employee: '/employee/settings'
@@ -391,6 +404,26 @@ const Sidebar = () => {
           </div>
         )}
       </div>
+
+      {role === 'drive_incharge' && (
+        <div className="px-6 mt-6">
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 rounded-2xl p-4 border border-emerald-100/50 shadow-sm relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-200/20 rounded-full blur-xl pointer-events-none" />
+            <h3 className="text-[11px] font-black text-emerald-800 uppercase tracking-wider mb-2 relative z-10">
+              Unlock Features
+            </h3>
+            <p className="text-[10px] font-medium text-emerald-700/80 leading-relaxed relative z-10 mb-3">
+              Register fully to post jobs, apply for jobs, and access the complete platform.
+            </p>
+            <button
+              onClick={() => navigate('/complete-social-profile')}
+              className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all shadow-sm shadow-emerald-600/20 relative z-10"
+            >
+              Complete Registration
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Logout */}
       <div className="px-6 py-8 mt-6 border-t border-slate-50 bg-slate-50/20">
