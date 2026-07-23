@@ -48,6 +48,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const ManageUsers = () => {
   const navigate = useNavigate();
@@ -114,9 +115,14 @@ const ManageUsers = () => {
     fetchRoles();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = (id) => setDeleteTarget(id);
+
+  const confirmDelete = async () => {
+    const id = deleteTarget;
+    setDeleting(true);
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${id}`, {
@@ -124,8 +130,11 @@ const ManageUsers = () => {
       });
       toast.success('User deleted successfully');
       setUsers(users.filter(u => u._id !== id));
+      setDeleteTarget(null);
     } catch (err) {
       toast.error('Failed to delete user');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -419,6 +428,17 @@ const ManageUsers = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete this user?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

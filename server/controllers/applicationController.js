@@ -1,5 +1,19 @@
 const Application = require('../models/Application');
 const Job = require('../models/Job');
+const sendEmail = require('../utils/sendEmail');
+const { emailWrapper } = require('../utils/emailTemplates');
+const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
+
+const FRONTEND_URL = process.env.FRONTEND_URL;
+
+const STATUS_LABELS = {
+  pending: 'Pending Review',
+  reviewed: 'Reviewed',
+  shortlisted: 'Shortlisted',
+  rejected: 'Not Selected',
+  accepted: 'Offer Extended',
+  withdrawn: 'Withdrawn'
+};
 
 exports.getMyApplications = async (req, res) => {
   try {
@@ -108,6 +122,35 @@ exports.applyJob = async (req, res) => {
     // Increment applicants count in Job model
     await Job.findByIdAndUpdate(jobId, { $inc: { applicantsCount: 1 } });
 
+    if (isPriority) {
+      const jobWithRecruiter = await Job.findById(jobId).select('title recruiter').populate('recruiter', 'name email recruiterProfile.phone companyProfile.phone');
+      if (jobWithRecruiter?.recruiter?.email) {
+        sendEmail({
+          email: jobWithRecruiter.recruiter.email,
+          subject: `High-Priority Application — ${jobWithRecruiter.title}`,
+          html: emailWrapper('New High-Priority Application', `
+            <p>Hi ${jobWithRecruiter.recruiter.name || 'there'},</p>
+            <p><strong>${user.name || 'A candidate'}</strong> just applied to <strong>${jobWithRecruiter.title}</strong> using a Priority Application badge — this application is flagged for your immediate attention.</p>
+            <p><a href="${FRONTEND_URL}/company/jobs" style="color:#059669;">Review applicants</a></p>
+          `)
+        }).catch(() => {});
+      }
+      const recruiterPhone = getUserPhone(jobWithRecruiter?.recruiter);
+      if (recruiterPhone) {
+        sendWhatsAppTemplate({
+          to: recruiterPhone,
+          template: 'application_resume_unlockalert',
+          params: [
+            jobWithRecruiter.recruiter.name || 'there',
+            '1',
+            jobWithRecruiter.title,
+            '0',
+            `${FRONTEND_URL}/company/jobs`
+          ]
+        }).catch(() => {});
+      }
+    }
+
     res.status(201).json({ msg: 'Application submitted successfully', application });
   } catch (err) {
     console.error(err);
@@ -142,6 +185,10 @@ exports.updateApplicationStatus = async (req, res) => {
     const { id } = req.params;
     const { status, isPriority } = req.body;
 
+    const existing = await Application.findById(id).select('status');
+    if (!existing) return res.status(404).json({ msg: 'Application not found' });
+    const statusChanged = status !== undefined && status !== existing.status;
+
     const updateFields = {};
     if (status !== undefined) updateFields.status = status;
     if (isPriority !== undefined) updateFields.isPriority = isPriority;
@@ -150,9 +197,44 @@ exports.updateApplicationStatus = async (req, res) => {
       id,
       { $set: updateFields },
       { new: true }
-    ).populate('applicant', 'name email profileImage profile');
+    ).populate('applicant', 'name email profileImage profile').populate({ path: 'job', select: 'title company', populate: { path: 'company', select: 'name' } });
 
     if (!application) return res.status(404).json({ msg: 'Application not found' });
+
+    if (statusChanged && status !== 'withdrawn' && application.applicant?.email) {
+      const label = STATUS_LABELS[status] || status;
+      sendEmail({
+        email: application.applicant.email,
+        subject: `Your application for ${application.job?.title || 'a job'} — ${label}`,
+        html: emailWrapper('Application Status Update', `
+          <p>Hi ${application.applicant.name || 'there'},</p>
+          <p>Your application for <strong>${application.job?.title || 'the role'}</strong> has been updated to:</p>
+          <p style="font-size:18px;font-weight:800;color:#059669;">${label}</p>
+          ${status === 'accepted' ? '<p>Congratulations! The recruiter will be in touch with next steps.</p>' : ''}
+          <p><a href="${FRONTEND_URL}/jobseeker/applications" style="color:#059669;">View your applications</a></p>
+        `)
+      }).catch(() => {});
+    }
+
+    const applicantPhone = getUserPhone(application.applicant);
+    if (statusChanged && status !== 'withdrawn' && applicantPhone) {
+      const label = STATUS_LABELS[status] || status;
+      const companyName = application.job?.company?.name || 'the company';
+      const link = `${FRONTEND_URL}/jobseeker/applications`;
+      if (status === 'accepted') {
+        sendWhatsAppTemplate({
+          to: applicantPhone,
+          template: 'offer_letter_document_delivery',
+          params: [application.applicant.name || 'there', companyName, 'Offer Letter', link]
+        }).catch(() => {});
+      } else {
+        sendWhatsAppTemplate({
+          to: applicantPhone,
+          template: 'job_application_status_update',
+          params: [application.applicant.name || 'there', application.job?.title || 'the role', companyName, label, link]
+        }).catch(() => {});
+      }
+    }
 
     res.json({ msg: 'Application updated successfully', application });
   } catch (err) {
@@ -316,9 +398,95 @@ exports.trackDownload = async (req, res) => {
     user.downloadsUsed = used + 1;
     await user.save();
 
+    if (user.email) {
+      const remaining = limit > 0 ? Math.max(0, limit - user.downloadsUsed) : null;
+      sendEmail({
+        email: user.email,
+        subject: 'Resume Unlock Credit Used',
+        html: emailWrapper('Resume Download Confirmed', `
+          <p>Hi ${user.name || 'there'},</p>
+          <p>You just used 1 resume unlock/download credit.</p>
+          ${remaining !== null ? `<p>Remaining this cycle: <strong>${remaining}</strong></p>` : '<p>Your plan includes unlimited downloads.</p>'}
+        `)
+      }).catch(() => {});
+    }
+    const downloaderPhone = getUserPhone(user);
+    if (downloaderPhone) {
+      sendWhatsAppTemplate({
+        to: downloaderPhone,
+        template: 'application_resume_unlockalert',
+        params: [user.name || 'there', '0', 'a candidate profile', '1', `${FRONTEND_URL}/company/applicants`]
+      }).catch(() => {});
+    }
+
     res.json({ msg: 'Download authorized', downloadsUsed: user.downloadsUsed });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Invite one or more candidates to take a skill assessment (single or bulk)
+// @route   POST /api/applications/invite-assessment
+// @access  Private (Recruiter/Company/Admin)
+exports.inviteToAssessment = async (req, res) => {
+  try {
+    const { applicationIds, skill, date, deadline, link } = req.body;
+    if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+      return res.status(400).json({ msg: 'No candidates selected' });
+    }
+    if (!skill || !link) {
+      return res.status(400).json({ msg: 'Skill/role and test link are required' });
+    }
+
+    const applications = await Application.find({ _id: { $in: applicationIds } })
+      .populate('applicant', 'name email profile.phone')
+      .populate({ path: 'job', select: 'title recruiter company', populate: { path: 'company', select: 'name' } });
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const application of applications) {
+      if (!application.job || application.job.recruiter.toString() !== req.user.id) {
+        failed++;
+        continue;
+      }
+
+      const applicant = application.applicant;
+      const companyName = application.job.company?.name || 'the company';
+      const deadlineLabel = deadline ? new Date(deadline).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : 'Not specified';
+
+      let notified = false;
+      const applicantPhone = getUserPhone(applicant);
+      if (applicantPhone) {
+        const result = await sendWhatsAppTemplate({
+          to: applicantPhone,
+          template: 'assessment_testinvite',
+          params: [applicant.name || 'there', skill, companyName, deadlineLabel, link]
+        });
+        if (result?.ok) notified = true;
+      }
+      if (applicant?.email) {
+        sendEmail({
+          email: applicant.email,
+          subject: `You're invited to a ${skill} assessment — ${companyName}`,
+          html: emailWrapper('Assessment Invitation', `
+            <p>Hi ${applicant.name || 'there'},</p>
+            <p>${companyName} has invited you to complete the <strong>${skill}</strong> assessment for <strong>${application.job.title}</strong>.</p>
+            ${date ? `<p><strong>Test Date:</strong> ${new Date(date).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</p>` : ''}
+            <p><strong>Deadline:</strong> ${deadlineLabel}</p>
+            <p><a href="${link}" style="color:#059669;">Take the assessment</a></p>
+          `)
+        }).catch(() => {});
+        notified = true;
+      }
+
+      if (notified) sent++; else failed++;
+    }
+
+    res.json({ msg: `Invited ${sent} candidate(s)`, sent, failed });
+  } catch (err) {
+    console.error('Invite To Assessment Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };

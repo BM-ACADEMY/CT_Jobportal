@@ -238,8 +238,24 @@ const SubscriptionPage = () => {
   }, []);
 
   useEffect(() => {
-    setAutoRenew(!!user?.autoRenew);
-  }, [user?.autoRenew]);
+    const loadOrgAutoRenew = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        if (user?.role === 'college') {
+          const res = await axios.get(`${API_BASE_URL}/college/profile`, { headers: { Authorization: `Bearer ${token}` } });
+          setAutoRenew(!!res.data.autoRenewEnabled);
+        } else if (user?.role === 'company') {
+          const res = await axios.get(`${API_BASE_URL}/company/profile`, { headers: { Authorization: `Bearer ${token}` } });
+          setAutoRenew(!!res.data.company?.autoRenewEnabled);
+        } else {
+          setAutoRenew(!!user?.autoRenew);
+        }
+      } catch {
+        setAutoRenew(!!user?.autoRenew);
+      }
+    };
+    if (user?.role) loadOrgAutoRenew();
+  }, [user?.role, user?.autoRenew]);
 
   const currentPlan = user?.subscription;
   const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
@@ -252,9 +268,19 @@ const SubscriptionPage = () => {
     setSavingAutoRenew(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`${API_BASE_URL}/user/auto-renew`, { autoRenew: next }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (user?.role === 'college') {
+        await axios.put(`${API_BASE_URL}/college/me/subscription/auto-renew`, { autoRenewEnabled: next }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else if (user?.role === 'company') {
+        await axios.put(`${API_BASE_URL}/company/subscription/auto-renew`, { autoRenewEnabled: next }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await axios.patch(`${API_BASE_URL}/user/auto-renew`, { autoRenew: next }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
       setAutoRenew(next);
       toast.success(`Auto-renewal ${next ? 'enabled' : 'disabled'}`);
       refreshUser();
@@ -265,9 +291,16 @@ const SubscriptionPage = () => {
     }
   };
 
+  const isRecurringRole = (role) => role === 'college' || role === 'company';
+
   const handleUpgrade = (plan) => {
     if (plan.price === 0) {
       handleProceedPayment(plan);
+      return;
+    }
+    // Institutional plans are a single annual mandate, not a monthly/quarterly/yearly quantity pick
+    if (isRecurringRole(plan.role)) {
+      handleProceedPayment(plan, 1, true);
       return;
     }
     setCheckoutPlan(plan);
@@ -293,6 +326,46 @@ const SubscriptionPage = () => {
           setCheckoutPlan(null);
           refreshUser();
         }
+        return;
+      }
+
+      if (isRecurringRole(plan.role)) {
+        const subRes = await axios.post(`${API_BASE_URL}/payments/create-subscription`, {
+          planId: plan._id,
+        }, { headers: { Authorization: `Bearer ${token}` } });
+
+        const { subscriptionId, keyId } = subRes.data;
+
+        const options = {
+          key: keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
+          subscription_id: subscriptionId,
+          name: 'Velaivaaipu',
+          description: `${plan.name} — ${plan.duration} (auto-renews)`,
+          handler: async (response) => {
+            try {
+              const verifyRes = await axios.post(`${API_BASE_URL}/payments/verify-subscription`, {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_subscription_id: response.razorpay_subscription_id,
+                razorpay_signature: response.razorpay_signature,
+                planId: plan._id,
+              }, { headers: { Authorization: `Bearer ${token}` } });
+
+              if (verifyRes.data.success) {
+                toast.success('Subscription active — it will auto-renew automatically.');
+                setCheckoutPlan(null);
+                setAutoRenew(true);
+                refreshUser();
+              }
+            } catch (err) {
+              toast.error(err.response?.data?.msg || 'Verification failed');
+            }
+          },
+          prefill: { name: user?.name, email: user?.email },
+          theme: { color: '#10b981' },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
         return;
       }
 
@@ -342,6 +415,15 @@ const SubscriptionPage = () => {
   };
 
   const buildFeatures = (plan, role) => {
+    if (role === 'college') {
+      return (plan.features || []).map(f => ({
+        label: f.name,
+        key: 'dynamic',
+        isDynamic: true,
+        isActive: !!f.isActive,
+        value: f.value,
+      }));
+    }
     const base = role === 'company' ? COMPANY_FEATURES : RECRUITER_FEATURES;
     const staticLabels = new Set(base.map(f => f.label.toLowerCase()));
     return [
@@ -362,7 +444,7 @@ const SubscriptionPage = () => {
     ];
   };
 
-  const defaultTab = user?.role === 'company' ? 'company' : 'recruiter';
+  const defaultTab = user?.role === 'company' ? 'company' : user?.role === 'college' ? 'college' : 'recruiter';
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-20 pt-4">
@@ -470,7 +552,7 @@ const SubscriptionPage = () => {
       {/* Plans */}
       <div id="plans-section" className="space-y-8">
         <Tabs defaultValue={defaultTab} className="w-full space-y-8">
-          {user?.role !== 'recruiter' && user?.role !== 'company' && (
+          {user?.role !== 'recruiter' && user?.role !== 'company' && user?.role !== 'college' && (
             <div className="flex justify-center">
               <TabsList className="bg-slate-100 p-1 rounded-xl w-fit">
                 <TabsTrigger value="recruiter" className="rounded-lg px-8 py-2.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
@@ -529,6 +611,29 @@ const SubscriptionPage = () => {
                         currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
                         isPopular={idx === 1}
+                        gstPercentage={gstPercentage}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="college" className="m-0">
+                {plans.filter(p => p.role === 'college').length === 0 ? (
+                  <div className="text-center py-16 rounded-2xl border border-dashed border-slate-200">
+                    <Zap size={32} className="text-slate-200 mx-auto mb-3" />
+                    <p className="text-slate-500 font-semibold">No campus plans available</p>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {plans.filter(p => p.role === 'college').sort((a, b) => a.price - b.price).map((plan, idx) => (
+                      <PricingCard
+                        key={plan._id}
+                        plan={plan}
+                        features={buildFeatures(plan, 'college')}
+                        currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
+                        onAction={handleUpgrade}
+                        isPopular={idx === 2}
                         gstPercentage={gstPercentage}
                       />
                     ))}

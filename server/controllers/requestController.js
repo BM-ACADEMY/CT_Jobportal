@@ -252,7 +252,8 @@ const submitAiResumeReviewRequest = async (req, res) => {
     });
 
     const resultObj = await model.generateContent(prompt);
-    const responseText = resultObj.response.text();
+    let responseText = resultObj.response.text();
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
     const aiData = JSON.parse(responseText);
 
     const request = new AdminRequest({
@@ -362,7 +363,8 @@ const submitSalaryBenchmarkRequest = async (req, res) => {
     });
 
     const resultObj = await model.generateContent(prompt);
-    const responseText = resultObj.response.text();
+    let responseText = resultObj.response.text();
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
     const aiData = JSON.parse(responseText);
 
     const benchmarkData = {

@@ -5,22 +5,36 @@ const AuthContext = createContext();
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/auth`;
 
 const getRoleRoute = (role) => {
-  const routes = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', company: '/company', jobseeker: '/jobseeker', org_employee: '/employee' };
+  const routes = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', company: '/company', jobseeker: '/jobseeker', org_employee: '/employee', college: '/college', drive_incharge: '/incharge' };
   return routes[role] || '/jobseeker';
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setTokenState] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+
+  const setTokenAndHeader = (newToken) => {
+    if (newToken) {
+      localStorage.setItem('token', newToken);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      setTokenState(newToken);
+    } else {
+      localStorage.removeItem('token');
+      delete axios.defaults.headers.common['Authorization'];
+      setTokenState(null);
+    }
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    if (storedUser && token) {
+    const storedToken = localStorage.getItem('token');
+    if (storedUser && storedToken) {
       try {
         // Hydrate immediately from localStorage so the UI doesn't flash
         setUser(JSON.parse(storedUser));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setTokenState(storedToken);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         // Then sync from server — this triggers ensureFreePlan for users with no subscription
         axios.get(`${import.meta.env.VITE_API_BASE_URL}/auth/me`)
           .then(res => {
@@ -31,9 +45,8 @@ export const AuthProvider = ({ children }) => {
             // Only clear session if token is explicitly invalid/expired (401 or 403)
             if (err.response && (err.response.status === 401 || err.response.status === 403)) {
               localStorage.removeItem('user');
-              localStorage.removeItem('token');
+              setTokenAndHeader(null);
               setUser(null);
-              delete axios.defaults.headers.common['Authorization'];
             }
           })
           .finally(() => setLoading(false));
@@ -41,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       } catch (err) {
         console.error('Error parsing stored user:', err);
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        setTokenAndHeader(null);
       }
     }
     setLoading(false);
@@ -55,11 +68,10 @@ export const AuthProvider = ({ children }) => {
         return { success: true, requireOtp: true, email: res.data.email, msg: res.data.msg };
       }
 
-      const { user, token } = res.data;
+      const { user, token: resToken } = res.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setTokenAndHeader(resToken);
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Login failed' };
@@ -75,11 +87,10 @@ export const AuthProvider = ({ children }) => {
         return { success: true, require2FA: true, adminId: res.data.adminId };
       }
       
-      const { user, token } = res.data;
+      const { user, token: resToken } = res.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setTokenAndHeader(resToken);
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Admin login failed' };
@@ -90,11 +101,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const ADMIN_API_URL = `${import.meta.env.VITE_API_BASE_URL}/admin`;
       const res = await axios.post(`${ADMIN_API_URL}/login-verify-otp`, { adminId, otp });
-      const { user, token } = res.data;
+      const { user, token: resToken } = res.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setTokenAndHeader(resToken);
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Invalid or expired OTP' };
@@ -110,11 +120,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Fallback if no OTP required
-      const { user, token } = res.data;
+      const { user, token: resToken } = res.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setTokenAndHeader(resToken);
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Registration failed' };
@@ -124,11 +133,10 @@ export const AuthProvider = ({ children }) => {
   const verifyOtp = useCallback(async (email, otp) => {
     try {
       const res = await axios.post(`${API_URL}/verify-otp`, { email, otp });
-      const { user, token } = res.data;
+      const { user, token: resToken } = res.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setTokenAndHeader(resToken);
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Invalid or expired OTP' };
@@ -165,8 +173,7 @@ export const AuthProvider = ({ children }) => {
   const completeSocialLogin = useCallback((token, userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    setTokenAndHeader(token);
     return { success: true, redirect: getRoleRoute(userData.role) };
   }, []);
 
@@ -179,10 +186,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
+    axios.post(`${API_URL}/logout`).catch(() => {});
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+    setTokenAndHeader(null);
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -197,7 +204,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ 
-      user, loading, login, adminLogin, verifyAdminOtp, register, verifyOtp, 
+      user, loading, token, login, adminLogin, verifyAdminOtp, register, verifyOtp, 
       forgotPassword, resetPassword, logout, completeSocialLogin, refreshUser, updateUser, resendOtp
     }}>
       {children}

@@ -67,13 +67,28 @@ const JobSeekerDashboard = () => {
       
       {/* Main Content Feed */}
       <div className="flex-1 min-w-0 space-y-12">
-        <div className="flex items-center gap-4 bg-emerald-50/50 p-4 rounded-[24px] border border-emerald-100/50">
-          <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center border border-emerald-100">
-            <QrCode className="w-5 h-5 text-emerald-600" />
-          </div>
-          <div>
-             <h2 className="text-lg font-bold text-slate-900 tracking-tight">Welcome back, {user?.name}</h2>
-             <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-0.5">ID: {user?.display_id || 'Pending Generate'}</p>
+        {/* Premium Welcome Header */}
+        <div className="relative rounded-[32px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 sm:p-10 text-white shadow-2xl overflow-hidden group">
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/20 blur-[80px] rounded-full group-hover:bg-emerald-500/30 transition-all duration-700" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl shadow-inner border border-white/20 flex items-center justify-center">
+                <QrCode className="w-7 h-7 text-emerald-400" />
+              </div>
+              <div className="space-y-1">
+                 <h2 className="text-3xl font-black text-white tracking-tight">Welcome back, {user?.name}</h2>
+                 <div className="flex items-center gap-3">
+                   <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold tracking-widest text-[10px] uppercase backdrop-blur-md">
+                     Job Seeker Portal
+                   </Badge>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                     ID: <span className="text-emerald-400">{user?.display_id || 'Pending Generate'}</span>
+                   </p>
+                 </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -154,27 +169,32 @@ const JobSeekerDashboard = () => {
         </section>
 
         {/* CV Banner - Elegant Version */}
-        <div className="relative p-8 rounded-[24px] bg-emerald-50/50 border border-emerald-100 overflow-hidden flex flex-col md:flex-row items-center gap-10 group">
-           <div className="shrink-0 w-20 h-28 bg-white rounded-xl shadow-sm border border-slate-100 rotate-[-4deg] flex flex-col gap-2 p-3 transition-transform group-hover:rotate-0 duration-500">
-              <div className="h-2 w-2/3 bg-slate-100 rounded" />
-              <div className="h-1.5 w-full bg-slate-50 rounded" />
-              <div className="h-1.5 w-full bg-slate-50 rounded" />
-              <div className="mt-auto h-2 w-1/3 bg-emerald-100 rounded" />
+        <div className="relative p-8 rounded-[32px] bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100/60 overflow-hidden flex flex-col md:flex-row items-center gap-10 group hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-500">
+           <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-x-1/4 translate-y-1/4 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700">
+             <Sparkles size={160} />
            </div>
            
-           <div className="flex-1 text-center md:text-left space-y-3">
-              <h3 className="text-2xl font-bold text-slate-900 leading-tight">Elevate your application with a professional CV</h3>
-              <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500 font-semibold">
-                 <p className="flex items-center gap-2">
-                    <CircleCheck size={14} className="text-emerald-600" /> AI-guided content
+           <div className="shrink-0 w-24 h-32 bg-white rounded-2xl shadow-md border border-slate-100/80 rotate-[-4deg] flex flex-col gap-2 p-4 transition-transform group-hover:rotate-[-2deg] group-hover:-translate-y-2 duration-500 relative z-10">
+              <div className="h-2.5 w-2/3 bg-slate-100 rounded-full" />
+              <div className="h-1.5 w-full bg-slate-50 rounded-full mt-2" />
+              <div className="h-1.5 w-full bg-slate-50 rounded-full" />
+              <div className="h-1.5 w-5/6 bg-slate-50 rounded-full" />
+              <div className="mt-auto h-2.5 w-1/3 bg-emerald-100 rounded-full" />
+           </div>
+           
+           <div className="flex-1 text-center md:text-left space-y-4 relative z-10">
+              <h3 className="text-2xl lg:text-3xl font-black text-slate-900 leading-tight tracking-tight">Elevate your application with a professional CV</h3>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-3 text-[11px] uppercase tracking-widest text-slate-500 font-bold">
+                 <p className="flex items-center gap-2 bg-white/60 px-3 py-1.5 rounded-xl border border-white">
+                    <CircleCheck size={14} className="text-emerald-500" /> AI-guided content
                  </p>
-                 <p className="flex items-center gap-2">
-                    <CircleCheck size={14} className="text-emerald-600" /> Professional templates
+                 <p className="flex items-center gap-2 bg-white/60 px-3 py-1.5 rounded-xl border border-white">
+                    <CircleCheck size={14} className="text-emerald-500" /> Pro templates
                  </p>
               </div>
            </div>
 
-           <Button onClick={() => navigate('/jobseeker/resume-builder')} className="shrink-0 h-12 px-8 bg-slate-900 text-white font-bold rounded-xl shadow-sm hover:bg-emerald-600 transition-all text-xs uppercase tracking-widest">
+           <Button onClick={() => navigate('/jobseeker/resume-builder')} className="relative z-10 shrink-0 h-14 px-8 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:bg-emerald-600 transition-all duration-300 text-xs uppercase tracking-widest hover:-translate-y-1">
              Craft My Resume
            </Button>
         </div>
@@ -209,34 +229,37 @@ const JobSeekerDashboard = () => {
       </div>
 
       {/* Right Column Widgets */}
-      <div className="hidden xl:flex flex-col gap-8 w-[320px]">
-        <Card className="p-6 rounded-[24px] border-slate-200 shadow-sm bg-white group hover:border-emerald-100 transition-all">
-          <CardContent className="p-0 space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-emerald-600 group-hover:bg-emerald-50 transition-all duration-500">
+      <div className="hidden xl:flex flex-col gap-8 w-[340px]">
+        <Card className="p-8 rounded-[32px] border-slate-200/60 shadow-sm bg-white group hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-500">
+          <CardContent className="p-0 space-y-6 relative z-10">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-emerald-600 group-hover:bg-emerald-50 group-hover:border-emerald-100 transition-all duration-500 shadow-sm">
                  <QrCode size={24} />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-900 leading-tight">Mobile Access</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Scan to Download</p>
+                <p className="text-base font-black text-slate-900 leading-tight">Mobile Access</p>
+                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-0.5">Scan to Download</p>
               </div>
             </div>
-            <p className="text-xs font-medium text-slate-500 leading-relaxed">Instant interview alerts and application tracking on the go.</p>
-            <div className="bg-slate-50 p-3 rounded-xl flex items-center justify-between border border-slate-100">
-               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Active Installs: 3.5k+</span>
-               <ExternalLink size={14} className="text-slate-300" />
+            <p className="text-sm font-medium text-slate-500 leading-relaxed">Instant interview alerts, one-tap applications, and status tracking on the go.</p>
+            <div className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between border border-slate-100 group-hover:border-slate-200 transition-colors">
+               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Installs: <span className="text-slate-900 font-black">3.5k+</span></span>
+               <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm">
+                 <ExternalLink size={12} className="text-slate-400" />
+               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-[24px] bg-slate-900 text-white border-none overflow-hidden h-64 flex flex-col justify-end group cursor-pointer hover:bg-slate-800 transition-all shadow-lg">
-            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-700">
-               <TrendingUp size={100} />
+        <Card className="rounded-[32px] bg-gradient-to-br from-slate-900 to-slate-800 text-white border-none overflow-hidden h-72 flex flex-col justify-end group cursor-pointer hover:shadow-2xl hover:shadow-slate-900/20 hover:-translate-y-1 transition-all duration-500">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 group-hover:rotate-[15deg] transition-all duration-1000 ease-out">
+               <TrendingUp size={120} />
             </div>
-            <div className="p-8 relative z-10 space-y-3">
-               <Badge className="bg-emerald-600 text-white border-none text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md">Market Report</Badge>
-               <h4 className="text-lg font-bold leading-tight">Gender disparity in career planning transparency</h4>
-               <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1 group-hover:text-emerald-400 transition-colors uppercase tracking-widest">Read Insights <ChevronRight size={12} /></p>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent opacity-80" />
+            <div className="p-8 relative z-10 space-y-4">
+               <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-xl backdrop-blur-md">Market Report</Badge>
+               <h4 className="text-xl font-black leading-tight tracking-tight">The Future of AI in Career Planning</h4>
+               <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2 group-hover:text-emerald-400 transition-colors uppercase tracking-[0.2em]">Read Insights <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /></p>
             </div>
         </Card>
       </div>

@@ -2,6 +2,14 @@ const Interview = require('../models/Interview');
 const User = require('../models/User');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
+const sendEmail = require('../utils/sendEmail');
+const { emailWrapper } = require('../utils/emailTemplates');
+const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
+
+const FRONTEND_URL = process.env.FRONTEND_URL;
+const formatWhen = (date) => new Date(date).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short' });
+const formatDate = (date) => new Date(date).toLocaleDateString('en-IN', { dateStyle: 'full' });
+const formatTime = (date) => new Date(date).toLocaleTimeString('en-IN', { timeStyle: 'short' });
 
 // @desc    Schedule a video interview
 // @route   POST /api/interviews
@@ -88,8 +96,39 @@ const scheduleInterview = async (req, res) => {
     }
 
     const populated = await Interview.findById(interview._id)
-      .populate('candidate', 'name email avatar profile.headline')
-      .populate('job', 'title');
+      .populate('candidate', 'name email avatar profile.headline profile.phone')
+      .populate({ path: 'job', select: 'title company', populate: { path: 'company', select: 'name' } });
+
+    if (populated.candidate?.email) {
+      sendEmail({
+        email: populated.candidate.email,
+        subject: `Interview Invitation — ${populated.job?.title || 'Your Application'}`,
+        html: emailWrapper('You\'re Invited to an Interview', `
+          <p>Hi ${populated.candidate.name || 'there'},</p>
+          <p>You've been invited to an interview for <strong>${populated.job?.title || 'a role'}</strong>.</p>
+          <p><strong>When:</strong> ${formatWhen(populated.scheduledAt)}</p>
+          <p><strong>Duration:</strong> ${populated.duration} minutes</p>
+          ${populated.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${populated.meetingLink}" style="color:#059669;">${populated.meetingLink}</a></p>` : ''}
+          ${populated.notes ? `<p><strong>Notes:</strong> ${populated.notes}</p>` : ''}
+        `)
+      }).catch(() => {});
+    }
+    const candidatePhone = getUserPhone(populated.candidate);
+    if (candidatePhone) {
+      sendWhatsAppTemplate({
+        to: candidatePhone,
+        template: 'whatsapp_interview_invitation',
+        params: [
+          populated.candidate.name || 'there',
+          populated.job?.title || 'the role',
+          populated.job?.company?.name || 'the company',
+          formatDate(populated.scheduledAt),
+          formatTime(populated.scheduledAt),
+          populated.meetingLink ? 'Video Call' : 'In-Person',
+          populated.meetingLink || `${FRONTEND_URL}/jobseeker/interviews`
+        ]
+      }).catch(() => {});
+    }
 
     res.status(201).json({ msg: 'Interview scheduled successfully', interview: populated });
   } catch (err) {
@@ -137,11 +176,25 @@ const getRecruiterInterviews = async (req, res) => {
 const cancelInterview = async (req, res) => {
   try {
     const recruiterId = req.user.id;
-    const interview = await Interview.findOne({ _id: req.params.id, recruiter: recruiterId });
+    const interview = await Interview.findOne({ _id: req.params.id, recruiter: recruiterId })
+      .populate('candidate', 'name email')
+      .populate('job', 'title');
     if (!interview) return res.status(404).json({ msg: 'Interview not found' });
 
+    const scheduledAt = interview.scheduledAt;
     interview.status = 'cancelled';
     await interview.save();
+
+    if (interview.candidate?.email) {
+      sendEmail({
+        email: interview.candidate.email,
+        subject: `Interview Cancelled — ${interview.job?.title || 'Your Application'}`,
+        html: emailWrapper('Interview Cancelled', `
+          <p>Hi ${interview.candidate.name || 'there'},</p>
+          <p>Your interview for <strong>${interview.job?.title || 'a role'}</strong> scheduled on <strong>${formatWhen(scheduledAt)}</strong> has been cancelled by the recruiter.</p>
+        `)
+      }).catch(() => {});
+    }
 
     res.json({ msg: 'Interview cancelled', interview });
   } catch (err) {

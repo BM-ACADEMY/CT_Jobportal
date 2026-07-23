@@ -13,6 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 const STATUS_COLOR = {
   active:   'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -60,14 +61,23 @@ const MyJobs = () => {
     }
   };
 
-  const handleDelete = async (jobId, title) => {
-    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
+  const [deleteTarget, setDeleteTarget] = useState(null); // { jobId, title }
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = (jobId, title) => setDeleteTarget({ jobId, title });
+
+  const confirmDelete = async () => {
+    const { jobId } = deleteTarget;
+    setDeleting(true);
     try {
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}`, { headers });
       toast.success('Job deleted successfully');
       setJobs(prev => prev.filter(j => j._id !== jobId));
+      setDeleteTarget(null);
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Failed to delete job');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -314,6 +324,17 @@ const MyJobs = () => {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Delete "${deleteTarget?.title}"?`}
+        description="This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

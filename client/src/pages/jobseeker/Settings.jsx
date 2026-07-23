@@ -4,7 +4,8 @@ import axios from 'axios';
 import { 
   User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Plus, X, Upload, FileText, CheckCircle2, Loader2,
-  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2, Download, BadgeCheck
+  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2, Download, BadgeCheck,
+  XCircle, AlertCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
+const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
 const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
 
 const INDIAN_STATES = [
@@ -118,6 +120,103 @@ const Settings = () => {
     const [newSkill, setNewSkill] = useState('');
     const [newJobTitle, setNewJobTitle] = useState('');
     const [newRemoteLocation, setNewRemoteLocation] = useState('');
+
+    // Campus / college link state
+    const [campusStudent, setCampusStudent] = useState(null);
+    const [campusLoading, setCampusLoading] = useState(true);
+    const [joinForm, setJoinForm] = useState({ collegeCode: '', rollNumber: '', department: '', batchYear: '', phone: '' });
+    const [joiningCollege, setJoiningCollege] = useState(false);
+    const [activating, setActivating] = useState(false);
+    const [reapplying, setReapplying] = useState(false);
+    const [reapplyForm, setReapplyForm] = useState({ rollNumber: '', department: '', batchYear: '', phone: '' });
+
+    const fetchCampusStudent = async () => {
+        setCampusLoading(true);
+        try {
+            const res = await axios.get(`${API_COLLEGE_URL}/me/student`);
+            setCampusStudent(res.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setCampusLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchCampusStudent(); }, []);
+
+    useEffect(() => {
+        if (campusStudent?.idVerification?.status === 'rejected') {
+            setReapplyForm({
+                rollNumber: campusStudent.rollNumber || '',
+                department: campusStudent.department || '',
+                batchYear: campusStudent.batchYear || '',
+                phone: campusStudent.phone || '',
+            });
+        }
+    }, [campusStudent]);
+
+    const handleJoinCollege = async (e) => {
+        e.preventDefault();
+        const { collegeCode, rollNumber, department, batchYear, phone } = joinForm;
+        if (!collegeCode.trim() || !rollNumber.trim() || !department.trim() || !batchYear || !phone.trim()) {
+            return toast.error('Please fill in college code, roll number, department, batch year, and phone number');
+        }
+        setJoiningCollege(true);
+        try {
+            const res = await axios.post(`${API_COLLEGE_URL}/me/join`, {
+                collegeCode: collegeCode.trim(),
+                rollNumber: rollNumber.trim(),
+                department: department.trim(),
+                batchYear: parseInt(batchYear),
+                phone: phone.trim(),
+            });
+            toast.success(res.data.msg || 'Join request sent');
+            setJoinForm({ collegeCode: '', rollNumber: '', department: '', batchYear: '', phone: '' });
+            fetchCampusStudent();
+        } catch (err) {
+            toast.error(err.response?.data?.msg || 'Failed to join college');
+        } finally {
+            setJoiningCollege(false);
+        }
+    };
+
+    const handleReapply = async (e) => {
+        e.preventDefault();
+        if (!campusStudent?.college?.code) return toast.error('Missing college code');
+        const { rollNumber, department, batchYear, phone } = reapplyForm;
+        if (!rollNumber.trim() || !department.trim() || !batchYear || !phone.trim()) {
+            return toast.error('Please fill in roll number, department, batch year, and phone number');
+        }
+        setReapplying(true);
+        try {
+            const res = await axios.post(`${API_COLLEGE_URL}/me/join`, {
+                collegeCode: campusStudent.college.code,
+                rollNumber: rollNumber.trim(),
+                department: department.trim(),
+                batchYear: parseInt(batchYear),
+                phone: phone.trim(),
+            });
+            toast.success(res.data.msg || 'Re-submitted your join request');
+            fetchCampusStudent();
+        } catch (err) {
+            toast.error(err.response?.data?.msg || 'Failed to re-apply');
+        } finally {
+            setReapplying(false);
+        }
+    };
+
+    const handleActivate = async () => {
+        setActivating(true);
+        try {
+            await axios.post(`${API_COLLEGE_URL}/me/activate`);
+            toast.success('Profile activated — your TPO can now see you as active');
+            fetchCampusStudent();
+        } catch (err) {
+            toast.error(err.response?.data?.msg || 'Failed to activate');
+        } finally {
+            setActivating(false);
+        }
+    };
 
     useEffect(() => {
         if (user) {
@@ -478,6 +577,9 @@ const Settings = () => {
                     </TabsTrigger>
                     <TabsTrigger value="preferences" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <Settings2 className="w-3.5 h-3.5 mr-2" /> Preferences
+                    </TabsTrigger>
+                    <TabsTrigger value="campus" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                        <GraduationCap className="w-3.5 h-3.5 mr-2" /> Campus
                     </TabsTrigger>
                 </TabsList>
 
@@ -1237,6 +1339,151 @@ const Settings = () => {
                                     ))}
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* ── TAB: CAMPUS ── */}
+                <TabsContent value="campus" className="mt-8">
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-slate-50 p-6">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <GraduationCap className="w-4 h-4 text-emerald-600" /> Campus / College Status
+                            </CardTitle>
+                            <CardDescription className="text-xs font-medium text-slate-400">Link your account to your college's placement portal</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-8">
+                            {campusLoading ? (
+                                <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
+                            ) : campusStudent ? (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <DataDisplay label="College" value={campusStudent.college?.name} icon={GraduationCap} isEditing={false} />
+                                        <DataDisplay label="Placement Status" value={campusStudent.placementStatus} icon={CheckCircle2} isEditing={false} />
+                                        <DataDisplay label="Registration Source" value={campusStudent.registrationSource} isEditing={false} />
+                                        <DataDisplay
+                                            label="ID Verification"
+                                            value={campusStudent.idVerification?.status === 'pending' ? 'Awaiting TPO approval' : campusStudent.idVerification?.status}
+                                            isEditing={false}
+                                        />
+                                    </div>
+                                    {campusStudent.idVerification?.status === 'rejected' ? (
+                                        <div className="p-6 rounded-2xl bg-red-50 border border-red-100 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <XCircle size={18} className="text-red-500" />
+                                                <h4 className="text-sm font-bold text-slate-900">Join request rejected</h4>
+                                            </div>
+                                            <p className="text-xs text-slate-500">
+                                                Your request to join {campusStudent.college?.name || 'this college'} was rejected by the TPO.
+                                                {campusStudent.idVerification?.rejectionReason ? ` Reason: "${campusStudent.idVerification.rejectionReason}"` : ''}
+                                                {' '}You are not active or visible on their student list.
+                                            </p>
+                                            <form onSubmit={handleReapply} className="space-y-3 pt-1">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="space-y-1">
+                                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Roll Number</Label>
+                                                        <Input value={reapplyForm.rollNumber} onChange={(e) => setReapplyForm(p => ({ ...p, rollNumber: e.target.value }))} className="h-10 rounded-xl bg-white border-slate-200 font-medium text-sm" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Department</Label>
+                                                        <Input value={reapplyForm.department} onChange={(e) => setReapplyForm(p => ({ ...p, department: e.target.value }))} className="h-10 rounded-xl bg-white border-slate-200 font-medium text-sm" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Year of Passing</Label>
+                                                        <Input type="number" value={reapplyForm.batchYear} onChange={(e) => setReapplyForm(p => ({ ...p, batchYear: e.target.value }))} className="h-10 rounded-xl bg-white border-slate-200 font-medium text-sm" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
+                                                        <Input value={reapplyForm.phone} onChange={(e) => setReapplyForm(p => ({ ...p, phone: e.target.value }))} className="h-10 rounded-xl bg-white border-slate-200 font-medium text-sm" />
+                                                    </div>
+                                                </div>
+                                                <Button type="submit" disabled={reapplying} className="h-10 px-6 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest">
+                                                    {reapplying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Re-apply
+                                                </Button>
+                                            </form>
+                                        </div>
+                                    ) : campusStudent.idVerification?.status === 'pending' ? (
+                                        <div className="p-6 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3">
+                                            <AlertCircle size={18} className="text-amber-500 mt-0.5 shrink-0" />
+                                            <div>
+                                                <h4 className="text-sm font-bold text-slate-900">Awaiting TPO approval</h4>
+                                                <p className="text-xs text-slate-500 mt-1">Your join request is under review. You'll be able to activate your profile once your TPO approves it.</p>
+                                            </div>
+                                        </div>
+                                    ) : !campusStudent.isActivated ? (
+                                        <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-between gap-4">
+                                            <div>
+                                                <h4 className="text-sm font-bold text-slate-900">Activate your profile</h4>
+                                                <p className="text-xs text-slate-500 mt-1">Let your TPO know you're actively using the portal — this flips your status to "active" on their dashboard.</p>
+                                            </div>
+                                            <Button onClick={handleActivate} disabled={activating} className="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest shrink-0">
+                                                {activating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Activate My Profile
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-2 text-xs font-bold text-emerald-600">
+                                            <CheckCircle2 size={16} /> Your profile is active and visible to your TPO.
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <form onSubmit={handleJoinCollege} className="max-w-md space-y-4">
+                                    <p className="text-sm text-slate-500 font-medium">
+                                        Not linked to a college yet. Enter your details below (ask your TPO for the college code) to send a join request.
+                                    </p>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">College Code</Label>
+                                        <Input
+                                            value={joinForm.collegeCode}
+                                            onChange={(e) => setJoinForm(p => ({ ...p, collegeCode: e.target.value }))}
+                                            placeholder="e.g. SKCT"
+                                            className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Roll Number</Label>
+                                            <Input
+                                                value={joinForm.rollNumber}
+                                                onChange={(e) => setJoinForm(p => ({ ...p, rollNumber: e.target.value }))}
+                                                placeholder="e.g. 21CS045"
+                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Department</Label>
+                                            <Input
+                                                value={joinForm.department}
+                                                onChange={(e) => setJoinForm(p => ({ ...p, department: e.target.value }))}
+                                                placeholder="e.g. CSE"
+                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Year of Passing / Batch</Label>
+                                            <Input
+                                                type="number"
+                                                value={joinForm.batchYear}
+                                                onChange={(e) => setJoinForm(p => ({ ...p, batchYear: e.target.value }))}
+                                                placeholder="e.g. 2026"
+                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
+                                            <Input
+                                                value={joinForm.phone}
+                                                onChange={(e) => setJoinForm(p => ({ ...p, phone: e.target.value }))}
+                                                placeholder="e.g. 9876543210"
+                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                    <Button type="submit" disabled={joiningCollege} className="h-11 px-6 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest">
+                                        {joiningCollege ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Send Join Request
+                                    </Button>
+                                </form>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

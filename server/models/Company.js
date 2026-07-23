@@ -153,6 +153,21 @@ const companySchema = new mongoose.Schema({
   subscriptionExpiry: {
     type: Date
   },
+  nextRenewalDate: {
+    type: Date
+  },
+  autoRenewEnabled: {
+    type: Boolean,
+    default: true
+  },
+  razorpaySubscriptionId: {
+    type: String,
+    default: ''
+  },
+  renewalFailureCount: {
+    type: Number,
+    default: 0
+  },
   display_id: {
     type: String,
     unique: true,

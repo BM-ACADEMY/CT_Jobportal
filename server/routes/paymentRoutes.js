@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   createOrder,
   verifyPayment,
+  createSubscriptionOrder,
+  verifySubscriptionPayment,
   getPaymentHistory,
   getAllPayments,
   cancelSubscription,
@@ -13,12 +15,17 @@ const {
   rejectRefund,
   getBuyers,
   getBuyerDetails,
-  sendRenewalReminder
+  sendRenewalReminder,
+  handleRenewalWebhook
 } = require('../controllers/paymentController');
 const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
+const expressBodyParser = require('express');
 
 router.post('/create-order', verifyToken, createOrder);
 router.post('/verify-payment', verifyToken, verifyPayment);
+router.post('/create-subscription', verifyToken, createSubscriptionOrder);
+router.post('/verify-subscription', verifyToken, verifySubscriptionPayment);
+router.post('/razorpay/renewal-webhook', expressBodyParser.raw({ type: 'application/json' }), handleRenewalWebhook);
 router.post('/cancel-plan', verifyToken, cancelSubscription);
 router.get('/history', verifyToken, getPaymentHistory);
 router.post('/:paymentId/request-refund', verifyToken, requestRefund);

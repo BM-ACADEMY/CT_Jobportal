@@ -559,6 +559,31 @@ const rejectJoinRequest = async (req, res) => {
   }
 };
 
+// @desc    Toggle auto-renew for the recruiter's company subscription (spec 9.3/9.4)
+// @route   PUT /api/company/subscription/auto-renew
+const toggleCompanyAutoRenew = async (req, res) => {
+  try {
+    const { autoRenewEnabled } = req.body;
+    if (typeof autoRenewEnabled !== 'boolean') {
+      return res.status(400).json({ msg: 'autoRenewEnabled must be a boolean' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user?.company) return res.status(404).json({ msg: 'No company linked to your account' });
+
+    const company = await Company.findById(user.company);
+    if (!company) return res.status(404).json({ msg: 'Company not found' });
+
+    company.autoRenewEnabled = autoRenewEnabled;
+    await company.save();
+
+    res.json({ msg: `Auto-renew ${autoRenewEnabled ? 'enabled' : 'disabled'}`, autoRenewEnabled });
+  } catch (err) {
+    console.error('Toggle Company Auto-Renew Error:', err.message);
+    res.status(500).json({ msg: 'Server Error', error: err.message });
+  }
+};
+
 module.exports = {
   getRecruiterProfile,
   updateRecruiterProfile,
@@ -572,5 +597,6 @@ module.exports = {
   requestJoinCompany,
   getJoinRequests,
   acceptJoinRequest,
-  rejectJoinRequest
+  rejectJoinRequest,
+  toggleCompanyAutoRenew
 };

@@ -5,6 +5,24 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 
+// job.salary/experience are normally pre-formatted strings by the caller, but guard against
+// receiving the raw backend shape ({min, max, currency, isRangeHidden}) directly to avoid
+// "Objects are not valid as a React child" crashes.
+const formatSalary = (salary) => {
+  if (typeof salary === 'string') return salary;
+  if (!salary || salary.isRangeHidden) return 'Not Disclosed';
+  if (salary.min && salary.max) return `₹${(salary.min / 100000).toFixed(1)}–${(salary.max / 100000).toFixed(1)} LPA`;
+  if (salary.min) return `₹${(salary.min / 100000).toFixed(1)}+ LPA`;
+  return 'Competitive';
+};
+
+const formatExperience = (experience) => {
+  if (typeof experience === 'string') return experience;
+  if (!experience || (!experience.min && !experience.max)) return 'Any Experience';
+  if (experience.min && experience.max) return `${experience.min}-${experience.max} Yrs`;
+  return `${experience.min || experience.max}+ Yrs`;
+};
+
 const DetailedJobCard = ({ job }) => {
   return (
     <Card 
@@ -48,13 +66,13 @@ const DetailedJobCard = ({ job }) => {
                 <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
                   <Briefcase size={14} />
                 </div>
-                <span className="text-foreground/70">{job.experience}</span>
+                <span className="text-foreground/70">{formatExperience(job.experience)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
                   <span className="font-black text-xs">₹</span>
                 </div>
-                <span className="text-foreground/70">{job.salary}</span>
+                <span className="text-foreground/70">{formatSalary(job.salary)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">

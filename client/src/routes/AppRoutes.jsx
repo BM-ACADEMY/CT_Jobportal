@@ -14,6 +14,7 @@ import FeatureGate from '../components/subscription/FeatureGate';
 // Pages
 import HomePage from '../pages/Home';
 import FreeAssessment from '../pages/public/FreeAssessment';
+import CampusRegistration from '../pages/public/CampusRegistration';
 import Jobs from '../pages/Jobs';
 import JobDetails from '../pages/JobDetails';
 import Companies from '../pages/Companies';
@@ -67,6 +68,7 @@ import SkillTests from '../pages/jobseeker/features/SkillTests';
 import SalaryBenchmarking from '../pages/jobseeker/features/SalaryBenchmarking';
 import AiResumeReview from '../pages/jobseeker/features/AiResumeReview';
 import MyApplications from '../pages/jobseeker/MyApplications';
+import CampusDrives from '../pages/jobseeker/CampusDrives';
 
 // Company/Recruiter feature pages
 import AtsPipeline from '../pages/company/features/AtsPipeline';
@@ -80,6 +82,7 @@ import AICandidateMatching from '../pages/company/features/AICandidateMatching';
 import BulkApplicantManagement from '../pages/company/features/BulkApplicantManagement';
 import MyJobs from '../pages/company/MyJobs';
 import CandidateSearch from '../pages/company/CandidateSearch';
+import DriveRequests from '../pages/company/DriveRequests';
 import RaiseTicket from '../pages/tickets/RaiseTicket';
 import MyTickets from '../pages/tickets/MyTickets';
 import AdminTickets from '../pages/admin/AdminTickets';
@@ -89,7 +92,19 @@ import EmployeeDashboard from '../pages/employee/Dashboard';
 
 import WriteReview from '../pages/shared/WriteReview';
 import ManageReviews from '../pages/admin/ManageReviews';
+import AdminCollegeVerification from '../pages/admin/CollegeVerification';
 
+// College pages
+import CollegeDashboard from '../pages/college/Dashboard';
+import CollegeStudents from '../pages/college/Students';
+import CollegeDrives from '../pages/college/Drives';
+import CollegeSettings from '../pages/college/Settings';
+import CollegeReports from '../pages/college/Reports';
+import CollegeVerification from '../pages/college/Verification';
+import PrincipalExecutiveSummary from '../pages/public/PrincipalExecutiveSummary';
+import CompanyDriveView from '../pages/public/CompanyDriveView';
+import AcceptInchargeInvite from '../pages/public/AcceptInchargeInvite';
+import ManageDrive from '../pages/shared/ManageDrive';
 
 
 // Role-based redirect after login
@@ -103,6 +118,8 @@ const RoleRedirect = () => {
     company: '/company',
     jobseeker: '/jobseeker',
     org_employee: '/employee',
+    college: '/college',
+    drive_incharge: '/incharge',
   };
   return <Navigate to={routes[user.role] || '/jobseeker'} replace />;
 };
@@ -115,6 +132,10 @@ const AppRoutes = () => {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/free-assessment" element={<FreeAssessment />} />
+        <Route path="/campus/:driveCode" element={<CampusRegistration />} />
+        <Route path="/principal/executive-summary/:passkey" element={<PrincipalExecutiveSummary />} />
+        <Route path="/company-drive/:token" element={<CompanyDriveView />} />
+        <Route path="/incharge/accept/:driveId/:token" element={<AcceptInchargeInvite />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/job/:id" element={<JobDetails />} />
         <Route path="/companies" element={<Companies />} />
@@ -187,6 +208,8 @@ const AppRoutes = () => {
         }
       />
 
+
+
       <Route
         element={
           <PrivateRoute>
@@ -199,6 +222,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute>
               <SavedJobs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/incharge"
+          element={
+            <PrivateRoute>
+              <ManageDrive />
             </PrivateRoute>
           }
         />
@@ -235,6 +266,7 @@ const AppRoutes = () => {
           }
         />
         <Route path="/jobseeker/applications" element={<PrivateRoute roles={['jobseeker']}><MyApplications /></PrivateRoute>} />
+        <Route path="/jobseeker/campus-drives" element={<PrivateRoute roles={['jobseeker']}><CampusDrives /></PrivateRoute>} />
         <Route path="/jobseeker/resume-builder" element={<PrivateRoute roles={['jobseeker']}><ResumeBuilder /></PrivateRoute>} />
         <Route path="/jobseeker/job-alerts" element={<PrivateRoute roles={['jobseeker']}><JobAlerts /></PrivateRoute>} />
         <Route path="/jobseeker/profile-insights" element={<PrivateRoute roles={['jobseeker']}><ProfileInsights /></PrivateRoute>} />
@@ -292,6 +324,7 @@ const AppRoutes = () => {
         <Route path="/company/interview-scheduling" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasInterviewScheduling" subscriptionPath="/company/subscription"><InterviewScheduling /></FeatureGate></PrivateRoute>} />
         <Route path="/company/ai-matching" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><FeatureGate featureKey="hasAICandidateMatching" subscriptionPath="/company/subscription"><AICandidateMatching /></FeatureGate></PrivateRoute>} />
         <Route path="/company/messages" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><Messages /></PrivateRoute>} />
+        <Route path="/company/drive-requests" element={<PrivateRoute roles={['company']}><DriveRequests /></PrivateRoute>} />
         <Route path="/company/payment-history" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><PaymentHistory /></PrivateRoute>} />
         <Route path="/company/pay-per-features" element={<PrivateRoute roles={['recruiter', 'company', 'college']}><PayPerFeatures /></PrivateRoute>} />
         <Route
@@ -310,6 +343,17 @@ const AppRoutes = () => {
         <Route path="/employee/messages" element={<PrivateRoute roles={['org_employee']}><FeatureGate featureKey="hasMessageRecruiters" subscriptionPath="/jobseeker/subscription"><Messages /></FeatureGate></PrivateRoute>} />
         <Route path="/employee/video-interview" element={<PrivateRoute roles={['org_employee']}><VideoInterview /></PrivateRoute>} />
         <Route path="/employee/interview-scheduling" element={<PrivateRoute roles={['org_employee']}><InterviewScheduling /></PrivateRoute>} />
+
+        {/* College (TPO) */}
+        <Route path="/college" element={<PrivateRoute roles={['college']}><CollegeDashboard /></PrivateRoute>} />
+        <Route path="/college/students" element={<PrivateRoute roles={['college']}><CollegeStudents /></PrivateRoute>} />
+        <Route path="/college/drives" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
+        <Route path="/college/drives/new" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
+        <Route path="/college/reports" element={<PrivateRoute roles={['college']}><CollegeReports /></PrivateRoute>} />
+        <Route path="/college/verification" element={<PrivateRoute roles={['college']}><CollegeVerification /></PrivateRoute>} />
+        <Route path="/college/subscription" element={<PrivateRoute roles={['college']}><CompanySubscription /></PrivateRoute>} />
+        <Route path="/college/payment-history" element={<PrivateRoute roles={['college']}><PaymentHistory /></PrivateRoute>} />
+        <Route path="/college/settings" element={<PrivateRoute roles={['college']}><CollegeSettings /></PrivateRoute>} />
 
         {/* Admin */}
         <Route
@@ -341,6 +385,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManageJobs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/colleges"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminCollegeVerification />
             </PrivateRoute>
           }
         />

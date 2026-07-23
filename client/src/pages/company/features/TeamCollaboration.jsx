@@ -13,6 +13,7 @@ import { useSocket } from '@/context/SocketContext';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -662,26 +663,40 @@ const TeamCollaboration = () => {
     }
   };
 
-  const handleGroupAction = async (action) => {
+  const [groupConfirmAction, setGroupConfirmAction] = useState(null); // 'delete' | 'clear'
+  const [groupActionLoading, setGroupActionLoading] = useState(false);
+
+  const runGroupAction = async (action) => {
+    setGroupActionLoading(true);
     if (action === 'delete') {
-      if (!window.confirm('Are you sure you want to delete this group? This action cannot be undone.')) return;
       try {
         await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/collaboration/groups/${activeGroup._id}`, { headers });
         toast.success('Group deleted');
         setGroups(prev => prev.filter(g => g._id !== activeGroup._id));
         setActiveGroup(null);
+        setGroupConfirmAction(null);
       } catch (err) {
         toast.error('Failed to delete group');
+      } finally {
+        setGroupActionLoading(false);
       }
     } else if (action === 'clear') {
-      if (!window.confirm('Clear all messages in this group?')) return;
       try {
         await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/collaboration/groups/${activeGroup._id}/messages`, { headers });
         setMessages([]);
         toast.success('Messages cleared');
+        setGroupConfirmAction(null);
       } catch (err) {
         toast.error('Failed to clear messages');
+      } finally {
+        setGroupActionLoading(false);
       }
+    }
+  };
+
+  const handleGroupAction = async (action) => {
+    if (action === 'delete' || action === 'clear') {
+      setGroupConfirmAction(action);
     } else if (action === 'settings') {
       toast.info('Group settings coming soon');
     } else if (action === 'delete_message') {
@@ -767,11 +782,22 @@ const TeamCollaboration = () => {
         onSchedule={handleScheduleCall}
       />
 
-      <MembersModal 
-        isOpen={isMembersModalOpen} 
-        onClose={() => setIsMembersModalOpen(false)} 
+      <MembersModal
+        isOpen={isMembersModalOpen}
+        onClose={() => setIsMembersModalOpen(false)}
         group={activeGroup}
         onAddMember={handleAddMember}
+      />
+
+      <ConfirmDialog
+        open={!!groupConfirmAction}
+        onOpenChange={(open) => !open && setGroupConfirmAction(null)}
+        title={groupConfirmAction === 'delete' ? 'Delete this group?' : 'Clear all messages in this group?'}
+        description={groupConfirmAction === 'delete' ? 'This action cannot be undone.' : undefined}
+        confirmLabel={groupConfirmAction === 'delete' ? 'Delete' : 'Clear'}
+        destructive
+        loading={groupActionLoading}
+        onConfirm={() => runGroupAction(groupConfirmAction)}
       />
     </FeatureGate>
   );

@@ -5,12 +5,12 @@ import axios from 'axios';
 import { User, Briefcase, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 
 const CompleteSocialProfile = () => {
-  const { completeSocialLogin } = useAuth();
+  const { completeSocialLogin, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const token = queryParams.get('token');
-  const userId = queryParams.get('userId');
+  const token = queryParams.get('token') || localStorage.getItem('token');
+  const userId = queryParams.get('userId') || user?.id || user?._id;
 
   const [role, setRole] = useState('jobseeker');
   const [password, setPassword] = useState('');

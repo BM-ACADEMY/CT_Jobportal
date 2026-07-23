@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -61,15 +62,11 @@ const STATIC_FEATURES = {
     { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
     { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
   ],
-  college: [
-    { key: 'userSeats', label: 'Team Seats', type: 'count', unit: 'seats' },
-    { key: 'hasBulkApplicantManagement', label: 'Bulk Applicant Management', type: 'boolean' },
-    { key: 'hasInterviewScheduling', label: 'Interview Scheduling', type: 'boolean' },
-    { key: 'hasTeamCollaboration', label: 'Team Collaboration', type: 'boolean', hint: 'Auto-enabled if seats > 1' },
-    { key: 'hasRequests', label: 'Service Requests', type: 'boolean' },
-    { key: 'hasMessageRecruiters', label: 'Messaging', type: 'boolean' },
-    { key: 'hasDedicatedOnboarding', label: 'Dedicated Onboarding', type: 'boolean' },
-  ],
+  // College plans have no core/static fields — every campus-specific capability (Student
+  // Capacity, CSV Bulk Upload, Co-Branded Certificates, etc.) lives in the Dynamic Feature
+  // Catalog instead. The 7 entries formerly here were copy-pasted from the company role and
+  // didn't apply to colleges at all (team seats, bulk applicant management, ...).
+  college: [],
 };
 
 const DEFAULT_FORM = {
@@ -166,14 +163,22 @@ const FeatureCatalogPanel = ({ role, features, onRefresh }) => {
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete feature "${name}"? It will be removed from all plans.`)) return;
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, name }
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = (id, name) => setDeleteTarget({ id, name });
+
+  const confirmDelete = async () => {
+    setDeleting(true);
     try {
-      await axios.delete(`${API}/subscriptions/features/${id}`, { headers: authHeader() });
+      await axios.delete(`${API}/subscriptions/features/${deleteTarget.id}`, { headers: authHeader() });
       toast.success('Feature deleted from all plans');
+      setDeleteTarget(null);
       onRefresh();
     } catch {
       toast.error('Delete failed');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -331,6 +336,17 @@ const FeatureCatalogPanel = ({ role, features, onRefresh }) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={`Delete feature "${deleteTarget?.name}"?`}
+        description="It will be removed from all plans."
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
@@ -391,9 +407,11 @@ const PlanCard = ({ plan, roleFeatures, onEdit, onDelete, onToggleDynamicFeature
 
         {/* Summary pills */}
         <div className="flex gap-2 flex-wrap">
-          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
-            {enabledStaticCount}/{staticFields.length} core
-          </span>
+          {staticFields.length > 0 && (
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+              {enabledStaticCount}/{staticFields.length} core
+            </span>
+          )}
           <span className="text-[10px] font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-lg">
             {enabledDynCount}/{roleFeatures.length} dynamic
           </span>
@@ -412,6 +430,7 @@ const PlanCard = ({ plan, roleFeatures, onEdit, onDelete, onToggleDynamicFeature
       {expanded && (
         <div className="border-t border-slate-50 divide-y divide-slate-50">
           {/* Static features (read-only display) */}
+          {staticFields.length > 0 && (
           <div className="px-5 py-3">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Core Features</p>
             <div className="space-y-2">
@@ -449,6 +468,7 @@ const PlanCard = ({ plan, roleFeatures, onEdit, onDelete, onToggleDynamicFeature
               })}
             </div>
           </div>
+          )}
 
           {/* Dynamic features (toggleable inline) */}
           {roleFeatures.length > 0 && (
@@ -736,17 +756,19 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
             </div>
 
             {/* Static Features */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Zap size={13} className="text-slate-400" />
-                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Core Features</Label>
+            {staticFields.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap size={13} className="text-slate-400" />
+                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Core Features</Label>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {staticFields.map(f => (
+                    <StaticFeatureInput key={f.key} field={f} form={form} onChange={set} />
+                  ))}
+                </div>
               </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {staticFields.map(f => (
-                  <StaticFeatureInput key={f.key} field={f} form={form} onChange={set} />
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Dynamic Features from catalog */}
             {dynFields.length > 0 && (
@@ -957,14 +979,23 @@ const ManageSubscriptions = () => {
   const handleEdit = (plan) => { setEditingPlan(plan); setPlanModalOpen(true); };
   const handleNew = () => { setEditingPlan(null); setPlanModalOpen(true); };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this plan? This cannot be undone.')) return;
+  const [deletePlanTarget, setDeletePlanTarget] = useState(null);
+  const [deletingPlan, setDeletingPlan] = useState(false);
+
+  const handleDelete = (id) => setDeletePlanTarget(id);
+
+  const confirmDeletePlan = async () => {
+    const id = deletePlanTarget;
+    setDeletingPlan(true);
     try {
       await axios.delete(`${API}/subscriptions/${id}`, { headers: authHeader() });
       toast.success('Plan deleted');
       setSubscriptions(s => s.filter(x => x._id !== id));
+      setDeletePlanTarget(null);
     } catch {
       toast.error('Delete failed');
+    } finally {
+      setDeletingPlan(false);
     }
   };
 
@@ -1073,6 +1104,17 @@ const ManageSubscriptions = () => {
         editingPlan={editingPlan}
         onSaved={fetchAll}
         allFeatures={globalFeatures}
+      />
+
+      <ConfirmDialog
+        open={!!deletePlanTarget}
+        onOpenChange={(open) => !open && setDeletePlanTarget(null)}
+        title="Delete this plan?"
+        description="This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        loading={deletingPlan}
+        onConfirm={confirmDeletePlan}
       />
     </div>
   );

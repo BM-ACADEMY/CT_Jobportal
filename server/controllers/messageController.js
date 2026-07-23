@@ -2,8 +2,12 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const Ticket = require('../models/Ticket');
+const sendEmail = require('../utils/sendEmail');
+const { emailWrapper } = require('../utils/emailTemplates');
+const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
 
 const RECRUITER_ROLES = ['recruiter', 'company', 'org_employee'];
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 // @desc    Get or create conversation
 // @route   POST /api/messages/conversation
@@ -179,6 +183,11 @@ const sendMessage = async (req, res) => {
     const { conversationId, content, attachment } = req.body;
     const senderId = req.user.id;
 
+    // If the recipient wasn't already sitting on unread messages from this sender, this message
+    // starts a new "unread" streak worth emailing about — avoids re-emailing on every message
+    // of an active back-and-forth.
+    const priorUnreadCount = await Message.countDocuments({ conversation: conversationId, sender: senderId, isRead: false });
+
     const newMessage = new Message({
       conversation: conversationId,
       sender: senderId,
@@ -195,6 +204,34 @@ const sendMessage = async (req, res) => {
 
     // Optional: Emit socket event from here if needed
     // req.io.to(conversationId).emit('receive_message', newMessage);
+
+    if (priorUnreadCount === 0) {
+      const [conversation, sender] = await Promise.all([
+        Conversation.findById(conversationId).populate('participants', 'name email profile.phone recruiterProfile.phone companyProfile.phone'),
+        User.findById(senderId).select('name')
+      ]);
+      const recipient = conversation?.participants.find(p => p._id?.toString() !== senderId);
+      if (recipient?.email) {
+        sendEmail({
+          email: recipient.email,
+          subject: `New message from ${sender?.name || 'a user'}`,
+          html: emailWrapper('New Message', `
+            <p>Hi ${recipient.name || 'there'},</p>
+            <p><strong>${sender?.name || 'Someone'}</strong> sent you a message on Velaivaaipu:</p>
+            <blockquote style="border-left:3px solid #10b981;padding-left:12px;color:#475569;margin-left:0;">${content || '📎 Attachment'}</blockquote>
+            <p><a href="${FRONTEND_URL}" style="color:#059669;">Log in to reply</a></p>
+          `)
+        }).catch(() => {});
+      }
+      const recipientPhone = getUserPhone(recipient);
+      if (recipientPhone) {
+        sendWhatsAppTemplate({
+          to: recipientPhone,
+          template: 'off_platform_chat_bridge',
+          params: [recipient.name || 'there', sender?.name || 'Someone', 'your conversation', content || 'Sent an attachment', FRONTEND_URL]
+        }).catch(() => {});
+      }
+    }
 
     res.json(newMessage);
   } catch (err) {
@@ -266,6 +303,8 @@ const sendBulkMessage = async (req, res) => {
     }
 
     const results = { sent: 0, failed: 0 };
+    const recipientUsers = await User.find({ _id: { $in: recipientIds } }).select('name email profile.phone recruiterProfile.phone companyProfile.phone');
+    const recipientMap = new Map(recipientUsers.map(u => [u._id.toString(), u]));
 
     for (const recipientId of recipientIds) {
       try {
@@ -284,6 +323,36 @@ const sendBulkMessage = async (req, res) => {
 
         await Conversation.findByIdAndUpdate(conversation._id, { lastMessage: msg._id, updatedAt: Date.now() });
         results.sent++;
+
+        const recipientUser = recipientMap.get(String(recipientId));
+        if (recipientUser?.email) {
+          sendEmail({
+            email: recipientUser.email,
+            subject: subject ? `New message: ${subject}` : `New message from ${sender.name || 'a recruiter'}`,
+            html: emailWrapper('New Message', `
+              <p>Hi ${recipientUser.name || 'there'},</p>
+              <p><strong>${sender.name || 'A recruiter'}</strong> sent you a message${subject ? `: <strong>${subject}</strong>` : ''}.</p>
+              <blockquote style="border-left:3px solid #10b981;padding-left:12px;color:#475569;margin-left:0;">${content}</blockquote>
+              <p><a href="${FRONTEND_URL}" style="color:#059669;">Log in to reply</a></p>
+            `)
+          }).catch(() => {});
+        }
+
+        const bulkRecipientPhone = getUserPhone(recipientUser);
+        if (bulkRecipientPhone) {
+          sendWhatsAppTemplate({
+            to: bulkRecipientPhone,
+            template: 'bulk_candidate_communication',
+            params: [
+              recipientUser?.name || 'there',
+              sender.name || 'a recruiter',
+              subject || 'an update',
+              new Date().toLocaleDateString('en-IN'),
+              FRONTEND_URL,
+              FRONTEND_URL
+            ]
+          }).catch(() => {});
+        }
       } catch {
         results.failed++;
       }

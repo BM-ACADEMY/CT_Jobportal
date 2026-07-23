@@ -61,6 +61,31 @@ const roleConfig = {
       { label: 'Reports', href: '/subadmin/reports' },
     ],
   },
+  college: {
+    label: 'College',
+    color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+    navItems: [
+      { label: 'Students', href: '/college/students' },
+      { label: 'Campus Drives', href: '/college/drives' },
+      { label: 'Reports', href: '/college/reports' },
+    ],
+  },
+  org_employee: {
+    label: 'Employee',
+    color: 'bg-primary/10 text-primary border-primary/20',
+    navItems: [
+      { label: 'Jobs', href: '/jobs' },
+      { label: 'Companies', href: '/companies' },
+      { label: 'Services', href: '/services' },
+    ],
+  },
+  drive_incharge: {
+    label: 'Drive In-Charge',
+    color: 'bg-primary/10 text-primary border-primary/20',
+    navItems: [
+      { label: 'Manage Drive', href: '/incharge' },
+    ],
+  },
 };
 
 const Header = () => {
@@ -151,11 +176,11 @@ const Header = () => {
                     <div className="p-1 space-y-1">
                       <DropdownMenuItem 
                           onClick={() => {
-                              const routes = { 
-                                  jobseeker: '/jobseeker/settings', 
+                              const routes = {
+                                  jobseeker: '/jobseeker/settings',
                                   recruiter: '/company/settings',
                                   company: '/company/settings',
-                                  college: '/company/settings',
+                                  college: '/college/settings',
                                   admin: '/admin/settings',
                                   subadmin: '/subadmin/settings',
                                   org_employee: '/employee/settings'

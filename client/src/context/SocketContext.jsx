@@ -12,7 +12,10 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      const newSocket = io(import.meta.env.VITE_API_DOMAIN || 'http://localhost:5000');
+      const socketUrl = import.meta.env.VITE_API_DOMAIN || 'http://localhost:5000';
+      const newSocket = io(socketUrl, {
+        transports: ['websocket'] // Enforce WebSocket to prevent polling issues on Render
+      });
       setSocket(newSocket);
 
       return () => newSocket.close();

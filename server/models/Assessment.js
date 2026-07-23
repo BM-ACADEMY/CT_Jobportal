@@ -27,6 +27,12 @@ const assessmentSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  category: {
+    type: String,
+    enum: ['data', 'design', 'development', 'marketing', 'general'],
+    default: 'general',
+    index: true
+  },
   questions: [questionSchema]
 }, { timestamps: true });
 

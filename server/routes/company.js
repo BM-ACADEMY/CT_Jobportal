@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { getRecruiterProfile, updateRecruiterProfile, getTeamMembers, inviteTeamMember, removeTeamMember, getOrgEmployees, addOrgEmployee, removeOrgEmployee, getJoinRequests, acceptJoinRequest, rejectJoinRequest } = require('../controllers/recruiterController');
+const { getRecruiterProfile, updateRecruiterProfile, getTeamMembers, inviteTeamMember, removeTeamMember, getOrgEmployees, addOrgEmployee, removeOrgEmployee, getJoinRequests, acceptJoinRequest, rejectJoinRequest, toggleCompanyAutoRenew } = require('../controllers/recruiterController');
+const { getIncomingDriveRequests, respondToDriveRequest } = require('../controllers/companyDriveController');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
 
@@ -32,5 +33,12 @@ router.delete('/employees/:employeeId', removeOrgEmployee);
 router.get('/join-requests', getJoinRequests);
 router.post('/join-requests/:userId/accept', acceptJoinRequest);
 router.post('/join-requests/:userId/reject', rejectJoinRequest);
+
+// Subscription auto-renew (spec 9.4)
+router.put('/subscription/auto-renew', toggleCompanyAutoRenew);
+
+// Campus drive participation requests (from colleges)
+router.get('/drive-requests', getIncomingDriveRequests);
+router.post('/drive-requests/:driveId/:companyEntryId/respond', respondToDriveRequest);
 
 module.exports = router;

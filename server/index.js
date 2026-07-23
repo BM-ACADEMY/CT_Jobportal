@@ -22,9 +22,13 @@ const assessmentRoutes = require('./routes/assessmentRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const payPerRoutes = require('./routes/payPerRoutes');
+const collegeRoutes = require('./routes/collegeRoutes');
+const skillTestRoutes = require('./routes/skillTestRoutes');
+const whatsappRoutes = require('./routes/whatsapp');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
 const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
+const { startCronJobs } = require('./cron');
 const path = require('path');
 
 const session = require('express-session');
@@ -121,6 +125,9 @@ app.use('/api/collaboration', collaborationRoutes);
 app.use('/api/assessments', assessmentRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/pay-per', payPerRoutes);
+app.use('/api/college', collegeRoutes);
+app.use('/api/skill-tests', skillTestRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 
 // MongoDB Connection
@@ -135,6 +142,7 @@ mongoose.connect(MONGODB_URI)
     await seedAdmin();
     await seedSubscriptions();
     await migrateUsersToFreePlan();
+    startCronJobs();
   })
   .catch((err) => {
     console.error('MongoDB connection error details:', err.message);

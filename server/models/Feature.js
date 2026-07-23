@@ -9,7 +9,7 @@ const featureSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['jobseeker', 'recruiter', 'company']
+    enum: ['jobseeker', 'recruiter', 'company', 'college']
   },
   // boolean = on/off toggle, count = numeric limit, duration = time-based limit
   type: {

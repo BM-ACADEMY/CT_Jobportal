@@ -4,6 +4,7 @@ import { Users, Plus, Trash2, Mail, Briefcase, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from 'sonner';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 const MyTeam = () => {
   const [employees, setEmployees] = useState([]);
@@ -46,14 +47,22 @@ const MyTeam = () => {
     }
   };
 
-  const handleRemoveEmployee = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this member from your team?')) return;
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [removing, setRemoving] = useState(false);
+
+  const handleRemoveEmployee = (id) => setRemoveTarget(id);
+
+  const confirmRemove = async () => {
+    setRemoving(true);
     try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/company/employees/${id}`, { headers });
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/company/employees/${removeTarget}`, { headers });
       toast.success('Team member removed');
+      setRemoveTarget(null);
       fetchEmployees();
     } catch (err) {
       toast.error('Failed to remove team member');
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -162,6 +171,16 @@ const MyTeam = () => {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        onOpenChange={(open) => !open && setRemoveTarget(null)}
+        title="Remove this member from your team?"
+        confirmLabel="Remove"
+        destructive
+        loading={removing}
+        onConfirm={confirmRemove}
+      />
     </div>
   );
 };
