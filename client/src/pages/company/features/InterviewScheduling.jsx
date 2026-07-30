@@ -3,6 +3,7 @@ import { Calendar, Clock, Link2, CheckCircle2, Bell, RefreshCw } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import FeatureGate from '@/components/subscription/FeatureGate';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const SLOTS = [
@@ -25,6 +26,7 @@ const InterviewScheduling = () => {
       subscriptionPath="/company/subscription"
     >
       <div className="space-y-8 pb-12">
+        <PageSOPBanner pageKey="interviewScheduling" />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getRecruiterProfile, updateRecruiterProfile, getTeamMembers, inviteTeamMember, removeTeamMember, getOrgEmployees, addOrgEmployee, removeOrgEmployee, getJoinRequests, acceptJoinRequest, rejectJoinRequest, toggleCompanyAutoRenew } = require('../controllers/recruiterController');
+const { getRecruiterProfile, updateRecruiterProfile, getTeamMembers, addTeamMember, removeTeamMember, updateTeamMemberPermissions, getTeamActivity, getOrgEmployees, removeOrgEmployee, getJoinRequests, acceptJoinRequest, rejectJoinRequest, toggleCompanyAutoRenew } = require('../controllers/recruiterController');
 const { getIncomingDriveRequests, respondToDriveRequest } = require('../controllers/companyDriveController');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
@@ -21,12 +21,13 @@ router.put('/profile', upload.fields([
 
 // Team management routes (company/org only)
 router.get('/team', getTeamMembers);
-router.post('/team/invite', inviteTeamMember);
+router.post('/team/invite', addTeamMember);
+router.put('/team/:memberId/permissions', updateTeamMemberPermissions);
+router.get('/team-activity', getTeamActivity);
 router.delete('/team/:memberId', removeTeamMember);
 
-// Org employee management routes
+// Org employee management routes (add-employee entry point removed — superseded by /team/invite)
 router.get('/employees', getOrgEmployees);
-router.post('/employees', addOrgEmployee);
 router.delete('/employees/:employeeId', removeOrgEmployee);
 
 // Join requests routes

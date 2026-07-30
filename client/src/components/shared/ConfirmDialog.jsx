@@ -26,6 +26,10 @@ import {
  *     destructive confirmLabel="Reject"
  *     reason={{ label: 'Reason (optional)', placeholder: 'Let them know why...' }}
  *     onConfirm={(reason) => doReject(reason)} loading={rejecting} />
+ *
+ * Confirm with extra custom content (e.g. a form/checkbox grid) via children — rendered
+ * between the description and the footer buttons. onConfirm is still called with no args
+ * in this case (the caller reads whatever state it's managing itself).
  */
 const ConfirmDialog = ({
   open,
@@ -38,6 +42,7 @@ const ConfirmDialog = ({
   loading = false,
   reason,
   onConfirm,
+  children,
 }) => {
   const [reasonValue, setReasonValue] = useState('');
 
@@ -80,6 +85,8 @@ const ConfirmDialog = ({
             />
           </div>
         )}
+
+        {children}
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button type="button" variant="outline" disabled={loading} onClick={() => onOpenChange(false)} className="rounded-xl font-bold">

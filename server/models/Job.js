@@ -10,8 +10,12 @@ const jobSchema = new mongoose.Schema({
   },
   company: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Company',
-    required: true
+    ref: 'Company'
+  },
+  postedAs: {
+    type: String,
+    enum: ['company', 'recruiter', 'both'],
+    default: 'company'
   },
   recruiter: {
     type: mongoose.Schema.Types.ObjectId,
@@ -29,12 +33,10 @@ const jobSchema = new mongoose.Schema({
   },
   jobType: {
     type: String,
-    enum: ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'],
     default: 'Full-time'
   },
   workMode: {
     type: String,
-    enum: ['On-site', 'Remote', 'Hybrid'],
     default: 'On-site'
   },
   location: {

@@ -15,7 +15,7 @@ const getEffectivePlanLimit = async (user, roleName) => {
     const expiry = user.subscriptionExpiry;
     const isSnapshotValid = details.price === 0 || details.duration === 'Lifetime' || !expiry || new Date(expiry) > new Date();
     if (isSnapshotValid) {
-      plan = details;
+      plan = plan ? { ...plan.toObject ? plan.toObject() : plan, ...details } : details;
     }
   }
 

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import PricingCard from '../../components/subscription/PricingCard';
 import CheckoutModal from '../../components/subscription/CheckoutModal';
+import PageSOPBanner from '../../components/common/PageSOPBanner';
 
 const JOBSEEKER_FEATURES = [
   { label: 'Resume Builder', key: 'hasResumeBuilder' },
@@ -20,7 +21,7 @@ const JOBSEEKER_FEATURES = [
   { label: 'Profile View Insights', key: 'hasProfileViewInsights' },
   { label: 'Career Counselling', key: 'hasCareerCounselling' },
   { label: 'Counselling Sessions', key: 'careerCounsellingCount' },
-  { label: 'Interview Prep', key: 'hasInterviewPrep' },
+  { label: 'Mock Interviews', key: 'hasMockInterviews' },
   { label: 'Priority Badge', key: 'hasPriorityBadge' },
 ];
 
@@ -29,7 +30,7 @@ const FEATURE_HIGHLIGHTS = [
   { key: 'hasProfileBoost', icon: TrendingUp, label: 'Profile Boost', desc: 'Appear higher in recruiter searches', color: 'text-amber-600', bg: 'bg-amber-50' },
   { key: 'hasProfileViewInsights', icon: Users, label: 'Profile Insights', desc: 'See who viewed your profile', color: 'text-emerald-600', bg: 'bg-emerald-50' },
   { key: 'hasCareerCounselling', icon: Star, label: 'Career Counselling', desc: '1-on-1 expert career sessions', color: 'text-rose-600', bg: 'bg-rose-50' },
-  { key: 'hasInterviewPrep', icon: Briefcase, label: 'Interview Prep', desc: 'AI mock interviews & feedback', color: 'text-teal-600', bg: 'bg-teal-50' },
+  { key: 'hasMockInterviews', icon: Briefcase, label: 'Mock Interviews', desc: 'AI mock interviews & feedback', color: 'text-teal-600', bg: 'bg-teal-50' },
 ];
 
 const AutoRenewToggle = ({ enabled, onToggle, saving }) => (
@@ -142,7 +143,7 @@ const SubscriptionPage = () => {
     setCheckoutPlan(plan);
   };
 
-  const handleProceedPayment = async (plan, quantity = 1, selectedAutoRenew = true) => {
+  const handleProceedPayment = async (plan, quantity = 1, selectedAutoRenew = true, couponCode = null) => {
     try {
       const token = localStorage.getItem('token');
 
@@ -168,6 +169,7 @@ const SubscriptionPage = () => {
       const orderRes = await axios.post(`${API_BASE_URL}/payments/create-order`, {
         planId: plan._id,
         quantity,
+        couponCode
       }, { headers: { Authorization: `Bearer ${token}` } });
 
       const { orderId, amount, currency } = orderRes.data;
@@ -188,6 +190,7 @@ const SubscriptionPage = () => {
               planId: plan._id,
               quantity,
               autoRenew: selectedAutoRenew,
+              couponCode
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             if (verifyRes.data.success) {
@@ -230,6 +233,7 @@ const SubscriptionPage = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 pb-20 pt-4">
+      <PageSOPBanner pageKey="jobseekerSubscription" />
 
       {/* Header */}
       <div>

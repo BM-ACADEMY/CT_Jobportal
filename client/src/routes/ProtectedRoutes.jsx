@@ -22,13 +22,24 @@ export const GuestRoute = ({ children }) => {
 };
 
 // Protect authenticated routes. If roles provided, also enforces role check.
-export const PrivateRoute = ({ children, roles }) => {
+// If permissionKey is provided, additionally restricts team-managed recruiters (an org's
+// delegated team member, not the company owner or a solo recruiter) to only the pages
+// their admin has explicitly granted.
+export const PrivateRoute = ({ children, roles, permissionKey }) => {
   const { user, loading } = useAuth();
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) {
     const roleRedirects = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', jobseeker: '/jobseeker' };
     return <Navigate to={roleRedirects[user.role] || '/jobseeker'} replace />;
+  }
+  if (
+    permissionKey &&
+    user.role === 'recruiter' &&
+    user.isTeamManaged === true &&
+    !(user.teamPermissions || []).includes(permissionKey)
+  ) {
+    return <Navigate to="/company" replace />;
   }
   return children;
 };

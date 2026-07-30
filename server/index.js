@@ -25,6 +25,7 @@ const payPerRoutes = require('./routes/payPerRoutes');
 const collegeRoutes = require('./routes/collegeRoutes');
 const skillTestRoutes = require('./routes/skillTestRoutes');
 const whatsappRoutes = require('./routes/whatsapp');
+const couponRoutes = require('./routes/couponRoutes');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
 const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
@@ -128,6 +129,7 @@ app.use('/api/pay-per', payPerRoutes);
 app.use('/api/college', collegeRoutes);
 app.use('/api/skill-tests', skillTestRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/coupons', couponRoutes);
 
 
 // MongoDB Connection

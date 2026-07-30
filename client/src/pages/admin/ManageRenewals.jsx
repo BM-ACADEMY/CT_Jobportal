@@ -248,7 +248,7 @@ const ManageRenewals = () => {
                             {r.subscription?.name || 'No Plan'}
                           </p>
                           <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1 capitalize">
-                            {r.role}
+                            {r.role?.name || r.role || ''}
                           </span>
                         </div>
                       </td>

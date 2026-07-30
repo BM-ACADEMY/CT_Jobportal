@@ -304,6 +304,11 @@ const Drives = () => {
   const [companySearchResults, setCompanySearchResults] = useState([]);
   const [searchingCompanies, setSearchingCompanies] = useState(false);
   const [invitingCompanyId, setInvitingCompanyId] = useState(null);
+  const [resendingEntryId, setResendingEntryId] = useState(null);
+  // Email and WhatsApp are independent channels — the TPO picks which one(s) to send through.
+  const [inviteChannels, setInviteChannels] = useState({ email: true, whatsapp: true });
+  const toggleInviteChannel = (channel) => setInviteChannels(p => ({ ...p, [channel]: !p[channel] }));
+  const selectedChannelsList = () => Object.entries(inviteChannels).filter(([, on]) => on).map(([c]) => c);
 
   useEffect(() => {
     if (!companySearchQuery.trim()) { setCompanySearchResults([]); return; }
@@ -322,15 +327,29 @@ const Drives = () => {
   }, [companySearchQuery]);
 
   const inviteCompany = async (company) => {
+    const channels = selectedChannelsList();
+    if (channels.length === 0) return toast.error('Pick Email and/or WhatsApp before sending the invite');
     setInvitingCompanyId(company._id);
     try {
-      await axios.post(`${API}/college/drives/${detailDrive._id}/invite-company/${company._id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`${API}/college/drives/${detailDrive._id}/invite-company/${company._id}`, { channels }, { headers: { Authorization: `Bearer ${token}` } });
       toast.success(`Invite sent to ${company.name}`);
       setCompanySearchQuery('');
       setCompanySearchResults([]);
       openDetail(detailDrive);
     } catch (err) { toast.error(err.response?.data?.msg || 'Failed to send invite'); }
     finally { setInvitingCompanyId(null); }
+  };
+
+  const resendCompanyInvite = async (entry) => {
+    const channels = selectedChannelsList();
+    if (channels.length === 0) return toast.error('Pick Email and/or WhatsApp before resending');
+    setResendingEntryId(entry._id);
+    try {
+      await axios.post(`${API}/college/drives/${detailDrive._id}/companies/${entry._id}/resend-invite`, { channels }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(`Invite resent to ${entry.name}`);
+      openDetail(detailDrive);
+    } catch (err) { toast.error(err.response?.data?.msg || 'Failed to resend invite'); }
+    finally { setResendingEntryId(null); }
   };
 
   const messageCompanyContact = (conversationId) => {
@@ -672,6 +691,17 @@ const Drives = () => {
                   </div>
                   {/* Invite a real registered Company account — formal request they can accept/reject */}
                   <div className="mb-3 relative">
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Send via:</span>
+                      <label className="flex items-center gap-1 text-[11px] font-bold text-slate-600 cursor-pointer">
+                        <input type="checkbox" checked={inviteChannels.email} onChange={() => toggleInviteChannel('email')} className="rounded" />
+                        Email
+                      </label>
+                      <label className="flex items-center gap-1 text-[11px] font-bold text-slate-600 cursor-pointer">
+                        <input type="checkbox" checked={inviteChannels.whatsapp} onChange={() => toggleInviteChannel('whatsapp')} className="rounded" />
+                        WhatsApp
+                      </label>
+                    </div>
                     <div className="relative">
                       <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <Input
@@ -757,6 +787,16 @@ const Drives = () => {
                                 className="flex items-center gap-1 text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:underline"
                               >
                                 <MessageSquare size={11} /> Message
+                              </button>
+                            )}
+                            {c.company && c.requestStatus === 'requested' && (
+                              <button
+                                type="button"
+                                disabled={resendingEntryId === c._id}
+                                onClick={() => resendCompanyInvite(c)}
+                                className="flex items-center gap-1 text-[10px] font-bold text-amber-600 hover:text-amber-700 hover:underline"
+                              >
+                                <Send size={11} /> {resendingEntryId === c._id ? 'Resending...' : 'Resend'}
                               </button>
                             )}
                             {c.company && c.requestStatus === 'rejected' && (

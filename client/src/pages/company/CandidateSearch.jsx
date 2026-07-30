@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import {
   Search, MapPin, Briefcase, User, Loader2, Sparkles,
   AlertTriangle, ChevronRight, Filter, X, GraduationCap, BadgeCheck
@@ -95,6 +96,7 @@ const CandidateSearch = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-6">
+      <PageSOPBanner pageKey="candidateSearch" />
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Candidate Search</h1>

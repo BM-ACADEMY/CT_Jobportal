@@ -60,6 +60,20 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  const processPendingAssessment = async (role) => {
+    if (role !== 'jobseeker') return;
+    const pending = localStorage.getItem('pendingAssessment');
+    if (pending) {
+      try {
+        const assessment = JSON.parse(pending);
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/skill-tests/save`, assessment);
+        localStorage.removeItem('pendingAssessment');
+      } catch (err) {
+        console.error('Error saving pending assessment:', err);
+      }
+    }
+  };
+
   const login = useCallback(async (email, password) => {
     try {
       const res = await axios.post(`${API_URL}/login`, { email, password });
@@ -72,6 +86,7 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       setTokenAndHeader(resToken);
+      await processPendingAssessment(user.role);
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Login failed' };
@@ -124,6 +139,7 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       setTokenAndHeader(resToken);
+      await processPendingAssessment(user.role);
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Registration failed' };
@@ -137,6 +153,7 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       setTokenAndHeader(resToken);
+      await processPendingAssessment(user.role);
       return { success: true, redirect: getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Invalid or expired OTP' };
@@ -170,10 +187,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const completeSocialLogin = useCallback((token, userData) => {
+  const completeSocialLogin = useCallback(async (token, userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     setTokenAndHeader(token);
+    await processPendingAssessment(userData.role);
     return { success: true, redirect: getRoleRoute(userData.role) };
   }, []);
 

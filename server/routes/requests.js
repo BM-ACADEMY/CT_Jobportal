@@ -3,39 +3,37 @@ const router = express.Router();
 const { verifyToken, authorizeRoles, isAdmin } = require('../middlewares/authMiddleware');
 const {
   submitCounsellingRequest,
-  submitInterviewPrepRequest,
-  submitSalaryBenchmarkRequest,
+  submitMockInterviewRequest,
   getMySessions,
-  getMyInterviewPrep,
-  getMySalaryBenchmarks,
+  getMyMockInterviews,
+  getMyAiResumeReviews,
   cancelMySession,
-  cancelMyInterviewPrep,
+  cancelMyMockInterview,
   getAdminRequests,
   updateRequestStatus,
   adminAssignRequest,
   getAssignees,
   getAssignedRequests,
   updateAssignedRequest,
-  submitBulkApplicationRequest,
   submitWebsiteRequest,
   submitAiResumeReviewRequest,
-  getMyAiResumeReviews,
+  updateMySession,
+  selectSlot,
 } = require('../controllers/requestController');
 
 router.use(verifyToken);
 
 router.post('/counselling', authorizeRoles('jobseeker'), submitCounsellingRequest);
-router.post('/interview-prep', authorizeRoles('jobseeker'), submitInterviewPrepRequest);
+router.post('/mock-interview', authorizeRoles('jobseeker'), submitMockInterviewRequest);
 router.post('/ai-resume-review', authorizeRoles('jobseeker'), submitAiResumeReviewRequest);
-router.post('/salary-benchmark', authorizeRoles('jobseeker'), submitSalaryBenchmarkRequest);
-router.get('/salary-benchmark', authorizeRoles('jobseeker'), getMySalaryBenchmarks);
 router.get('/my-sessions', authorizeRoles('jobseeker'), getMySessions);
-router.get('/my-interview-prep', authorizeRoles('jobseeker'), getMyInterviewPrep);
+router.get('/my-mock-interviews', authorizeRoles('jobseeker'), getMyMockInterviews);
 router.get('/my-ai-resume-reviews', authorizeRoles('jobseeker'), getMyAiResumeReviews);
-router.patch('/interview-prep/:id/cancel', authorizeRoles('jobseeker'), cancelMyInterviewPrep);
+router.patch('/mock-interview/:id/cancel', authorizeRoles('jobseeker'), cancelMyMockInterview);
 router.patch('/counselling/:id/cancel', authorizeRoles('jobseeker'), cancelMySession);
+router.patch('/counselling/:id', authorizeRoles('jobseeker'), updateMySession);
+router.patch('/:id/select-slot', authorizeRoles('jobseeker'), selectSlot);
 
-router.post('/bulk-application', authorizeRoles('recruiter', 'company'), submitBulkApplicationRequest);
 router.post('/website-request', authorizeRoles('recruiter', 'company'), submitWebsiteRequest);
 
 router.get('/admin', isAdmin, getAdminRequests);

@@ -95,7 +95,7 @@ const Header = () => {
   const config = roleConfig[role] || roleConfig.jobseeker;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white">
       <div className="max-w-[1440px] mx-auto px-6 md:px-10 h-20 flex items-center justify-between gap-6">
 
         {/* Logo */}

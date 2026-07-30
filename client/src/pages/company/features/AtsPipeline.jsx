@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import {
   Layers, Users, CheckCircle2, Circle, Plus, Loader2, ChevronRight,
   Briefcase, Search, Filter, Star, Sparkles, Download, ArrowRight,
   X, Check, Eye, Clock, Award, AlertCircle, RefreshCw, Mail, MapPin,
-  SlidersHorizontal, CheckSquare, Square, Trash2, UserCheck
+  SlidersHorizontal, CheckSquare, Square, Trash2, UserCheck, UploadCloud
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import FeatureGate from '@/components/subscription/FeatureGate';
+import { useAuth } from '@/context/AuthContext';
 
 const STAGES = [
   {
@@ -57,6 +59,8 @@ const AtsPipeline = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
+  const [bulkAiLoading, setBulkAiLoading] = useState(false);
+  const { user } = useAuth();
 
   // Filters & search
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,9 +72,15 @@ const AtsPipeline = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
-  // Modal inspection state
   const [inspectApp, setInspectApp] = useState(null);
   const [calculatingAI, setCalculatingAI] = useState(false);
+
+  // Import CSV state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importOption, setImportOption] = useState('new'); // 'new' or jobId
+  const [importRole, setImportRole] = useState('');
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
@@ -79,7 +89,7 @@ const AtsPipeline = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/jobs/company-jobs`, { headers });
+        const res = await axios.get(`${API_BASE_URL}/jobs/company-jobs-stats`, { headers });
         const jobList = Array.isArray(res.data) ? res.data : [];
         setJobs(jobList);
         if (jobList.length > 0) {
@@ -225,6 +235,58 @@ const AtsPipeline = () => {
     }
   };
 
+  const handleImportPipeline = async (e) => {
+    e.preventDefault();
+    if (!importFile) return toast.error('CSV file is required');
+    if (importOption === 'new' && !importRole.trim()) return toast.error('Role name is required for a new pipeline');
+    
+    const formData = new FormData();
+    formData.append('file', importFile);
+    formData.append('jobId', importOption);
+    if (importOption === 'new') {
+      formData.append('role', importRole.trim());
+    }
+
+    setImporting(true);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/jobs/import-pipeline`, formData, { headers });
+      toast.success('Pipeline imported successfully!');
+      setShowImportModal(false);
+      setImportFile(null);
+      setImportRole('');
+      setImportOption('new');
+      
+      // If we imported into an existing job, we should probably fetch applications again
+      if (importOption !== 'new') {
+        const updatedJob = res.data.job;
+        setJobs(jobs.map(j => j._id === updatedJob._id ? updatedJob : j));
+        if (selectedJob?._id === updatedJob._id) {
+          fetchApplications(updatedJob._id); // Refresh board
+        }
+      } else {
+        setJobs([res.data.job, ...jobs]);
+        setSelectedJob(res.data.job);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to import pipeline');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleBulkAiMatch = async () => {
+    if (!selectedJob) return toast.error('Please select a pipeline first');
+    setBulkAiLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE_URL}/jobs/${selectedJob._id}/bulk-ai-match`, {}, { headers });
+      toast.success(res.data.msg);
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to start bulk AI match');
+    } finally {
+      setBulkAiLoading(false);
+    }
+  };
+
   const toggleSelectCard = (e, appId) => {
     e.stopPropagation();
     setSelectedIds(prev =>
@@ -275,6 +337,12 @@ const AtsPipeline = () => {
   const offerCount = applications.filter(a => a.status === 'accepted').length;
   const priorityCount = applications.filter(a => a.isPriority).length;
 
+  // Check for export feature
+  const hasExportFeature = 
+    user?.purchasedFeatures?.some(f => f.featureKey === 'hasCandidateDBExport' && f.isActive) || 
+    user?.subscription?.features?.hasCandidateDBExport || 
+    user?.subscription?.hasCandidateDBExport;
+
   return (
     <FeatureGate
       featureKey="hasATSPipeline"
@@ -283,6 +351,7 @@ const AtsPipeline = () => {
       subscriptionPath="/company/subscription"
     >
       <div className="space-y-6 pb-12">
+        <PageSOPBanner pageKey="atsPipeline" />
         {/* Header Title Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -300,13 +369,22 @@ const AtsPipeline = () => {
             <Button
               onClick={handleExportCSV}
               variant="outline"
-              disabled={!selectedJob || totalCount === 0}
+              disabled={!selectedJob || totalCount === 0 || !hasExportFeature}
+              title={!hasExportFeature ? "Candidate DB Export feature required" : ""}
               className="h-9 px-4 rounded-xl text-xs font-bold gap-1.5 border-slate-200 hover:bg-slate-50"
             >
               <Download size={14} /> Export CSV
             </Button>
             <Button
-              onClick={() => navigate('/company/post-job')}
+              onClick={handleBulkAiMatch}
+              disabled={!selectedJob || bulkAiLoading || totalCount === 0}
+              className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-md shadow-blue-500/20"
+            >
+              {bulkAiLoading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+              AI Matches
+            </Button>
+            <Button
+              onClick={() => setShowImportModal(true)}
               className="h-9 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs gap-1.5 shadow-md shadow-violet-500/20"
             >
               <Plus size={15} /> Add Job Pipeline
@@ -329,27 +407,23 @@ const AtsPipeline = () => {
           </div>
         ) : (
           <>
-            {/* Job Selector Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {jobs.map(job => (
-                <button
-                  key={job._id}
-                  onClick={() => setSelectedJob(job)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 flex items-center gap-2 ${
-                    selectedJob?._id === job._id
-                      ? 'bg-violet-600 text-white border-violet-600 shadow-md shadow-violet-500/20'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300 hover:bg-violet-50/40'
-                  }`}
-                >
-                  <Briefcase size={13} className={selectedJob?._id === job._id ? 'text-violet-200' : 'text-slate-400'} />
-                  <span>{job.title}</span>
-                  <Badge className={`px-1.5 py-0 text-[10px] font-black rounded-md ${
-                    selectedJob?._id === job._id ? 'bg-violet-500 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {job.applicantsCount || 0}
-                  </Badge>
-                </button>
-              ))}
+            {/* Job Selector Dropdown */}
+            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">Select Pipeline</label>
+              <select
+                value={selectedJob?._id || ''}
+                onChange={(e) => {
+                  const job = jobs.find(j => j._id === e.target.value);
+                  if (job) setSelectedJob(job);
+                }}
+                className="h-10 px-4 rounded-xl border border-violet-200 bg-violet-50 text-sm font-bold text-violet-900 focus:outline-none focus:ring-2 focus:ring-violet-400 min-w-[280px] cursor-pointer"
+              >
+                {jobs.map(job => (
+                  <option key={job._id} value={job._id}>
+                    {job.title} ({job.applicantsCount || 0} candidates)
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Pipeline Conversion KPI Banner */}
@@ -656,6 +730,85 @@ const AtsPipeline = () => {
           </>
         )}
       </div>
+
+      {/* Import Pipeline CSV Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600">
+                  <UploadCloud size={16} />
+                </div>
+                <h3 className="text-base font-bold text-slate-900">Import CSV Pipeline</h3>
+              </div>
+              <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleImportPipeline} className="p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Pipeline</label>
+                <select
+                  value={importOption}
+                  onChange={(e) => setImportOption(e.target.value)}
+                  className="w-full h-11 px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-violet-400 focus:outline-none"
+                >
+                  <option value="new">+ Create New Pipeline</option>
+                  <optgroup label="Existing Pipelines">
+                    {jobs.map(job => (
+                      <option key={job._id} value={job._id}>{job.title}</option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+              
+              {importOption === 'new' && (
+                <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">New Role Name</label>
+                  <input
+                    required={importOption === 'new'}
+                    type="text"
+                    placeholder="e.g. Senior Frontend Developer"
+                    value={importRole}
+                    onChange={(e) => setImportRole(e.target.value)}
+                    className="w-full h-11 px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-violet-400 focus:outline-none"
+                  />
+                </div>
+              )}
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">CSV File</label>
+                <div className="relative">
+                  <input
+                    required
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setImportFile(e.target.files[0])}
+                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 border border-slate-200 rounded-xl p-1 cursor-pointer"
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-[10px] text-slate-400">
+                    Columns: Name, Email, Headline, Status
+                  </p>
+                  <a href="/sample_pipeline.csv" download className="text-[10px] font-bold text-violet-600 hover:text-violet-700 underline underline-offset-2 decoration-violet-300">
+                    Download Sample CSV
+                  </a>
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={importing}
+                className="w-full h-11 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold"
+              >
+                {importing ? <Loader2 size={16} className="animate-spin mr-2" /> : <UploadCloud size={16} className="mr-2" />}
+                Import Candidates
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Full Application Inspector Drawer Modal */}
       {inspectApp && (

@@ -33,6 +33,8 @@ const ManageDrive = () => {
   const [posting, setPosting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showStudentList, setShowStudentList] = useState(false);
+  const [studentFilter, setStudentFilter] = useState('all');
   const searchBoxRef = useRef(null);
 
   useEffect(() => { fetchDrives(); }, []);
@@ -64,6 +66,7 @@ const ManageDrive = () => {
     setSelectedCompanyIdx(0);
     setSearchQuery('');
     setSearchOpen(false);
+    setShowStudentList(false);
     try {
       const res = await axios.get(`${API}/college/drives/${driveId}`);
       setDetail(res.data);
@@ -199,15 +202,25 @@ const ManageDrive = () => {
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1"><Users size={14} /> Students ({detail.students?.length || 0})</h3>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={exportingStudents || !detail.students?.length}
-                onClick={exportStudents}
-                className="rounded-lg text-xs font-bold gap-1.5 h-8"
-              >
-                <Download size={13} /> {exportingStudents ? 'Exporting...' : 'Export List'}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowStudentList(!showStudentList)}
+                  className="rounded-lg text-xs font-bold h-8"
+                >
+                  {showStudentList ? 'Hide Student List' : 'See Student List'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={exportingStudents || !detail.students?.length}
+                  onClick={exportStudents}
+                  className="rounded-lg text-xs font-bold gap-1.5 h-8"
+                >
+                  <Download size={13} /> {exportingStudents ? 'Exporting...' : 'Export List'}
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -225,6 +238,46 @@ const ManageDrive = () => {
                 {applying ? 'Updating...' : `Apply to ${selectedIds.length || 0} selected`}
               </Button>
             </div>
+
+            {showStudentList && (
+              <div className="mb-4 border border-slate-200 rounded-xl max-h-64 overflow-y-auto">
+                {(detail.students || []).map(s => {
+                  const isSelected = selectedIds.includes(s._id);
+                  const appStatus = s.driveApplications?.find(d => d.drive === activeDriveId)?.status || 'registered';
+                  return (
+                    <label key={s._id} className="flex items-center gap-3 px-3 py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={isSelected}
+                        onChange={() => toggleSelect(s._id)}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800 text-xs truncate">{s.user?.name}</span>
+                          {s.rollNumber && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded uppercase">{s.rollNumber}</span>}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500">
+                          <span className="truncate">{s.user?.email}</span>
+                          {s.phone && (
+                            <>
+                              <span>•</span>
+                              <span>{s.phone}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 whitespace-nowrap">
+                        {appStatus}
+                      </span>
+                    </label>
+                  );
+                })}
+                {(!detail.students || detail.students.length === 0) && (
+                   <p className="p-4 text-xs text-slate-500 text-center">No students found.</p>
+                )}
+              </div>
+            )}
 
             {/* Search-to-select combobox */}
             <div ref={searchBoxRef} className="relative">
@@ -328,6 +381,60 @@ const ManageDrive = () => {
                   {a.message && <p className="text-slate-500 mt-0.5">{a.message}</p>}
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1"><Users size={14} /> Student Pipeline</h3>
+              <select 
+                value={studentFilter} 
+                onChange={e => setStudentFilter(e.target.value)} 
+                className="h-8 rounded-lg border border-slate-200 px-2 text-[10px] font-bold"
+              >
+                <option value="all">All Stages</option>
+                {STAGE_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+              {(() => {
+                const filtered = (detail.students || []).filter(s => {
+                  if (studentFilter === 'all') return true;
+                  const appStatus = s.driveApplications?.find(d => d.drive === activeDriveId)?.status || 'registered';
+                  return appStatus === studentFilter;
+                });
+                
+                if (filtered.length === 0) {
+                  return <p className="text-xs text-slate-400 p-4 text-center border border-dashed border-slate-200 rounded-xl">No students found for this stage.</p>;
+                }
+                
+                return filtered.map(s => {
+                  const appStatus = s.driveApplications?.find(d => d.drive === activeDriveId)?.status || 'registered';
+                  return (
+                    <div key={s._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800 text-xs truncate">{s.user?.name}</span>
+                          {s.rollNumber && <span className="text-[10px] font-bold text-slate-500 bg-white border border-slate-100 px-1.5 py-0.5 rounded uppercase">{s.rollNumber}</span>}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 font-medium">
+                          <span className="truncate">{s.user?.email}</span>
+                          {s.phone && (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span>{s.phone}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <span className="font-bold uppercase text-[10px] px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
+                        {STAGE_OPTIONS.find(opt => opt.value === appStatus)?.label || appStatus}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>

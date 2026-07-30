@@ -5,6 +5,7 @@ const Application = require('../models/Application');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
+const { logTeamActivity } = require('../utils/teamActivityLog');
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const formatWhen = (date) => new Date(date).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short' });
@@ -129,6 +130,14 @@ const scheduleInterview = async (req, res) => {
         ]
       }).catch(() => {});
     }
+
+    logTeamActivity({
+      actor: { _id: recruiter._id, name: recruiter.name, company: recruiter.company, role: req.user.role },
+      action: 'interview_scheduled',
+      description: `Scheduled an interview for ${populated.candidate?.name || 'a candidate'}`,
+      entity: interview._id,
+      entityModel: 'Interview'
+    });
 
     res.status(201).json({ msg: 'Interview scheduled successfully', interview: populated });
   } catch (err) {

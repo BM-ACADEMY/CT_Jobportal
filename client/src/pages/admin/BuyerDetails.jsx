@@ -192,7 +192,7 @@ const BuyerDetails = () => {
               <p style="font-weight: bold; color: #0f172a;">${user.name}</p>
               ${user.display_id ? `<p style="font-family: monospace;">ID: ${user.display_id}</p>` : ''}
               <p>Email: ${user.email}</p>
-              <p style="text-transform: capitalize;">Account Type: ${user.role}</p>
+              <p style="text-transform: capitalize;">Account Type: ${user.role?.name || user.role}</p>
               <p style="margin-top: 8px;">Payment Mode: ${invoice.paymentMethod || 'Razorpay'}</p>
               <p style="font-family: monospace;">Payment ID: ${invoice.razorpay_payment_id || 'N/A'}</p>
             </div>
@@ -382,7 +382,7 @@ const BuyerDetails = () => {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-1 capitalize font-medium">{user.role}</p>
+              <p className="text-xs text-slate-400 mt-1 capitalize font-medium">{user.role?.name || user.role}</p>
             </div>
 
             <div className="border-t border-slate-50 pt-6 space-y-4">
@@ -657,7 +657,7 @@ const BuyerDetails = () => {
                     <p className="font-bold text-slate-800">{user.name}</p>
                     {user.display_id && <p className="font-mono text-[10px]">ID: {user.display_id}</p>}
                     <p>Email: {user.email}</p>
-                    <p className="capitalize">Account Type: {user.role}</p>
+                    <p className="capitalize">Account Type: {user.role?.name || user.role}</p>
                     <p className="mt-2">Payment Mode: {selectedInvoice.paymentMethod || 'Razorpay'}</p>
                     <p className="font-mono text-[10px]">Payment ID: {selectedInvoice.razorpay_payment_id || 'N/A'}</p>
                   </div>

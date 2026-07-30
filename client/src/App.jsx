@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import AppRoutes from './routes/AppRoutes';
 import { Toaster } from 'sonner';
+import CursorLens from './components/common/CursorLens';
 import './index.css';
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
     <AuthProvider>
       <SocketProvider>
         <Toaster position="top-center" richColors />
+        <CursorLens />
         <Router>
           <AppRoutes />
         </Router>

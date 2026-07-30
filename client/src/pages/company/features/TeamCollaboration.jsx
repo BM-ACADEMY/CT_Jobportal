@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { 
   Users, Plus, MessageCircle, FileText, StickyNote, Mic, 
   Calendar, Settings, Send, Paperclip, Smile, MoreVertical,
@@ -727,6 +728,7 @@ const TeamCollaboration = () => {
       description="Create groups, share documents, stickers, voice messages, and schedule team calls."
       subscriptionPath="/company/subscription"
     >
+      <PageSOPBanner pageKey="teamCollaboration" />
       <div className="flex h-[calc(100vh-140px)] bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-2xl shadow-emerald-900/5">
         <GroupSidebar 
           groups={groups} 

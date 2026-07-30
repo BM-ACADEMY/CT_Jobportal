@@ -2,6 +2,7 @@ import React from 'react';
 import { Star, MapPin } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const RecommendedJobCard = ({ job }) => {
   return (
@@ -10,9 +11,12 @@ const RecommendedJobCard = ({ job }) => {
     >
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-5">
-          <div className="w-14 h-14 rounded-2xl border border-border flex items-center justify-center p-2.5 shadow-sm overflow-hidden bg-background group-hover:border-primary/20 transition-colors">
-            <img src={job.logo} alt={job.company} className="w-full h-full object-contain" />
-          </div>
+          <Avatar className="w-14 h-14 rounded-2xl border border-border flex items-center justify-center shadow-sm overflow-hidden bg-background group-hover:border-primary/20 transition-colors p-2.5">
+            {job.logo && <AvatarImage src={job.logo} alt={job.company} className="object-contain" />}
+            <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold text-sm">
+              {job.company?.[0]?.toUpperCase() || 'C'}
+            </AvatarFallback>
+          </Avatar>
           <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1">
             {job.postedAt}
           </Badge>

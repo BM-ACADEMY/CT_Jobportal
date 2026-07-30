@@ -355,6 +355,7 @@ const normalizeCompanies = (companies, existingCompanies = []) => {
         normalized.company = existing.company || null;
         normalized.requestStatus = existing.requestStatus || 'none';
         if (existing.requestedAt) normalized.requestedAt = existing.requestedAt;
+        if (existing.lastResentAt) normalized.lastResentAt = existing.lastResentAt;
         if (existing.respondedAt) normalized.respondedAt = existing.respondedAt;
         if (existing.respondedBy) normalized.respondedBy = existing.respondedBy;
         normalized.conversation = existing.conversation || null;
@@ -605,13 +606,66 @@ const searchRegisteredCompanies = async (req, res) => {
   }
 };
 
+// Plan-driven cap on distinct companies a college can formally invite (email + WhatsApp),
+// mirroring the ID Verification Badges cap style — campus_elite is unlimited (no entry
+// here means "no cap"). Keep in sync with the "Company Drive Invites" feature values in
+// scripts/seedCampusPlans.js.
+const DRIVE_INVITE_LIMITS = { campus_free: 0, campus_lite: 15, campus_pro: 50 };
+
+// Sends the drive-invite notification via whichever channel(s) the TPO picked — email and
+// WhatsApp are independent here, not bundled, so a resend can go out over just one of them.
+const sendDriveInviteNotifications = ({ owner, company, college, drive, channels }) => {
+  const inviteUrl = `${FRONTEND_URL}/company/drive-requests`;
+
+  if (channels.includes('email')) {
+    sendEmail({
+      email: owner.email || company.admin_email,
+      subject: `[Velaivaaipu] Campus drive invite — ${drive.title}`,
+      html: emailWrapper('Campus Drive Invitation', `
+        <p>Hi ${owner.name || 'there'},</p>
+        <p><strong>${college.name}</strong> has invited your company to participate in their campus drive <strong>${drive.title}</strong>.</p>
+        <p><a href="${inviteUrl}" style="color:#059669;">View and respond</a></p>
+      `)
+    }).catch(() => {});
+  }
+
+  if (channels.includes('whatsapp')) {
+    const ownerPhone = getUserPhone(owner);
+    if (ownerPhone) {
+      sendWhatsAppTemplate({
+        to: ownerPhone,
+        template: 'off_platform_chat_bridge',
+        params: [
+          owner.name || 'there',
+          college.name,
+          `an invite to participate in "${drive.title}"`,
+          `${college.name} has invited your company to participate in their campus drive "${drive.title}". Log in to accept or reject.`,
+          inviteUrl
+        ]
+      }).catch(() => {});
+    }
+  }
+};
+
+const VALID_CHANNELS = ['email', 'whatsapp'];
+const parseChannels = (channels) => {
+  const list = Array.isArray(channels) ? channels.filter(c => VALID_CHANNELS.includes(c)) : [];
+  return [...new Set(list)];
+};
+
 // @route   POST /api/college/drives/:driveId/invite-company/:companyId
 // Sends a formal participation request to a real registered Company (distinct from
 // send-link above, whose :companyId is a companies[] subdocument id, not a Company._id).
 // Opens a message thread immediately so college and company can discuss before the
-// company responds, and notifies the company owner by email + WhatsApp.
+// company responds. Body: { channels: ['email'|'whatsapp', ...] } — the TPO picks which
+// channel(s) to notify through; at least one is required.
 const requestCompanyForDrive = async (req, res) => {
   try {
+    const channels = parseChannels(req.body.channels);
+    if (channels.length === 0) {
+      return res.status(400).json({ msg: 'Select at least one channel (Email or WhatsApp) to send the invite through' });
+    }
+
     const college = await getCollegeForTPO(req.user.id);
     const drive = await CampusDrive.findOne({ _id: req.params.driveId, college: college._id });
     if (!drive) return res.status(404).json({ msg: 'Drive not found' });
@@ -627,12 +681,27 @@ const requestCompanyForDrive = async (req, res) => {
 
     let entry = drive.companies.find(c => c.company && c.company.toString() === String(company._id));
     if (entry && entry.requestStatus === 'requested') {
-      return res.status(400).json({ msg: 'Already invited, awaiting response' });
+      return res.status(400).json({ msg: 'Already invited, awaiting response. Use Resend instead.' });
+    }
+
+    const inviteLimit = DRIVE_INVITE_LIMITS[college.subscriptionTier];
+    if (inviteLimit !== undefined) {
+      const usedResult = await CampusDrive.aggregate([
+        { $match: { college: college._id } },
+        { $unwind: '$companies' },
+        { $match: { 'companies.requestStatus': { $ne: 'none' } } },
+        { $count: 'count' }
+      ]);
+      const used = usedResult[0]?.count || 0;
+      if (used >= inviteLimit) {
+        return res.status(403).json({ msg: `Company drive invite limit reached for your plan (${inviteLimit}). Upgrade to invite more companies.` });
+      }
     }
 
     if (entry && entry.requestStatus === 'rejected') {
       entry.requestStatus = 'requested';
       entry.requestedAt = new Date();
+      entry.lastResentAt = undefined;
       entry.respondedAt = undefined;
       entry.respondedBy = undefined;
       // Keep the existing conversation so chat history from the earlier round persists.
@@ -653,33 +722,52 @@ const requestCompanyForDrive = async (req, res) => {
 
     await drive.save();
 
-    const inviteUrl = `${FRONTEND_URL}/company/drive-requests`;
-    sendEmail({
-      email: owner.email || company.admin_email,
-      subject: `[Velaivaaipu] Campus drive invite — ${drive.title}`,
-      html: emailWrapper('Campus Drive Invitation', `
-        <p>Hi ${owner.name || 'there'},</p>
-        <p><strong>${college.name}</strong> has invited your company to participate in their campus drive <strong>${drive.title}</strong>.</p>
-        <p><a href="${inviteUrl}" style="color:#059669;">View and respond</a></p>
-      `)
-    }).catch(() => {});
-
-    const ownerPhone = getUserPhone(owner);
-    if (ownerPhone) {
-      sendWhatsAppTemplate({
-        to: ownerPhone,
-        template: 'off_platform_chat_bridge',
-        params: [
-          owner.name || 'there',
-          college.name,
-          `an invite to participate in "${drive.title}"`,
-          `${college.name} has invited your company to participate in their campus drive "${drive.title}". Log in to accept or reject.`,
-          inviteUrl
-        ]
-      }).catch(() => {});
-    }
+    sendDriveInviteNotifications({ owner, company, college, drive, channels });
 
     res.status(201).json({ msg: 'Invite sent', company: entry, conversationId: conversation._id });
+  } catch (err) {
+    if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
+    res.status(500).json({ msg: 'Server Error', error: err.message });
+  }
+};
+
+// @route   POST /api/college/drives/:driveId/companies/:companyEntryId/resend-invite
+// Re-sends the invite notification for a request that's still awaiting a response — doesn't
+// change requestStatus/requestedAt, just nudges the company again via the chosen channel(s).
+// :companyEntryId is the companies[] subdocument id (see the note on requestCompanyForDrive
+// about the two distinct id spaces).
+const resendCompanyInvite = async (req, res) => {
+  try {
+    const channels = parseChannels(req.body.channels);
+    if (channels.length === 0) {
+      return res.status(400).json({ msg: 'Select at least one channel (Email or WhatsApp) to resend through' });
+    }
+
+    const college = await getCollegeForTPO(req.user.id);
+    const drive = await CampusDrive.findOne({ _id: req.params.driveId, college: college._id });
+    if (!drive) return res.status(404).json({ msg: 'Drive not found' });
+
+    const entry = drive.companies.id(req.params.companyEntryId);
+    if (!entry || !entry.company) return res.status(404).json({ msg: 'Request not found' });
+    if (entry.requestStatus !== 'requested') {
+      return res.status(400).json({ msg: 'This request is no longer awaiting a response' });
+    }
+
+    const company = await Company.findById(entry.company);
+    if (!company) return res.status(404).json({ msg: 'Company not found' });
+
+    const companyRole = await Role.findOne({ name: 'company' });
+    const owner = companyRole
+      ? await User.findOne({ company: entry.company, role: companyRole._id })
+      : null;
+    if (!owner) return res.status(400).json({ msg: 'This company has no active owner account yet' });
+
+    entry.lastResentAt = new Date();
+    await drive.save();
+
+    sendDriveInviteNotifications({ owner, company, college, drive, channels });
+
+    res.json({ msg: 'Invite resent', company: entry });
   } catch (err) {
     if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
     res.status(500).json({ msg: 'Server Error', error: err.message });
@@ -2535,6 +2623,7 @@ module.exports = {
   sendCompanyLink,
   searchRegisteredCompanies,
   requestCompanyForDrive,
+  resendCompanyInvite,
   getCompanyDriveView,
   exportCompanyDriveStudents,
   deleteDrive,

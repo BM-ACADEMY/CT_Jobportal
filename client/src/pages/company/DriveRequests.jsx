@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { GraduationCap, CheckCircle2, XCircle, MessageSquare, Clock, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -27,6 +29,7 @@ const DriveRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [respondingId, setRespondingId] = useState(null);
+  const [rejectingReq, setRejectingReq] = useState(null);
 
   useEffect(() => { fetchRequests(); }, []);
 
@@ -38,18 +41,26 @@ const DriveRequests = () => {
     finally { setLoading(false); }
   };
 
-  const respond = async (req, action) => {
+  const respond = async (req, action, note) => {
     setRespondingId(req.companyEntryId);
     try {
       await axios.post(
         `${API}/company/drive-requests/${req.driveId}/${req.companyEntryId}/respond`,
-        { action },
+        { action, note },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(action === 'accept' ? 'Invite accepted' : 'Invite rejected');
       fetchRequests();
     } catch (err) { toast.error(err.response?.data?.msg || 'Failed to respond'); }
     finally { setRespondingId(null); }
+  };
+
+  // Rejecting asks for an optional note — entirely the company's choice to fill in or skip.
+  // If left blank, nothing extra is sent; if filled, it goes to the college as a platform message.
+  const confirmReject = async (note) => {
+    const req = rejectingReq;
+    setRejectingReq(null);
+    await respond(req, 'reject', note);
   };
 
   const messageCollege = (conversationId) => {
@@ -62,6 +73,7 @@ const DriveRequests = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <PageSOPBanner pageKey="driveRequests" />
       <div>
         <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
           <ClipboardList size={22} className="text-emerald-600" /> Campus Drive Requests
@@ -117,7 +129,7 @@ const DriveRequests = () => {
                       variant="outline"
                       disabled={respondingId === req.companyEntryId}
                       className="rounded-lg text-xs font-bold gap-1.5 h-9 text-rose-600 border-rose-200 hover:bg-rose-50"
-                      onClick={() => respond(req, 'reject')}
+                      onClick={() => setRejectingReq(req)}
                     >
                       <XCircle size={13} /> Reject
                     </Button>
@@ -133,6 +145,18 @@ const DriveRequests = () => {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!rejectingReq}
+        onOpenChange={(open) => { if (!open) setRejectingReq(null); }}
+        title={`Reject invite for ${rejectingReq?.driveTitle || 'this drive'}?`}
+        description="You can optionally leave a note for the college explaining why — entirely up to you, it's fine to leave this blank."
+        destructive
+        confirmLabel="Reject"
+        loading={respondingId === rejectingReq?.companyEntryId}
+        reason={{ label: 'Note to the college (optional)', placeholder: "e.g. Scheduling conflict, doesn't fit our hiring plan this cycle..." }}
+        onConfirm={confirmReject}
+      />
     </div>
   );
 };

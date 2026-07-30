@@ -14,11 +14,7 @@ const getAssessment = async (req, res) => {
     skill = skill.toLowerCase().trim();
     difficulty = difficulty.toLowerCase().trim();
 
-    // Check cache in MongoDB
-    const cachedAssessment = await Assessment.findOne({ skill, difficulty });
-    if (cachedAssessment && cachedAssessment.questions.length > 0) {
-      return res.json({ msg: 'Fetched from cache', questions: cachedAssessment.questions });
-    }
+    // Removed cache check to ensure unique questions are generated every time.
 
     // Generate via Gemini
     const prompt = `
@@ -26,6 +22,7 @@ You are an expert technical interviewer and examination engine. Your task is to 
 - Skill: ${skill}
 - Difficulty: ${difficulty}
 - Number of Questions: 10
+- Randomization Seed: ${Math.random()}
 
 ### Difficulty Guidelines:
 - Easy: Core syntax, basic concepts, and common definitions.
@@ -135,6 +132,8 @@ const startTest = async (req, res) => {
   }
 };
 
+const SkillTestResult = require('../models/SkillTestResult');
+
 const submitTest = async (req, res) => {
   try {
     const { category } = req.params;
@@ -146,13 +145,48 @@ const submitTest = async (req, res) => {
 
     let score = 0;
     const total = cachedAssessment.questions.length;
-    
+
     cachedAssessment.questions.forEach(q => {
       if (answers[q.id] === q.correct_option) score++;
     });
 
     const passed = (score / total) >= 0.7; // 70%+ required
-    res.json({ score, total, passed, percentage: Math.round((score/total)*100) });
+    const percentage = Math.round((score / total) * 100);
+
+    // Persist the result for logged-in jobseekers only (req.user is set by
+    // optionalVerifyToken when a valid token is present; guests still get scored).
+    if (req.user?.id && req.user.role === 'jobseeker') {
+      try {
+        await SkillTestResult.findOneAndUpdate(
+          { user: req.user.id, skill },
+          { user: req.user.id, skill, difficulty: 'medium', score, total, percentage, passed },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+      } catch (persistErr) {
+        console.error('SkillTestResult persist error:', persistErr.message);
+      }
+    }
+
+    res.json({ score, total, passed, percentage });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error', error: err.message });
+  }
+};
+
+// @desc    Get the logged-in jobseeker's latest result per skill
+// @route   GET /api/skill-tests/my-results
+// @access  Private (jobseeker)
+const getMyResults = async (req, res) => {
+  try {
+    const results = await SkillTestResult.find({ user: req.user.id })
+      .sort({ createdAt: -1 });
+
+    const latestBySkill = new Map();
+    for (const r of results) {
+      if (!latestBySkill.has(r.skill)) latestBySkill.set(r.skill, r);
+    }
+
+    res.json([...latestBySkill.values()]);
   } catch (err) {
     res.status(500).json({ msg: 'Server error', error: err.message });
   }
@@ -196,10 +230,39 @@ const claimCertificate = async (req, res) => {
   }
 };
 
+const saveResult = async (req, res) => {
+  try {
+    const { skill, difficulty, score, total, percentage, passed, questions, answers } = req.body;
+    
+    // Save or update the result
+    const result = await SkillTestResult.findOneAndUpdate(
+      { user: req.user.id, skill: skill.toLowerCase().trim() },
+      { 
+        user: req.user.id, 
+        skill: skill.toLowerCase().trim(), 
+        difficulty, 
+        score, 
+        total, 
+        percentage, 
+        passed,
+        questions,
+        answers 
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error saving result', error: err.message });
+  }
+};
+
 module.exports = {
   getAssessment,
   getCategories,
   startTest,
   submitTest,
-  claimCertificate
+  getMyResults,
+  claimCertificate,
+  saveResult
 };

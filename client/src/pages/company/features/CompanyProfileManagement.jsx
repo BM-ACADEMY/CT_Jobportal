@@ -5,6 +5,7 @@ import {
   Send, Loader2, Lock, ArrowRight, CheckCircle2, MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,7 @@ const CompanyProfileManagement = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <PageSOPBanner pageKey="companyProfileManagement" />
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>

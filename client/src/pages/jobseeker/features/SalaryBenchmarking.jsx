@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -198,6 +199,7 @@ const SalaryBenchmarkingContent = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
+      <PageSOPBanner pageKey="salaryBenchmarking" />
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">

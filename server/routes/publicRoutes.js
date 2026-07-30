@@ -5,6 +5,81 @@ const Company = require('../models/Company');
 const User = require('../models/User');
 const Job = require('../models/Job');
 const Role = require('../models/Role');
+const Review = require('../models/Review');
+const Application = require('../models/Application');
+const College = require('../models/College');
+const CollegeStudent = require('../models/CollegeStudent');
+const PayPerFeature = require('../models/PayPerFeature');
+
+// @desc  GET /api/public/stats
+//        Real, aggregate platform counts for the public home page.
+//        No placement/success-rate figures are returned — the platform
+//        has no "hired" status to honestly back that claim.
+router.get('/stats', async (req, res) => {
+  try {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const jobseekerRole = await Role.findOne({ name: 'jobseeker' });
+
+    const [
+      activeJobsCount,
+      companiesCount,
+      jobseekersCount,
+      jobsPostedToday,
+      newJobsThisWeek,
+      applicationsToday,
+      ratingAgg,
+      studentsPlacedCount,
+      collegesOnboardedCount,
+      placementHighlights,
+    ] = await Promise.all([
+      Job.countDocuments({ status: 'active' }),
+      Company.countDocuments(),
+      jobseekerRole ? User.countDocuments({ role: jobseekerRole._id }) : 0,
+      Job.countDocuments({ status: 'active', createdAt: { $gte: startOfToday } }),
+      Job.countDocuments({ status: 'active', createdAt: { $gte: sevenDaysAgo } }),
+      Application.countDocuments({ createdAt: { $gte: startOfToday } }),
+      Review.aggregate([
+        { $match: { status: 'approved' } },
+        { $group: { _id: null, avgRating: { $avg: '$rating' }, count: { $sum: 1 } } },
+      ]),
+      CollegeStudent.countDocuments({ placementStatus: 'placed' }),
+      College.countDocuments({ verificationStatus: 'verified', isActive: true }),
+      // Anonymized highlights only — company + package, never the student's identity.
+      CollegeStudent.aggregate([
+        { $match: { placementStatus: 'placed', placedDetails: { $ne: [] } } },
+        { $unwind: '$placedDetails' },
+        { $sort: { 'placedDetails.placedAt': -1 } },
+        { $limit: 6 },
+        { $project: {
+          _id: 0,
+          companyName: '$placedDetails.companyName',
+          packageLPA: '$placedDetails.packageLPA',
+          tierPolicy: '$placedDetails.tierPolicy',
+        } },
+      ]),
+    ]);
+
+    res.json({
+      activeJobsCount,
+      companiesCount,
+      jobseekersCount,
+      jobsPostedToday,
+      newJobsThisWeek,
+      applicationsToday,
+      avgRating: ratingAgg[0]?.avgRating || 0,
+      reviewsCount: ratingAgg[0]?.count || 0,
+      studentsPlacedCount,
+      collegesOnboardedCount,
+      placementHighlights,
+    });
+  } catch (err) {
+    console.error('Public Stats Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+});
 
 // @desc  GET /api/public/companies
 //        Returns paginated Company docs + recruiter users
@@ -173,6 +248,43 @@ router.get('/recruiters/:id', async (req, res) => {
     });
   } catch (err) {
     console.error('Recruiter Detail Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+});
+
+// @desc  GET /api/public/colleges
+//        Verified, active colleges onboarded to the platform — for the
+//        public college/TPO home page ("colleges already registered").
+router.get('/colleges', async (req, res) => {
+  try {
+    const limit = Math.min(24, Math.max(1, parseInt(req.query.limit) || 12));
+    const colleges = await College.find({ verificationStatus: 'verified', isActive: true })
+      .select('name logo university location display_id')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+    res.json(colleges);
+  } catch (err) {
+    console.error('Public Colleges Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+});
+
+// @desc  GET /api/public/pay-per-features?role=recruiter|company|college
+//        Real, active pay-per-use add-ons for a given role — a public
+//        pricing teaser (no auth), independent of the authenticated
+//        `/api/pay-per/features` endpoint used inside the dashboard.
+router.get('/pay-per-features', async (req, res) => {
+  try {
+    const role = (req.query.role || '').trim();
+    if (!['jobseeker', 'recruiter', 'company', 'college'].includes(role)) {
+      return res.status(400).json({ msg: 'A valid role query param is required' });
+    }
+    const features = await PayPerFeature.find({ role, isActive: true })
+      .select('name description featureKey cost pricingOptions days')
+      .sort({ cost: 1 });
+    res.json(features);
+  } catch (err) {
+    console.error('Public Pay-Per Features Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });
   }
 });

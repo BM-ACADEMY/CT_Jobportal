@@ -430,7 +430,7 @@ const getUserProfile = async (req, res) => {
   try {
     let user = await User.findById(req.user.id)
       .select('-password')
-      .populate(['role', 'subscription', 'pendingCompanyInvite']);
+      .populate(['role', 'subscription', 'pendingCompanyInvite.company']);
     
     // If not found in User collection, check Admin collection
     if (!user) {
@@ -489,7 +489,9 @@ const getUserProfile = async (req, res) => {
       counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
       employerCompany: user.employerCompany || null,
       employerCompanyName,
-      pendingCompanyInvite: user.pendingCompanyInvite || null,
+      pendingCompanyInvite: user.pendingCompanyInvite?.company ? user.pendingCompanyInvite : null,
+      isTeamManaged: user.isTeamManaged || false,
+      teamPermissions: user.teamPermissions || [],
       purchasedFeatures: user.purchasedFeatures || [],
       hasInchargeDrives: await hasInchargeDrives(user._id),
       display_id: user.display_id,

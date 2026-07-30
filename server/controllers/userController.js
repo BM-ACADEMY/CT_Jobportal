@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const pdfParse = require('pdf-parse');
+const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
 
 // Helper to calculate profile completion
 const calculateCompletion = (user) => {
@@ -209,7 +210,66 @@ const toggleSaveJob = async (req, res) => {
   }
 };
 
-// @desc    Get Saved Jobs
+// @desc    Toggle Hide Job
+// @route   POST /api/user/hide-job/:jobId
+const toggleHideJob = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { jobId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    if (!user.hiddenJobs) user.hiddenJobs = [];
+
+    const isHidden = user.hiddenJobs.some(id => id.toString() === jobId);
+
+    if (isHidden) {
+      // Unhide
+      user.hiddenJobs = user.hiddenJobs.filter(id => id.toString() !== jobId);
+      await user.save();
+      return res.json({ msg: 'Job unhidden successfully', hiddenJobs: user.hiddenJobs });
+    } else {
+      // Hide
+      const Job = require('../models/Job');
+      const jobExists = await Job.findById(jobId);
+      if (!jobExists) return res.status(404).json({ msg: 'Job not found' });
+
+      user.hiddenJobs.push(jobId);
+      await user.save();
+      return res.json({ msg: 'Job hidden successfully', hiddenJobs: user.hiddenJobs });
+    }
+  } catch (err) {
+    console.error('Toggle Hide Job Error:', err.message);
+    res.status(500).json({ msg: 'Server error during hide job' });
+  }
+};
+
+// @desc    Get Hidden Jobs
+// @route   GET /api/user/hidden-jobs
+const getHiddenJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate({
+      path: 'hiddenJobs',
+      populate: {
+        path: 'company',
+        select: 'name logo'
+      }
+    });
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const jobs = user.hiddenJobs || [];
+    const filteredJobs = jobs.filter(job => job !== null);
+
+    res.json(filteredJobs);
+
+  } catch (err) {
+    console.error('Get Hidden Jobs Error:', err.message);
+    res.status(500).json({ msg: 'Server error fetching hidden jobs' });
+  }
+};
 // @route   GET /api/user/saved-jobs
 const getSavedJobs = async (req, res) => {
   try {
@@ -541,39 +601,20 @@ const analyzeResume = async (req, res) => {
 // @route   POST /api/user/accept-company-invite
 const acceptCompanyInvite = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate('pendingCompanyInvite');
-    if (!user || !user.pendingCompanyInvite) {
+    const user = await User.findById(req.user.id).populate('pendingCompanyInvite.company');
+    if (!user || !user.pendingCompanyInvite?.company) {
       return res.status(400).json({ msg: 'No pending invite found.' });
     }
 
-    const orgEmployeeRole = await require('../models/Role').findOne({ name: 'org_employee' });
-    if (!orgEmployeeRole) {
-      return res.status(500).json({ msg: 'Role not found' });
+    const { company, type, permissions } = user.pendingCompanyInvite;
+
+    if (type === 'recruiter') {
+      await grantRecruiterTeamAccess(user, company._id, permissions || []);
+    } else {
+      await promoteToOrgEmployee(user, company._id);
     }
 
-    user.employerCompany = user.pendingCompanyInvite._id;
-    user.company = user.pendingCompanyInvite._id; // Sync it for recruiter role logic
-    user.role = orgEmployeeRole._id;
-    
-    if (!user.companyHistory) user.companyHistory = [];
-    user.companyHistory.forEach(h => {
-      if (h.status === 'Current') {
-        h.status = 'Previous';
-        h.leftAt = new Date();
-      }
-    });
-    user.companyHistory.push({
-      company: user.pendingCompanyInvite._id,
-      status: 'Current',
-      joinedAt: new Date()
-    });
-
     user.pendingCompanyInvite = undefined;
-    
-    // Add default company profile adminRole if needed
-    if (!user.companyProfile) user.companyProfile = {};
-    if (!user.companyProfile.adminRole) user.companyProfile.adminRole = 'Employee';
-
     await user.save();
     res.json({ msg: 'Invite accepted. Your account is now part of the organization.' });
   } catch (err) {
@@ -587,7 +628,7 @@ const acceptCompanyInvite = async (req, res) => {
 const declineCompanyInvite = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    if (!user || !user.pendingCompanyInvite) {
+    if (!user || !user.pendingCompanyInvite?.company) {
       return res.status(400).json({ msg: 'No pending invite found.' });
     }
 
@@ -605,6 +646,8 @@ module.exports = {
   uploadResume,
   toggleSaveJob,
   getSavedJobs,
+  toggleHideJob,
+  getHiddenJobs,
   getPublicProfile,
   toggleBlockEntity,
   trackProfileView,

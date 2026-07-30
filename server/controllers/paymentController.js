@@ -13,6 +13,7 @@ const { sendWhatsAppMessage, triggerN8nWebhook } = require('../utils/notificatio
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
+const Coupon = require('../models/Coupon');
 
 const RECURRING_ROLES = ['college', 'company'];
 const STUDENT_LIMIT_UNLIMITED = 100000;
@@ -79,11 +80,24 @@ const createOrder = async (req, res) => {
     }
 
     const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
+    const { couponCode } = req.body;
     const gstPercentage = await fetchGstPercentage();
     
     // Look up pricing option configured by admin, with default fallback
-    const baseAmount = getPricingOption(plan, quantity);
+    let baseAmount = getPricingOption(plan, quantity);
     const baseAmountPerUnit = plan.price || plan.cost || 0;
+
+    let discountPercentage = 0;
+    let couponApplied = null;
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+      if (coupon && (coupon.totalUses === 0 || coupon.currentUses < coupon.totalUses)) {
+        discountPercentage = coupon.percentage;
+        couponApplied = coupon._id;
+        const discountVal = (baseAmount * discountPercentage) / 100;
+        baseAmount = baseAmount - discountVal;
+      }
+    }
 
     const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
     const totalAmount = baseAmount + gstAmount;
@@ -111,6 +125,8 @@ const createOrder = async (req, res) => {
       gstPercentage,
       gstAmount,
       totalAmount,
+      discountPercentage,
+      couponApplied
     });
   } catch (err) {
     console.error('Create Order Error:', err);
@@ -127,7 +143,8 @@ const verifyPayment = async (req, res) => {
       razorpay_payment_id,
       razorpay_signature,
       planId,
-      isFree
+      isFree,
+      couponCode
     } = req.body;
     const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
 
@@ -197,8 +214,21 @@ const verifyPayment = async (req, res) => {
       const gstPct = isFree ? 0 : await fetchGstPercentage();
       
       let baseAmt = 0;
+      let appliedCouponId = null;
       if (!isFree) {
         baseAmt = getPricingOption(plan, quantity);
+        if (couponCode) {
+          const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+          if (coupon && (coupon.totalUses === 0 || coupon.currentUses < coupon.totalUses)) {
+            const discountVal = (baseAmt * coupon.percentage) / 100;
+            baseAmt = baseAmt - discountVal;
+            appliedCouponId = coupon._id;
+            
+            // Increment coupon uses
+            coupon.currentUses += 1;
+            await coupon.save();
+          }
+        }
       }
 
       const gstAmt = isFree ? 0 : Math.round(baseAmt * gstPct) / 100;
@@ -217,7 +247,8 @@ const verifyPayment = async (req, res) => {
         razorpay_payment_id: razorpay_payment_id || 'FREE_PAYMENT',
         razorpay_signature: razorpay_signature || '',
         status: 'completed',
-        paymentMethod: isFree ? 'None' : 'Razorpay'
+        paymentMethod: isFree ? 'None' : 'Razorpay',
+        couponApplied: appliedCouponId
       });
       await paymentRecord.save();
 
@@ -257,7 +288,7 @@ const verifyPayment = async (req, res) => {
 // @route   POST /api/payments/create-subscription
 const createSubscriptionOrder = async (req, res) => {
   try {
-    const { planId } = req.body;
+    const { planId, couponCode } = req.body;
     if (!planId) return res.status(400).json({ msg: 'planId is required' });
 
     const plan = await Subscription.findById(planId);
@@ -267,14 +298,30 @@ const createSubscriptionOrder = async (req, res) => {
       return res.status(400).json({ msg: 'Recurring subscriptions are only available for college and company plans' });
     }
 
+    let baseAmount = plan.price;
+    let discountPercentage = 0;
+    let couponApplied = null;
+    
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+      if (coupon && (coupon.totalUses === 0 || coupon.currentUses < coupon.totalUses)) {
+        discountPercentage = coupon.percentage;
+        couponApplied = coupon._id;
+        const discountVal = (baseAmount * discountPercentage) / 100;
+        baseAmount = baseAmount - discountVal;
+      }
+    }
+
     const gstPercentage = await fetchGstPercentage();
-    const gstAmount = Math.round(plan.price * gstPercentage) / 100;
-    const totalAmount = plan.price + gstAmount;
+    const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
+    const totalAmount = baseAmount + gstAmount;
     const amountInPaise = Math.round(totalAmount * 100);
 
     // Lazily create (and cache) the Razorpay recurring Plan backing this Subscription doc
     let razorpayPlanId = plan.razorpayPlanId;
-    if (!razorpayPlanId) {
+    
+    // If a coupon is applied, we must create a custom plan for this specific discounted price
+    if (couponApplied || !razorpayPlanId) {
       const periodMap = {
         Monthly: { period: 'monthly', interval: 1 },
         Quarterly: { period: 'monthly', interval: 3 },
@@ -292,8 +339,12 @@ const createSubscriptionOrder = async (req, res) => {
         }
       });
       razorpayPlanId = razorpayPlan.id;
-      plan.razorpayPlanId = razorpayPlanId;
-      await plan.save();
+      
+      // Only cache the planId on the model if no coupon was applied
+      if (!couponApplied) {
+        plan.razorpayPlanId = razorpayPlanId;
+        await plan.save();
+      }
     }
 
     const totalCountMap = { Monthly: 240, Quarterly: 80, Yearly: 20 };
@@ -303,7 +354,11 @@ const createSubscriptionOrder = async (req, res) => {
       plan_id: razorpayPlanId,
       customer_notify: 1,
       total_count: totalCount,
-      notes: { planId: String(plan._id), userId: String(req.user.id) }
+      notes: { 
+        planId: String(plan._id), 
+        userId: String(req.user.id),
+        couponCode: couponCode || ''
+      }
     });
 
     res.json({
@@ -313,6 +368,8 @@ const createSubscriptionOrder = async (req, res) => {
       totalAmount,
       gstPercentage,
       gstAmount,
+      discountPercentage,
+      couponApplied,
       keyId: process.env.RAZORPAY_KEY_ID
     });
   } catch (err) {
@@ -325,7 +382,7 @@ const createSubscriptionOrder = async (req, res) => {
 // @route   POST /api/payments/verify-subscription
 const verifySubscriptionPayment = async (req, res) => {
   try {
-    const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, planId } = req.body;
+    const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, planId, couponCode } = req.body;
     if (!razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature || !planId) {
       return res.status(400).json({ msg: 'Missing payment verification fields' });
     }
@@ -398,13 +455,30 @@ const verifySubscriptionPayment = async (req, res) => {
     }
 
     try {
+      let baseAmount = plan.price;
+      let appliedCouponId = null;
+
+      if (couponCode) {
+        const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+        if (coupon && (coupon.totalUses === 0 || coupon.currentUses < coupon.totalUses)) {
+          const discountVal = (baseAmount * coupon.percentage) / 100;
+          baseAmount = baseAmount - discountVal;
+          appliedCouponId = coupon._id;
+
+          // Increment coupon uses
+          coupon.currentUses += 1;
+          await coupon.save();
+        }
+      }
+
       const gstPercentage = await fetchGstPercentage();
-      const gstAmount = Math.round(plan.price * gstPercentage) / 100;
+      const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
+
       await Payment.create({
         user: req.user.id,
         plan: plan._id,
-        amount: plan.price + gstAmount,
-        baseAmount: plan.price,
+        amount: baseAmount + gstAmount,
+        baseAmount: baseAmount,
         gstPercentage,
         gstAmount,
         quantity: 1,
@@ -413,7 +487,8 @@ const verifySubscriptionPayment = async (req, res) => {
         razorpay_payment_id,
         razorpay_signature,
         status: 'completed',
-        paymentMethod: 'Razorpay'
+        paymentMethod: 'Razorpay',
+        couponApplied: appliedCouponId
       });
     } catch (paymentErr) {
       console.error('Error saving subscription payment record:', paymentErr.message);

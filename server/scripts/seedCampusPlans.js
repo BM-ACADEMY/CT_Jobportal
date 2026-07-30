@@ -30,6 +30,7 @@ const CAMPUS_PLANS = [
       { name: 'Scheduled Placement Reports', isActive: false, value: 'None' },
       { name: 'ID Verification Badges', isActive: true, value: 'Manual Queue' },
       { name: 'Razorpay Auto-Renewal', isActive: false, value: 'N/A' },
+      { name: 'Company Drive Invites', isActive: false, value: 'Not Available' },
     ]
   },
   {
@@ -53,6 +54,7 @@ const CAMPUS_PLANS = [
       { name: 'Scheduled Placement Reports', isActive: true, value: 'Monthly PDF' },
       { name: 'ID Verification Badges', isActive: true, value: '250 Students' },
       { name: 'Razorpay Auto-Renewal', isActive: true, value: 'Mandate' },
+      { name: 'Company Drive Invites', isActive: true, value: '15 Invites/Year' },
     ]
   },
   {
@@ -76,6 +78,7 @@ const CAMPUS_PLANS = [
       { name: 'Scheduled Placement Reports', isActive: true, value: 'Weekly/Monthly PDF' },
       { name: 'ID Verification Badges', isActive: true, value: 'Unlimited' },
       { name: 'Razorpay Auto-Renewal', isActive: true, value: 'Mandate' },
+      { name: 'Company Drive Invites', isActive: true, value: '50 Invites/Year' },
     ]
   },
   {
@@ -103,6 +106,7 @@ const CAMPUS_PLANS = [
       { name: 'Scheduled Placement Reports', isActive: true, value: 'Custom Schedule' },
       { name: 'ID Verification Badges', isActive: true, value: 'Unlimited' },
       { name: 'Razorpay Auto-Renewal', isActive: true, value: 'Custom Billing' },
+      { name: 'Company Drive Invites', isActive: true, value: 'Unlimited' },
     ]
   }
 ];

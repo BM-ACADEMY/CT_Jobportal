@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import {
   Briefcase, Plus, Edit2, Trash2, Users, Eye, Search, Copy,
   MapPin, Clock, Loader2, MoreVertical, ToggleLeft, ToggleRight, AlertTriangle, Sparkles
@@ -118,6 +119,7 @@ const MyJobs = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 py-6">
+      <PageSOPBanner pageKey="myJobs" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

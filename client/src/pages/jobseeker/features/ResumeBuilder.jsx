@@ -8,6 +8,7 @@ import {
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import AIGenerateModal from './AIGenerateModal';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 // ─── LocalStorage ─────────────────────────────────────────────────────────────
 const STORE_KEY = 'ct_resumes_v1';
@@ -1189,6 +1190,7 @@ const ResumeBuilder = () => {
       description="Build professional, ATS-optimized resumes with live preview, full customization, and PDF download."
       subscriptionPath="/jobseeker/subscription"
     >
+      <PageSOPBanner pageKey="resumeBuilder" />
       {limitError && (
         <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-medium text-amber-800">
           {limitError}

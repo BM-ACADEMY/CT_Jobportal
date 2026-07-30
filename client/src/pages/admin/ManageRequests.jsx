@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import {
   X, UserCheck, Loader2, AlertCircle, CheckCircle2, Send, Clock, Layout, Users, Star, Mic, ClipboardList,
-  RefreshCw, Search, ChevronLeft, ChevronRight
+  RefreshCw, Search, ChevronLeft, ChevronRight, Eye
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,10 +15,7 @@ const PAGE_SIZE = 10;
 
 const TYPE_CONFIG = {
   counselling:    { label: 'Career Counselling', icon: Star,         color: 'bg-rose-50 text-rose-700 border-rose-200' },
-  interview_prep: { label: 'Interview Prep',     icon: Mic,          color: 'bg-teal-50 text-teal-700 border-teal-200' },
-  salary_benchmark: { label: 'Salary Benchmark', icon: ClipboardList, color: 'bg-violet-50 text-violet-700 border-violet-200' },
-  // website_request:  { label: 'Website Request',   icon: Layout,        color: 'bg-emerald-50 text-teal-700 border-emerald-200' },
-  bulk_application: { label: 'Bulk Application', icon: Users,           color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  mock_interview: { label: 'Mock Interview',     icon: Mic,          color: 'bg-teal-50 text-teal-700 border-teal-200' },
 };
 
 const STATUS_CONFIG = {
@@ -35,7 +32,7 @@ const authHeader = () => ({ Authorization: `Bearer ${token()}` });
 const AssignModal = ({ request, onClose, onAssigned }) => {
   const [assignees, setAssignees]   = useState([]);
   const [search, setSearch]         = useState('');
-  const [selected, setSelected]     = useState(null);
+  const [selectedPool, setSelectedPool] = useState([]);
   const [notes, setNotes]           = useState(request.adminNotes || '');
   const [loading, setLoading]       = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -55,15 +52,15 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
   );
 
   const handleAssign = async () => {
-    if (!selected) { toast.error('Please select a recruiter or company'); return; }
+    if (selectedPool.length === 0) { toast.error('Please select at least one recruiter or company'); return; }
     setSubmitting(true);
     try {
       await axios.patch(
         `${API}/requests/admin/${request._id}/assign`,
-        { assignedTo: selected._id, adminNotes: notes },
+        { assignedToPool: selectedPool.map(s => s._id), adminNotes: notes },
         { headers: authHeader() }
       );
-      toast.success(`Assigned to ${selected.name}`);
+      toast.success(`Assigned to ${selectedPool.length} professional(s)`);
       onAssigned();
       onClose();
     } catch (err) {
@@ -95,18 +92,16 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
             <>
               <p><span className="font-bold text-slate-700">Date:</span> {request.bookingDate} at {request.bookingTime}</p>
               <p><span className="font-bold text-slate-700">Phone:</span> {request.bookingPhone || '—'}</p>
+              {request.qualification && <p><span className="font-bold text-slate-700">Edu:</span> {request.qualification} ({request.major})</p>}
+              {request.workExperience && <p><span className="font-bold text-slate-700">Exp:</span> {request.workExperience}</p>}
+              {request.notes && <p><span className="font-bold text-slate-700">Notes:</span> {request.notes}</p>}
             </>
           )}
-          {request.type === 'interview_prep' && (
+          {request.type === 'mock_interview' && (
             <>
               <p><span className="font-bold text-slate-700">Skills:</span> {request.skills}</p>
               <p><span className="font-bold text-slate-700">Goal:</span> {request.careerGoal}</p>
-            </>
-          )}
-          {request.type === 'salary_benchmark' && (
-            <>
-              <p><span className="font-bold text-slate-700">Role:</span> {request.jobRole}</p>
-              <p><span className="font-bold text-slate-700">Company:</span> {request.companyName}</p>
+              <p><span className="font-bold text-slate-700">Date:</span> {request.mockInterviewDate} at {request.mockInterviewTime}</p>
             </>
           )}
           {request.type === 'website_request' && (
@@ -114,12 +109,6 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
               <p><span className="font-bold text-slate-700">Website Details:</span> {request.websiteDetails}</p>
               <p><span className="font-bold text-slate-700">Goal:</span> {request.websiteGoal}</p>
               <p><span className="font-bold text-slate-700">Audience:</span> {request.targetAudience}</p>
-            </>
-          )}
-          {request.type === 'bulk_application' && (
-            <>
-              <p><span className="font-bold text-slate-700">Job:</span> {request.jobId?.title || 'Unknown'}</p>
-              <p><span className="font-bold text-slate-700">Target Count:</span> {request.count}</p>
             </>
           )}
         </div>
@@ -147,13 +136,13 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
             filtered.map(a => (
               <button
                 key={a._id}
-                onClick={() => setSelected(a)}
+                onClick={() => setSelectedPool(prev => prev.find(p => p._id === a._id) ? prev.filter(p => p._id !== a._id) : [...prev, a])}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors border-b border-slate-50 last:border-0 ${
-                  selected?._id === a._id ? 'bg-emerald-50' : 'hover:bg-slate-50'
+                  selectedPool.find(p => p._id === a._id) ? 'bg-emerald-50' : 'hover:bg-slate-50'
                 }`}
               >
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-bold ${
-                  selected?._id === a._id ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'
+                  selectedPool.find(p => p._id === a._id) ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {a.name?.[0]?.toUpperCase()}
                 </div>
@@ -162,11 +151,11 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
                   <p className="text-[10px] text-slate-500 truncate">{a.companyName || a.email}</p>
                 </div>
                 <Badge className={`text-[9px] font-bold px-2 py-0 border-none shrink-0 ${
-                  a.role === 'company' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
+                  (a.role?.name || a.role) === 'company' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
                 }`}>
-                  {a.role}
+                  {a.role?.name || a.role}
                 </Badge>
-                {selected?._id === a._id && <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />}
+                {selectedPool.find(p => p._id === a._id) && <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />}
               </button>
             ))
           )}
@@ -192,7 +181,7 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
           </Button>
           <Button
             onClick={handleAssign}
-            disabled={submitting || !selected}
+            disabled={submitting || selectedPool.length === 0}
             className="flex-1 h-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold gap-1.5"
           >
             {submitting ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
@@ -281,10 +270,7 @@ const UpdateModal = ({ request, onClose, onUpdated }) => {
 const TABS = [
   { key: 'all',             label: 'All' },
   { key: 'counselling',     label: 'Career Counselling' },
-  { key: 'interview_prep',  label: 'Interview Prep' },
-  { key: 'salary_benchmark', label: 'Salary Benchmark' },
-  // { key: 'website_request',  label: 'Website Requests' },
-  { key: 'bulk_application', label: 'Bulk Applications' },
+  { key: 'mock_interview',  label: 'Mock Interviews' },
 ];
 
 const STATUS_TABS = [
@@ -304,6 +290,8 @@ const ManageRequests = () => {
   const [page, setPage]             = useState(1);
   const [assignTarget, setAssignTarget] = useState(null);
   const [updateTarget, setUpdateTarget] = useState(null);
+  const [viewReq, setViewReq] = useState(null);
+  const [viewPoolReq, setViewPoolReq] = useState(null);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -365,11 +353,122 @@ const ManageRequests = () => {
         />
       )}
 
+      {/* View Details Modal */}
+      {viewReq && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-sm font-bold text-slate-900 mb-4">Request Details</h3>
+            <div className="space-y-3 text-sm text-slate-700">
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">User Name</p>
+                  <p className="font-medium">{viewReq.user?.name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
+                  <p className="font-medium truncate" title={viewReq.user?.email}>{viewReq.user?.email}</p>
+                </div>
+              </div>
+              
+              {viewReq.type === 'counselling' && (
+                <div className="space-y-2">
+                  <p><span className="font-bold">Date & Time:</span> {viewReq.bookingDate} at {viewReq.bookingTime}</p>
+                  {viewReq.bookingPhone && <p><span className="font-bold">Phone:</span> {viewReq.bookingPhone}</p>}
+                  {viewReq.qualification && <p><span className="font-bold">Qualification:</span> {viewReq.qualification}</p>}
+                  {viewReq.major && <p><span className="font-bold">Major:</span> {viewReq.major}</p>}
+                  {viewReq.workExperience && <p><span className="font-bold">Work Exp:</span> {viewReq.workExperience}</p>}
+                  {viewReq.notes && (
+                    <div>
+                      <p className="font-bold mb-1">Notes / Goals:</p>
+                      <div className="bg-slate-50 p-3 rounded-xl text-xs">{viewReq.notes}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {viewReq.type === 'mock_interview' && (
+                <div className="space-y-2">
+                  <p><span className="font-bold">Skills:</span> {viewReq.skills}</p>
+                  {viewReq.careerGoal && <p><span className="font-bold">Career Goal:</span> {viewReq.careerGoal}</p>}
+                  <p><span className="font-bold">Date & Time:</span> {viewReq.mockInterviewDate} at {viewReq.mockInterviewTime}</p>
+                </div>
+              )}
+
+              {viewReq.adminNotes && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-blue-800">
+                  <p className="font-bold text-xs mb-1">Additional Notes / Instructions:</p>
+                  <p className="whitespace-pre-wrap">{viewReq.adminNotes}</p>
+                </div>
+              )}
+
+              {viewReq.status === 'approved' && !viewReq.selectedSlot && viewReq.slot1Date && (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
+                  <p className="font-bold text-xs mb-2">Suggested Slots (Awaiting Seeker Selection):</p>
+                  <div className="grid grid-cols-1 gap-2 text-xs">
+                    <div className="p-2 bg-white rounded border border-amber-100">
+                      <span className="font-bold">Slot 1:</span> {viewReq.slot1Date} at {viewReq.slot1StartTime} - {viewReq.slot1EndTime}
+                    </div>
+                    {viewReq.slot2Date && (
+                      <div className="p-2 bg-white rounded border border-amber-100">
+                        <span className="font-bold">Slot 2:</span> {viewReq.slot2Date} at {viewReq.slot2StartTime} - {viewReq.slot2EndTime}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {viewReq.status === 'approved' && viewReq.selectedSlot && viewReq.meetingDate && (
+                <div className="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800">
+                  <p className="font-bold text-xs mb-2">Confirmed Meeting Details:</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="font-bold block text-emerald-700">Date</span>{viewReq.meetingDate}</div>
+                    <div><span className="font-bold block text-emerald-700">Time</span>{viewReq.meetingStartTime} - {viewReq.meetingEndTime}</div>
+                    {viewReq.meetingLink && (
+                      <div className="col-span-2">
+                        <span className="font-bold block text-emerald-700">Meeting Link</span>
+                        <a href={viewReq.meetingLink} target="_blank" rel="noreferrer" className="text-blue-600 underline break-all">{viewReq.meetingLink}</a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setViewReq(null)} variant="outline" className="h-9 px-4 text-xs font-bold rounded-xl">Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Pool Modal */}
+      {viewPoolReq && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-sm font-bold text-slate-900 mb-2">Invited Professionals</h3>
+            <p className="text-xs text-slate-500 mb-4">The following professionals have been invited to accept this request.</p>
+            <div className="space-y-2">
+              {viewPoolReq.assignedToPool.map(p => (
+                <div key={p._id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div>
+                    <p className="font-bold text-slate-800 text-sm">{p.name}</p>
+                    <p className="text-[10px] text-slate-500 font-mono uppercase truncate max-w-[200px]">{p.display_id || p.email}</p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] bg-white">Invited</Badge>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setViewPoolReq(null)} variant="outline" className="h-9 px-4 text-xs font-bold rounded-xl">Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Session Requests</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Career counselling and interview prep requests from seekers.</p>
+          <p className="text-sm text-slate-500 mt-0.5">Career counselling and mock interview requests from seekers.</p>
         </div>
         <button
           onClick={fetchRequests}
@@ -492,19 +591,17 @@ const ManageRequests = () => {
                       {/* Details */}
                       <td className="py-3 px-3 text-slate-600 max-w-[200px]">
                         {r.type === 'counselling' && (
-                          <span className="truncate block">{r.bookingDate} {r.bookingTime}</span>
+                          <>
+                            <span className="truncate block font-semibold">{r.bookingDate} at {r.bookingTime}</span>
+                            {r.qualification && <span className="truncate block text-[10px]">Edu: {r.qualification}</span>}
+                            {r.workExperience && <span className="truncate block text-[10px]">Exp: {r.workExperience}</span>}
+                          </>
                         )}
-                        {r.type === 'interview_prep' && (
-                          <span className="truncate block">{r.skills}</span>
-                        )}
-                        {r.type === 'salary_benchmark' && (
-                          <span className="truncate block">{r.jobRole} @ {r.companyName}</span>
+                        {r.type === 'mock_interview' && (
+                          <span className="truncate block">{r.skills} - {r.mockInterviewDate} {r.mockInterviewTime}</span>
                         )}
                         {r.type === 'website_request' && (
                           <span className="truncate block">{r.websiteDetails}</span>
-                        )}
-                        {r.type === 'bulk_application' && (
-                          <span className="truncate block">{r.count} Applicants for {r.jobId?.title || 'Job'}</span>
                         )}
                       </td>
                       {/* Status */}
@@ -518,8 +615,10 @@ const ManageRequests = () => {
                         {r.assignedTo ? (
                           <div>
                             <p className="font-bold text-slate-700 truncate max-w-[130px]">{r.assignedTo.name}</p>
-                            <p className="text-[10px] text-slate-400 capitalize">{r.assignedTo.role}</p>
+                            <p className="text-[10px] text-slate-400 font-mono uppercase">{r.assignedTo.display_id || ''}</p>
                           </div>
+                        ) : r.assignedToPool?.length > 0 ? (
+                          <button onClick={() => setViewPoolReq(r)} className="text-blue-500 hover:text-blue-600 hover:underline italic text-[10px] font-medium">Pending (Pool: {r.assignedToPool.length})</button>
                         ) : (
                           <span className="text-slate-400 italic">Unassigned</span>
                         )}
@@ -531,6 +630,12 @@ const ManageRequests = () => {
                       {/* Actions */}
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setViewReq(r)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors"
+                          >
+                            <Eye size={11} /> View
+                          </button>
                           {r.status !== 'cancelled' && r.status !== 'completed' && (
                             <button
                               onClick={() => setAssignTarget(r)}

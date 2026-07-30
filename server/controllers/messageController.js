@@ -5,6 +5,7 @@ const Ticket = require('../models/Ticket');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
+const { logTeamActivity } = require('../utils/teamActivityLog');
 
 const RECRUITER_ROLES = ['recruiter', 'company', 'org_employee'];
 const FRONTEND_URL = process.env.FRONTEND_URL;
@@ -201,6 +202,17 @@ const sendMessage = async (req, res) => {
       lastMessage: newMessage._id,
       updatedAt: Date.now()
     });
+
+    if (req.user.role === 'recruiter') {
+      const actingUser = await User.findById(senderId).select('name company').lean();
+      logTeamActivity({
+        actor: { _id: actingUser._id, name: actingUser.name, company: actingUser.company, role: req.user.role },
+        action: 'message_sent',
+        description: 'Sent a message to a candidate',
+        entity: newMessage._id,
+        entityModel: 'Message'
+      });
+    }
 
     // Optional: Emit socket event from here if needed
     // req.io.to(conversationId).emit('receive_message', newMessage);

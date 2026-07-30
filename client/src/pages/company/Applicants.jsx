@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import {
   Users,
   ChevronLeft,
@@ -278,6 +279,7 @@ const Applicants = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 py-6">
+      <PageSOPBanner pageKey="applicants" />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div className="flex items-center gap-4">
           <Button 

@@ -5,6 +5,8 @@ import { QrCode, Calendar, Building2, Megaphone, Loader2, CheckCircle2, XCircle 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Link } from 'react-router-dom';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
 
@@ -155,6 +157,7 @@ const CampusDrives = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <PageSOPBanner pageKey="jobseekerCampusDrives" />
       <div>
         <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
           <QrCode size={20} className="text-emerald-600" /> Campus Drives
@@ -207,10 +210,10 @@ const CampusDrives = () => {
       ) : (
         <div className="grid gap-4">
           {drives.map(drive => (
-            <div key={drive._id} className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+            <Link key={drive._id} to={`/jobseeker/campus-drives/${drive._id}`} className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:border-emerald-200 transition-colors block">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <h3 className="text-sm font-black text-slate-900">{drive.title}</h3>
+                  <h3 className="text-sm font-black text-slate-900 group-hover:text-emerald-700">{drive.title}</h3>
                   {(drive.companies?.length > 0 ? drive.companies : drive.companyName ? [{ name: drive.companyName, packageLPA: drive.packageLPA }] : []).length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {(drive.companies?.length > 0 ? drive.companies : [{ name: drive.companyName, packageLPA: drive.packageLPA }]).map((c, i) => (
@@ -229,7 +232,12 @@ const CampusDrives = () => {
                       <CheckCircle2 size={12} /> {drive.myApplication.status}
                     </span>
                   ) : (
-                    <Button size="sm" disabled={registeringId === drive._id} onClick={() => registerForDrive(drive._id)} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
+                    <Button 
+                      size="sm" 
+                      disabled={registeringId === drive._id} 
+                      onClick={(e) => { e.preventDefault(); registerForDrive(drive._id); }} 
+                      className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+                    >
                       {registeringId === drive._id ? 'Registering...' : 'Register'}
                     </Button>
                   )}
@@ -248,7 +256,7 @@ const CampusDrives = () => {
                   ))}
                 </div>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       )}

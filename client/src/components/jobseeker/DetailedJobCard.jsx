@@ -1,9 +1,13 @@
-import React from 'react';
-import { Briefcase, MapPin, Building2, Clock, Globe, Bookmark, EyeOff, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { Briefcase, MapPin, Building2, Clock, Globe, Bookmark, EyeOff, Star, CircleCheck } from 'lucide-react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // job.salary/experience are normally pre-formatted strings by the caller, but guard against
 // receiving the raw backend shape ({min, max, currency, isRangeHidden}) directly to avoid
@@ -23,17 +27,50 @@ const formatExperience = (experience) => {
   return `${experience.min || experience.max}+ Yrs`;
 };
 
-const DetailedJobCard = ({ job }) => {
+const DetailedJobCard = ({ job, application, onRevoke }) => {
+  const navigate = useNavigate();
+  const [isHidden, setIsHidden] = useState(false);
+
+  const handleHide = async (e) => {
+    e.stopPropagation();
+    try {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/hide-job/${job.id}`, {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setIsHidden(true);
+      toast.success('Job hidden');
+    } catch (err) {
+      toast.error('Failed to hide job');
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.stopPropagation();
+    try {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/save-job/${job.id}`, {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      toast.success('Job saved');
+    } catch (err) {
+      toast.error('Failed to save job');
+    }
+  };
+
+  if (isHidden) return null;
+
   return (
     <Card 
+      onClick={() => navigate(`/job/${job.id}`)}
       className="mb-5 rounded-[20px] border-border bg-card hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer group"
     >
       <CardContent className="p-6">
         <div className="flex gap-5">
-          {/* Checkbox for Bulk Selection */}
-          <div className="pt-1.5 flex flex-col justify-start">
-            <Checkbox className="w-5 h-5 border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
-          </div>
+          {/* Application Status Marker */}
+          {application && application.status !== 'withdrawn' && (
+            <div className="pt-1.5 flex flex-col justify-start">
+               <CircleCheck className="w-5 h-5 text-emerald-500" />
+            </div>
+          )}
 
           {/* Job Content */}
           <div className="flex-1 min-w-0">
@@ -55,9 +92,12 @@ const DetailedJobCard = ({ job }) => {
               </div>
               
               {/* Company Logo in Card */}
-              <div className="w-14 h-14 rounded-2xl border border-border flex items-center justify-center p-2 overflow-hidden bg-background shadow-sm flex-shrink-0 group-hover:border-primary/20 transition-colors">
-                 <img src={job.logo} alt={job.company} className="w-full h-full object-contain" />
-              </div>
+              <Avatar className="w-14 h-14 rounded-2xl border border-border flex items-center justify-center overflow-hidden bg-background shadow-sm flex-shrink-0 group-hover:border-primary/20 transition-colors p-2">
+                 {job.logo && <AvatarImage src={job.logo} alt={job.company} className="object-contain" />}
+                 <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold text-sm">
+                   {job.company?.[0]?.toUpperCase() || 'C'}
+                 </AvatarFallback>
+              </Avatar>
             </div>
 
             {/* Job Metadata */}
@@ -107,12 +147,43 @@ const DetailedJobCard = ({ job }) => {
                  </Badge>
               </div>
               <div className="flex items-center gap-3 self-end sm:self-center">
-                <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-2 text-xs font-black text-muted-foreground hover:text-destructive hover:bg-destructive/10 uppercase tracking-wider h-10 px-4 rounded-xl">
+                <Button 
+                  onClick={handleHide}
+                  variant="ghost" 
+                  size="sm" 
+                  className="hidden sm:flex items-center gap-2 text-xs font-black text-muted-foreground hover:text-destructive hover:bg-destructive/10 uppercase tracking-wider h-10 px-4 rounded-xl"
+                >
                   <EyeOff size={16} /> <span>Hide</span>
                 </Button>
-                <Button variant="outline" size="sm" className="flex items-center gap-2 text-xs font-black text-foreground/70 hover:text-primary hover:bg-primary/10 border-transparent hover:border-primary/20 uppercase tracking-wider h-10 px-5 rounded-xl">
-                  <Bookmark size={16} /> <span>Save</span>
-                </Button>
+                {application && application.status !== 'withdrawn' ? (
+                  <Button 
+                    onClick={async (e) => {
+                       e.stopPropagation();
+                       try {
+                         const token = localStorage.getItem('token');
+                         await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/applications/${application._id}/revoke`, {}, { headers: { Authorization: `Bearer ${token}` }});
+                         toast.success('Application revoked');
+                         if (onRevoke) onRevoke();
+                       } catch (err) {
+                         toast.error(err.response?.data?.msg || 'Error revoking application');
+                       }
+                    }}
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center gap-2 text-xs font-black text-rose-500 hover:text-rose-600 hover:bg-rose-50 uppercase tracking-wider h-10 px-5 rounded-xl transition-colors border border-transparent hover:border-rose-200"
+                  >
+                    <span>Revoke</span>
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleSave}
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-2 text-xs font-black text-foreground/70 hover:text-primary hover:bg-primary/10 border-transparent hover:border-primary/20 uppercase tracking-wider h-10 px-5 rounded-xl transition-colors"
+                  >
+                    <Bookmark size={16} /> <span>Save</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>

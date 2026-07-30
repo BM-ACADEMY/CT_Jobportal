@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Sparkles, ArrowRight, Loader2, Target, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Loader2, Target, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+
+import { useAuth } from '../../context/AuthContext';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
 const FreeAssessment = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [step, setStep] = useState('entry'); // entry, test, lead, results
   const [skill, setSkill] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
@@ -47,11 +51,39 @@ const FreeAssessment = () => {
     setAnswers(prev => ({ ...prev, [currentQIndex]: opt }));
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (currentQIndex < questions.length - 1) {
       setCurrentQIndex(prev => prev + 1);
     } else {
-      setStep('lead');
+      // Calculate score before moving to lead step
+      let calculatedScore = 0;
+      questions.forEach((q, idx) => {
+        if (answers[idx] === q.correct_option) {
+          calculatedScore++;
+        }
+      });
+      setScore(calculatedScore);
+      
+      if (user?.role === 'jobseeker') {
+        try {
+          await axios.post(`${API}/skill-tests/save`, {
+            skill,
+            difficulty,
+            score: calculatedScore,
+            total: questions.length,
+            percentage: Math.round((calculatedScore / questions.length) * 100),
+            passed: (calculatedScore / questions.length) >= 0.6,
+            questions,
+            answers
+          }); // Removed withCredentials: true as we use Bearer tokens
+          navigate('/jobseeker/skill-tests');
+        } catch (err) {
+          toast.error("Failed to save score, but redirecting.");
+          navigate('/jobseeker/skill-tests');
+        }
+      } else {
+        setStep('lead');
+      }
     }
   };
 
@@ -64,22 +96,20 @@ const FreeAssessment = () => {
   const showResults = (e) => {
     e.preventDefault();
     if (!leadName || !leadPhone) return toast.error('Please enter your details to view results.');
-    
-    // Calculate score
-    let calculatedScore = 0;
-    questions.forEach((q, idx) => {
-      if (answers[idx] === q.correct_option) {
-        calculatedScore++;
-      }
-    });
-    setScore(calculatedScore);
     setStep('results');
   };
 
   if (step === 'entry') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-6">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-6 relative">
+          <button 
+            onClick={() => navigate(-1)}
+            className="absolute top-6 left-6 text-slate-400 hover:text-slate-700 transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          
           <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
             <Sparkles size={32} />
           </div>
@@ -208,7 +238,15 @@ const FreeAssessment = () => {
           
           <div className="space-y-4 text-left">
             <Button 
-              onClick={() => navigate(`/register?fromAssessment=true&skill=${encodeURIComponent(skill)}&score=${score}&total=${questions.length}`)}
+              onClick={() => {
+                localStorage.setItem('pendingAssessment', JSON.stringify({
+                  skill, difficulty, score, total: questions.length, 
+                  percentage: Math.round((score / questions.length) * 100),
+                  passed: (score / questions.length) >= 0.6,
+                  questions, answers
+                }));
+                navigate(`/register?fromAssessment=true`);
+              }}
               className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 mt-4 transition-transform hover:scale-105"
             >
               Create Free Account to Unlock Results <ArrowRight size={18} />

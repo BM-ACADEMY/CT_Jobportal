@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Video, Calendar, Link2, Loader2, Briefcase, Clock, X, CheckCircle2, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { Badge } from '@/components/ui/badge';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { JitsiMeeting } from '@jitsi/react-sdk';
@@ -289,6 +290,7 @@ const VideoInterview = () => {
       description="Schedule and manage video interviews with candidates directly from the portal."
       subscriptionPath="/company/subscription"
     >
+      <PageSOPBanner pageKey="videoInterview" />
       {activeMeeting && (
         <NativeMeetingRoom 
           interview={activeMeeting} 

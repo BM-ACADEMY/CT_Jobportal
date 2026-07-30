@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  X, ShieldCheck, Tag, Zap, CreditCard, Loader2
+  X, ShieldCheck, Tag, Zap, CreditCard, Loader2, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -18,6 +18,7 @@ const PayPerCheckoutModal = ({ feature, gstPercentage = 0, onClose, onProceed })
 
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [processing, setProcessing] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const selectedOption = options[selectedIdx];
   const quantity = selectedOption.quantity;
@@ -185,13 +186,35 @@ const PayPerCheckoutModal = ({ feature, gstPercentage = 0, onClose, onProceed })
             </div>
           </div>
 
+          {/* Terms and conditions checkbox */}
+          <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 cursor-pointer hover:bg-slate-100/60 transition-colors group select-none mt-2">
+            <div
+              onClick={(e) => { e.preventDefault(); setTermsAccepted(v => !v); }}
+              className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                termsAccepted
+                  ? 'bg-emerald-500 border-emerald-500'
+                  : 'bg-white border-slate-300 group-hover:border-slate-400'
+              }`}
+            >
+              {termsAccepted && <Check size={11} strokeWidth={3} className="text-white" />}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-emerald-600 hover:underline">Terms and Conditions</a>
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-relaxed">
+                By checking this, you agree to our terms of service and privacy policy.
+              </p>
+            </div>
+          </label>
+
         </div>
 
         {/* Actions */}
         <div className="px-6 py-4 border-t border-slate-100 bg-white shrink-0 space-y-2">
           <Button
             onClick={handleProceed}
-            disabled={processing}
+            disabled={processing || !termsAccepted}
             className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.01] transition-all disabled:opacity-60 disabled:scale-100"
           >
             {processing
