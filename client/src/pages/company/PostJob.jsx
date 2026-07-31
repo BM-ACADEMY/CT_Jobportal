@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { Briefcase, MapPin, Clock, DollarSign, Users, FileText, Plus, X, Sparkles, LayoutGrid, Send, Trash2, Target, ChevronLeft, ArrowRight, ExternalLink, Loader2, Lock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const PostJob = () => {
     const [selectedJob, setSelectedJob] = useState(null);
     const [editingJobId, setEditingJobId] = useState(null);
     const [newSkill, setNewSkill] = useState('');
+    const [newLocation, setNewLocation] = useState('');
 
     const [formData, setFormData] = useState({
         title: '',
@@ -42,9 +44,9 @@ const PostJob = () => {
         applicationQuestions: [
             { questionText: 'Full Name', type: 'text', isRequired: true, isStandard: true, enabled: true },
             { questionText: 'Email Address', type: 'text', isRequired: true, isStandard: true, enabled: true },
-            { questionText: 'Phone Number', type: 'text', isRequired: true, isStandard: true, enabled: true },
             { questionText: 'Resume/CV', type: 'text', isRequired: true, isStandard: true, enabled: true },
-        ]
+        ],
+        postedAs: 'company'
     });
 
     const standardFields = [
@@ -165,6 +167,27 @@ const PostJob = () => {
         });
     };
 
+    const handleAddLocation = () => {
+        if (newLocation.trim()) {
+            const currentLocations = formData.location ? formData.location.split(', ').filter(Boolean) : [];
+            if (!currentLocations.includes(newLocation.trim())) {
+                setFormData({
+                    ...formData,
+                    location: [...currentLocations, newLocation.trim()].join(', ')
+                });
+            }
+            setNewLocation('');
+        }
+    };
+
+    const handleRemoveLocation = (loc) => {
+        const currentLocations = formData.location ? formData.location.split(', ').filter(Boolean) : [];
+        setFormData({
+            ...formData,
+            location: currentLocations.filter(l => l !== loc).join(', ')
+        });
+    };
+
     const handleAddDetail = () => {
         setFormData({
             ...formData,
@@ -204,7 +227,8 @@ const PostJob = () => {
                 { questionText: 'Email Address', type: 'text', isRequired: true, isStandard: true },
                 { questionText: 'Phone Number', type: 'text', isRequired: true, isStandard: true },
                 { questionText: 'Resume/CV', type: 'text', isRequired: true, isStandard: true },
-            ]
+            ],
+            postedAs: 'company'
         });
     };
 
@@ -228,7 +252,8 @@ const PostJob = () => {
                 { questionText: 'Email Address', type: 'text', isRequired: true, isStandard: true },
                 { questionText: 'Phone Number', type: 'text', isRequired: true, isStandard: true },
                 { questionText: 'Resume/CV', type: 'text', isRequired: true, isStandard: true },
-            ]
+            ],
+            postedAs: job.postedAs || 'company'
         });
         setViewMode('create');
     };
@@ -293,11 +318,17 @@ const PostJob = () => {
         loadingSetter(true);
         try {
 
+            const submissionData = {
+                ...formData,
+                postedAs: user?.company ? formData.postedAs : 'recruiter',
+                status
+            };
+
             if (editingJobId) {
-                await axios.put(`${API_JOBS_URL}/${editingJobId}`, { ...formData, status });
+                await axios.put(`${API_JOBS_URL}/${editingJobId}`, submissionData);
                 toast.success(status === 'draft' ? "Draft updated!" : "Position published successfully!");
             } else {
-                await axios.post(API_JOBS_URL, { ...formData, status });
+                await axios.post(API_JOBS_URL, submissionData);
                 toast.success(status === 'draft' ? "Job saved as draft!" : "Job posted successfully!");
             }
             resetForm();
@@ -331,7 +362,7 @@ const PostJob = () => {
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-700">
-            
+            <PageSOPBanner pageKey="postJob" />
             {/* ── VIEW: LIST OF JOBS ── */}
             {viewMode === 'list' && (
                 <div className="space-y-8">
@@ -641,6 +672,21 @@ const PostJob = () => {
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-6">
                                     <div className="space-y-2">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Post Job As <span className="text-rose-500">*</span></Label>
+                                        <select 
+                                            className="w-full h-10 px-3 text-sm rounded-lg border border-border bg-white focus:outline-none focus:border-emerald-600 font-semibold"
+                                            value={formData.postedAs || (user?.company ? 'company' : 'recruiter')}
+                                            onChange={(e) => setFormData({...formData, postedAs: e.target.value})}
+                                            disabled={!user?.company}
+                                        >
+                                            <option value="recruiter">My Profile (Recruiter)</option>
+                                            {user?.company && <option value="company">Company Account</option>}
+                                            {user?.company && <option value="both">Both (Company & Recruiter)</option>}
+                                        </select>
+                                        {!user?.company && <p className="text-[10px] text-muted-foreground mt-1">You must set up or join a company to post on its behalf.</p>}
+                                    </div>
+
+                                    <div className="space-y-2">
                                         <Label className="text-xs font-semibold text-muted-foreground">Job Title</Label>
                                         <Input 
                                             placeholder="e.g. Senior Software Engineer"
@@ -912,40 +958,78 @@ const PostJob = () => {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-6">
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         <Label className="text-xs font-semibold text-muted-foreground">Job Type</Label>
-                                        <select 
-                                            className="w-full h-10 px-3 rounded-lg border border-border text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 bg-white"
-                                            value={formData.jobType}
-                                            onChange={(e) => setFormData({...formData, jobType: e.target.value})}
-                                        >
-                                            {['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'].map(type => (
-                                                <option key={type} value={type}>{type}</option>
-                                            ))}
-                                        </select>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'].map(type => {
+                                                const isSelected = formData.jobType?.includes(type);
+                                                return (
+                                                    <Badge 
+                                                        key={type}
+                                                        onClick={() => {
+                                                            const types = formData.jobType ? formData.jobType.split(', ').filter(Boolean) : [];
+                                                            if (isSelected) {
+                                                                setFormData({...formData, jobType: types.filter(t => t !== type).join(', ')});
+                                                            } else {
+                                                                setFormData({...formData, jobType: [...types, type].join(', ')});
+                                                            }
+                                                        }}
+                                                        className={`cursor-pointer px-3 py-1.5 rounded-md font-semibold text-xs border ${isSelected ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700' : 'bg-white text-muted-foreground border-border hover:bg-muted'}`}
+                                                    >
+                                                        {type}
+                                                    </Badge>
+                                                )
+                                            })}
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         <Label className="text-xs font-semibold text-muted-foreground">Work Mode</Label>
-                                        <select 
-                                            className="w-full h-10 px-3 rounded-lg border border-border text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 bg-white"
-                                            value={formData.workMode}
-                                            onChange={(e) => setFormData({...formData, workMode: e.target.value})}
-                                        >
-                                            {['On-site', 'Remote', 'Hybrid'].map(mode => (
-                                                <option key={mode} value={mode}>{mode}</option>
-                                            ))}
-                                        </select>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['On-site', 'Remote', 'Hybrid'].map(mode => {
+                                                const isSelected = formData.workMode?.includes(mode);
+                                                return (
+                                                    <Badge 
+                                                        key={mode}
+                                                        onClick={() => {
+                                                            const modes = formData.workMode ? formData.workMode.split(', ').filter(Boolean) : [];
+                                                            if (isSelected) {
+                                                                setFormData({...formData, workMode: modes.filter(m => m !== mode).join(', ')});
+                                                            } else {
+                                                                setFormData({...formData, workMode: [...modes, mode].join(', ')});
+                                                            }
+                                                        }}
+                                                        className={`cursor-pointer px-3 py-1.5 rounded-md font-semibold text-xs border ${isSelected ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700' : 'bg-white text-muted-foreground border-border hover:bg-muted'}`}
+                                                    >
+                                                        {mode}
+                                                    </Badge>
+                                                )
+                                            })}
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-semibold text-muted-foreground">Location</Label>
-                                        <Input 
-                                            placeholder="e.g. Bengaluru, Karnataka"
-                                            value={formData.location}
-                                            onChange={(e) => setFormData({...formData, location: e.target.value})}
-                                            className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
-                                        />
+                                    <div className="space-y-3">
+                                        <Label className="text-xs font-semibold text-muted-foreground">Locations</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                placeholder="e.g. Bengaluru"
+                                                value={newLocation}
+                                                onChange={(e) => setNewLocation(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddLocation())}
+                                                className="h-10 rounded-lg border-border focus-visible:ring-emerald-600 font-semibold"
+                                            />
+                                            <Button type="button" onClick={handleAddLocation} className="h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700">
+                                                <Plus className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 pt-1">
+                                            {(formData.location ? formData.location.split(', ').filter(Boolean) : []).map((loc) => (
+                                                <Badge key={loc} className="px-3 py-1.5 rounded-md font-bold text-[10px] uppercase tracking-wider bg-emerald-50 text-emerald-700 border-emerald-100 flex items-center gap-2">
+                                                    {loc}
+                                                    <X size={12} className="cursor-pointer" onClick={() => handleRemoveLocation(loc)} />
+                                                </Badge>
+                                            ))}
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>

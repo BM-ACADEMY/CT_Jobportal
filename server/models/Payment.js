@@ -64,6 +64,11 @@ const paymentSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     default: 'Razorpay'
+  },
+  couponApplied: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Coupon',
+    default: null
   }
 }, { timestamps: true });
 

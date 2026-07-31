@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import PageSOPBanner from '../../components/common/PageSOPBanner';
 
 const SavedJobs = () => {
   const [savedJobs, setSavedJobs] = useState([]);
@@ -71,6 +72,7 @@ const SavedJobs = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 py-6">
+      <PageSOPBanner pageKey="savedJobs" />
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight">Saved Opportunities</h1>

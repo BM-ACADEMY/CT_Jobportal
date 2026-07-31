@@ -19,6 +19,7 @@ const {
   sendCompanyLink,
   searchRegisteredCompanies,
   requestCompanyForDrive,
+  resendCompanyInvite,
   getCompanyDriveView,
   exportCompanyDriveStudents,
   deleteDrive,
@@ -146,6 +147,7 @@ router.put('/drives/:driveId', verifyToken, authorizeRoles('college'), updateDri
 router.post('/drives/:driveId/companies/:companyId/send-link', verifyToken, authorizeRoles('college'), sendCompanyLink);
 router.get('/companies/search', verifyToken, authorizeRoles('college'), searchRegisteredCompanies);
 router.post('/drives/:driveId/invite-company/:companyId', verifyToken, authorizeRoles('college'), requestCompanyForDrive);
+router.post('/drives/:driveId/companies/:companyEntryId/resend-invite', verifyToken, authorizeRoles('college'), resendCompanyInvite);
 router.delete('/drives/:driveId', verifyToken, authorizeRoles('college'), deleteDrive);
 router.get('/drives/:driveId/regenerate-qr', verifyToken, authorizeRoles('college'), regenerateQR);
 router.put('/drives/:driveId/student-round', verifyToken, requireDriveAccess, updateDriveRoundStatus);

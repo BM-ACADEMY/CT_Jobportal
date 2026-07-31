@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, TrendingUp, Eye, Building2, BarChart2, Loader2, User, Briefcase } from 'lucide-react';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -80,6 +81,7 @@ const ProfileInsights = () => {
       subscriptionPath="/jobseeker/subscription"
     >
       <div className="space-y-8 pb-12">
+        <PageSOPBanner pageKey="profileInsights" />
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 mb-1">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { UserPlus, Briefcase, FileText, Plus, Users, Loader2, TrendingUp, Eye, ChevronRight, Sparkles, Building2, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,6 +46,7 @@ const CompanyDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 py-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <PageSOPBanner pageKey="companyDashboard" />
       {/* Header Area with Premium Gradient */}
       <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 md:p-10 text-white shadow-xl overflow-hidden group">
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
@@ -119,7 +121,7 @@ const CompanyDashboard = () => {
           </div>
           <div className="flex flex-col gap-4">
             <button
-              onClick={() => navigate('/jobs')}
+              onClick={() => navigate('/company/candidate-search')}
               className="flex items-center gap-4 p-5 rounded-[20px] bg-white border border-slate-200/60 hover:border-emerald-200 hover:bg-emerald-50/30 hover:shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-0.5 transition-all text-left group"
             >
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 transition-colors group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-md shadow-sm">

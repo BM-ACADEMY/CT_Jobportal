@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Mail, Send, Users, Loader2, Briefcase, CheckSquare, Square, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { Badge } from '@/components/ui/badge';
 import FeatureGate from '@/components/subscription/FeatureGate';
 
@@ -111,6 +112,7 @@ const BulkMessaging = () => {
       subscriptionPath="/company/subscription"
     >
       <div className="space-y-6 pb-12">
+        <PageSOPBanner pageKey="bulkMessaging" />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

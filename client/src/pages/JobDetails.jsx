@@ -284,15 +284,17 @@ const JobDetails = () => {
             transition={{ delay: 0.2 }}
             className="flex items-center gap-4"
           >
-            <Button 
-              onClick={handleSaveJob}
-              disabled={isSaving}
-              variant="outline" 
-              size="xl" 
-              className={`rounded-2xl h-16 w-16 p-0 border-slate-100 transition-all ${isJobSaved ? 'text-primary bg-primary/5 border-primary/20' : 'text-slate-400 hover:bg-slate-50 hover:text-primary'}`}
-            >
-              <Bookmark size={24} className={isJobSaved ? 'fill-primary' : ''} />
-            </Button>
+            {user?.role !== 'recruiter' && user?.role !== 'company' && (
+              <Button 
+                onClick={handleSaveJob}
+                disabled={isSaving}
+                variant="outline" 
+                size="xl" 
+                className={`rounded-2xl h-16 w-16 p-0 border-slate-100 transition-all ${isJobSaved ? 'text-primary bg-primary/5 border-primary/20' : 'text-slate-400 hover:bg-slate-50 hover:text-primary'}`}
+              >
+                <Bookmark size={24} className={isJobSaved ? 'fill-primary' : ''} />
+              </Button>
+            )}
             <Button 
               onClick={handleShareJob}
               variant="outline" 
@@ -301,13 +303,15 @@ const JobDetails = () => {
             >
               <Share2 size={24} />
             </Button>
-            <Button 
-              onClick={handleApply}
-              size="xl" 
-              className="rounded-md px-10 h-14 bg-slate-900 hover:bg-primary text-white font-bold text-lg shadow-md transition-all hover:scale-[1.01]"
-            >
-              Apply for this job
-            </Button>
+            {user?.role !== 'recruiter' && user?.role !== 'company' && (
+              <Button 
+                onClick={handleApply}
+                size="xl" 
+                className="rounded-md px-10 h-14 bg-slate-900 hover:bg-primary text-white font-bold text-lg shadow-md transition-all hover:scale-[1.01]"
+              >
+                Apply for this job
+              </Button>
+            )}
           </motion.div>
         </div>
       </div>

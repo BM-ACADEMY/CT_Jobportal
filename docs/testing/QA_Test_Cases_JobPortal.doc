@@ -1,0 +1,470 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>CT Jobportal - Manual Test Case Document</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  @page { size: A4; margin: 2cm 1.6cm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color:#222; line-height:1.35; }
+  h1 { font-size: 22pt; color:#1a3d7c; border-bottom: 3px solid #1a3d7c; padding-bottom:6px; margin-top:0; }
+  h2 { font-size: 16pt; color:#1a3d7c; margin-top: 26pt; page-break-before: always; border-bottom:1px solid #ccc; padding-bottom:3px;}
+  h3 { font-size: 12.5pt; color:#134; margin-top:16pt; margin-bottom:4pt; }
+  .cover { text-align:center; margin-top:120px; page-break-after: always;}
+  .cover h1 { border:none; font-size:30pt; }
+  .cover p { font-size:13pt; }
+  .meta-table { margin: 40px auto; border-collapse:collapse; width:60%; }
+  .meta-table td { border:1px solid #999; padding:6px 10px; font-size:11pt; }
+  table.tc { border-collapse: collapse; width:100%; margin-bottom:14pt; font-size:9.7pt; }
+  table.tc th { background:#1a3d7c; color:#fff; padding:5px 6px; text-align:left; border:1px solid #123; }
+  table.tc td { border:1px solid #bbb; padding:5px 6px; vertical-align:top; }
+  table.tc tr:nth-child(even) td { background:#f2f5fa; }
+  .col-id { width:8%; font-weight:bold; white-space:nowrap;}
+  .col-scn { width:20%; }
+  .col-steps { width:34%; }
+  .col-exp { width:26%; }
+  .col-pri { width:6%; text-align:center; font-weight:bold; }
+  .p1 { color:#b30000; }
+  .p2 { color:#9a6b00; }
+  .p3 { color:#256029; }
+  .note { background:#fff8e1; border-left:4px solid #f0ad4e; padding:8px 12px; margin:10px 0; font-size:10pt;}
+  .toc a { text-decoration:none; color:#134; }
+  .toc-table { width:100%; border-collapse:collapse; }
+  .toc-table td { padding:4px 6px; font-size:11pt; }
+  .role-tag { display:inline-block; background:#e3ebf7; color:#1a3d7c; border-radius:3px; padding:1px 6px; font-size:9pt; margin-right:4px;}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>CT Jobportal</h1>
+  <p style="font-size:20pt; margin-top:-10px;">Manual Test Case Document</p>
+  <p>End-to-End Functional Test Cases &mdash; All Modules &amp; Roles</p>
+  <table class="meta-table">
+    <tr><td><b>Document Version</b></td><td>1.0</td></tr>
+    <tr><td><b>Date</b></td><td>27-Jul-2026</td></tr>
+    <tr><td><b>Application</b></td><td>CT Jobportal (React/Vite + Node/Express/MongoDB, Socket.IO, Razorpay, Jitsi)</td></tr>
+    <tr><td><b>Prepared For</b></td><td>QA / Engineering Team</td></tr>
+    <tr><td><b>Status</b></td><td>Draft for Execution</td></tr>
+  </table>
+</div>
+
+<h1>1. Introduction</h1>
+
+<h3>1.1 Purpose</h3>
+<p>This document provides a complete set of manual functional test cases covering every module and user role of the CT Jobportal application, from account creation through subscription/payment, job posting, applications, campus placements, messaging, tickets, and admin governance. It is intended to be executed end-to-end before each major release and re-run (regression) after significant changes to any module.</p>
+
+<h3>1.2 Scope</h3>
+<p>In scope: all pages under <code>client/src/pages</code> (Auth, Admin, Sub-admin, College, Company/Recruiter, Org Employee, Job Seeker, Public, Shared, Tickets) and their corresponding backend flows (auth, jobs, applications, subscriptions, payments, pay-per-feature, college/drives, messaging, tickets, reviews, assessments, interviews, WhatsApp/email notifications).</p>
+<p>Out of scope: automated unit/integration tests, load/stress testing, and third-party service internals (Razorpay, Jitsi, Gemini, Meta WhatsApp Cloud API) beyond verifying the integration points.</p>
+
+<h3>1.3 Roles Covered</h3>
+<p>
+<span class="role-tag">jobseeker</span>
+<span class="role-tag">recruiter</span>
+<span class="role-tag">company</span>
+<span class="role-tag">org_employee</span>
+<span class="role-tag">college</span>
+<span class="role-tag">drive_incharge</span>
+<span class="role-tag">admin</span>
+<span class="role-tag">sub-admin</span>
+<span class="role-tag">public / guest</span>
+</p>
+
+<h3>1.4 Test Environment</h3>
+<ul>
+  <li>Frontend: React + Vite (client/), Backend: Node.js + Express + MongoDB (server/)</li>
+  <li>Real-time chat: Socket.IO | Payments: Razorpay (one-time orders + recurring subscriptions) | Video: Jitsi Meet SDK</li>
+  <li>Notifications: Email (SMTP) + WhatsApp (Meta Cloud API templates)</li>
+  <li>Browsers: Chrome, Edge, Firefox (latest) | Devices: Desktop 1920x1080, Laptop 1366x768, Tablet 768px, Mobile 390px</li>
+  <li>Test data: at least 2 seeded accounts per role, 1 admin, 1 sub-admin, expired/near-expiry subscriptions, a blocked user, a pending college verification</li>
+</ul>
+
+<h3>1.5 Test Case ID Convention</h3>
+<table class="tc">
+<tr><th>Prefix</th><th>Module</th><th>Prefix</th><th>Module</th></tr>
+<tr><td>AUTH</td><td>Authentication &amp; Onboarding</td><td>EMP</td><td>Org Employee</td></tr>
+<tr><td>ADM</td><td>Admin</td><td>JS</td><td>Job Seeker Core</td></tr>
+<tr><td>SUB-A</td><td>Sub-admin</td><td>JSF</td><td>Job Seeker Premium Features</td></tr>
+<tr><td>COL</td><td>College</td><td>PUB</td><td>Public Pages</td></tr>
+<tr><td>CMP</td><td>Company / Recruiter Core</td><td>SHR</td><td>Shared Modules</td></tr>
+<tr><td>CMPF</td><td>Company Premium Features</td><td>TCK</td><td>Tickets &amp; Support</td></tr>
+<tr><td>SUBS</td><td>Subscription &amp; Payment</td><td>NFR</td><td>Non-Functional / Cross-cutting</td></tr>
+</table>
+
+<h3>1.6 Priority Legend</h3>
+<p><span class="p1">P1 - Critical</span> (blocks core business flow, must pass before release) &nbsp;|&nbsp;
+<span class="p2">P2 - High</span> (important feature/validation) &nbsp;|&nbsp;
+<span class="p3">P3 - Medium</span> (edge case / secondary UX)</p>
+
+<div class="note"><b>Format used below:</b> TC ID | Test Scenario | Steps | Expected Result | Priority. Each case assumes the previous section's preconditions (e.g. a logged-in user of the relevant role) unless steps state otherwise.</div>
+
+<h2 id="auth">2. Authentication &amp; Onboarding</h2>
+<p>Pages: Register.jsx, Login.jsx, VerifyOtp.jsx, ForgotPassword.jsx, CompanyLogin.jsx, CompleteSocialProfile.jsx, SocialAuthSuccess.jsx</p>
+
+<h3>2.1 Registration</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">AUTH-001</td><td>Register as Job Seeker with valid data</td><td>Go to Register &rarr; select role "jobseeker" &rarr; fill name, email, password (e.g. Pass@123), confirm password &rarr; Submit</td><td>Account created, redirected to OTP verification screen, OTP email sent</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-002</td><td>Register as Recruiter with valid data</td><td>Select role "recruiter" &rarr; fill required fields &rarr; Submit</td><td>Account created, OTP screen shown</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-003</td><td>Register as Company with valid data</td><td>Select role "company" &rarr; fill required fields &rarr; Submit</td><td>Account created, OTP screen shown</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-004</td><td>Register as College with valid data</td><td>Select role "college" &rarr; fill name/email/password + collegeName, collegeEmail, collegePhone, tpoPhone &rarr; Submit</td><td>Account created, pending verification state, OTP screen shown</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-005</td><td>College registration missing tpoPhone</td><td>Fill all college fields except tpoPhone &rarr; Submit</td><td>Client-side validation error, form not submitted</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">AUTH-006</td><td>Password fails complexity rule</td><td>Enter password "abcdefg" (no uppercase/number/symbol) &rarr; Submit</td><td>Inline validation error; submit blocked</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">AUTH-007</td><td>Confirm password mismatch</td><td>Password "Pass@123", Confirm "Pass@124" &rarr; Submit</td><td>"Passwords do not match" error shown</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">AUTH-008</td><td>Register with already-registered email</td><td>Use an email that already has an account &rarr; Submit</td><td>Server returns duplicate-email error; no new account created</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-009</td><td>Register with invalid email format</td><td>Enter "abc@" as email &rarr; Submit</td><td>Zod validation error shown, submit blocked</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">AUTH-010</td><td>Switch role toggle clears role-specific fields</td><td>Fill college-specific fields &rarr; switch role to jobseeker</td><td>College-only fields hidden/cleared; no leftover data submitted</td><td class="col-pri p3">P3</td></tr>
+</table>
+
+<h3>2.2 OTP Verification</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">AUTH-011</td><td>Verify with correct 6-digit OTP</td><td>Enter the OTP received by email &rarr; Submit</td><td>Account verified/activated; user redirected to login or auto-logged-in to role dashboard</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-012</td><td>Verify with incorrect OTP</td><td>Enter a wrong 6-digit code &rarr; Submit</td><td>Error message shown; account remains unverified</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-013</td><td>Resend OTP before cooldown expires</td><td>Immediately click Resend within 60s</td><td>Resend button disabled, countdown timer visible, no new email sent</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">AUTH-014</td><td>Resend OTP after cooldown</td><td>Wait 60s &rarr; click Resend</td><td>New OTP emailed, old OTP invalidated, timer resets</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">AUTH-015</td><td>Edit email on standalone VerifyOtp page</td><td>Navigate directly to Verify OTP page &rarr; change email &rarr; request OTP</td><td>OTP sent to newly entered email address</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">AUTH-016</td><td>Expired OTP submitted</td><td>Wait beyond OTP validity window &rarr; enter old OTP</td><td>"OTP expired" error, must resend</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h3>2.3 Login &amp; Forgot Password</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">AUTH-017</td><td>Login with valid credentials, correct role selected</td><td>Select matching role toggle &rarr; enter email/password &rarr; "Authorize Access"</td><td>Redirected to the correct role dashboard</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-018</td><td>Login with correct credentials but wrong role toggle</td><td>Login as a jobseeker account while "recruiter" toggle selected</td><td>Error: role mismatch / account not found for that role; login denied</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-019</td><td>Login with wrong password</td><td>Correct email, incorrect password &rarr; Submit</td><td>Generic invalid-credentials error, no account lockout info leaked</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-020</td><td>Login to a blocked account</td><td>Login using credentials of a user with isAdminBlocked=true</td><td>Access denied with "account blocked" message</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-021</td><td>Company Login dedicated page</td><td>Navigate to /company-login &rarr; enter valid company credentials &rarr; "Enter Business Portal"</td><td>Redirected to Company Dashboard</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">AUTH-022</td><td>Forgot password - request OTP</td><td>Forgot Password &rarr; enter registered email &rarr; Submit</td><td>Step advances to OTP+new-password screen; OTP emailed</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-023</td><td>Forgot password - reset with valid OTP</td><td>Enter OTP + new password &rarr; Submit</td><td>Success screen shown; login works with new password; old password rejected</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-024</td><td>Forgot password - invalid/expired OTP</td><td>Enter wrong OTP on reset step</td><td>Error shown, password not changed</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h3>2.4 Social Login</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">AUTH-025</td><td>Sign up via Google/GitHub/LinkedIn - new user</td><td>Click a social button on Register/Login &rarr; complete provider OAuth consent</td><td>Redirected to SocialAuthSuccess &rarr; then CompleteSocialProfile (role picker + password)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-026</td><td>Complete social profile - valid data</td><td>Pick role (jobseeker/recruiter/company) &rarr; set password + confirm &rarr; Submit</td><td>Profile completed, redirected to correct role dashboard</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">AUTH-027</td><td>Complete social profile - password mismatch</td><td>Password and Confirm differ &rarr; Submit</td><td>"Passwords do not match" error</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">AUTH-028</td><td>Social login - existing complete profile</td><td>Log in via social provider for an account that already finished onboarding</td><td>Skips CompleteSocialProfile, goes directly to role dashboard</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="admin">3. Admin Module</h2>
+<p>Pages: Dashboard, ManageUsers, ManageCompanies, ManageBuyers/BuyerDetails, ManageJobs, ManageSubscriptions, ManagePayPer, ManageRenewals, ManageRefunds, ManageRequests, ManageReviews, CollegeVerification, PaymentHistory, AdminSettings, AdminTickets.</p>
+
+<h3>3.1 Dashboard</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">ADM-001</td><td>Dashboard loads platform KPIs</td><td>Login as admin &rarr; land on Dashboard</td><td>Totals (users, companies, colleges, revenue, active subscriptions) match DB counts</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-002</td><td>Non-admin cannot access admin routes</td><td>Login as jobseeker/company &rarr; navigate directly to /admin/dashboard URL</td><td>Redirected away / 403, admin UI not rendered</td><td class="col-pri p1">P1</td></tr>
+</table>
+
+<h3>3.2 Manage Users / Companies</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">ADM-003</td><td>Filter users by role tab</td><td>ManageUsers &rarr; click jobseeker / recruiter / company / college tabs</td><td>List filters correctly per tab</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-004</td><td>Block a user</td><td>Select active user &rarr; Block</td><td>isAdminBlocked=true; user can no longer log in (see AUTH-020)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-005</td><td>Unblock a user</td><td>Select blocked user &rarr; Unblock</td><td>User can log in again</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-006</td><td>Edit a user's role</td><td>Open user &rarr; change role &rarr; Save</td><td>Role updated; user's route/dashboard access changes accordingly on next login</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-007</td><td>Delete a user</td><td>Select user &rarr; Delete &rarr; confirm</td><td>User removed from list and DB; related data handled per cascade rules</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-008</td><td>Message a user from admin panel</td><td>Click Message icon on a user row</td><td>Chat thread opens/creates with that user</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-009</td><td>View/edit a company's profile and verification badge</td><td>ManageCompanies &rarr; open a company &rarr; check is_verified badge</td><td>Verified/Pending badge accurate; edits persist</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-010</td><td>Delete a company</td><td>Select company &rarr; Delete &rarr; confirm</td><td>Company and its postings removed/deactivated appropriately</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-011</td><td>View Buyer Details</td><td>ManageBuyers &rarr; open BuyerDetails for a paying user</td><td>Correct purchase/subscription history displayed for that buyer</td><td class="col-pri p3">P3</td></tr>
+</table>
+
+<h3>3.3 Manage Jobs / Reviews / Requests</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">ADM-012</td><td>Moderate/remove an inappropriate job posting</td><td>ManageJobs &rarr; open job &rarr; deactivate/delete</td><td>Job no longer visible to job seekers</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-013</td><td>Approve a pending review</td><td>ManageReviews &rarr; open pending review &rarr; Approve</td><td>Status &rarr; approved; review appears on public Home page</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-014</td><td>Reject a review</td><td>ManageReviews &rarr; Reject a pending review</td><td>Status &rarr; rejected; not shown publicly</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-015</td><td>Assign a counselling/mock-interview/website request</td><td>ManageRequests &rarr; open request (type counselling|mock_interview|website_request) &rarr; Assign to recruiter/company</td><td>Status pending &rarr; approved; assignee notified</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-016</td><td>Update request status to completed with notes</td><td>Open an approved request &rarr; add notes &rarr; mark completed</td><td>Status updates to completed; notes saved and visible to requester</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-017</td><td>Cancel a request</td><td>Open pending request &rarr; Cancel</td><td>Status &rarr; cancelled; requester notified</td><td class="col-pri p3">P3</td></tr>
+</table>
+
+<h3>3.4 Subscriptions, Pay-Per-Feature, Renewals, Refunds</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">ADM-018</td><td>Create/edit a subscription plan</td><td>ManageSubscriptions &rarr; create plan with price/duration (Monthly/Quarterly/Yearly/Lifetime) &rarr; Save</td><td>Plan appears in respective role's Subscription page pricing</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-019</td><td>Deactivate a subscription plan</td><td>Toggle a plan inactive</td><td>Plan no longer purchasable by new users; existing subscribers unaffected</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-020</td><td>Create a pay-per-feature item</td><td>ManagePayPer &rarr; add featureKey, cost, days, usageCount &rarr; Save</td><td>Feature appears on PayPerFeatures page with correct price/usage</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-021</td><td>Filter renewals by expiring_soon</td><td>ManageRenewals &rarr; filter = expiring_soon</td><td>Only subscriptions within the expiry window shown</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-022</td><td>Extend a user's subscription</td><td>Select user &rarr; Extend &rarr; enter days &rarr; confirm</td><td>PATCH /admin/users/:id/extend-subscription succeeds; new expiry date reflected on user's Subscription page</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-023</td><td>Bulk send renewal reminder</td><td>Select multiple expiring users &rarr; Send Reminder</td><td>Reminder email/WhatsApp (renewal_reminder template) sent to all selected</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-024</td><td>Approve a refund request</td><td>ManageRefunds &rarr; filter refund_pending &rarr; Approve</td><td>Payment status &rarr; refunded; user's subscription reverted to Free plan</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-025</td><td>Reject a refund request</td><td>ManageRefunds &rarr; Reject a refund_pending item</td><td>Status reverts to completed; user's paid plan remains active</td><td class="col-pri p1">P1</td></tr>
+</table>
+
+<h3>3.5 College Verification, Payment History, Settings, Tickets</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">ADM-026</td><td>Verify a pending college</td><td>CollegeVerification &rarr; open pending college &rarr; Verify</td><td>verificationStatus &rarr; verified; college gains full portal access</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-027</td><td>Reject a college verification</td><td>Open pending college &rarr; Reject with reason</td><td>verificationStatus &rarr; rejected; college notified with reason</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-028</td><td>Reset a college's verification status</td><td>Open verified/rejected college &rarr; Reset</td><td>Status returns to pending for re-review</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">ADM-029</td><td>View global payment history</td><td>PaymentHistory &rarr; filter by status/date</td><td>Accurate list of all completed/failed/refunded transactions platform-wide</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">ADM-030</td><td>Update admin account settings</td><td>AdminSettings &rarr; change name/password/notification prefs &rarr; Save</td><td>Changes persist; re-login uses new password if changed</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">ADM-031</td><td>Resolve a support ticket from AdminTickets</td><td>Open an open/in_progress ticket &rarr; enter conclusion (&ge;10 chars) &rarr; mark resolved</td><td>Ticket status &rarr; resolved; requester can view resolution</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">ADM-032</td><td>Attempt to resolve ticket with short conclusion</td><td>Enter conclusion &lt;10 chars &rarr; submit</td><td>Validation error, status unchanged</td><td class="col-pri p3">P3</td></tr>
+</table>
+
+<h2 id="subadmin">4. Sub-admin Module</h2>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">SUB-A-001</td><td>Sub-admin dashboard loads scoped data</td><td>Login as sub-admin &rarr; view Dashboard</td><td>Only permitted data/actions are visible (reduced vs. full admin)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUB-A-002</td><td>Sub-admin cannot access super-admin-only actions</td><td>Attempt an action reserved for admin (e.g. creating another admin, deleting core config)</td><td>Action blocked/hidden per permission scope</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUB-A-003</td><td>Sub-admin performs an allowed action (e.g. ticket/review moderation)</td><td>Perform an in-scope task from Dashboard</td><td>Action succeeds and is reflected for other admins</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="college">5. College Module</h2>
+<p>Pages: college/Dashboard, Drives, Students, Verification, Reports, Settings; public/CampusRegistration, AcceptInchargeInvite.</p>
+
+<h3>5.1 Campus Drives</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">COL-001</td><td>Create a campus drive</td><td>Drives &rarr; New Drive &rarr; fill title*, batchYear*, departments, add companies (packageLPA, tierPolicy = regular/dream/super_dream), eligibility (minCGPA, maxArrears), rounds &rarr; Save</td><td>Drive created; QR code and registration URL generated</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">COL-002</td><td>Create drive missing required title/batchYear</td><td>Leave title or batchYear blank &rarr; Save</td><td>Validation error, drive not created</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-003</td><td>Invite a company to a drive</td><td>Open drive &rarr; Invite Company &rarr; select company (respecting plan invite cap Free=0/Lite=15/Pro=50/Elite=unlimited)</td><td>requestStatus = requested; company sees the drive request (DriveRequests.jsx)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">COL-004</td><td>Exceed company invite cap for college's plan</td><td>Invite beyond the plan's allowed count (e.g. 16th invite on Lite)</td><td>Invite blocked with upgrade-required message</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-005</td><td>Toggle drive active/closed</td><td>Open drive &rarr; toggle status</td><td>Registration disabled once closed; students can no longer register</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">COL-006</td><td>Delete a drive that is still active</td><td>Attempt Delete on an active (not closed) drive</td><td>Blocked with "must be closed before delete" message</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-007</td><td>Delete a closed drive</td><td>Close drive &rarr; Delete &rarr; confirm</td><td>Drive removed successfully</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-008</td><td>Advance a registered student through stages</td><td>Students &rarr; move student through registered &rarr; stage1 &rarr; stage2 &rarr; final_interview &rarr; certificate_verification &rarr; selected</td><td>Each stage transition saved; student placementStatus updates in parallel (applied/shortlisted/interviewing/placed)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">COL-009</td><td>Mark a student rejected mid-drive</td><td>Set a student's stage to rejected</td><td>Student excluded from further rounds; reflected in Reports</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-010</td><td>Invite a Drive In-Charge</td><td>Drive &rarr; Invite In-Charge &rarr; enter name/email/phone</td><td>Invite email sent with 7-day expiry token link (AcceptInchargeInvite)</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-011</td><td>Accept in-charge invite as new user</td><td>Open invite link &rarr; complete signup</td><td>New account created with role drive_incharge, linked to the drive</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-012</td><td>Accept in-charge invite with existing account</td><td>Open invite link while already logged in with an existing account</td><td>Existing account linked as drive in-charge instead of creating duplicate</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">COL-013</td><td>Expired in-charge invite link</td><td>Open invite link after 7 days</td><td>Error: invite expired</td><td class="col-pri p3">P3</td></tr>
+</table>
+
+<h3>5.2 Students, ID Verification, Reports</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">COL-014</td><td>Bulk import students via CSV (required columns present)</td><td>Students &rarr; Import CSV with name+rollNumber columns for each row</td><td>Students created; default password = phone (fallback rollNumber); campus email auto-generated if missing</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">COL-015</td><td>CSV import missing required columns</td><td>Upload CSV without rollNumber column</td><td>Import rejected with clear error identifying missing column</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-016</td><td>CSV import exceeding student plan limit</td><td>Import a CSV that pushes total students past the plan's studentLimit</td><td>Import blocked/partial with upgrade-required message</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-017</td><td>Approve student ID verification</td><td>Verification &rarr; open pending idVerification &rarr; Approve</td><td>Status &rarr; approved; counts toward Campus Lite's 250-approved cap</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">COL-018</td><td>Reject student ID verification</td><td>Open pending idVerification &rarr; Reject</td><td>Status &rarr; rejected; student notified</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-019</td><td>Exceed Campus Lite 250 approved-student cap</td><td>Attempt to approve the 251st student on a Lite plan</td><td>Approval blocked with upgrade-required message</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-020</td><td>Generate placement Reports</td><td>Reports &rarr; select a drive/date range</td><td>Accurate placement stats (registered/placed/opted_out counts) generated; exportable</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-021</td><td>Update college Settings</td><td>Settings &rarr; edit profile/contact info &rarr; Save</td><td>Changes persisted and reflected across college pages</td><td class="col-pri p3">P3</td></tr>
+</table>
+
+<h3>5.3 Public Campus Registration</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">COL-022</td><td>Student self-registers for an active drive</td><td>Scan QR / open registration URL &rarr; enter name+email (required) &rarr; Submit</td><td>Registration recorded; auto AI skill assessment triggered</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">COL-023</td><td>Pass auto skill assessment (&ge;60%)</td><td>Complete the auto-generated assessment scoring &ge;60%</td><td>placementStatus advances (e.g. to active/eligible for drive)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">COL-024</td><td>Fail auto skill assessment (&lt;60%)</td><td>Complete assessment scoring below 60%</td><td>Student flagged accordingly; not auto-advanced</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">COL-025</td><td>Register for a closed drive</td><td>Open a registration link for a drive already toggled closed</td><td>Registration blocked with "drive closed" message</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="company">6. Company / Recruiter Core Module</h2>
+<p>Pages: company/Dashboard, PostJob, MyJobs, Applicants, CandidateSearch, DriveRequests, AssignedRequests, MyTeam, Settings, Subscription.</p>
+
+<h3>6.1 Job Posting</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">CMP-001</td><td>Save a job as Draft</td><td>PostJob &rarr; fill title only &rarr; "Save Draft"</td><td>Job saved with status=draft, not visible to job seekers</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-002</td><td>Publish a complete job</td><td>Fill title, description, vacancies, experience range, jobType, workMode, location, salary range, skillsRequired &rarr; "Publish Job"</td><td>Job saved with status=active, visible in public job search</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-003</td><td>Publish without title/description</td><td>Leave description blank &rarr; Publish</td><td>Server rejects (title+description required when status!=draft)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-004</td><td>Exceed active job posting quota</td><td>Publish a job beyond the plan's activeJobPostings limit (and no pay-per add-on)</td><td>403 with requiresUpgrade:true; UI shows upgrade prompt</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-005</td><td>Publish job using pay-per add-on credit after quota reached</td><td>Reach plan quota &rarr; purchase activeJobPostings pay-per add-on &rarr; publish</td><td>Job publishes successfully using the add-on credit</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-006</td><td>Hide salary range</td><td>Toggle isRangeHidden on salary &rarr; Publish</td><td>Job seeker view shows salary as hidden/"Not disclosed"</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">CMP-007</td><td>Add custom application questions</td><td>Add question types text/textarea/multiple-choice, toggle standard fields (Name/Email/Phone/Resume) &rarr; Publish</td><td>Application form for that job shows the configured fields/questions</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-008</td><td>Toggle a job active &harr; inactive</td><td>MyJobs &rarr; toggle status on an active job</td><td>Job hidden from search while inactive; re-toggle restores visibility</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-009</td><td>Close a job</td><td>MyJobs &rarr; toggle active &rarr; closed</td><td>Job marked closed; no further applications accepted</td><td class="col-pri p1">P1</td></tr>
+</table>
+
+<h3>6.2 Applicants Management</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">CMP-010</td><td>Filter applicants by status (All/Pending/Shortlisted/Rejected)</td><td>Applicants &rarr; use status filter dropdown</td><td>List filters accurately per status</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-011</td><td>Shortlist an applicant</td><td>Select applicant &rarr; Shortlist</td><td>Status &rarr; shortlisted ("Shortlisted"); applicant notified</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-012</td><td>Decline an applicant</td><td>Select applicant &rarr; Decline</td><td>Status &rarr; rejected ("Not Selected"); applicant notified</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-013</td><td>Mark applicant Reviewed</td><td>Select pending applicant &rarr; Mark Reviewed</td><td>Status &rarr; reviewed ("Reviewed")</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-014</td><td>Bulk select and invite to assessment</td><td>Check multiple applicants &rarr; "Invite Selected (N)" &rarr; fill Skill/Role*, Test Date, Deadline, Test Link* &rarr; Send</td><td>Assessment invite sent to all selected via email + WhatsApp (assessment_testinvite template)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-015</td><td>Invite to assessment missing required Skill/Role or Test Link</td><td>Leave Skill/Role or Test Link blank &rarr; Send</td><td>Validation error, invite not sent</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-016</td><td>Export applicants to CSV</td><td>Applicants &rarr; Export CSV (plan/pay-per gated)</td><td>CSV downloads with correct applicant data if entitled; upgrade prompt if not</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">CMP-017</td><td>View AI match score</td><td>Open an applicant with AI matching entitlement active</td><td>Gemini-computed match score displayed; hidden/upsell if not entitled</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h3>6.3 Candidate Search, Drive Requests, Team, Settings</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">CMP-018</td><td>Search candidates by skill/keyword</td><td>CandidateSearch &rarr; enter skill/location filters &rarr; Search</td><td>Relevant job seeker profiles returned</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-019</td><td>Accept a campus drive invite</td><td>DriveRequests &rarr; open requested drive &rarr; Accept</td><td>requestStatus &rarr; accepted; company appears in the college's drive company list</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-020</td><td>Reject a campus drive invite</td><td>DriveRequests &rarr; Reject</td><td>requestStatus &rarr; rejected; college notified</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-021</td><td>View assigned admin requests</td><td>AssignedRequests &rarr; view list</td><td>Only requests assigned by admin to this company are shown, with correct status</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-022</td><td>Invite a team member/employee</td><td>MyTeam &rarr; Employees tab &rarr; add employee (name/email) &rarr; Save</td><td>User account auto-created; invite email with temp password sent; new org_employee sees company's plan features</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMP-023</td><td>Remove a team member/employee</td><td>MyTeam &rarr; remove an employee</td><td>Employee account access revoked / unlinked from company</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMP-024</td><td>Update Company Settings</td><td>Settings &rarr; edit company profile fields &rarr; Save</td><td>Changes persisted and reflected on company's public profile</td><td class="col-pri p3">P3</td></tr>
+</table>
+
+<h2 id="companyfeatures">7. Company Premium Features</h2>
+<p>Pages: AICandidateMatching, Analytics, AtsPipeline, BulkApplicantManagement, BulkMessaging, CompanyProfileManagement, InterviewScheduling, TeamCollaboration, VideoInterview. All are subscription/pay-per gated.</p>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">CMPF-001</td><td>Access a premium feature without entitlement</td><td>Login as a Free-plan company &rarr; open any premium feature page</td><td>Locked/upsell state shown with "Upgrade" or "Buy Now" CTA, no functional access</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMPF-002</td><td>Access after subscribing to a plan including the feature</td><td>Upgrade plan to one that includes the feature &rarr; reopen page</td><td>Feature fully functional, lock removed</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMPF-003</td><td>Access via one-off pay-per-feature purchase</td><td>Buy the feature via PayPerFeatures &rarr; open the feature page</td><td>Feature usable up to usageLeft/expiresAt; button shows "Already Purchased"</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMPF-004</td><td>AI Candidate Matching produces ranked results</td><td>Open AICandidateMatching for a job with applicants</td><td>Candidates ranked with Gemini-based match scores</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMPF-005</td><td>Analytics funnel reflects real data</td><td>Open Analytics &rarr; compare hiring funnel numbers to actual applicant counts</td><td>Applied/Reviewed/Shortlisted/Hired counts and monthly trend match backend data</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMPF-006</td><td>ATS Pipeline drag-and-drop stage change</td><td>AtsPipeline &rarr; drag an applicant card to a different stage column</td><td>Applicant's status updates to match new column; persists on refresh</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMPF-007</td><td>Bulk Applicant Management - bulk status update</td><td>Select multiple applicants across jobs &rarr; apply bulk status change</td><td>All selected applicants updated correctly</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMPF-008</td><td>Bulk Messaging to shortlisted candidates</td><td>BulkMessaging &rarr; select shortlisted segment &rarr; compose &rarr; Send</td><td>Message delivered to all selected candidates' chat/inbox</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMPF-009</td><td>Company Profile Management - edit branding/media</td><td>Update logo, banner, description &rarr; Save</td><td>Public company profile reflects changes immediately</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">CMPF-010</td><td>Team Collaboration - switch Team Members / Employees tabs</td><td>Open TeamCollaboration &rarr; toggle tabs</td><td>Each tab shows the correct respective list and actions</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMPF-011</td><td>Interview Scheduling - schedule an interview</td><td>InterviewScheduling &rarr; select applicationId, scheduledAt, duration, meetingLink, notes &rarr; Save</td><td>Interview created status=scheduled; candidate notified with meeting link</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMPF-012</td><td>Schedule a second interview on same application while one is already scheduled</td><td>Attempt to create another scheduled interview for the same applicationId</td><td>Blocked - only one scheduled interview allowed per application at a time</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMPF-013</td><td>Cancel a scheduled interview</td><td>Open scheduled interview &rarr; Cancel</td><td>Status &rarr; cancelled; slot freed for rescheduling</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">CMPF-014</td><td>Video Interview - join a Jitsi session</td><td>VideoInterview &rarr; join at scheduled time using meetingLink</td><td>Jitsi Meet room loads with camera/mic; both parties can join same room</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">CMPF-015</td><td>Join video interview without required plan/pay-per credit</td><td>Attempt to open VideoInterview page without hasVideoInterview entitlement</td><td>Access blocked with upgrade prompt</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="employee">8. Org Employee Module</h2>
+<p>Pages: employee/Dashboard, plus shared Applications/Messages/VideoInterview/InterviewScheduling/Settings under employer's plan.</p>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">EMP-001</td><td>Employee dashboard shows employer's plan info</td><td>Login as org_employee &rarr; view Dashboard</td><td>Displays employerCompanyName and the employer's active subscription/plan features</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">EMP-002</td><td>Employee inherits employer's subscription-gated features</td><td>Employer has an active plan with e.g. Video Interview &rarr; employee opens that feature</td><td>Feature accessible without employee needing a personal subscription</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">EMP-003</td><td>Employee feature access removed if employer's plan lapses</td><td>Employer's subscription expires &rarr; employee reloads a premium feature page</td><td>Feature becomes locked/upsell for the employee too</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">EMP-004</td><td>Employee handles an application (view/shortlist/reject)</td><td>Login as employee &rarr; open an application assigned to the company &rarr; change status</td><td>Status change succeeds and is visible to company admin too</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">EMP-005</td><td>Employee sends/receives messages</td><td>Open Messages &rarr; chat with a candidate</td><td>Message delivered in real time via Socket.IO</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">EMP-006</td><td>Employee cannot access company-admin-only pages (MyTeam, Subscription)</td><td>Attempt to navigate directly to /company/subscription or /company/team as employee</td><td>Access denied/redirected</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">EMP-007</td><td>Employee updates own Settings</td><td>Settings &rarr; edit personal profile &rarr; Save</td><td>Personal profile updated without affecting employer/company data</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">EMP-008</td><td>Company removes employee mid-session</td><td>Company admin removes the employee from MyTeam while employee is logged in</td><td>Employee's next request is denied / forced logout; access fully revoked</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="jobseeker">9. Job Seeker Core Module</h2>
+<p>Pages: jobseeker/Dashboard, MyApplications, SavedJobs, CampusDrives, PublicProfile, Settings, Subscription.</p>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">JS-001</td><td>Dashboard shows recommended jobs and quick stats</td><td>Login as jobseeker &rarr; view Dashboard</td><td>Relevant open jobs and application/profile stats displayed</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JS-002</td><td>Apply to a job</td><td>Open a job &rarr; fill application form (standard fields + custom questions if any) &rarr; Submit</td><td>Application created with status=pending ("Pending Review"); appears in MyApplications</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JS-003</td><td>Apply to a job missing a required custom question</td><td>Leave a required custom question blank &rarr; Submit</td><td>Validation error, application not submitted</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JS-004</td><td>View MyApplications and track status</td><td>MyApplications &rarr; view list</td><td>Statuses shown as friendly labels: Pending Review/Reviewed/Shortlisted/Not Selected/Offer Extended/Withdrawn</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JS-005</td><td>Withdraw an application while pending/reviewed</td><td>Select a pending or reviewed application &rarr; Withdraw</td><td>Status &rarr; withdrawn successfully</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JS-006</td><td>Withdraw an application already shortlisted/rejected/accepted</td><td>Attempt Withdraw on a shortlisted/rejected/accepted application</td><td>Blocked with 400 "cannot be revoked" error</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JS-007</td><td>Save a job for later</td><td>Job listing &rarr; click Save/bookmark icon</td><td>Job appears under SavedJobs</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JS-008</td><td>Remove a saved job</td><td>SavedJobs &rarr; Unsave a job</td><td>Job removed from saved list</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">JS-009</td><td>Register for a campus drive</td><td>CampusDrives &rarr; open an eligible active drive &rarr; register</td><td>Registration recorded, matches college-side stage tracking (see COL-022)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JS-010</td><td>Attempt to register for drive when ineligible (CGPA/backlog)</td><td>Register on a drive with minCGPA/maxArrears criteria not met</td><td>Blocked or flagged ineligible</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JS-011</td><td>View own Public Profile as seen by recruiters</td><td>Open PublicProfile preview</td><td>Displays only intended public fields; matches recruiter-side CandidateSearch view</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">JS-012</td><td>Update profile Settings (resume upload, personal info)</td><td>Settings &rarr; upload resume, edit skills/experience &rarr; Save</td><td>Profile updates persist; new resume used in subsequent applications</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JS-013</td><td>Message a recruiter within plan's cap</td><td>Contact a recruiter via chat while under messageRecruitersCount limit</td><td>Message sent successfully; count decremented</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JS-014</td><td>Exceed recruiter-messaging cap for plan</td><td>Attempt to message a new recruiter after cap reached</td><td>Blocked with upgrade prompt</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="jsfeatures">10. Job Seeker Premium Features</h2>
+<p>Pages: AiResumeReview, CareerCounselling, JobAlerts, MockInterviews, ProfileInsights, ResumeBuilder, SalaryBenchmarking, SkillTests, AIGenerateModal.</p>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">JSF-001</td><td>Access premium feature on Free plan</td><td>Open any premium feature page without entitlement</td><td>Locked state with Upgrade/Buy Now CTA</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JSF-002</td><td>AI Resume Review generates feedback</td><td>Upload/select resume &rarr; run AI Resume Review</td><td>Structured feedback (strengths/gaps/suggestions) returned</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JSF-003</td><td>Request Career Counselling session</td><td>CareerCounselling &rarr; submit request form</td><td>Request created status=pending; visible to admin in ManageRequests (type=counselling)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JSF-004</td><td>Career Counselling request approved by admin</td><td>Admin approves the request (see ADM-015)</td><td>Job seeker sees status update to approved with assigned counsellor</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JSF-005</td><td>Create a Job Alert</td><td>JobAlerts &rarr; set keyword/location/salary criteria &rarr; Save</td><td>Alert saved; matching new jobs trigger a notification</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JSF-006</td><td>Delete a Job Alert</td><td>JobAlerts &rarr; remove an existing alert</td><td>Alert deleted, no further notifications for it</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">JSF-007</td><td>Request a Mock Interview</td><td>MockInterviews &rarr; submit skills + careerGoal &rarr; Submit request</td><td>Request created status=pending; admin/professional can approve/assign (see ADM-015)</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JSF-008</td><td>Mock interview marked completed</td><td>After session, admin marks request completed</td><td>Job seeker sees status=completed with any feedback notes</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JSF-009</td><td>View Profile Insights</td><td>Open ProfileInsights</td><td>Profile completeness score and improvement suggestions shown</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">JSF-010</td><td>Build a resume with Resume Builder</td><td>ResumeBuilder &rarr; fill sections (experience/education/skills) &rarr; Generate/Save</td><td>Resume generated/downloadable in expected format</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JSF-011</td><td>View Salary Benchmarking for a role</td><td>SalaryBenchmarking &rarr; enter role/location &rarr; view results</td><td>Reasonable salary range/data displayed for the query</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">JSF-012</td><td>Take a Skill Test and pass</td><td>SkillTests &rarr; start AI-generated 10-question MCQ (skill+difficulty) &rarr; answer &ge;70% correctly &rarr; Submit</td><td>Result shows Pass; badge/credential awarded</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">JSF-013</td><td>Take a Skill Test and fail (&lt;70%)</td><td>Answer below 70% correctly &rarr; Submit</td><td>Result shows Fail; retake option offered per policy</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">JSF-014</td><td>Skill test question caching</td><td>Retake the same skill+difficulty test shortly after</td><td>Cached question set served (from Mongo cache) rather than a fresh Gemini call each time</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">JSF-015</td><td>Use AI Generate Modal (e.g. AI-assisted content generation)</td><td>Trigger AIGenerateModal from a relevant feature &rarr; enter prompt/context &rarr; Generate</td><td>AI-generated content returned and insertable into the target field</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="public">11. Public Pages (Guest / Unauthenticated)</h2>
+<p>Pages: Home, public/CampusRegistration, CompanyDriveView, FreeAssessment, AcceptInchargeInvite, PrincipalExecutiveSummary.</p>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">PUB-001</td><td>Home page loads for a guest</td><td>Visit site root without logging in</td><td>Homepage renders with job search, approved reviews, CTA to Register/Login</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">PUB-002</td><td>Only approved reviews show on Home</td><td>Compare Home page reviews to ManageReviews data</td><td>Only status=approved reviews are publicly visible</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">PUB-003</td><td>Guest browses/searches public job listings</td><td>Use search/filter on Home or jobs listing</td><td>Active jobs returned matching filters; draft/closed jobs excluded</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">PUB-004</td><td>Guest attempts to apply to a job</td><td>Click Apply on a job while logged out</td><td>Redirected to Login/Register before application form</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">PUB-005</td><td>View a Company Drive publicly</td><td>Open a shared CompanyDriveView link</td><td>Drive details (companies, eligibility, rounds) visible without login</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">PUB-006</td><td>Take a Free Assessment</td><td>Open FreeAssessment &rarr; complete sample quiz</td><td>Score/result shown; prompts sign-up for full features</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">PUB-007</td><td>View Principal Executive Summary report</td><td>Open PrincipalExecutiveSummary link (typically shared with college principal)</td><td>High-level placement stats rendered correctly for the college/time range</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">PUB-008</td><td>Campus registration public flow</td><td>Same as COL-022 from a guest's perspective</td><td>Works without requiring prior portal login</td><td class="col-pri p1">P1</td></tr>
+</table>
+
+<h2 id="shared">12. Shared Modules: Drives, Pay-Per-Feature, Payment History, Reviews</h2>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">SHR-001</td><td>ManageDrive shared component - shared between college/company views</td><td>Open a drive as college vs. as an invited company</td><td>Each role sees only the actions/data appropriate to its permissions</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SHR-002</td><td>Pay-Per-Feature "Buy Now" purchase flow</td><td>PayPerFeatures &rarr; select a feature &rarr; Buy Now &rarr; complete Razorpay checkout</td><td>Order created &rarr; payment verified (HMAC-SHA256) &rarr; feature added to purchasedFeatures with usageLeft/expiresAt</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SHR-003</td><td>"Upgrade / Buy Again" after usage/expiry exhausted</td><td>Exhaust usageLeft or pass expiresAt on a purchased feature &rarr; revisit PayPerFeatures</td><td>Button shows "Upgrade / Buy Again" instead of "Already Purchased"</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">SHR-004</td><td>Payment fails/cancelled mid-checkout</td><td>Close Razorpay modal before completing payment</td><td>Payment record status=failed or cancelled; feature/plan not granted</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SHR-005</td><td>View own Payment History</td><td>Open PaymentHistory (company/jobseeker/college) &rarr; view list</td><td>All own transactions with correct status (completed/failed/refunded/etc.) displayed</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">SHR-006</td><td>Submit a review (first time)</td><td>WriteReview &rarr; enter rating + comment &rarr; Submit</td><td>Review created status=pending, awaiting admin approval (see ADM-013)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SHR-007</td><td>Resubmit/edit an existing review</td><td>Edit a previously submitted (e.g. approved) review &rarr; Save</td><td>Only one review per user retained; status resets to pending for re-approval</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h3>12.1 Subscription &amp; Payment (Cross-role)</h3>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">SUBS-001</td><td>Job seeker/recruiter purchase one-time plan</td><td>Subscription page &rarr; choose a paid plan &rarr; create-order &rarr; complete Razorpay &rarr; verify-payment</td><td>Signature verified; plan activated immediately with correct expiry per duration</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUBS-002</td><td>Company/College purchase recurring plan</td><td>Choose a paid plan &rarr; complete Razorpay Subscriptions checkout (auto-renew mandate)</td><td>Recurring subscription created; auto-renew toggle shown as ON</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUBS-003</td><td>Select Free plan</td><td>Choose Free tier plan</td><td>No Razorpay flow triggered; verify-payment called with isFree:true; plan activated instantly</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUBS-004</td><td>Toggle auto-renew off</td><td>Subscription &rarr; disable Auto-Renew</td><td>Mandate stops; plan still valid till current expiry, then lapses to Free</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">SUBS-005</td><td>Cancel subscription (job seeker)</td><td>Subscription &rarr; Cancel</td><td>Reverts to Free plan; payment record marked cancelled</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUBS-006</td><td>Renewal webhook - successful charge</td><td>Simulate Razorpay subscription.charged webhook</td><td>Subscription expiry extended automatically; user notified (renewal reminder flow N/A here)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUBS-007</td><td>Renewal webhook - payment halted/pending</td><td>Simulate subscription.halted or .pending webhook</td><td>renewalFailureCount increments; user not yet downgraded</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">SUBS-008</td><td>Renewal fails 3 times consecutively</td><td>Simulate 3 consecutive failed renewal charges for a College/Company plan</td><td>Auto-downgraded to Free tier after the 3rd failure</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUBS-009</td><td>Tampered payment signature</td><td>Attempt verify-payment with an invalid/tampered signature</td><td>Request rejected, plan not activated, security event logged</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">SUBS-010</td><td>Duplicate/replayed webhook event</td><td>Send the same Razorpay webhook payload twice</td><td>Second event is a no-op (idempotent) - no double renewal/charge applied</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="tickets">13. Support Tickets, Messaging &amp; Notifications</h2>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">TCK-001</td><td>Raise a ticket with all required fields</td><td>RaiseTicket &rarr; fill userRole, accountIdentity, category (e.g. payment_checkout), severity (e.g. major), check diagnosticsConsent, optionally attach error log &rarr; Submit</td><td>Ticket created status=open; visible in MyTickets and AdminTickets</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">TCK-002</td><td>Raise a ticket without diagnostics consent</td><td>Leave diagnosticsConsent unchecked &rarr; Submit</td><td>Submission blocked - consent is required</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">TCK-003</td><td>Attach an error log file to a ticket</td><td>Upload a log file &rarr; Submit</td><td>File attached and retrievable by admin on the ticket detail view</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">TCK-004</td><td>Track ticket status in MyTickets</td><td>MyTickets &rarr; view own tickets</td><td>Status shown accurately: open/in_progress/resolved/closed</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">TCK-005</td><td>Chat with admin while ticket is open</td><td>With an open/in_progress ticket, open Messages &rarr; contact admin</td><td>Chat allowed and functional</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">TCK-006</td><td>Attempt to chat with admin without an active ticket</td><td>No open/in_progress ticket exists &rarr; try to message admin</td><td>Blocked - must raise a ticket first</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">TCK-007</td><td>Real-time message delivery via Socket.IO</td><td>Two users chat simultaneously in separate sessions</td><td>Messages appear instantly without page refresh on both ends</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">TCK-008</td><td>Email notification delivery for key events</td><td>Trigger events (interview invite, application status change, offer, renewal reminder, verification approve/reject, etc.) &rarr; check inbox</td><td>Corresponding email received with correct content</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">TCK-009</td><td>WhatsApp template notification delivery</td><td>Trigger an event with a wired WhatsApp template (e.g. interview invite, assessment invite, round status, verification result)</td><td>WhatsApp message received via Meta Cloud API on the registered/normalized phone number</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">TCK-010</td><td>WhatsApp send failure does not block core action</td><td>Simulate WhatsApp API failure during an event (e.g. invalid phone)</td><td>Core action (e.g. status change, invite) still completes; WhatsApp failure is silently caught, not surfaced as an error to the user</td><td class="col-pri p2">P2</td></tr>
+</table>
+
+<h2 id="nfr">14. Non-Functional &amp; Cross-Cutting Checks</h2>
+<table class="tc">
+<tr><th class="col-id">ID</th><th class="col-scn">Scenario</th><th class="col-steps">Steps</th><th class="col-exp">Expected Result</th><th class="col-pri">Pri</th></tr>
+<tr><td class="col-id">NFR-001</td><td>Role-based route guarding</td><td>For each role, attempt to directly navigate (via URL) to every other role's protected routes</td><td>All cross-role access attempts are denied/redirected</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">NFR-002</td><td>Session/token expiry handling</td><td>Let auth token expire &rarr; perform any authenticated action</td><td>User redirected to login with a clear session-expired message</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">NFR-003</td><td>Responsive layout across breakpoints</td><td>Load key pages (Home, Dashboard, PostJob, Applicants) at 1920px, 1366px, 768px, 390px widths</td><td>Layout adapts correctly, no overlapping/cut-off content, nav collapses to mobile menu</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">NFR-004</td><td>Cross-browser compatibility</td><td>Repeat core flows (register, apply to job, post job, pay) on Chrome, Edge, Firefox</td><td>Consistent behavior and layout across browsers</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">NFR-005</td><td>Sidebar/Header navigation correctness per role</td><td>Login as each role &rarr; verify Sidebar/Header menu items match that role's permitted pages</td><td>No broken links, no menu items for inaccessible features</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">NFR-006</td><td>Confirm-dialog guards for destructive actions</td><td>Trigger delete/cancel actions across modules (delete job, delete drive, cancel subscription, delete user)</td><td>ConfirmDialog appears before the action executes; cancelling the dialog performs no change</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">NFR-007</td><td>Feature gate consistency (FeatureGate component)</td><td>Compare locked/unlocked state of a premium feature across Sidebar badge, feature page, and PayPerFeatures page</td><td>Entitlement state is consistent everywhere at once (no stale cached state after purchase)</td><td class="col-pri p1">P1</td></tr>
+<tr><td class="col-id">NFR-008</td><td>Form field validation messages are clear</td><td>Submit key forms (Register, PostJob, RaiseTicket, WriteReview) with missing/invalid data</td><td>Every required field shows a specific, understandable inline error</td><td class="col-pri p3">P3</td></tr>
+<tr><td class="col-id">NFR-009</td><td>Data consistency after concurrent actions</td><td>Two admins act on the same request/refund/renewal simultaneously</td><td>No duplicate processing; last-write-wins or proper locking behavior, no data corruption</td><td class="col-pri p2">P2</td></tr>
+<tr><td class="col-id">NFR-010</td><td>Sensitive data not exposed client-side</td><td>Inspect network responses for password hashes, Razorpay secrets, other users' PII</td><td>No sensitive fields leaked in any API response</td><td class="col-pri p1">P1</td></tr>
+</table>
+
+<h2 id="signoff">15. Sign-off</h2>
+<table class="meta-table" style="width:100%;">
+<tr><td><b>Total Test Cases</b></td><td>209 (see per-section tables, Sections 2-14)</td></tr>
+<tr><td><b>Executed By</b></td><td>&nbsp;</td></tr>
+<tr><td><b>Execution Date</b></td><td>&nbsp;</td></tr>
+<tr><td><b>Pass / Fail / Blocked</b></td><td>&nbsp; / &nbsp; / &nbsp;</td></tr>
+<tr><td><b>Release Recommendation</b></td><td>&nbsp;</td></tr>
+</table>
+
+</body>
+</html>

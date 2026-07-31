@@ -55,9 +55,9 @@ const submitCounsellingRequest = async (req, res) => {
       return res.status(403).json({ msg: 'Career counselling limit reached or not included in your active features.' });
     }
 
-    const { bookingName, bookingEmail, bookingPhone, bookingDate, bookingTime } = req.body;
-    if (!bookingName || !bookingEmail || !bookingDate || !bookingTime) {
-      return res.status(400).json({ msg: 'Name, email, date and time are required.' });
+    const { bookingName, bookingEmail, bookingPhone, bookingDate, bookingTime, qualification, major, workExperience, notes } = req.body;
+    if (!bookingName || !bookingEmail || !bookingDate || !bookingTime || !qualification || !major || !workExperience) {
+      return res.status(400).json({ msg: 'Please provide all required details (name, email, date, time, qualification, major, work experience).' });
     }
 
     const request = new AdminRequest({
@@ -68,6 +68,10 @@ const submitCounsellingRequest = async (req, res) => {
       bookingPhone,
       bookingDate,
       bookingTime,
+      qualification,
+      major,
+      workExperience,
+      notes,
     });
     await request.save();
 
@@ -89,9 +93,9 @@ const submitCounsellingRequest = async (req, res) => {
   }
 };
 
-// @desc    Submit interview prep request
-// @route   POST /api/requests/interview-prep
-const submitInterviewPrepRequest = async (req, res) => {
+// @desc    Submit mock interview request
+// @route   POST /api/requests/mock-interview
+const submitMockInterviewRequest = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate('subscription');
     if (!user) return res.status(404).json({ msg: 'User not found' });
@@ -103,12 +107,12 @@ const submitInterviewPrepRequest = async (req, res) => {
 
     const plan = user.subscription;
     
-    if (plan && plan.hasInterviewPrep) {
+    if (plan && plan.hasMockInterviews) {
       hasFeature = true;
       source = 'plan';
       limit = 0;
     } else if (plan && Array.isArray(plan.features)) {
-      const dynamicFeature = plan.features.find(f => f.isActive && (f.name?.toLowerCase() === 'interview prep' || f.name?.toLowerCase() === 'interview preparation'));
+      const dynamicFeature = plan.features.find(f => f.isActive && (f.name?.toLowerCase() === 'mock interviews' || f.name?.toLowerCase() === 'mock interview'));
       if (dynamicFeature) {
         hasFeature = true;
         source = 'plan';
@@ -117,7 +121,7 @@ const submitInterviewPrepRequest = async (req, res) => {
     }
 
     if (source === 'plan' && limit > 0) {
-      if ((user.interviewPrepUsed || 0) >= limit) {
+      if ((user.mockInterviewsUsed || 0) >= limit) {
         hasFeature = false;
       }
     }
@@ -125,7 +129,7 @@ const submitInterviewPrepRequest = async (req, res) => {
     if (!hasFeature && Array.isArray(user.purchasedFeatures)) {
       const ppFeatureIndex = user.purchasedFeatures.findIndex(f => 
         f.isActive && 
-        f.featureKey === 'hasInterviewPrep' && 
+        f.featureKey === 'hasMockInterviews' && 
         f.usageLeft > 0 && 
         (!f.expiresAt || new Date(f.expiresAt) > new Date())
       );
@@ -138,7 +142,7 @@ const submitInterviewPrepRequest = async (req, res) => {
     }
 
     if (!hasFeature) {
-      return res.status(403).json({ msg: 'Interview prep limit reached or not included in your active features.' });
+      return res.status(403).json({ msg: 'Mock interview limit reached or not included in your active features.' });
     }
 
     const { skills, careerGoal } = req.body;
@@ -148,14 +152,14 @@ const submitInterviewPrepRequest = async (req, res) => {
 
     const request = new AdminRequest({
       user: req.user.id,
-      type: 'interview_prep',
+      type: 'mock_interview',
       skills,
       careerGoal,
     });
     await request.save();
 
     if (source === 'plan' && limit > 0) {
-      user.interviewPrepUsed = (user.interviewPrepUsed || 0) + 1;
+      user.mockInterviewsUsed = (user.mockInterviewsUsed || 0) + 1;
     } else if (source === 'payper' && payPerFeatureIndex !== -1) {
       user.purchasedFeatures[payPerFeatureIndex].usageLeft -= 1;
       if (user.purchasedFeatures[payPerFeatureIndex].usageLeft <= 0) {
@@ -165,9 +169,9 @@ const submitInterviewPrepRequest = async (req, res) => {
     }
     await user.save();
 
-    res.status(201).json({ msg: 'Your interview prep request has been submitted. Our team will reach out soon.' });
+    res.status(201).json({ msg: 'Your mock interview request has been submitted. Our team will reach out soon.' });
   } catch (err) {
-    console.error('Interview Prep Request Error:', err);
+    console.error('Mock Interview Request Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
@@ -473,11 +477,11 @@ const getMySessions = async (req, res) => {
   }
 };
 
-// @desc    Get interview prep requests for current user
-// @route   GET /api/requests/my-interview-prep
-const getMyInterviewPrep = async (req, res) => {
+// @desc    Get mock interview requests for current user
+// @route   GET /api/requests/my-mock-interviews
+const getMyMockInterviews = async (req, res) => {
   try {
-    const requests = await AdminRequest.find({ user: req.user.id, type: 'interview_prep' })
+    const requests = await AdminRequest.find({ user: req.user.id, type: 'mock_interview' })
       .sort({ createdAt: -1 });
     res.json(requests);
   } catch (err) {
@@ -526,7 +530,25 @@ const cancelMySession = async (req, res) => {
     session.status = 'cancelled';
     await session.save();
 
-    await User.findByIdAndUpdate(req.user.id, { $inc: { counsellingSessionsUsed: -1 } });
+    const user = await User.findById(req.user.id);
+    let refunded = false;
+    if (user.counsellingSessionsUsed > 0) {
+      user.counsellingSessionsUsed -= 1;
+      refunded = true;
+    }
+    if (!refunded && Array.isArray(user.purchasedFeatures)) {
+      const ppIdx = user.purchasedFeatures.findIndex(f => f.featureKey === 'hasCareerCounselling' && (!f.expiresAt || new Date(f.expiresAt) > new Date()));
+      if (ppIdx !== -1) {
+        user.purchasedFeatures[ppIdx].usageLeft += 1;
+        user.purchasedFeatures[ppIdx].isActive = true;
+        user.markModified('purchasedFeatures');
+        refunded = true;
+      }
+    }
+    if (!refunded) {
+      user.counsellingSessionsUsed = (user.counsellingSessionsUsed || 0) - 1;
+    }
+    await user.save();
 
     res.json({ msg: 'Session cancelled successfully' });
   } catch (err) {
@@ -534,14 +556,42 @@ const cancelMySession = async (req, res) => {
   }
 };
 
-// @desc    Seeker: Cancel own interview prep
-// @route   PATCH /api/requests/interview-prep/:id/cancel
-const cancelMyInterviewPrep = async (req, res) => {
+// @desc    Seeker: Edit own counselling session
+// @route   PATCH /api/requests/counselling/:id
+const updateMySession = async (req, res) => {
   try {
     const session = await AdminRequest.findOne({
       _id: req.params.id,
       user: req.user.id,
-      type: 'interview_prep',
+      type: 'counselling',
+    });
+
+    if (!session) return res.status(404).json({ msg: 'Session not found' });
+    if (session.status !== 'pending') return res.status(400).json({ msg: 'Only pending sessions can be edited' });
+
+    const { bookingDate, bookingTime, qualification, major, workExperience, notes } = req.body;
+    if (bookingDate) session.bookingDate = bookingDate;
+    if (bookingTime) session.bookingTime = bookingTime;
+    if (qualification) session.qualification = qualification;
+    if (major) session.major = major;
+    if (workExperience) session.workExperience = workExperience;
+    if (notes !== undefined) session.notes = notes;
+
+    await session.save();
+    res.json({ msg: 'Session updated successfully', session });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Seeker: Cancel own mock interview
+// @route   PATCH /api/requests/mock-interview/:id/cancel
+const cancelMyMockInterview = async (req, res) => {
+  try {
+    const session = await AdminRequest.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+      type: 'mock_interview',
     });
 
     if (!session) return res.status(404).json({ msg: 'Request not found' });
@@ -550,6 +600,26 @@ const cancelMyInterviewPrep = async (req, res) => {
 
     session.status = 'cancelled';
     await session.save();
+
+    const user = await User.findById(req.user.id);
+    let refunded = false;
+    if (user.mockInterviewsUsed > 0) {
+      user.mockInterviewsUsed -= 1;
+      refunded = true;
+    }
+    if (!refunded && Array.isArray(user.purchasedFeatures)) {
+      const ppIdx = user.purchasedFeatures.findIndex(f => f.featureKey === 'hasMockInterviews' && (!f.expiresAt || new Date(f.expiresAt) > new Date()));
+      if (ppIdx !== -1) {
+        user.purchasedFeatures[ppIdx].usageLeft += 1;
+        user.purchasedFeatures[ppIdx].isActive = true;
+        user.markModified('purchasedFeatures');
+        refunded = true;
+      }
+    }
+    if (!refunded) {
+      user.mockInterviewsUsed = (user.mockInterviewsUsed || 0) - 1;
+    }
+    await user.save();
 
     res.json({ msg: 'Request cancelled successfully' });
   } catch (err) {
@@ -591,7 +661,8 @@ const getAdminRequests = async (req, res) => {
 
     const requests = await AdminRequest.find(query)
       .populate('user', 'name email phone display_id role')
-      .populate('assignedTo', 'name email display_id')
+      .populate('assignedTo', 'name email display_id role company companyProfile')
+      .populate('assignedToPool', 'name email display_id role company companyProfile')
       .sort({ createdAt: -1 });
 
     res.json(requests);
@@ -620,20 +691,50 @@ const updateRequestStatus = async (req, res) => {
   }
 };
 
-// @desc    Admin: Assign request to sub-admin/admin
+// @desc    Admin: Assign request to sub-admin/admin/recruiter
 // @route   PATCH /api/requests/admin/:id/assign
 const adminAssignRequest = async (req, res) => {
   try {
-    const { assignedTo } = req.body;
+    const { assignedToPool } = req.body;
     if (req.user.role !== 'admin') {
       return res.status(403).json({ msg: 'Not authorized to assign tasks' });
     }
 
-    const request = await AdminRequest.findById(req.params.id);
+    const request = await AdminRequest.findById(req.params.id).populate('user', 'name');
     if (!request) return res.status(404).json({ msg: 'Request not found' });
 
-    request.assignedTo = assignedTo || null;
+    request.assignedToPool = assignedToPool || [];
+    request.assignedTo = null;
+    request.status = 'pending';
+    request.assignedAt = Date.now();
     await request.save();
+    
+    if (assignedToPool && assignedToPool.length > 0) {
+      const assignees = await User.find({ _id: { $in: assignedToPool } }).select('name email');
+      const sendEmail = require('../utils/sendEmail');
+      
+      for (const assignee of assignees) {
+        if (assignee.email) {
+          try {
+            await sendEmail({
+              email: assignee.email,
+              subject: 'New Request Assigned to You',
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                  <h2 style="color: #059669;">New Request Assigned</h2>
+                  <p>Hello ${assignee.name},</p>
+                  <p>You have been assigned a new <strong>${request.type.replace('_', ' ')}</strong> request from ${request.user?.name || 'a user'}.</p>
+                  <p>Please log in to your dashboard, navigate to <strong>Requests</strong>, and accept the request. Note that this request may have been sent to multiple professionals and will be locked to the first person who accepts it.</p>
+                  <p style="margin-top: 30px;">Best regards,<br/><strong>Velaivaaipu Team</strong></p>
+                </div>
+              `
+            });
+          } catch (e) {
+            console.error('Failed to send assignment notification email:', e);
+          }
+        }
+      }
+    }
     
     res.json({ msg: 'Request assigned successfully' });
   } catch (err) {
@@ -645,10 +746,10 @@ const adminAssignRequest = async (req, res) => {
 // @route   GET /api/requests/assignees
 const getAssignees = async (req, res) => {
   try {
-    const roles = await Role.find({ name: { $in: ['admin', 'subadmin'] } }).select('_id');
+    const roles = await Role.find({ name: { $in: ['admin', 'subadmin', 'recruiter', 'company'] } }).select('_id');
     const roleIds = roles.map(r => r._id);
     const assignees = await User.find({ role: { $in: roleIds } })
-      .select('name email role display_id')
+      .select('name email role display_id companyName')
       .populate('role', 'name');
     res.json(assignees);
   } catch (err) {
@@ -661,7 +762,12 @@ const getAssignees = async (req, res) => {
 // @route   GET /api/requests/assigned
 const getAssignedRequests = async (req, res) => {
   try {
-    const requests = await AdminRequest.find({ assignedTo: req.user.id })
+    const requests = await AdminRequest.find({
+      $or: [
+        { assignedToPool: req.user.id, status: 'pending' },
+        { assignedTo: req.user.id }
+      ]
+    })
       .populate('user', 'name email phone display_id')
       .sort({ createdAt: -1 });
     res.json(requests);
@@ -670,59 +776,91 @@ const getAssignedRequests = async (req, res) => {
   }
 };
 
-// @desc    Subadmin: Update assigned request (progress/notes)
+// @desc    Subadmin/Recruiter: Update assigned request (progress/notes)
 // @route   PATCH /api/requests/assigned/:id
 const updateAssignedRequest = async (req, res) => {
   try {
-    const { status, adminNotes } = req.body;
-    const request = await AdminRequest.findOne({ _id: req.params.id, assignedTo: req.user.id });
+    const { status, adminNotes, action, slot1Date, slot1StartTime, slot1EndTime, slot2Date, slot2StartTime, slot2EndTime, meetingLink } = req.body;
+    const request = await AdminRequest.findOne({ 
+      _id: req.params.id, 
+      $or: [
+        { assignedToPool: req.user.id, status: 'pending' },
+        { assignedTo: req.user.id }
+      ]
+    }).populate('user', 'name email');
 
-    if (!request) return res.status(404).json({ msg: 'Request not found or not assigned to you' });
+    if (!request) return res.status(404).json({ msg: 'Request not found or no longer available' });
+
+    if (action === 'reject') {
+      request.assignedToPool = request.assignedToPool.filter(id => id.toString() !== req.user.id);
+      await request.save();
+      return res.json({ msg: 'Request rejected' });
+    }
+
+    const previousStatus = request.status;
 
     if (status) request.status = status;
     if (adminNotes !== undefined) request.adminNotes = adminNotes;
     
+    if (status === 'approved') {
+      if (slot1Date) request.slot1Date = slot1Date;
+      if (slot1StartTime) request.slot1StartTime = slot1StartTime;
+      if (slot1EndTime) request.slot1EndTime = slot1EndTime;
+      if (slot2Date) request.slot2Date = slot2Date;
+      if (slot2StartTime) request.slot2StartTime = slot2StartTime;
+      if (slot2EndTime) request.slot2EndTime = slot2EndTime;
+      
+      // Default to native link if not provided
+      request.meetingLink = meetingLink ? meetingLink : `http://localhost:5173/meeting/${request._id}`;
+    }
+    
+    if (status === 'approved' && previousStatus === 'pending') {
+      request.assignedTo = req.user.id;
+    }
+    
     await request.save();
+
+    // Send email to user if status changed to approved
+    if (status === 'approved' && previousStatus !== 'approved' && request.user?.email) {
+      const sendEmail = require('../utils/sendEmail');
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #059669;">Your Request has been Accepted!</h2>
+          <p>Hello ${request.user.name},</p>
+          <p>Your <strong>${request.type.replace('_', ' ')}</strong> request has been reviewed and accepted by one of our professionals.</p>
+          ${adminNotes ? `
+          <div style="background: #ecfdf5; border: 1px solid #d1fae5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; color: #065f46;"><strong>Additional Notes:</strong></p>
+            <p style="margin: 5px 0 0 0; white-space: pre-wrap;">${adminNotes}</p>
+          </div>
+          ` : ''}
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0;"><strong>Available Slot 1:</strong> ${request.slot1Date} at ${request.slot1StartTime} - ${request.slot1EndTime}</p>
+            <p style="margin: 0 0 10px 0;"><strong>Available Slot 2:</strong> ${request.slot2Date} at ${request.slot2StartTime} - ${request.slot2EndTime}</p>
+            <p style="margin: 10px 0 0 0; color: #ef4444; font-weight: bold;">Please log in to your dashboard to confirm your preferred slot.</p>
+          </div>
+          <p>You can also log in to your dashboard to view the meeting link and instructions.</p>
+          <p style="margin-top: 30px;">Best regards,<br/><strong>Velaivaaipu Team</strong></p>
+        </div>
+      `;
+      try {
+        await sendEmail({
+          email: request.user.email,
+          subject: `Update on your ${request.type.replace('_', ' ')} Request`,
+          html: emailHtml
+        });
+      } catch (e) {
+        console.error('Failed to send assignment acceptance email:', e);
+      }
+    }
+
     res.json({ msg: 'Request updated successfully', request });
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }
 };
 
-// @desc    Submit Bulk Application request (Company feature)
-// @route   POST /api/requests/bulk-application
-const submitBulkApplicationRequest = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).populate('subscription');
-    if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    let hasFeature = false;
-    const plan = user.subscription;
-    
-    if (plan && plan.hasBulkApplicantManagement) {
-      hasFeature = true;
-    } else if (Array.isArray(user.purchasedFeatures) && user.purchasedFeatures.some(f => f.isActive && f.featureKey === 'hasBulkApplicantManagement' && f.usageLeft > 0)) {
-      hasFeature = true;
-    }
-
-    if (!hasFeature) {
-      return res.status(403).json({ msg: 'Bulk Applicant Management is not active on your account.' });
-    }
-
-    const { jobId, action, count } = req.body;
-
-    const request = new AdminRequest({
-      user: req.user.id,
-      type: 'bulk_application',
-      adminNotes: `Requested ${action} for ${count} applicants on job ${jobId}`,
-    });
-    await request.save();
-
-    res.status(201).json({ msg: 'Bulk action requested successfully. Admin will process shortly.' });
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
 
 // @desc    Submit Website request (Company feature)
 // @route   POST /api/requests/website-request
@@ -754,23 +892,51 @@ const submitWebsiteRequest = async (req, res) => {
   }
 };
 
+// @route   PATCH /api/requests/:id/select-slot
+const selectSlot = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { slot } = req.body; // '1' or '2'
+    
+    const request = await AdminRequest.findOne({ _id: id, user: req.user.id });
+    if (!request) return res.status(404).json({ msg: 'Request not found' });
+    if (request.status !== 'approved') return res.status(400).json({ msg: 'Request is not approved yet' });
+
+    request.selectedSlot = slot;
+    if (slot === '1') {
+      request.meetingDate = request.slot1Date;
+      request.meetingStartTime = request.slot1StartTime;
+      request.meetingEndTime = request.slot1EndTime;
+    } else {
+      request.meetingDate = request.slot2Date;
+      request.meetingStartTime = request.slot2StartTime;
+      request.meetingEndTime = request.slot2EndTime;
+    }
+    
+    await request.save();
+    res.json({ msg: 'Slot confirmed', request });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
-  submitBulkApplicationRequest,
   submitCounsellingRequest,
-  submitInterviewPrepRequest,
-  submitSalaryBenchmarkRequest,
+  submitMockInterviewRequest,
   submitAiResumeReviewRequest,
   getMySessions,
-  getMyInterviewPrep,
+  getMyMockInterviews,
   getMyAiResumeReviews,
-  getMySalaryBenchmarks,
   cancelMySession,
-  cancelMyInterviewPrep,
+  cancelMyMockInterview,
   getAdminRequests,
   updateRequestStatus,
   adminAssignRequest,
   getAssignees,
   getAssignedRequests,
   updateAssignedRequest,
-  submitWebsiteRequest
+  submitWebsiteRequest,
+  updateMySession,
+  selectSlot
 };

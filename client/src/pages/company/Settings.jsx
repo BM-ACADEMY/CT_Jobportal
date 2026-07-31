@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { 
   User, Mail, Phone, MapPin, Briefcase, Building2, 
   Plus, X, Upload, FileText, CheckCircle2, Loader2, Sparkles,
@@ -419,6 +420,7 @@ const RecruiterSettings = () => {
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-10 animate-in fade-in duration-700">
+            <PageSOPBanner pageKey="recruiterSettings" />
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-1">

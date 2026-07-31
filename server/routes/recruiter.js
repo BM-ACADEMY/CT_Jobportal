@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getRecruiterProfile, updateRecruiterProfile, searchCompanies, requestJoinCompany } = require('../controllers/recruiterController');
+const { getRecruiterProfile, updateRecruiterProfile, searchCompanies, requestJoinCompany, getMyJoinRequests, revokeJoinRequest } = require('../controllers/recruiterController');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
 
@@ -20,5 +20,7 @@ router.put('/profile', upload.fields([
 
 router.get('/search-companies', searchCompanies);
 router.post('/request-join/:companyId', requestJoinCompany);
+router.delete('/request-join/:companyId', revokeJoinRequest);
+router.get('/my-requests', getMyJoinRequests);
 
 module.exports = router;

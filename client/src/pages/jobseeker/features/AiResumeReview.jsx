@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const PAGE_SIZE = 5;
@@ -364,6 +365,7 @@ const AiResumeReview = () => {
   return (
     <>
       <div className="space-y-8 pb-12 max-w-4xl mx-auto p-6">
+        <PageSOPBanner pageKey="aiResumeReview" />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

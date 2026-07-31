@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -298,15 +299,14 @@ const SubscriptionPage = () => {
       handleProceedPayment(plan);
       return;
     }
-    // Institutional plans are a single annual mandate, not a monthly/quarterly/yearly quantity pick
     if (isRecurringRole(plan.role)) {
-      handleProceedPayment(plan, 1, true);
+      setCheckoutPlan(plan);
       return;
     }
     setCheckoutPlan(plan);
   };
 
-  const handleProceedPayment = async (plan, quantity = 1, selectedAutoRenew = true) => {
+  const handleProceedPayment = async (plan, quantity = 1, selectedAutoRenew = true, couponCode = null) => {
     try {
       const token = localStorage.getItem('token');
 
@@ -332,6 +332,7 @@ const SubscriptionPage = () => {
       if (isRecurringRole(plan.role)) {
         const subRes = await axios.post(`${API_BASE_URL}/payments/create-subscription`, {
           planId: plan._id,
+          couponCode
         }, { headers: { Authorization: `Bearer ${token}` } });
 
         const { subscriptionId, keyId } = subRes.data;
@@ -348,6 +349,7 @@ const SubscriptionPage = () => {
                 razorpay_subscription_id: response.razorpay_subscription_id,
                 razorpay_signature: response.razorpay_signature,
                 planId: plan._id,
+                couponCode
               }, { headers: { Authorization: `Bearer ${token}` } });
 
               if (verifyRes.data.success) {
@@ -372,6 +374,7 @@ const SubscriptionPage = () => {
       const orderRes = await axios.post(`${API_BASE_URL}/payments/create-order`, {
         planId: plan._id,
         quantity,
+        couponCode
       }, { headers: { Authorization: `Bearer ${token}` } });
 
       const { orderId, amount, currency } = orderRes.data;
@@ -392,6 +395,7 @@ const SubscriptionPage = () => {
               planId: plan._id,
               quantity,
               autoRenew: selectedAutoRenew,
+              couponCode
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             if (verifyRes.data.success) {
@@ -448,6 +452,7 @@ const SubscriptionPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-20 pt-4">
+      <PageSOPBanner pageKey="companySubscription" />
 
       {/* Checkout summary modal */}
       {checkoutPlan && (

@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
@@ -92,6 +93,7 @@ const MyApplications = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-6">
+      <PageSOPBanner pageKey="myApplications" />
       {/* Revoke confirmation modal */}
       {revokeTarget && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">

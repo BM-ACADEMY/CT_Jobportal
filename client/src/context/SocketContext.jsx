@@ -14,7 +14,7 @@ export const SocketProvider = ({ children }) => {
     if (user) {
       const socketUrl = import.meta.env.VITE_API_DOMAIN || 'http://localhost:5000';
       const newSocket = io(socketUrl, {
-        transports: ['websocket'] // Enforce WebSocket to prevent polling issues on Render
+        transports: ['websocket', 'polling'] // Allow fallback to polling to prevent local connection failures
       });
       setSocket(newSocket);
 

@@ -19,6 +19,14 @@ const SALARY_RANGES = [
   { label: '₹12–20 LPA', min: 1200000, max: 2000000 },
   { label: '₹20 LPA+', min: 2000000, max: Infinity },
 ];
+const EXPERIENCE_RANGES = [
+  { label: 'Any', min: 0, max: Infinity },
+  { label: 'Fresher (0 Years)', min: 0, max: 0 },
+  { label: '1–3 Years', min: 1, max: 3 },
+  { label: '3–5 Years', min: 3, max: 5 },
+  { label: '5–10 Years', min: 5, max: 10 },
+  { label: '10+ Years', min: 10, max: Infinity },
+];
 const SORT_OPTIONS = [
   { label: 'Newest First', value: 'newest' },
   { label: 'Oldest First', value: 'oldest' },
@@ -35,10 +43,11 @@ const Jobs = () => {
   const [locationTerm, setLocationTerm] = useState(searchParams.get('loc') || '');
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedSalary, setSelectedSalary] = useState(0);
+  const [selectedExperience, setSelectedExperience] = useState(0);
   const [sortBy, setSortBy] = useState('newest');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [showAllTypes, setShowAllTypes] = useState(false);
-  const [activeTab, setActiveTab] = useState('all'); // 'all' or 'matched'
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'matched' ? 'matched' : 'all'); // 'all' or 'matched'
   
   const { user } = useAuth();
 
@@ -60,6 +69,7 @@ const Jobs = () => {
   }, [API_BASE_URL, activeTab, user]);
 
   const salaryRange = SALARY_RANGES[selectedSalary];
+  const expRange = EXPERIENCE_RANGES[selectedExperience];
 
   const filteredJobs = useMemo(() => {
     let result = jobs.filter(job => {
@@ -72,13 +82,18 @@ const Jobs = () => {
         job.location?.toLowerCase().includes(locationTerm.toLowerCase());
 
       const matchesType = selectedTypes.length === 0 ||
-        selectedTypes.includes(job.jobType);
+        selectedTypes.some(type => job.jobType?.includes(type));
 
       const jobMin = job.salary?.min || 0;
       const matchesSalary = selectedSalary === 0 ||
         (jobMin >= salaryRange.min && jobMin <= salaryRange.max);
 
-      return matchesSearch && matchesLocation && matchesType && matchesSalary;
+      const jobExpMin = job.experience?.min || 0;
+      const jobExpMax = job.experience?.max || 0;
+      const matchesExperience = selectedExperience === 0 ||
+        (jobExpMin <= expRange.max && (jobExpMax >= expRange.min || jobExpMax === 0 || !jobExpMax));
+
+      return matchesSearch && matchesLocation && matchesType && matchesSalary && matchesExperience;
     });
 
     result = [...result].sort((a, b) => {
@@ -90,7 +105,7 @@ const Jobs = () => {
     });
 
     return result;
-  }, [jobs, searchTerm, locationTerm, selectedTypes, selectedSalary, sortBy]);
+  }, [jobs, searchTerm, locationTerm, selectedTypes, selectedSalary, selectedExperience, sortBy]);
 
   const toggleType = (type) => {
     setSelectedTypes(prev =>
@@ -103,10 +118,11 @@ const Jobs = () => {
     setLocationTerm('');
     setSelectedTypes([]);
     setSelectedSalary(0);
+    setSelectedExperience(0);
     setSortBy('newest');
   };
 
-  const hasActiveFilters = searchTerm || locationTerm || selectedTypes.length > 0 || selectedSalary > 0;
+  const hasActiveFilters = searchTerm || locationTerm || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0;
 
   const formatSalary = (salary) => {
     if (!salary || salary.isRangeHidden) return 'Not Disclosed';
@@ -173,6 +189,31 @@ const Jobs = () => {
               <span
                 onClick={() => setSelectedSalary(i)}
                 className={`text-sm font-medium transition-colors ${selectedSalary === i ? 'text-emerald-700 font-semibold' : 'text-slate-600 group-hover:text-slate-900'}`}
+              >
+                {range.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Experience Range */}
+      <div>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Experience</p>
+        <div className="space-y-2">
+          {EXPERIENCE_RANGES.map((range, i) => (
+            <label key={i} className="flex items-center gap-3 cursor-pointer group">
+              <div
+                onClick={() => setSelectedExperience(i)}
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                  selectedExperience === i ? 'border-emerald-500' : 'border-slate-200 group-hover:border-emerald-300'
+                }`}
+              >
+                {selectedExperience === i && <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />}
+              </div>
+              <span
+                onClick={() => setSelectedExperience(i)}
+                className={`text-sm font-medium transition-colors ${selectedExperience === i ? 'text-emerald-700 font-semibold' : 'text-slate-600 group-hover:text-slate-900'}`}
               >
                 {range.label}
               </span>
@@ -268,7 +309,7 @@ const Jobs = () => {
           <div className="flex-1 pt-8 min-w-0">
 
             {/* Active filter chips */}
-            {(selectedTypes.length > 0 || selectedSalary > 0) && (
+            {(selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0) && (
               <div className="flex flex-wrap gap-2 mb-5">
                 {selectedTypes.map(t => (
                   <Badge key={t} className="bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-emerald-100 transition-colors" onClick={() => toggleType(t)}>
@@ -278,6 +319,11 @@ const Jobs = () => {
                 {selectedSalary > 0 && (
                   <Badge className="bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-amber-100 transition-colors" onClick={() => setSelectedSalary(0)}>
                     {SALARY_RANGES[selectedSalary].label} <X size={11} className="ml-1.5" />
+                  </Badge>
+                )}
+                {selectedExperience > 0 && (
+                  <Badge className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => setSelectedExperience(0)}>
+                    {EXPERIENCE_RANGES[selectedExperience].label} <X size={11} className="ml-1.5" />
                   </Badge>
                 )}
               </div>
@@ -313,7 +359,7 @@ const Jobs = () => {
                   className="lg:hidden flex items-center gap-2 h-9 px-4 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:border-emerald-300 transition-colors"
                 >
                   <SlidersHorizontal size={14} /> Filters
-                  {hasActiveFilters && <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center font-bold">{selectedTypes.length + (selectedSalary > 0 ? 1 : 0)}</span>}
+                  {hasActiveFilters && <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center font-bold">{selectedTypes.length + (selectedSalary > 0 ? 1 : 0) + (selectedExperience > 0 ? 1 : 0)}</span>}
                 </button>
                 <select
                   value={sortBy}

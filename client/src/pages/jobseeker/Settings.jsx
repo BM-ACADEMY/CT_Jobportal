@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Plus, X, Upload, FileText, CheckCircle2, Loader2,
-  Save, Trash2, LayoutGrid, Clock, Target, Eye, Globe, MapPinned, Settings2, Download, BadgeCheck,
+  Save, Trash2, LayoutGrid, Clock, Target, Eye, EyeOff, Globe, MapPinned, Settings2, Download, BadgeCheck,
   XCircle, AlertCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import ImageCropperModal from "@/components/shared/ImageCropperModal";
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
@@ -129,6 +130,36 @@ const Settings = () => {
     const [activating, setActivating] = useState(false);
     const [reapplying, setReapplying] = useState(false);
     const [reapplyForm, setReapplyForm] = useState({ rollNumber: '', department: '', batchYear: '', phone: '' });
+
+    // Hidden jobs state
+    const [hiddenJobs, setHiddenJobs] = useState([]);
+    const [hiddenJobsLoading, setHiddenJobsLoading] = useState(false);
+
+    const fetchHiddenJobs = async () => {
+        setHiddenJobsLoading(true);
+        try {
+            const res = await axios.get(`${API_USER_URL}/hidden-jobs`);
+            setHiddenJobs(res.data || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setHiddenJobsLoading(false);
+        }
+    };
+
+    const handleUnhideJob = async (jobId) => {
+        try {
+            await axios.post(`${API_USER_URL}/hide-job/${jobId}`);
+            setHiddenJobs(prev => prev.filter(job => job._id !== jobId));
+            toast.success('Job unhidden successfully');
+        } catch (err) {
+            toast.error('Failed to unhide job');
+        }
+    };
+
+    useEffect(() => {
+        fetchHiddenJobs();
+    }, []);
 
     const fetchCampusStudent = async () => {
         setCampusLoading(true);
@@ -523,6 +554,7 @@ const Settings = () => {
 
     return (
         <div className="max-w-5xl mx-auto space-y-10 py-8 px-4 animate-in fade-in duration-500">
+            <PageSOPBanner pageKey="jobseekerSettings" />
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div className="space-y-1">
@@ -581,6 +613,9 @@ const Settings = () => {
                     <TabsTrigger value="campus" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <GraduationCap className="w-3.5 h-3.5 mr-2" /> Campus
                     </TabsTrigger>
+                    <TabsTrigger value="hidden-jobs" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                        <EyeOff className="w-3.5 h-3.5 mr-2" /> Hidden Jobs
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* ── TAB: BASIC INFO ── */}
@@ -594,6 +629,7 @@ const Settings = () => {
                                             src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} 
                                             className="w-full h-48 sm:h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
                                             alt="Cover" 
+                                            onError={(e) => { e.target.style.display = 'none'; }}
                                         />
                                     </Zoom>
                                 ) : (
@@ -601,6 +637,7 @@ const Settings = () => {
                                         src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} 
                                         className="w-full h-full object-cover" 
                                         alt="Cover" 
+                                        onError={(e) => { e.target.style.display = 'none'; }}
                                     />
                                 )
                             ) : (
@@ -619,15 +656,17 @@ const Settings = () => {
                                             <Zoom>
                                                 <img 
                                                     src={formData.avatar.startsWith('http') ? formData.avatar : `${API_DOMAIN}${formData.avatar}`} 
-                                                    className="w-24 h-24 sm:w-32 sm:h-32 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                                                    className="w-24 h-24 sm:w-32 sm:h-32 object-cover cursor-pointer hover:opacity-90 transition-opacity bg-emerald-50" 
                                                     alt="Avatar" 
+                                                    onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${formData.name || 'User'}&background=ecfdf5&color=059669&size=128`; }}
                                                 />
                                             </Zoom>
                                         ) : (
                                             <img 
                                                 src={formData.avatar.startsWith('http') ? formData.avatar : `${API_DOMAIN}${formData.avatar}`} 
-                                                className="w-full h-full object-cover" 
+                                                className="w-full h-full object-cover bg-emerald-50" 
                                                 alt="Avatar" 
+                                                onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${formData.name || 'User'}&background=ecfdf5&color=059669&size=128`; }}
                                             />
                                         )
                                     ) : (
@@ -1483,6 +1522,48 @@ const Settings = () => {
                                         {joiningCollege ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Send Join Request
                                     </Button>
                                 </form>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* ── TAB: HIDDEN JOBS ── */}
+                <TabsContent value="hidden-jobs" className="mt-8">
+                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-slate-50 flex flex-row items-center justify-between p-6">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <EyeOff className="w-4 h-4 text-emerald-600" /> Hidden Jobs
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            {hiddenJobsLoading ? (
+                                <div className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-500" /></div>
+                            ) : hiddenJobs.length === 0 ? (
+                                <div className="text-center py-10 text-slate-500 font-medium">No hidden jobs found.</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {hiddenJobs.map(job => (
+                                        <div key={job._id} className="p-4 rounded-xl border border-slate-100 bg-slate-50 flex flex-col gap-3">
+                                            <div className="flex justify-between items-start gap-4">
+                                                <div>
+                                                    <h3 className="font-bold text-slate-900 line-clamp-1">{job.title}</h3>
+                                                    <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-1">{job.company?.name || 'Unknown Company'}</p>
+                                                </div>
+                                                <Button 
+                                                    onClick={() => handleUnhideJob(job._id)} 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    className="shrink-0 h-8 text-[10px] uppercase tracking-widest font-bold"
+                                                >
+                                                    <Eye className="w-3 h-3 mr-1.5" /> Unhide
+                                                </Button>
+                                            </div>
+                                            {job.status !== 'active' && (
+                                                <Badge variant="destructive" className="w-fit text-[10px] uppercase">No longer available</Badge>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </CardContent>
                     </Card>

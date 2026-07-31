@@ -1,8 +1,10 @@
 const Application = require('../models/Application');
 const Job = require('../models/Job');
+const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
+const { logTeamActivity } = require('../utils/teamActivityLog');
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -234,6 +236,17 @@ exports.updateApplicationStatus = async (req, res) => {
           params: [application.applicant.name || 'there', application.job?.title || 'the role', companyName, label, link]
         }).catch(() => {});
       }
+    }
+
+    if (statusChanged && req.user.role === 'recruiter') {
+      const actingUser = await User.findById(req.user.id).select('name company').lean();
+      logTeamActivity({
+        actor: { _id: actingUser._id, name: actingUser.name, company: actingUser.company, role: req.user.role },
+        action: 'application_status_changed',
+        description: `Changed application status to ${STATUS_LABELS[status] || status} for ${application.applicant?.name || 'a candidate'}`,
+        entity: application._id,
+        entityModel: 'Application'
+      });
     }
 
     res.json({ msg: 'Application updated successfully', application });

@@ -62,6 +62,7 @@ const campusDriveSchema = new mongoose.Schema({
     company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
     requestStatus: { type: String, enum: ['none', 'requested', 'accepted', 'rejected'], default: 'none' },
     requestedAt: { type: Date },
+    lastResentAt: { type: Date },
     respondedAt: { type: Date },
     respondedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     conversation: { type: mongoose.Schema.Types.ObjectId, ref: 'Conversation', default: null }

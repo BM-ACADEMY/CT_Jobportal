@@ -8,6 +8,7 @@ import {
   BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { findPermissionKeyForPath } from '../../config/teamPermissions';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { hasFeature } from '../subscription/FeatureGate';
@@ -34,7 +35,6 @@ const coreMenus = {
     { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
-    { icon: ShoppingBag,     label: 'Pay-per Features',  path: '/company/pay-per-features' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
     { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
@@ -47,7 +47,6 @@ const coreMenus = {
     { icon: UserCog,         label: 'My Team',           path: '/company/team' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
-    { icon: ShoppingBag,     label: 'Pay-per Features',  path: '/company/pay-per-features' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
     { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
@@ -77,7 +76,8 @@ const coreMenus = {
         { label: 'Plans', path: '/admin/subscriptions/plans' },
         { label: 'Renewals', path: '/admin/subscriptions/renewals' },
         { label: 'Buyers', path: '/admin/subscriptions/buyers' },
-        { label: 'Pay-per System', path: '/admin/subscriptions/pay-per' }
+        { label: 'Pay-per System', path: '/admin/subscriptions/pay-per' },
+        { label: 'Coupons', path: '/admin/subscriptions/coupons' }
       ]
     },
     { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests' },
@@ -102,10 +102,10 @@ const premiumMenus = {
   jobseeker: [
     { icon: FileText,      label: 'Resume Builder',      path: '/jobseeker/resume-builder',      featureKey: 'hasResumeBuilder' },
     { icon: Bell,          label: 'Job Alerts',          path: '/jobseeker/job-alerts',          featureKey: 'jobAlerts' },
+    { icon: Sparkles,      label: 'Take Assessment',     path: '/jobseeker/skill-tests' },
     { icon: Users,         label: 'Profile Insights',    path: '/jobseeker/profile-insights',    featureKey: 'hasProfileViewInsights' },
     { icon: Star,          label: 'Career Counselling',  path: '/jobseeker/career-counselling',  featureKey: 'hasCareerCounselling' },
-    { icon: Mic,           label: 'Interview Prep',      path: '/jobseeker/interview-prep',      featureKey: 'hasInterviewPrep' },
-    { icon: TrendingUp,    label: 'Salary Benchmarking', path: '/jobseeker/salary-benchmarking', featureKey: 'hasSalaryBenchmarking' },
+    { icon: Mic,           label: 'Mock Interviews',     path: '/jobseeker/mock-interviews',     featureKey: 'hasMockInterviews' },
     { icon: BookOpen,      label: 'AI Profile Review',    path: '/jobseeker/ai-resume-review',    featureKey: 'hasAiResumeReview' },
     { icon: MessageCircle, label: 'Direct Messages',     path: '/jobseeker/messages',            featureKey: 'hasMessageRecruiters' },
   ],
@@ -248,8 +248,8 @@ const Sidebar = () => {
   const role = user?.role || 'jobseeker';
   const profileCompletion = user?.profile?.profileCompletion || 0;
 
-  const coreItems = [...(coreMenus[role] || [])];
-  
+  let coreItems = [...(coreMenus[role] || [])];
+
   // If role is strictly drive_incharge, they get Manage Drive as their only core item
   if (role === 'drive_incharge') {
     if (!coreItems.find(i => i.path === '/incharge')) {
@@ -262,7 +262,16 @@ const Sidebar = () => {
     }
   }
 
-  const premiumItems = premiumMenus[role] || [];
+  // A team-managed recruiter (delegated by an org admin, not the owner or a solo recruiter)
+  // only sees nav entries for pages their admin has actually granted.
+  const isPermissionBlocked = (path) => {
+    if (!(role === 'recruiter' && user?.isTeamManaged === true)) return false;
+    const key = findPermissionKeyForPath(path);
+    return key ? !(user.teamPermissions || []).includes(key) : false;
+  };
+  coreItems = coreItems.filter(i => !isPermissionBlocked(i.path));
+
+  const premiumItems = (premiumMenus[role] || []).filter(i => !isPermissionBlocked(i.path));
 
   const isActive = (path) => {
     const rootRoutes = ['/jobseeker', '/company', '/admin', '/subadmin', '/employee', '/college', '/incharge'];
@@ -271,7 +280,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-full h-full bg-white border border-slate-200 rounded-[24px] flex flex-col font-sans select-none shadow-sm overflow-y-auto animate-in fade-in slide-in-from-left-4 duration-700">
+    <aside className="w-full h-full bg-white border border-slate-200 rounded-[24px] flex flex-col font-sans select-none shadow-sm overflow-y-auto">
 
       {/* Brand */}
       <div className="p-8 border-b border-slate-50 flex items-center justify-between">
@@ -391,7 +400,7 @@ const Sidebar = () => {
               )}
             </div>
             {premiumItems.map(item => {
-              const unlocked = hasFeature(user, item.featureKey);
+              const unlocked = !item.featureKey || hasFeature(user, item.featureKey);
               return (
                 <PremiumNavItem
                   key={item.path}

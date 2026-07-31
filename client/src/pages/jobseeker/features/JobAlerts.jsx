@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Plus, Trash2, MapPin, Briefcase, DollarSign, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const FREQ_LABELS = { instant: 'Instant', daily: 'Daily Digest', weekly: 'Weekly Digest', monthly: 'Monthly Digest', none: 'Off' };
 
@@ -34,6 +36,7 @@ const AlertRow = ({ job }) => (
 );
 
 const JobAlerts = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [matchingJobs, setMatchingJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +106,7 @@ const JobAlerts = () => {
       subscriptionPath="/jobseeker/subscription"
     >
       <div className="space-y-8 pb-12">
+        <PageSOPBanner pageKey="jobAlerts" />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -114,7 +118,10 @@ const JobAlerts = () => {
             </div>
             <p className="text-sm text-slate-500">Dynamic alerts based on your profile requirements.</p>
           </div>
-          <Button className="h-10 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm gap-2 shrink-0">
+          <Button 
+            onClick={() => navigate('/jobseeker/settings?tab=preferences')}
+            className="h-10 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm gap-2 shrink-0"
+          >
             <Plus size={15} /> Update Preferences
           </Button>
         </div>

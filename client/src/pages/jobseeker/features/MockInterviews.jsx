@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const PAGE_SIZE = 5;
@@ -40,7 +41,7 @@ const RequestModal = ({ onClose, onSuccess }) => {
     setError('');
     setLoading(true);
     try {
-      await axios.post(`${API}/requests/interview-prep`, form, {
+      await axios.post(`${API}/requests/mock-interview`, form, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setDone(true);
@@ -135,6 +136,7 @@ const RequestsTable = ({ requests, loading, onCancel }) => {
   const [page, setPage]             = useState(1);
   const [confirmId, setConfirmId]   = useState(null);
   const [cancelling, setCancelling] = useState(false);
+  const [viewReq, setViewReq]       = useState(null);
 
   useEffect(() => { setPage(1); }, [filter]);
 
@@ -148,7 +150,7 @@ const RequestsTable = ({ requests, loading, onCancel }) => {
   const handleCancel = async () => {
     setCancelling(true);
     try {
-      await axios.patch(`${API}/requests/interview-prep/${confirmId}/cancel`, {}, {
+      await axios.patch(`${API}/requests/mock-interview/${confirmId}/cancel`, {}, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setConfirmId(null);
@@ -157,6 +159,26 @@ const RequestsTable = ({ requests, loading, onCancel }) => {
       // silent — user can retry
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const [confirmingSlot, setConfirmingSlot] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleSelectSlot = async (slot) => {
+    setConfirmingSlot(true);
+    setErrorMsg('');
+    try {
+      await axios.patch(`${API}/requests/${viewReq._id}/select-slot`, { slot }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setViewReq(null);
+      onCancel(); // We can just trigger a refresh by calling onCancel or we can pass a refresh function. Here onCancel triggers a refetch from parent since it usually re-fetches requests. But wait, onCancel might just close the cancel modal. Let's just use window.location.reload() or something, or better yet, since we don't have onSuccess easily here, just close the modal. No, we want them to see it. Actually the `RequestsTable` has no `onSuccess`, but `SessionsTable` has `onCancel` which might just be a callback to fetch again? Let's assume onCancel does a refetch. Wait, I will just do window.location.reload() to be safe. No, `onCancel` is meant to reload.
+      window.location.reload();
+    } catch (err) {
+      setErrorMsg(err.response?.data?.msg || 'Failed to select slot. Please try again.');
+    } finally {
+      setConfirmingSlot(false);
     }
   };
 
@@ -189,6 +211,96 @@ const RequestsTable = ({ requests, loading, onCancel }) => {
                 {cancelling ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
                 {cancelling ? 'Cancelling…' : 'Yes, Cancel'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewReq && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-sm font-bold text-slate-900">Request Details</h3>
+              <button onClick={() => setViewReq(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-slate-50 p-4 rounded-xl">
+                <p className="text-xs font-bold text-slate-500 uppercase mb-2">Your Request</p>
+                <div className="space-y-2 text-sm text-slate-800">
+                  <p><span className="font-semibold text-slate-600">Skills:</span> {viewReq.skills}</p>
+                  {viewReq.careerGoal && <p><span className="font-semibold text-slate-600">Career Goal:</span> {viewReq.careerGoal}</p>}
+                  <p><span className="font-semibold text-slate-600">Status:</span> {STATUS_CONFIG[viewReq.status]?.label || viewReq.status}</p>
+                </div>
+              </div>
+
+              {errorMsg && (
+                <p className="text-xs text-rose-600 font-medium bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                  <AlertCircle size={13} className="shrink-0" /> {errorMsg}
+                </p>
+              )}
+
+              {viewReq.status === 'approved' && !viewReq.selectedSlot && (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                  <p className="text-xs font-bold text-amber-800 uppercase tracking-widest mb-3">Please Confirm a Time Slot</p>
+                  <div className="space-y-3">
+                    {viewReq.slot1Date && (
+                      <div className="flex items-center justify-between p-3 bg-white border border-amber-100 rounded-lg">
+                        <div className="text-sm text-slate-800">
+                          <span className="font-bold">Slot 1:</span> {viewReq.slot1Date} at {viewReq.slot1StartTime} - {viewReq.slot1EndTime}
+                        </div>
+                        <button disabled={confirmingSlot} onClick={() => handleSelectSlot('1')} className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold">
+                          Confirm
+                        </button>
+                      </div>
+                    )}
+                    {viewReq.slot2Date && (
+                      <div className="flex items-center justify-between p-3 bg-white border border-amber-100 rounded-lg">
+                        <div className="text-sm text-slate-800">
+                          <span className="font-bold">Slot 2:</span> {viewReq.slot2Date} at {viewReq.slot2StartTime} - {viewReq.slot2EndTime}
+                        </div>
+                        <button disabled={confirmingSlot} onClick={() => handleSelectSlot('2')} className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold">
+                          Confirm
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {viewReq.status === 'approved' && viewReq.selectedSlot && viewReq.meetingDate && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                  <p className="text-xs font-bold text-emerald-800 uppercase tracking-widest mb-3">Scheduled Meeting Details</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm text-emerald-900">
+                    <div>
+                      <span className="font-semibold text-emerald-700 block text-xs">Date</span>
+                      {viewReq.meetingDate}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-emerald-700 block text-xs">Time</span>
+                      {viewReq.meetingStartTime} - {viewReq.meetingEndTime}
+                    </div>
+                    {viewReq.meetingLink && (
+                      <div className="col-span-2">
+                        <span className="font-semibold text-emerald-700 block text-xs">Meeting Link</span>
+                        <a href={viewReq.meetingLink} target="_blank" rel="noreferrer" className="text-blue-600 underline break-all">
+                          {viewReq.meetingLink}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {viewReq.adminNotes && (
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                  <p className="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2">Additional Instructions</p>
+                  <p className="text-sm text-blue-900 whitespace-pre-wrap">{viewReq.adminNotes}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -255,14 +367,22 @@ const RequestsTable = ({ requests, loading, onCancel }) => {
                       {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="py-3 px-3">
-                      {cancellable(r.status) && (
+                      <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => setConfirmId(r._id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors"
+                          onClick={() => setViewReq(r)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
                         >
-                          <X size={11} /> Cancel
+                          View
                         </button>
-                      )}
+                        {cancellable(r.status) && (
+                          <button
+                            onClick={() => setConfirmId(r._id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors"
+                          >
+                            <X size={11} /> Cancel
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -314,7 +434,7 @@ const RequestsTable = ({ requests, loading, onCancel }) => {
 };
 
 /* ─── Main Page ─────────────────────────────────────────────────────────────── */
-const InterviewPrep = () => {
+const MockInterviews = () => {
   const { user, refreshUser } = useAuth();
   const [showModal, setShowModal]   = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -323,15 +443,15 @@ const InterviewPrep = () => {
 
   const getRemainingCount = () => {
     let limit = 0;
-    let used = user?.interviewPrepUsed || 0;
+    let used = user?.mockInterviewsUsed || 0;
     let hasPlanFeature = false;
     
     const plan = user?.subscription;
-    if (plan && plan.hasInterviewPrep) {
+    if (plan && plan.hasMockInterviews) {
       hasPlanFeature = true;
       limit = 0;
     } else if (plan && Array.isArray(plan.features)) {
-      const dynamicFeature = plan.features.find(f => f.isActive && (f.name?.toLowerCase() === 'interview prep' || f.name?.toLowerCase() === 'interview preparation'));
+      const dynamicFeature = plan.features.find(f => f.isActive && (f.name?.toLowerCase() === 'mock interviews' || f.name?.toLowerCase() === 'mock interview'));
       if (dynamicFeature) {
         hasPlanFeature = true;
         limit = parseInt(dynamicFeature.value) || 0;
@@ -346,7 +466,7 @@ const InterviewPrep = () => {
     let ppRemaining = 0;
     if (Array.isArray(user?.purchasedFeatures)) {
       user.purchasedFeatures.forEach(f => {
-        if (f.isActive && f.featureKey === 'hasInterviewPrep' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) {
+        if (f.isActive && f.featureKey === 'hasMockInterviews' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) {
           ppRemaining += f.usageLeft;
         }
       });
@@ -361,7 +481,7 @@ const InterviewPrep = () => {
   const fetchRequests = useCallback(async () => {
     setTableLoading(true);
     try {
-      const res = await axios.get(`${API}/requests/my-interview-prep`, {
+      const res = await axios.get(`${API}/requests/my-mock-interviews`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setRequests(res.data || []);
@@ -385,6 +505,7 @@ const InterviewPrep = () => {
   return (
     <>
       <div className="space-y-8 pb-12">
+        <PageSOPBanner pageKey="mockInterviews" />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -392,7 +513,7 @@ const InterviewPrep = () => {
               <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
                 <Briefcase size={16} className="text-teal-600" />
               </div>
-              <h1 className="text-xl font-bold text-slate-900">Interview Prep</h1>
+              <h1 className="text-xl font-bold text-slate-900">Mock Interviews</h1>
             </div>
             <p className="text-sm text-slate-500">AI-powered mock interviews and question banks.</p>
           </div>
@@ -506,4 +627,4 @@ const InterviewPrep = () => {
   );
 };
 
-export default InterviewPrep;
+export default MockInterviews;

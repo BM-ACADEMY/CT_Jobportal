@@ -5,7 +5,7 @@ const adminRequestSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['counselling', 'interview_prep', 'salary_benchmark', 'bulk_application', 'website_request', 'ai_resume_review']
+    enum: ['counselling', 'mock_interview', 'website_request', 'ai_resume_review']
   },
   status: {
     type: String,
@@ -18,22 +18,38 @@ const adminRequestSchema = new mongoose.Schema({
   bookingPhone: String,
   bookingDate: String,
   bookingTime: String,
-  // Interview prep fields
+  qualification: String,
+  major: String,
+  workExperience: String,
+  notes: String,
+  // Mock interview fields
   skills: String,
   careerGoal: String,
-  // Salary benchmarking fields
-  jobRole: String,
-  companyName: String,
-  // Bulk application fields
-  jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },
-  count: { type: Number, default: 0 },
+  mockInterviewDate: String,
+  mockInterviewTime: String,
   // Website request fields
   websiteDetails: String,
   websiteGoal: String,
   targetAudience: String,
   // Admin notes
   adminNotes: String,
-  // Assignment to recruiter/company
+  // Scheduled Meeting Details (set by recruiter upon accept)
+  meetingDate: String,
+  meetingStartTime: String,
+  meetingEndTime: String,
+  meetingLink: String,
+  
+  // Slot selection for Mock Interviews / Counselling
+  slot1Date: String,
+  slot1StartTime: String,
+  slot1EndTime: String,
+  slot2Date: String,
+  slot2StartTime: String,
+  slot2EndTime: String,
+  selectedSlot: String, // '1' or '2'
+  // Assignment to recruiter/company pool (for multiple assignment)
+  assignedToPool: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  // The user who ultimately accepted the request
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   assignedAt: { type: Date, default: null },
 }, { timestamps: true });

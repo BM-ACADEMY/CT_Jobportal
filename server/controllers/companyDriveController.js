@@ -1,6 +1,8 @@
 const CampusDrive = require('../models/CampusDrive');
 const College = require('../models/College');
 const User = require('../models/User');
+const Conversation = require('../models/Conversation');
+const Message = require('../models/Message');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
@@ -44,11 +46,13 @@ const getIncomingDriveRequests = async (req, res) => {
   }
 };
 
-// @desc    Accept or reject a campus drive participation request
+// @desc    Accept or reject a campus drive participation request. On reject, `note` is an
+//          optional message the company can choose to leave for the college — entirely up
+//          to them to fill in or skip — delivered as a platform chat message, not email/WhatsApp.
 // @route   POST /api/company/drive-requests/:driveId/:companyEntryId/respond
 const respondToDriveRequest = async (req, res) => {
   try {
-    const { action } = req.body;
+    const { action, note } = req.body;
     if (!['accept', 'reject'].includes(action)) {
       return res.status(400).json({ msg: 'action must be accept or reject' });
     }
@@ -69,6 +73,13 @@ const respondToDriveRequest = async (req, res) => {
     entry.respondedAt = new Date();
     entry.respondedBy = req.user.id;
     await drive.save();
+
+    const trimmedNote = (note || '').trim();
+    if (action === 'reject' && trimmedNote && entry.conversation) {
+      const chatMessage = new Message({ conversation: entry.conversation, sender: req.user.id, content: trimmedNote });
+      await chatMessage.save();
+      await Conversation.findByIdAndUpdate(entry.conversation, { lastMessage: chatMessage._id, updatedAt: Date.now() });
+    }
 
     const college = drive.college;
     const tpo = college?.tpoUser ? await User.findById(college.tpoUser).select('name email profile.phone') : null;

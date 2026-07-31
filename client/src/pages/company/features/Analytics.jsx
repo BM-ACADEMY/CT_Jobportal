@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart2, TrendingUp, Eye, Users, Briefcase, Clock, Loader2 } from 'lucide-react';
 import FeatureGate from '@/components/subscription/FeatureGate';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const Analytics = () => {
   const [data, setData] = useState(null);
@@ -47,6 +48,7 @@ const Analytics = () => {
       subscriptionPath="/company/subscription"
     >
       <div className="space-y-8 pb-12">
+        <PageSOPBanner pageKey="analytics" />
         {/* Header */}
         <div>
           <div className="flex items-center gap-2 mb-1">

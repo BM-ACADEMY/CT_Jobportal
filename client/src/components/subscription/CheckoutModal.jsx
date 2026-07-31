@@ -4,6 +4,8 @@ import {
   ChevronDown, RefreshCw, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 const DURATION_ORDER = ['Monthly', 'Quarterly', 'Yearly', 'Lifetime'];
 
@@ -30,9 +32,16 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [autoRenew, setAutoRenew] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponError, setCouponError] = useState('');
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   const selectedPlan = rolePlans.find(p => p._id === selectedPlanId) || initialPlan;
   const isLifetime = selectedPlan.duration === 'Lifetime';
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
   // Reset selected option index to 0 whenever selected plan changes
   useEffect(() => { setSelectedIdx(0); }, [selectedPlanId]);
@@ -50,16 +59,46 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
   const baseTotal = isLifetime ? selectedPlan.price : selectedOption.price;
 
   const originalCost = selectedPlan.price * quantity;
-  const discountAmount = Math.max(0, originalCost - baseTotal);
-  const discountPercentage = originalCost > 0 ? Math.round((discountAmount / originalCost) * 100) : 0;
+  const bulkDiscountAmount = Math.max(0, originalCost - baseTotal);
+  let finalBaseTotal = baseTotal;
+  let couponDiscountAmount = 0;
 
-  const gstTotal     = Math.round(baseTotal * gstPercentage) / 100;
-  const grandTotal   = baseTotal + gstTotal;
+  if (appliedCoupon) {
+    couponDiscountAmount = Math.round(baseTotal * appliedCoupon.percentage) / 100;
+    finalBaseTotal = baseTotal - couponDiscountAmount;
+  }
+
+  const discountPercentage = originalCost > 0 ? Math.round(((bulkDiscountAmount + couponDiscountAmount) / originalCost) * 100) : 0;
+
+  const gstTotal     = Math.round(finalBaseTotal * gstPercentage) / 100;
+  const grandTotal   = finalBaseTotal + gstTotal;
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode) return;
+    setValidatingCoupon(true);
+    setCouponError('');
+    try {
+      const res = await axios.post(`${API_BASE_URL}/coupons/validate`, { code: couponCode });
+      setAppliedCoupon(res.data);
+      toast.success('Coupon applied successfully');
+    } catch (err) {
+      setCouponError(err.response?.data?.msg || 'Invalid coupon code');
+      setAppliedCoupon(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+  };
 
   const handleProceed = async () => {
     setProcessing(true);
     try {
-      await onProceed(selectedPlan, quantity, autoRenew);
+      await onProceed(selectedPlan, quantity, autoRenew, appliedCoupon?.code);
     } finally {
       setProcessing(false);
     }
@@ -195,14 +234,25 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
                 </div>
                 <span className="text-sm font-bold text-slate-900">{fmt(originalCost)}</span>
               </div>
-              {/* Discount */}
-              {discountAmount > 0 && !isLifetime && (
-                <div className="flex items-center justify-between px-4 py-3 bg-rose-50/50">
-                  <span className="text-xs font-semibold text-rose-600">
-                    Option Discount <span className="font-bold">({discountPercentage}%)</span>
+              {/* Bulk Discount */}
+              {bulkDiscountAmount > 0 && !isLifetime && (
+                <div className="flex items-center justify-between px-4 py-3 bg-slate-50">
+                  <span className="text-xs font-medium text-slate-600">
+                    Bulk Discount
                   </span>
-                  <span className="text-sm font-bold text-rose-600">
-                    - {fmt(discountAmount)}
+                  <span className="text-sm font-semibold text-slate-700">
+                    - {fmt(bulkDiscountAmount)}
+                  </span>
+                </div>
+              )}
+              {/* Coupon Discount */}
+              {appliedCoupon && (
+                <div className="flex items-center justify-between px-4 py-3 bg-amber-50">
+                  <span className="text-xs font-semibold text-amber-700">
+                    Coupon ({appliedCoupon.code}) <span className="font-bold">-{appliedCoupon.percentage}%</span>
+                  </span>
+                  <span className="text-sm font-bold text-amber-700">
+                    - {fmt(couponDiscountAmount)}
                   </span>
                 </div>
               )}
@@ -232,6 +282,37 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
             </div>
           </div>
 
+          {/* Coupon Input */}
+          <div className="rounded-xl border border-slate-100 p-3.5 bg-slate-50/60">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+              <Tag size={10} /> Have a Coupon?
+            </p>
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg">
+                <span className="text-xs font-bold text-emerald-800 flex items-center gap-1"><Check size={12}/> {appliedCoupon.code} Applied</span>
+                <button onClick={handleRemoveCoupon} className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-wider">Remove</button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter code"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  className="flex-1 text-xs px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
+                />
+                <Button 
+                  onClick={handleApplyCoupon} 
+                  disabled={!couponCode || validatingCoupon}
+                  className="h-[34px] px-4 text-xs font-bold bg-slate-800 text-white hover:bg-slate-700 rounded-lg"
+                >
+                  {validatingCoupon ? <Loader2 size={12} className="animate-spin" /> : 'Apply'}
+                </Button>
+              </div>
+            )}
+            {couponError && <p className="text-[10px] text-red-500 font-bold mt-1">{couponError}</p>}
+          </div>
+
           {/* Auto-pay checkbox */}
           <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 cursor-pointer hover:bg-slate-100/60 transition-colors group select-none">
             <div
@@ -255,13 +336,35 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
             </div>
           </label>
 
+          {/* Terms and conditions checkbox */}
+          <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 cursor-pointer hover:bg-slate-100/60 transition-colors group select-none mt-2">
+            <div
+              onClick={(e) => { e.preventDefault(); setTermsAccepted(v => !v); }}
+              className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                termsAccepted
+                  ? 'bg-emerald-500 border-emerald-500'
+                  : 'bg-white border-slate-300 group-hover:border-slate-400'
+              }`}
+            >
+              {termsAccepted && <Check size={11} strokeWidth={3} className="text-white" />}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-emerald-600 hover:underline">Terms and Conditions</a>
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-relaxed">
+                By checking this, you agree to our terms of service and privacy policy.
+              </p>
+            </div>
+          </label>
+
         </div>
 
         {/* Actions */}
         <div className="px-6 py-4 border-t border-slate-100 bg-white shrink-0 space-y-2">
           <Button
             onClick={handleProceed}
-            disabled={processing}
+            disabled={processing || !termsAccepted}
             className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.01] transition-all disabled:opacity-60 disabled:scale-100"
           >
             {processing

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { 
   Users, Send, FileText, CheckCircle2, Clock, AlertCircle, 
   Loader2, Sparkles, ChevronRight, LayoutGrid
@@ -81,6 +82,7 @@ const BulkApplicantManagement = () => {
       subscriptionPath="/company/subscription"
     >
       <div className="max-w-5xl mx-auto space-y-8 py-6">
+        <PageSOPBanner pageKey="bulkApplicantManagement" />
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Bulk Applicant <span className="text-emerald-600">Request</span></h1>
           <p className="text-sm text-slate-500 font-medium">Request high-volume candidate sourcing for your strategic job roles.</p>

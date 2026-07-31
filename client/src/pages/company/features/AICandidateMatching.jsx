@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { Sparkles, Briefcase, Users, ChevronDown, Loader2, CheckCircle2, XCircle, MapPin, Award } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import FeatureGate from '@/components/subscription/FeatureGate';
@@ -78,6 +79,7 @@ const AICandidateMatching = () => {
       subscriptionPath="/company/subscription"
     >
       <div className="space-y-8 pb-12">
+        <PageSOPBanner pageKey="aiCandidateMatching" />
         {/* Header */}
         <div>
           <div className="flex items-center gap-2 mb-1">

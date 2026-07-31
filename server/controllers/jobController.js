@@ -1,7 +1,11 @@
 const Job = require('../models/Job');
 const User = require('../models/User');
 const Application = require('../models/Application');
+const Role = require('../models/Role');
 const { getEffectivePlanLimit } = require('../utils/getEffectivePlanLimit');
+const { logTeamActivity } = require('../utils/teamActivityLog');
+const { parse } = require('csv-parse/sync');
+const crypto = require('crypto');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -11,8 +15,11 @@ const createJob = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId).populate('subscription').populate('role');
 
-    if (!user || !user.company) {
-      return res.status(400).json({ msg: 'You must be associated with a company to post jobs' });
+    const { postedAs } = req.body;
+    const finalPostedAs = postedAs || (user?.company ? 'company' : 'recruiter');
+
+    if (['company', 'both'].includes(finalPostedAs) && (!user || !user.company)) {
+      return res.status(400).json({ msg: 'You must be associated with a company to post jobs as a company' });
     }
 
     // Enforce job posting limit
@@ -31,9 +38,10 @@ const createJob = async (req, res) => {
       });
     }
 
+    const isUnlimited = planLimit === 0;
     const totalAllowed = planLimit + payPerLimit;
 
-    if (totalAllowed <= 0) {
+    if (!isUnlimited && totalAllowed <= 0) {
       return res.status(403).json({
         msg: "You don't have active plan to post the job. Please purchase a plan or add-on.",
         requiresUpgrade: true,
@@ -42,14 +50,16 @@ const createJob = async (req, res) => {
       });
     }
 
-    let activeCountQuery = { company: user.company, status: { $in: ['active', 'closed'] } };
+    let activeCountQuery = { status: { $in: ['active', 'closed'] } };
     if (user.role && user.role.name === 'recruiter') {
       activeCountQuery.recruiter = userId;
+    } else if (user.company) {
+      activeCountQuery.company = user.company;
     }
 
     const activeCount = await Job.countDocuments(activeCountQuery);
 
-    if (activeCount >= totalAllowed) {
+    if (!isUnlimited && activeCount >= totalAllowed) {
       return res.status(403).json({
         msg: `Job posting limit reached. Your allowed limit is ${totalAllowed} job postings. Please upgrade your plan or purchase an add-on to post more.`,
         requiresUpgrade: true,
@@ -94,11 +104,21 @@ const createJob = async (req, res) => {
       skillsRequired,
       additionalDetails,
       status: status || 'active',
-      company: user.company,
+      postedAs: finalPostedAs,
+      company: user.company || undefined,
       recruiter: userId
     });
 
     const job = await newJob.save();
+
+    logTeamActivity({
+      actor: { _id: user._id, name: user.name, company: user.company, role: user.role?.name },
+      action: 'job_posted',
+      description: `Posted a new job: ${job.title}`,
+      entity: job._id,
+      entityModel: 'Job'
+    });
+
     res.status(201).json({
       msg: 'Job posted successfully',
       job
@@ -118,8 +138,8 @@ const cloneJob = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    if (!user || !user.company) {
-      return res.status(400).json({ msg: 'You must be associated with a company to clone jobs' });
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
     }
 
     const jobToClone = await Job.findById(req.params.id);
@@ -128,7 +148,7 @@ const cloneJob = async (req, res) => {
     }
 
     // Verify ownership
-    if (jobToClone.recruiter.toString() !== userId && (!user.company || jobToClone.company.toString() !== user.company.toString())) {
+    if (jobToClone.recruiter.toString() !== userId && (!user.company || !jobToClone.company || jobToClone.company.toString() !== user.company.toString())) {
       return res.status(403).json({ msg: 'Not authorized to clone this job' });
     }
 
@@ -160,11 +180,14 @@ const getCompanyJobs = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    if (!user || !user.company) {
-      return res.json([]);
+    if (!user) return res.json([]);
+
+    let query = { recruiter: userId };
+    if (user.company) {
+      query = { $or: [{ company: user.company }, { recruiter: userId }] };
     }
 
-    const jobs = await Job.find({ company: user.company }).sort({ createdAt: -1 });
+    const jobs = await Job.find(query).sort({ createdAt: -1 });
     res.json(jobs);
 
   } catch (err) {
@@ -187,7 +210,7 @@ const updateJob = async (req, res) => {
     }
 
     // Verify ownership
-    if (job.recruiter.toString() !== userId && (!user.company || job.company.toString() !== user.company.toString())) {
+    if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString())) {
       return res.status(403).json({ msg: 'Not authorized to update this job' });
     }
 
@@ -262,7 +285,7 @@ const deleteJob = async (req, res) => {
     }
 
     // Verify ownership
-    if (job.recruiter.toString() !== userId && (!user.company || job.company.toString() !== user.company.toString())) {
+    if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString())) {
       return res.status(403).json({ msg: 'Not authorized to delete this job' });
     }
 
@@ -298,7 +321,11 @@ const getAllJobs = async (req, res) => {
     const jobs = await Job.find({
       status: 'active',
       recruiter: { $nin: blockedIds },
-      company: { $nin: blockedIds }
+      $or: [
+        { company: null },
+        { company: { $exists: false } },
+        { company: { $nin: blockedIds } }
+      ]
     })
       .populate('company', 'name logo location website')
       .populate({
@@ -430,6 +457,10 @@ const getMatchingJobs = async (req, res) => {
     query.recruiter = { $nin: blockedIds };
     query.company = { $nin: blockedIds };
 
+    if (user.hiddenJobs && user.hiddenJobs.length > 0) {
+      query._id = { $nin: user.hiddenJobs };
+    }
+
     const matchingJobs = await Job.find(query)
       .populate('company', 'name logo location website')
       .sort({ createdAt: -1 })
@@ -450,9 +481,14 @@ const getCompanyJobsWithStats = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
-    if (!user || !user.company) return res.json([]);
+    if (!user) return res.json([]);
 
-    const jobs = await Job.find({ company: user.company })
+    let query = { recruiter: userId };
+    if (user.company) {
+      query = { $or: [{ company: user.company }, { recruiter: userId }] };
+    }
+
+    const jobs = await Job.find(query)
       .populate('company', 'name logo')
       .sort({ createdAt: -1 });
 
@@ -482,9 +518,14 @@ const getRecruiterAnalytics = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
-    if (!user || !user.company) return res.json({ totalJobs: 0, totalApplicants: 0, shortlisted: 0, rejected: 0, activeJobs: 0, monthlyData: [] });
+    if (!user) return res.json({ totalJobs: 0, totalApplicants: 0, shortlisted: 0, rejected: 0, activeJobs: 0, monthlyData: [] });
 
-    const jobs = await Job.find({ company: user.company });
+    let query = { recruiter: userId };
+    if (user.company) {
+      query = { $or: [{ company: user.company }, { recruiter: userId }] };
+    }
+
+    const jobs = await Job.find(query);
     const jobIds = jobs.map(j => j._id);
 
     const [totalApplicants, shortlisted, rejected, reviewed] = await Promise.all([
@@ -860,7 +901,7 @@ const getJobQuota = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId).populate('subscription').populate('role');
-    if (!user || !user.company) return res.json({ limit: 0, used: 0 });
+    if (!user) return res.status(404).json({ msg: 'User not found' });
 
     const roleName = user.role?.name || 'recruiter';
     const planLimit = await getEffectivePlanLimit(user, roleName);
@@ -874,14 +915,19 @@ const getJobQuota = async (req, res) => {
       });
     }
 
+    const isUnlimited = planLimit === 0;
     const totalLimit = planLimit + payPerLimit;
-    let activeCountQuery = { company: user.company, status: { $in: ['active', 'closed'] } };
+
+    let activeCountQuery = { status: { $in: ['active', 'closed'] } };
     if (user.role && user.role.name === 'recruiter') {
       activeCountQuery.recruiter = userId;
+    } else if (user.company) {
+      activeCountQuery.company = user.company;
     }
+
     const used = await Job.countDocuments(activeCountQuery);
 
-    res.json({ limit: totalLimit, planLimit, payPerLimit, used, unlimited: false });
+    res.json({ limit: totalLimit, planLimit, payPerLimit, used, unlimited: isUnlimited });
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }
@@ -963,6 +1009,208 @@ const calculatePreMatch = async (req, res) => {
   }
 };
 
+// @desc    Import Pipeline from CSV
+// @route   POST /api/jobs/import-pipeline
+// @access  Private (Recruiter/Company)
+const importPipeline = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate('subscription');
+    
+    if (!req.file) return res.status(400).json({ msg: 'CSV file required' });
+
+    // Enforce Plan Limits
+    let limit = 0;
+    if (user.subscription && user.subscription.features) {
+      const feature = user.subscription.features.find(f => 
+        f.name.toLowerCase().includes('bulk applicantion') || 
+        f.name.toLowerCase().includes('bulk application')
+      );
+      if (feature && feature.isActive) {
+        limit = parseInt(feature.value) || 0;
+      }
+    }
+
+    const csvData = req.file.buffer.toString();
+    const records = parse(csvData, { columns: true, skip_empty_lines: true, trim: true });
+
+    if (limit > 0 && records.length > limit) {
+      return res.status(400).json({ msg: `Your plan allows a maximum of ${limit} candidates per bulk import. Your file has ${records.length} candidates.` });
+    }
+
+    let job;
+    if (req.body.jobId && req.body.jobId !== 'new') {
+      job = await Job.findById(req.body.jobId);
+      if (!job) return res.status(404).json({ msg: 'Selected job pipeline not found' });
+      // Ensure authorization
+      if (job.recruiter.toString() !== userId && job.company?.toString() !== user.company?.toString()) {
+        return res.status(403).json({ msg: 'Not authorized to import into this pipeline' });
+      }
+    } else {
+      const roleName = req.body.role || 'Imported Role';
+      // Create Dummy Job
+      job = new Job({
+        title: roleName,
+        description: 'Imported via CSV Pipeline',
+        skillsRequired: [],
+        experienceLevel: 'Entry',
+        jobType: 'Full-time',
+        workMode: 'On-site',
+        vacancies: 1,
+        salary: { min: 0, max: 0, isRangeHidden: true },
+        experience: { min: 0, max: 0 },
+        location: 'Various',
+        applicationQuestions: [],
+        additionalDetails: [],
+        recruiter: userId,
+        company: user.company || undefined,
+        postedAs: user.company ? 'company' : 'recruiter',
+        status: 'active'
+      });
+      await job.save();
+    }
+
+    let defaultRole = await Role.findOne({ name: 'jobseeker' });
+
+    // Process each record
+    for (const record of records) {
+      const email = record.email || record.Email || `imported_${crypto.randomBytes(4).toString('hex')}@example.com`;
+      const name = record.name || record.Name || record.Candidate || 'Imported Candidate';
+      const statusRaw = (record.status || record.Status || 'pending').toLowerCase();
+      let status = 'pending';
+      if (statusRaw.includes('screen') || statusRaw.includes('review')) status = 'reviewed';
+      if (statusRaw.includes('interview') || statusRaw.includes('shortlist')) status = 'shortlisted';
+      if (statusRaw.includes('offer') || statusRaw.includes('hire') || statusRaw.includes('accept')) status = 'accepted';
+      if (statusRaw.includes('reject')) status = 'rejected';
+
+      // Find or create a dummy user
+      let applicantUser = await User.findOne({ email });
+      if (!applicantUser) {
+        applicantUser = new User({
+          name,
+          email,
+          password: crypto.randomBytes(16).toString('hex'),
+          role: defaultRole ? defaultRole._id : null,
+          profile: { headline: record.headline || record.Headline || record.role || record.Role || 'Imported Candidate' }
+        });
+        await applicantUser.save();
+      }
+      
+      const app = new Application({
+        job: job._id,
+        applicant: applicantUser._id,
+        display_id: 'IMP-' + Math.floor(1000 + Math.random() * 9000),
+        status,
+        answers: [],
+        resumeUrl: ''
+      });
+      await app.save();
+    }
+    
+    // Return job with accurate stats
+    const totalApplicants = await Application.countDocuments({ job: job._id });
+    res.json({ job: { ...job.toObject(), applicantsCount: totalApplicants } });
+  } catch (err) {
+    console.error('Import Pipeline Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Generate AI match for all applications in a job pipeline
+// @route   POST /api/jobs/:jobId/bulk-ai-match
+// @access  Private (Recruiter/Company)
+const bulkAiMatch = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const userId = req.user.id;
+    
+    // Authorization
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ msg: 'Job not found' });
+    const user = await User.findById(userId);
+    if (job.recruiter.toString() !== userId && job.company?.toString() !== user.company?.toString()) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    const applications = await Application.find({ job: jobId }).populate('applicant');
+    const appsToProcess = applications.filter(app => !app.matchAnalysis || app.matchAnalysis.matchPercentage == null);
+    
+    if (appsToProcess.length === 0) {
+      return res.json({ msg: 'All applications already have AI match scores.' });
+    }
+    
+    res.json({ msg: `AI bulk match processing started for ${appsToProcess.length} candidates. It may take a few moments. Refresh the page soon to see the updated scores.` });
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
+    });
+
+    const delay = ms => new Promise(res => setTimeout(res, ms));
+    
+    const jobRequirement = {
+      title: job.title,
+      description: job.description,
+      skillsRequired: job.skillsRequired || [],
+      experienceLevel: job.experienceLevel || '',
+      jobType: job.jobType || ''
+    };
+
+    // Background processing
+    (async () => {
+       for (let i = 0; i < appsToProcess.length; i++) {
+         const app = appsToProcess[i];
+         if (!app.applicant) continue;
+         const candidate = app.applicant;
+         const candidateProfile = {
+           name: candidate.name || 'Unknown Candidate',
+           skills: candidate.profile?.skills || [],
+           experience: candidate.profile?.experience || [],
+           education: candidate.profile?.education || [],
+           headline: candidate.profile?.headline || '',
+         };
+
+         const prompt = `
+            You are an expert HR recruitment AI. Analyze the match compatibility between the candidate profile and the job description provided below.
+            
+            Candidate Profile:
+            ${JSON.stringify(candidateProfile)}
+            
+            Job Description:
+            ${JSON.stringify(jobRequirement)}
+            
+            Provide a match analysis in JSON format containing ONLY these exactly named keys:
+            1. "matchPercentage": A number between 0 and 100.
+            2. "matchedSkills": Array of strings of skills the candidate has that match the job.
+            3. "missingSkills": Array of strings of critical skills the job requires but the candidate lacks.
+            4. "verdict": A short summary justifying the score.
+          `;
+          try {
+             const resultObj = await model.generateContent(prompt);
+             let responseText = resultObj.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+             const result = JSON.parse(responseText);
+             app.matchAnalysis = {
+               matchPercentage: result.matchPercentage || 0,
+               matchedSkills: result.matchedSkills || [],
+               missingSkills: result.missingSkills || [],
+               verdict: result.verdict || '',
+               lastCalculated: new Date()
+             };
+             await app.save();
+             await delay(1000); // 1 sec delay to avoid rate limiting
+          } catch(err) {
+             console.error('Bulk Match Error:', err);
+             await delay(2000);
+          }
+       }
+    })();
+
+  } catch (err) {
+    if (!res.headersSent) res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   createJob,
   getCompanyJobs,
@@ -978,5 +1226,7 @@ module.exports = {
   getAICandidateMatches,
   getJobQuota,
   calculatePreMatch,
-  cloneJob
+  cloneJob,
+  importPipeline,
+  bulkAiMatch
 };

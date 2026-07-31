@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const PAGE_SIZE = 5;
@@ -15,7 +16,8 @@ const STATUS_CONFIG = {
   pending:   { label: 'Booked',    color: 'bg-amber-100 text-amber-700' },
   approved:  { label: 'Accepted',  color: 'bg-blue-100 text-blue-700' },
   completed: { label: 'Completed', color: 'bg-emerald-100 text-emerald-700' },
-  cancelled: { label: 'Rejected',  color: 'bg-red-100 text-red-700' },
+  rejected:  { label: 'Rejected',  color: 'bg-red-100 text-red-700' },
+  cancelled: { label: 'Cancelled', color: 'bg-slate-100 text-slate-700' },
 };
 
 const FILTERS = [
@@ -24,46 +26,73 @@ const FILTERS = [
   { key: 'approved',  label: 'Accepted' },
   { key: 'upcoming',  label: 'Upcoming' },
   { key: 'completed', label: 'Completed' },
-  { key: 'cancelled', label: 'Rejected' },
+  { key: 'rejected',  label: 'Rejected' },
+  { key: 'cancelled', label: 'Cancelled' },
 ];
 
 const STAT_CARDS = [
   { key: 'booked',    label: 'Booked',    color: 'bg-amber-50 border-amber-100',     text: 'text-amber-700' },
   { key: 'accepted',  label: 'Accepted',  color: 'bg-blue-50 border-blue-100',       text: 'text-blue-700' },
-  { key: 'upcoming',  label: 'Upcoming',  color: 'bg-violet-50 border-violet-100',   text: 'text-violet-700' },
   { key: 'completed', label: 'Completed', color: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
   { key: 'rejected',  label: 'Rejected',  color: 'bg-red-50 border-red-100',         text: 'text-red-700' },
+  { key: 'cancelled', label: 'Cancelled', color: 'bg-slate-50 border-slate-200',     text: 'text-slate-700' },
 ];
 
 /* ─── Request Modal ─────────────────────────────────────────────────────────── */
-const RequestModal = ({ onClose, onSuccess, sessionsLeft, unlimited }) => {
+const RequestModal = ({ onClose, onSuccess, sessionsLeft, unlimited, initialData }) => {
   const { user } = useAuth();
+  const isReadOnly = initialData && initialData.status !== 'pending';
   const [form, setForm] = useState({
-    bookingName: user?.name || '',
-    bookingEmail: user?.email || '',
-    bookingPhone: '',
-    bookingDate: '',
-    bookingTime: '',
+    bookingName: initialData?.bookingName || user?.name || '',
+    bookingEmail: initialData?.bookingEmail || user?.email || '',
+    bookingPhone: initialData?.bookingPhone || '',
+    bookingDate: initialData?.bookingDate || '',
+    bookingTime: initialData?.bookingTime || '',
+    qualification: initialData?.qualification || '',
+    major: initialData?.major || '',
+    workExperience: initialData?.workExperience || '',
+    notes: initialData?.notes || '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [confirmingSlot, setConfirmingSlot] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const handleSelectSlot = async (slot) => {
+    setConfirmingSlot(true);
+    try {
+      await axios.patch(`${API}/requests/${initialData._id}/select-slot`, { slot }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.msg || 'Failed to select slot. Please try again.');
+    } finally {
+      setConfirmingSlot(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { bookingName, bookingEmail, bookingDate, bookingTime } = form;
-    if (!bookingName || !bookingEmail || !bookingDate || !bookingTime) {
+    const { bookingName, bookingEmail, bookingDate, bookingTime, qualification, major, workExperience } = form;
+    if (!bookingName || !bookingEmail || !bookingDate || !bookingTime || !qualification || !major || !workExperience) {
       setError('Please fill in all required fields.');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      await axios.post(`${API}/requests/counselling`, form, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      if (initialData) {
+        await axios.patch(`${API}/requests/counselling/${initialData._id}`, form, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+      } else {
+        await axios.post(`${API}/requests/counselling`, form, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+      }
       setDone(true);
       onSuccess();
     } catch (err) {
@@ -78,8 +107,8 @@ const RequestModal = ({ onClose, onSuccess, sessionsLeft, unlimited }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in slide-in-from-bottom-4 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Book Career Counselling</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Fill in your details and preferred time.</p>
+            <h3 className="text-sm font-bold text-slate-900">{isReadOnly ? 'Session Details' : initialData ? 'Edit Booking' : 'Book Career Counselling'}</h3>
+            <p className="text-xs text-slate-500 mt-0.5">{isReadOnly ? 'View the details of your session.' : 'Fill in your details and preferred time.'}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-all">
             <X size={16} />
@@ -91,8 +120,8 @@ const RequestModal = ({ onClose, onSuccess, sessionsLeft, unlimited }) => {
             <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
               <CheckCircle2 size={22} className="text-emerald-600" />
             </div>
-            <p className="text-sm font-bold text-slate-900 mb-1">Session Booked!</p>
-            <p className="text-xs text-slate-500 mb-5">Your session request has been received. Our team will confirm via email shortly.</p>
+            <p className="text-sm font-bold text-slate-900 mb-1">{initialData ? 'Session Updated!' : 'Session Booked!'}</p>
+            <p className="text-xs text-slate-500 mb-5">{initialData ? 'Your session details have been successfully updated.' : 'Your session request has been received. Our team will confirm via email shortly.'}</p>
             <Button onClick={onClose} variant="outline" className="rounded-xl h-9 px-5 text-xs font-bold">Close</Button>
           </div>
         ) : (
@@ -101,30 +130,111 @@ const RequestModal = ({ onClose, onSuccess, sessionsLeft, unlimited }) => {
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="bName" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Full Name *</Label>
                 <Input id="bName" value={form.bookingName} onChange={e => set('bookingName', e.target.value)}
-                  placeholder="Your name" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+                  placeholder="Your name" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required disabled={isReadOnly} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="bEmail" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Email *</Label>
                 <Input id="bEmail" type="email" value={form.bookingEmail} onChange={e => set('bookingEmail', e.target.value)}
-                  placeholder="your@email.com" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+                  placeholder="your@email.com" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required disabled={isReadOnly} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="bPhone" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Phone</Label>
                 <Input id="bPhone" value={form.bookingPhone} onChange={e => set('bookingPhone', e.target.value)}
-                  placeholder="+91 98765 43210" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" />
+                  placeholder="+91 98765 43210" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" disabled={isReadOnly} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="bDate" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Preferred Date *</Label>
                 <Input id="bDate" type="date" value={form.bookingDate} onChange={e => set('bookingDate', e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+                  className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required disabled={isReadOnly} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="bTime" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Preferred Time *</Label>
                 <Input id="bTime" type="time" value={form.bookingTime} onChange={e => set('bookingTime', e.target.value)}
-                  className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required />
+                  className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required disabled={isReadOnly} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="qual" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Highest Qualification *</Label>
+                <Input id="qual" value={form.qualification} onChange={e => set('qualification', e.target.value)}
+                  placeholder="e.g. B.Tech, MBA" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required disabled={isReadOnly} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="major" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Major / Specialization *</Label>
+                <Input id="major" value={form.major} onChange={e => set('major', e.target.value)}
+                  placeholder="e.g. Computer Science" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required disabled={isReadOnly} />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="exp" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Work Experience (Years/Months) *</Label>
+                <Input id="exp" value={form.workExperience} onChange={e => set('workExperience', e.target.value)}
+                  placeholder="e.g. 2 Years / None" className="rounded-xl border-slate-200 focus:border-rose-400 text-sm" required disabled={isReadOnly} />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="notes" className="text-xs font-bold text-slate-700 uppercase tracking-widest">Specific questions / Goals</Label>
+                <textarea id="notes" value={form.notes} onChange={e => set('notes', e.target.value)}
+                  placeholder="What would you like to discuss during the session?" 
+                  className="w-full text-sm rounded-xl border border-slate-200 p-3 focus:border-rose-400 focus:outline-none resize-none disabled:bg-slate-50 disabled:text-slate-500" 
+                  rows={2} disabled={isReadOnly} />
               </div>
             </div>
+
+            {isReadOnly && initialData?.status === 'approved' && !initialData?.selectedSlot && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mt-4">
+                <p className="text-xs font-bold text-amber-800 uppercase tracking-widest mb-3">Please Confirm a Time Slot</p>
+                <div className="space-y-3">
+                  {initialData.slot1Date && (
+                    <div className="flex items-center justify-between p-3 bg-white border border-amber-100 rounded-lg">
+                      <div className="text-sm text-slate-800">
+                        <span className="font-bold">Slot 1:</span> {initialData.slot1Date} at {initialData.slot1StartTime} - {initialData.slot1EndTime}
+                      </div>
+                      <Button size="sm" disabled={confirmingSlot} onClick={() => handleSelectSlot('1')} className="bg-amber-500 hover:bg-amber-600 text-white text-xs h-8">
+                        Confirm
+                      </Button>
+                    </div>
+                  )}
+                  {initialData.slot2Date && (
+                    <div className="flex items-center justify-between p-3 bg-white border border-amber-100 rounded-lg">
+                      <div className="text-sm text-slate-800">
+                        <span className="font-bold">Slot 2:</span> {initialData.slot2Date} at {initialData.slot2StartTime} - {initialData.slot2EndTime}
+                      </div>
+                      <Button size="sm" disabled={confirmingSlot} onClick={() => handleSelectSlot('2')} className="bg-amber-500 hover:bg-amber-600 text-white text-xs h-8">
+                        Confirm
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {isReadOnly && initialData?.status === 'approved' && initialData?.selectedSlot && initialData?.meetingDate && (
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mt-4">
+                <p className="text-xs font-bold text-emerald-800 uppercase tracking-widest mb-3">Scheduled Meeting Details</p>
+                <div className="grid grid-cols-2 gap-3 text-sm text-emerald-900">
+                  <div>
+                    <span className="font-semibold text-emerald-700 block text-xs">Date</span>
+                    {initialData.meetingDate}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-emerald-700 block text-xs">Time</span>
+                    {initialData.meetingStartTime} - {initialData.meetingEndTime}
+                  </div>
+                  {initialData.meetingLink && (
+                    <div className="col-span-2">
+                      <span className="font-semibold text-emerald-700 block text-xs">Meeting Link</span>
+                      <a href={initialData.meetingLink} target="_blank" rel="noreferrer" className="text-blue-600 underline break-all">
+                        {initialData.meetingLink}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {isReadOnly && initialData?.adminNotes && (
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mt-4">
+                <p className="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2">Additional Instructions</p>
+                <p className="text-sm text-blue-900 whitespace-pre-wrap">{initialData.adminNotes}</p>
+              </div>
+            )}
 
             {error && (
               <p className="text-xs text-rose-600 font-medium bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
@@ -132,12 +242,14 @@ const RequestModal = ({ onClose, onSuccess, sessionsLeft, unlimited }) => {
               </p>
             )}
 
-            <Button type="submit" disabled={loading}
-              className="w-full h-11 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm gap-2 shadow-md shadow-rose-500/20">
-              {loading ? <><Loader2 size={15} className="animate-spin" /> Booking…</> : <><Send size={15} /> Book Session</>}
-            </Button>
+            {!isReadOnly && (
+              <Button type="submit" disabled={loading}
+                className="w-full h-11 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm gap-2 shadow-md shadow-rose-500/20">
+                {loading ? <><Loader2 size={15} className="animate-spin" /> Saving…</> : <><Send size={15} /> {initialData ? 'Save Changes' : 'Book Session'}</>}
+              </Button>
+            )}
 
-            {!unlimited && (
+            {(!unlimited && !initialData) && (
               <p className="text-[11px] text-center text-slate-400 font-medium">
                 {sessionsLeft} session{sessionsLeft !== 1 ? 's' : ''} remaining
               </p>
@@ -175,7 +287,7 @@ const UpgradeModal = ({ onClose }) => (
 );
 
 /* ─── Sessions Table (filter + pagination + cancel) ────────────────────────── */
-const SessionsTable = ({ sessions, loading, onCancel }) => {
+const SessionsTable = ({ sessions, loading, onCancel, onView }) => {
   const [filter, setFilter]       = useState('all');
   const [page, setPage]           = useState(1);
   const [confirmId, setConfirmId] = useState(null);
@@ -314,7 +426,13 @@ const SessionsTable = ({ sessions, loading, onCancel }) => {
                     <td className="py-3 px-3 text-slate-400 whitespace-nowrap">
                       {new Date(s.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="py-3 px-3">
+                    <td className="py-3 px-3 flex items-center gap-1.5">
+                      <button
+                        onClick={() => onView(s)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                      >
+                        {s.status === 'pending' ? 'Edit' : 'View'}
+                      </button>
                       {cancellable(s.status) && (
                         <button
                           onClick={() => setConfirmId(s._id)}
@@ -377,6 +495,7 @@ const SessionsTable = ({ sessions, loading, onCancel }) => {
 const CareerCounselling = () => {
   const { user, refreshUser } = useAuth();
   const [showModal, setShowModal]       = useState(false);
+  const [editingSession, setEditingSession] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [sessions, setSessions]         = useState([]);
   const [counts, setCounts]             = useState({ booked: 0, accepted: 0, upcoming: 0, completed: 0, rejected: 0 });
@@ -429,6 +548,7 @@ const CareerCounselling = () => {
   return (
     <>
       <div className="space-y-8 pb-12">
+        <PageSOPBanner pageKey="careerCounselling" />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -497,18 +617,21 @@ const CareerCounselling = () => {
               <RefreshCw size={14} />
             </button>
           </div>
-          <SessionsTable sessions={sessions} loading={sessionsLoading} onCancel={handleCancelDone} />
+          <SessionsTable sessions={sessions} loading={sessionsLoading} onCancel={handleCancelDone} onView={(s) => { setEditingSession(s); setShowModal(true); }} />
         </div>
       </div>
 
       {showModal && (
         <RequestModal
-          onClose={() => setShowModal(false)}
+          onClose={() => { setShowModal(false); setEditingSession(null); }}
           sessionsLeft={sessionsLeft}
           unlimited={unlimited}
+          initialData={editingSession}
           onSuccess={() => {
             fetchSessions();
             refreshUser();
+            setShowModal(false);
+            setEditingSession(null);
           }}
         />
       )}

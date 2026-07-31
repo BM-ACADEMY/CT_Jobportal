@@ -75,7 +75,7 @@ const PublicHeader = () => {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.map(link => (
+            {NAV_LINKS.filter(link => !(link.label === 'Find Jobs' && (user?.role === 'recruiter' || user?.role === 'company'))).map(link => (
               <Link
                 key={link.to}
                 to={link.to}
@@ -182,7 +182,7 @@ const PublicHeader = () => {
         {/* Mobile Menu */}
         {mobileOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-5 space-y-1">
-            {NAV_LINKS.map(link => (
+            {NAV_LINKS.filter(link => !(link.label === 'Find Jobs' && (user?.role === 'recruiter' || user?.role === 'company'))).map(link => (
               <Link
                 key={link.to}
                 to={link.to}

@@ -1,154 +1,74 @@
-import React, { useState } from 'react';
-import { ClipboardList, Play, CheckCircle2, Clock, Star, ChevronRight, Trophy, BarChart2, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ClipboardList, Play, CheckCircle2, Clock, Star, ChevronRight, Trophy, BarChart2, Lock, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import FeatureGate from '@/components/subscription/FeatureGate';
+import { hasFeature } from '@/components/subscription/FeatureGate';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
 
-const CATEGORIES = [
-  { label: 'JavaScript', questions: 30, duration: '30 min', level: 'Intermediate', color: 'bg-yellow-50 text-yellow-700 border-yellow-100', attempts: 1240 },
-  { label: 'Python',     questions: 25, duration: '25 min', level: 'Beginner',     color: 'bg-blue-50 text-blue-700 border-blue-100',     attempts: 980 },
-  { label: 'React',      questions: 20, duration: '20 min', level: 'Intermediate', color: 'bg-cyan-50 text-cyan-700 border-cyan-100',       attempts: 870 },
-  { label: 'SQL',        questions: 20, duration: '20 min', level: 'Beginner',     color: 'bg-orange-50 text-orange-700 border-orange-100', attempts: 760 },
-  { label: 'System Design', questions: 15, duration: '45 min', level: 'Advanced', color: 'bg-violet-50 text-violet-700 border-violet-100', attempts: 540 },
-  { label: 'Data Structures', questions: 25, duration: '35 min', level: 'Advanced', color: 'bg-rose-50 text-rose-700 border-rose-100',    attempts: 620 },
-  { label: 'Communication', questions: 15, duration: '15 min', level: 'Beginner',  color: 'bg-emerald-50 text-emerald-700 border-emerald-100', attempts: 430 },
-  { label: 'Aptitude',   questions: 30, duration: '30 min', level: 'Intermediate', color: 'bg-indigo-50 text-indigo-700 border-indigo-100', attempts: 1100 },
-];
+const API = import.meta.env.VITE_API_BASE_URL;
 
-const LEVEL_COLOR = {
-  Beginner:     'bg-emerald-50 text-emerald-700',
-  Intermediate: 'bg-amber-50 text-amber-700',
-  Advanced:     'bg-rose-50 text-rose-700',
-};
-
-const SAMPLE_QUESTIONS = [
-  {
-    id: 1,
-    q: 'What is the time complexity of binary search?',
-    options: ['O(n)', 'O(log n)', 'O(n²)', 'O(1)'],
-    answer: 1,
-    category: 'Data Structures',
-  },
-  {
-    id: 2,
-    q: 'Which hook in React is used for side effects?',
-    options: ['useState', 'useContext', 'useEffect', 'useReducer'],
-    answer: 2,
-    category: 'React',
-  },
-  {
-    id: 3,
-    q: 'In SQL, which clause is used to filter groups?',
-    options: ['WHERE', 'HAVING', 'GROUP BY', 'ORDER BY'],
-    answer: 1,
-    category: 'SQL',
-  },
-];
-
-const QuizModal = ({ test, onClose }) => {
-  const [current, setCurrent] = useState(0);
-  const [selected, setSelected] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-
-  const q = SAMPLE_QUESTIONS[current];
-  const total = SAMPLE_QUESTIONS.length;
-  const score = SAMPLE_QUESTIONS.filter(qs => selected[qs.id] === qs.answer).length;
-
-  if (submitted) {
-    const pct = Math.round((score / total) * 100);
-    return (
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md text-center space-y-5">
-          <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto">
-            <Trophy size={28} className="text-emerald-600" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900">Test Complete!</h2>
-          <p className="text-4xl font-bold text-emerald-600">{pct}%</p>
-          <p className="text-sm text-slate-500">You answered <strong>{score}/{total}</strong> questions correctly</p>
-          {pct >= 70 ? (
-            <Badge className="bg-emerald-50 text-emerald-700 border-none text-xs font-bold px-3 py-1">
-              <CheckCircle2 size={12} className="inline mr-1" /> Passed
-            </Badge>
-          ) : (
-            <Badge className="bg-amber-50 text-amber-700 border-none text-xs font-bold px-3 py-1">
-              Keep Practicing
-            </Badge>
-          )}
-          <div className="flex gap-3 justify-center">
-            <Button variant="outline" onClick={onClose} className="rounded-xl border-slate-200 font-bold text-xs">
-              Close
-            </Button>
-            <Button onClick={() => { setSelected({}); setCurrent(0); setSubmitted(false); }}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
-              Retake
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+const ResultDetailsModal = ({ result, onClose }) => {
+// ... keep modal logic ...
+  if (!result || !result.questions) return null;
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg space-y-6">
-        {/* Progress */}
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{test} Test</p>
-          <span className="text-xs font-bold text-slate-400">{current + 1} / {total}</span>
-        </div>
-        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${((current + 1) / total) * 100}%` }} />
-        </div>
-
-        {/* Question */}
-        <div>
-          <p className="text-sm font-bold text-slate-900 leading-relaxed mb-5">{q.q}</p>
-          <div className="space-y-2">
-            {q.options.map((opt, idx) => (
-              <button
-                key={idx}
-                onClick={() => setSelected(prev => ({ ...prev, [q.id]: idx }))}
-                className={`w-full text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
-                  selected[q.id] === idx
-                    ? 'border-emerald-400 bg-emerald-50 text-emerald-800 font-bold'
-                    : 'border-slate-200 hover:border-emerald-200 hover:bg-slate-50 text-slate-700'
-                }`}
-              >
-                <span className="font-bold mr-2 text-slate-400">{String.fromCharCode(65 + idx)}.</span> {opt}
-              </button>
-            ))}
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50 shrink-0">
+          <div>
+            <h2 className="text-xl font-black text-slate-900 capitalize">{result.skill} Assessment</h2>
+            <p className="text-sm font-bold text-slate-500">Score: {result.percentage}% ({result.score}/{result.total})</p>
           </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200 text-slate-600 hover:bg-slate-300">
+            <X size={20} />
+          </button>
         </div>
+        
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          {result.questions.map((q, i) => {
+            const userAnswer = result.answers ? result.answers[i] : null;
+            const isCorrect = userAnswer === q.correct_option;
+            
+            return (
+              <div key={i} className="space-y-3 bg-white border border-slate-100 p-5 rounded-2xl shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                    {isCorrect ? <CheckCircle2 size={14} /> : <X size={14} />}
+                  </div>
+                  <p className="text-sm font-bold text-slate-900 leading-relaxed pt-0.5">{i + 1}. {q.question}</p>
+                </div>
+                
+                <div className="pl-9 space-y-2">
+                  {Object.entries(q.options).map(([key, val]) => {
+                    const isSelected = userAnswer === key;
+                    const isActualCorrect = q.correct_option === key;
+                    
+                    let bg = 'bg-slate-50 border-slate-100 text-slate-600';
+                    if (isActualCorrect) bg = 'bg-emerald-50 border-emerald-200 text-emerald-800 font-bold';
+                    else if (isSelected && !isActualCorrect) bg = 'bg-rose-50 border-rose-200 text-rose-800 font-bold';
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={onClose} className="rounded-xl border-slate-200 font-bold text-xs">
-            Exit Test
-          </Button>
-          <div className="flex gap-2">
-            {current > 0 && (
-              <Button variant="outline" onClick={() => setCurrent(p => p - 1)} className="rounded-xl border-slate-200 font-bold text-xs">
-                Previous
-              </Button>
-            )}
-            {current < total - 1 ? (
-              <Button
-                onClick={() => setCurrent(p => p + 1)}
-                disabled={selected[q.id] === undefined}
-                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
-              >
-                Next <ChevronRight size={13} />
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setSubmitted(true)}
-                disabled={selected[q.id] === undefined}
-                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
-              >
-                Submit Test
-              </Button>
-            )}
-          </div>
+                    return (
+                      <div key={key} className={`p-3 rounded-xl border text-sm transition-all ${bg}`}>
+                        <span className="font-bold mr-2 opacity-50">{key.toUpperCase()}.</span> {val}
+                        {isSelected && !isActualCorrect && <span className="ml-2 text-[10px] uppercase font-black text-rose-500">(Your Answer)</span>}
+                        {isActualCorrect && <span className="ml-2 text-[10px] uppercase font-black text-emerald-600">(Correct Answer)</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {q.explanation && (
+                  <div className="ml-9 mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Explanation</p>
+                    <p className="text-xs font-medium text-slate-700">{q.explanation}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -156,17 +76,38 @@ const QuizModal = ({ test, onClose }) => {
 };
 
 const SkillTests = () => {
-  const [activeTest, setActiveTest] = useState(null);
-  const [scores] = useState({ JavaScript: 82, Python: 76 });
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeResult, setActiveResult] = useState(null);
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      try {
+        const res = await axios.get(`${API}/skill-tests/my-results`);
+        setResults(res.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResults();
+  }, []);
+
+  const bestScore = results.length > 0 ? Math.max(...results.map(r => r.percentage)) : '--';
+  const avgScore = results.length > 0 ? Math.round(results.reduce((a, b) => a + b.percentage, 0) / results.length) : '--';
+  const passedTests = results.filter(r => r.passed).length;
+  
+  const hasPremium = hasFeature(user, 'hasMockInterviews');
+  const canTakeTest = hasPremium || results.length < 5;
 
   return (
-    <FeatureGate
-      featureKey="hasInterviewPrep"
-      featureName="Skill Tests"
-      description="Prove your skills with verified assessments that boost your profile visibility and build recruiter confidence."
-      subscriptionPath="/jobseeker/subscription"
-    >
-      {activeTest && <QuizModal test={activeTest} onClose={() => setActiveTest(null)} />}
+    <>
+      <PageSOPBanner pageKey="skillTests" />
+      
+      {activeResult && <ResultDetailsModal result={activeResult} onClose={() => setActiveResult(null)} />}
 
       <div className="space-y-8 pb-12">
         {/* Header */}
@@ -178,20 +119,34 @@ const SkillTests = () => {
               </div>
               <h1 className="text-xl font-bold text-slate-900">Skill Assessments</h1>
             </div>
-            <p className="text-sm text-slate-500">Earn verified badges and stand out to recruiters.</p>
+            <p className="text-sm text-slate-500">Take an assessment to earn verified badges and stand out to recruiters.</p>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-xl">
-            <Trophy size={14} className="text-indigo-600" />
-            <p className="text-xs font-bold text-indigo-700">{Object.keys(scores).length} Tests Passed</p>
+          
+          <div className="flex flex-col items-end gap-1">
+            <Button 
+              onClick={() => {
+                if (canTakeTest) navigate('/free-assessment');
+                else navigate('/jobseeker/subscription');
+              }}
+              className={`h-12 px-8 rounded-xl font-bold shadow-lg ${canTakeTest ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white gap-2'}`}
+            >
+              {!canTakeTest && <Lock size={16} />}
+              {canTakeTest ? 'Take Assessment' : 'Upgrade to Take More Tests'}
+            </Button>
+            {!hasPremium && (
+              <span className="text-[10px] font-bold text-slate-400">
+                {results.length} / 5 free tests used
+              </span>
+            )}
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Tests Taken', value: Object.keys(scores).length, icon: ClipboardList, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-            { label: 'Best Score', value: Object.values(scores).length ? `${Math.max(...Object.values(scores))}%` : '--', icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
-            { label: 'Avg Score', value: Object.values(scores).length ? `${Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length)}%` : '--', icon: BarChart2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+            { label: 'Tests Taken', value: results.length, icon: ClipboardList, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+            { label: 'Best Score', value: bestScore !== '--' ? `${bestScore}%` : '--', icon: Star, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { label: 'Avg Score', value: avgScore !== '--' ? `${avgScore}%` : '--', icon: BarChart2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           ].map(s => (
             <div key={s.label} className="rounded-2xl border border-slate-100 bg-white p-4 text-center">
               <div className={`w-8 h-8 ${s.bg} rounded-xl flex items-center justify-center mx-auto mb-2`}>
@@ -204,66 +159,80 @@ const SkillTests = () => {
         </div>
 
         {/* Already scored */}
-        {Object.keys(scores).length > 0 && (
+        {passedTests > 0 && (
           <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
             <p className="text-xs font-bold text-emerald-800 mb-3 uppercase tracking-widest">Your Badges</p>
             <div className="flex flex-wrap gap-3">
-              {Object.entries(scores).map(([skill, score]) => (
-                <div key={skill} className="flex items-center gap-2 bg-white border border-emerald-100 px-3 py-2 rounded-xl">
+              {results.filter(r => r.passed).map((r) => (
+                <div key={r._id} className="flex items-center gap-2 bg-white border border-emerald-100 px-3 py-2 rounded-xl">
                   <CheckCircle2 size={14} className="text-emerald-500" />
-                  <span className="text-xs font-bold text-slate-800">{skill}</span>
-                  <span className="text-xs font-bold text-emerald-600">{score}%</span>
+                  <span className="text-xs font-bold text-slate-800 capitalize">{r.skill}</span>
+                  <span className="text-xs font-bold text-emerald-600">{r.percentage}%</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Available Tests */}
+        {/* Test Results */}
         <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Available Assessments</p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {CATEGORIES.map(cat => {
-              const taken = scores[cat.label];
-              return (
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Your Assessment Results</p>
+          
+          {loading ? (
+            <div className="py-12 flex justify-center">
+              <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            </div>
+          ) : results.length === 0 ? (
+            <div className="py-16 bg-white border border-slate-100 rounded-2xl flex flex-col items-center justify-center text-center px-4">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
+                <ClipboardList size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">No assessments taken</h3>
+              <p className="text-sm text-slate-500 max-w-sm mb-6">Take your first skill assessment to prove your expertise to top recruiters.</p>
+              <Button onClick={() => navigate('/free-assessment')} className="rounded-xl bg-slate-900 text-white font-bold h-11 px-8">
+                Start First Assessment
+              </Button>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {results.map(r => (
                 <div
-                  key={cat.label}
+                  key={r._id}
                   className="flex items-center gap-4 p-5 rounded-2xl border border-slate-100 bg-white hover:border-indigo-100 hover:shadow-sm transition-all group"
                 >
-                  <div className={`flex-none px-3 py-2 rounded-xl border text-xs font-bold ${cat.color}`}>
-                    {cat.label.slice(0, 2).toUpperCase()}
+                  <div className={`flex-none px-3 py-2 rounded-xl border text-xs font-bold ${r.passed ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                    {r.skill.slice(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-slate-900">{cat.label}</p>
-                      <Badge className={`text-[8px] font-bold border-none px-1.5 py-0 ${LEVEL_COLOR[cat.level]}`}>
-                        {cat.level}
+                      <p className="text-sm font-bold text-slate-900 capitalize">{r.skill}</p>
+                      <Badge className={`text-[8px] font-bold border-none px-1.5 py-0 ${r.passed ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {r.percentage}% {r.passed ? 'Passed' : 'Try Again'}
                       </Badge>
-                      {taken && (
-                        <Badge className="text-[8px] font-bold border-none px-1.5 py-0 bg-emerald-50 text-emerald-700">
-                          {taken}% ✓
-                        </Badge>
-                      )}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                        <Clock size={9} /> {cat.duration}
-                      </span>
-                      <span className="text-[10px] text-slate-400">{cat.questions} questions</span>
-                      <span className="text-[10px] text-slate-400">{cat.attempts.toLocaleString()} attempts</span>
+                      <span className="text-[10px] text-slate-400">{r.score} out of {r.total} correct</span>
+                      {r.createdAt && (
+                        <>
+                          <span className="text-[10px] text-slate-300">•</span>
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => setActiveTest(cat.label)}
-                    className="h-8 px-4 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs gap-1 shrink-0"
+                    onClick={() => setActiveResult(r)}
+                    className="h-8 px-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs shrink-0"
                   >
-                    <Play size={11} /> {taken ? 'Retake' : 'Start'}
+                    View Details
                   </Button>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tip */}
@@ -271,7 +240,7 @@ const SkillTests = () => {
           <p className="text-xs font-bold text-slate-700 mb-2">How badges work</p>
           <div className="space-y-1.5">
             {[
-              'Score ≥ 70% to earn a verified badge on your profile',
+              'Score ≥ 60% to earn a verified badge on your profile',
               'Badges are displayed to recruiters when they view your profile',
               'Retake any test to improve your score — only the best is shown',
             ].map(t => (
@@ -283,7 +252,7 @@ const SkillTests = () => {
           </div>
         </div>
       </div>
-    </FeatureGate>
+    </>
   );
 };
 

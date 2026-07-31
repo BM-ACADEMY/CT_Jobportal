@@ -9,7 +9,7 @@ import {
   X, Globe, CheckCircle2, ChevronLeft, ChevronRight,
   TrendingUp, Calendar, Link2, Star, ExternalLink, Mail
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const DOMAIN = import.meta.env.VITE_API_DOMAIN;
@@ -355,7 +355,8 @@ const Companies = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [industry, setIndustry] = useState('All');
-  const [type, setType] = useState('all');
+  const [searchParams] = useSearchParams();
+  const [type, setType] = useState(searchParams.get('type') || 'all');
   const [page, setPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);

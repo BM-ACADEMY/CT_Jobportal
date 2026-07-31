@@ -161,11 +161,31 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
   },
+  // Set only by the "Add Team Member" invite/accept-join-request flow (never by a recruiter
+  // setting up their own solo company profile) — the actual gate for page-level permission
+  // enforcement, since `company` alone is also set for solo recruiters and can't distinguish
+  // "delegated team member" from "owns their own company profile".
+  isTeamManaged: {
+    type: Boolean,
+    default: false
+  },
+  teamPermissions: {
+    type: [String],
+    default: [],
+    enum: ['post_job', 'my_jobs', 'candidate_search', 'messages',
+           'ats_pipeline', 'analytics', 'bulk_messaging',
+           'bulk_applicant_management', 'interview_scheduling', 'ai_candidate_matching']
+  },
   pendingCompanyInvite: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Company'
+    company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },
+    type: { type: String, enum: ['employee', 'recruiter'], default: 'employee' },
+    permissions: { type: [String], default: [] }
   },
   savedJobs: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Job'
+  }],
+  hiddenJobs: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Job'
   }],
@@ -219,11 +239,7 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  salaryBenchmarkingUsed: {
-    type: Number,
-    default: 0
-  },
-  interviewPrepUsed: {
+  mockInterviewsUsed: {
     type: Number,
     default: 0
   },
@@ -232,6 +248,10 @@ const userSchema = new mongoose.Schema({
     default: 0
   },
   priorityApplicationsUsed: {
+    type: Number,
+    default: 0
+  },
+  joinRequestsUsed: {
     type: Number,
     default: 0
   },
@@ -265,6 +285,10 @@ const userSchema = new mongoose.Schema({
   },
   lastLogoutAt: {
     type: Date
+  },
+  isActiveSeat: {
+    type: Boolean,
+    default: false
   },
   sessionLogs: [{
     loginAt: { type: Date, default: Date.now },

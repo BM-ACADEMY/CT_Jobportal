@@ -3,7 +3,16 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const Role = require('../models/Role');
 const Company = require('../models/Company');
+const TeamActivityLog = require('../models/TeamActivityLog');
 const sendEmail = require('../utils/sendEmail');
+const { emailWrapper } = require('../utils/emailTemplates');
+const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
+
+const TEAM_PERMISSIONS = [
+  'post_job', 'my_jobs', 'candidate_search', 'messages',
+  'ats_pipeline', 'analytics', 'bulk_messaging',
+  'bulk_applicant_management', 'interview_scheduling', 'ai_candidate_matching'
+];
 
 // @desc    Get Recruiter Profile and Company Details
 // @route   GET /api/recruiter/profile
@@ -27,7 +36,8 @@ const getRecruiterProfile = async (req, res) => {
       recruiterProfile: user.recruiterProfile,
       company: user.company,
       subscription: user.subscription,
-      downloadsUsed: user.downloadsUsed || 0
+      downloadsUsed: user.downloadsUsed || 0,
+      joinRequestsUsed: user.joinRequestsUsed || 0
     });
   } catch (err) {
     console.error('Get Recruiter Profile Error:', err.message);
@@ -173,7 +183,7 @@ const getTeamMembers = async (req, res) => {
       ],
       _id: { $ne: userId } 
     })
-      .select('name email avatar recruiterProfile companyProfile role companyHistory createdAt')
+      .select('name email avatar recruiterProfile companyProfile role companyHistory createdAt display_id isActiveSeat')
       .populate('role', 'name');
 
     const mappedMembers = members.map(m => {
@@ -184,7 +194,10 @@ const getTeamMembers = async (req, res) => {
         email: m.email,
         avatar: m.avatar,
         statusType: hist ? hist.status : 'Current',
-        role: m.role
+        role: m.role,
+        display_id: m.display_id,
+        isActiveSeat: m.isActiveSeat,
+        teamPermissions: m.teamPermissions
       };
     });
 
@@ -195,58 +208,91 @@ const getTeamMembers = async (req, res) => {
   }
 };
 
-// @desc    Invite a team member by email (send invite / update their company)
+// @desc    Add a team member — Employee or Recruiter, chosen by the admin at invite time.
+//          Employees get no permission picker (just marked as working here). Recruiters
+//          get admin-granted page-level access, enforced in their own panel once accepted.
+//          Requires the invitee to already be registered with role 'recruiter'; sends an
+//          invite email, actual attachment happens when they accept (userController.acceptCompanyInvite).
 // @route   POST /api/company/team/invite
-const inviteTeamMember = async (req, res) => {
+const addTeamMember = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { email, role: memberRole } = req.body;
-
+    const { email, type, permissions } = req.body;
     if (!email) return res.status(400).json({ msg: 'Email is required' });
+    if (!['employee', 'recruiter'].includes(type)) {
+      return res.status(400).json({ msg: 'type must be employee or recruiter' });
+    }
 
-    const currentUser = await User.findById(userId).populate('role');
-    if (!currentUser) return res.status(404).json({ msg: 'User not found' });
+    const grantedPermissions = type === 'recruiter' && Array.isArray(permissions) ? permissions : [];
+    const invalidPerm = grantedPermissions.find(p => !TEAM_PERMISSIONS.includes(p));
+    if (invalidPerm) return res.status(400).json({ msg: `Invalid permission: ${invalidPerm}` });
 
-    if (!currentUser.company) {
-      const found = await Company.findOne({ admin_email: currentUser.email });
+    const adminUser = await User.findById(req.user.id);
+    if (!adminUser) return res.status(404).json({ msg: 'User not found' });
+
+    if (!adminUser.company) {
+      const found = await Company.findOne({ admin_email: adminUser.email });
       if (found) {
-        currentUser.company = found._id;
-        await currentUser.save();
+        adminUser.company = found._id;
+        await adminUser.save();
       } else {
-        return res.status(400).json({ msg: 'Please complete your company profile in Settings before inviting members.' });
+        return res.status(400).json({ msg: 'Please complete your company profile in Settings before adding team members.' });
       }
     }
 
     // Check user seats limit
-    const subscription = currentUser.subscription;
+    const userWithSub = await User.findById(req.user.id).populate('subscription');
+    const subscription = userWithSub?.subscription;
     if (subscription) {
-      const currentMemberCount = await User.countDocuments({ 
+      const currentMemberCount = await User.countDocuments({
         $or: [
-          { company: currentUser.company },
-          { employerCompany: currentUser.company }
+          { company: adminUser.company },
+          { employerCompany: adminUser.company }
         ]
       });
-      
+
       if (currentMemberCount >= subscription.userSeats) {
-        return res.status(400).json({ 
-          msg: `Seat limit reached. Your plan allows only ${subscription.userSeats} seat(s). Please upgrade your subscription.` 
+        return res.status(400).json({
+          msg: `Seat limit reached. Your plan allows only ${subscription.userSeats} seat(s). Please upgrade your subscription.`
         });
       }
     }
 
-    const invitee = await User.findOne({ email }).populate('role');
-    if (!invitee) return res.status(404).json({ msg: 'No recruiter found with that email. They must register as a recruiter first.' });
-    if (invitee.role?.name !== 'recruiter') {
+    const existing = await User.findOne({ email: email.toLowerCase() }).populate('role');
+    if (!existing) {
+      return res.status(404).json({ msg: 'No recruiter found with that email. They must be registered first.' });
+    }
+    if (existing.role?.name !== 'recruiter') {
       return res.status(400).json({ msg: 'No recruiter found with that email. Please ensure the user is registered as a recruiter.' });
     }
+    if (existing.employerCompany && existing.employerCompany.toString() === adminUser.company.toString()) {
+      return res.status(400).json({ msg: 'This user is already a part of your team.' });
+    }
+    if (existing.employerCompany) {
+      return res.status(400).json({ msg: 'This user already belongs to another organization.' });
+    }
+    if (existing.pendingCompanyInvite?.company) {
+      return res.status(400).json({ msg: 'This user already has a pending invite.' });
+    }
 
-    invitee.company = currentUser.company;
-    invitee.companyProfile = { ...invitee.companyProfile, adminRole: memberRole || 'Member' };
-    await invitee.save();
+    existing.pendingCompanyInvite = { company: adminUser.company, type, permissions: grantedPermissions };
+    await existing.save();
 
-    res.json({ msg: `${email} has been added to your team.` });
+    const company = await Company.findById(adminUser.company);
+    const roleLabel = type === 'recruiter' ? 'Recruiter' : 'Employee';
+
+    await sendEmail({
+      email,
+      subject: `Invitation to join ${company?.name || 'an organization'}`,
+      html: emailWrapper('Team Invitation', `
+        <p>Hi ${existing.name},</p>
+        <p><strong>${company?.name || 'An organization'}</strong> has invited you to join their team as a <strong>${roleLabel}</strong> on Velaivaaipu.</p>
+        <p>Please log in to your account and accept the invite from your dashboard.</p>
+      `)
+    });
+
+    res.status(200).json({ msg: `Invite sent to ${email} successfully.` });
   } catch (err) {
-    console.error('Invite Team Member Error:', err);
+    console.error('Add Team Member Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
@@ -275,11 +321,123 @@ const removeTeamMember = async (req, res) => {
     }
 
     member.company = undefined;
+    member.isTeamManaged = false;
+    member.teamPermissions = [];
     await member.save();
 
     res.json({ msg: 'Team member removed successfully' });
   } catch (err) {
     console.error('Remove Team Member Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Update an existing team-managed recruiter's granted page permissions
+// @route   PUT /api/company/team/:memberId/permissions
+const updateTeamMemberPermissions = async (req, res) => {
+  try {
+    const { memberId } = req.params;
+    const { permissions } = req.body;
+
+    if (!Array.isArray(permissions) || permissions.some(p => !TEAM_PERMISSIONS.includes(p))) {
+      return res.status(400).json({ msg: 'Invalid permissions list' });
+    }
+
+    const adminUser = await User.findById(req.user.id);
+    if (!adminUser?.company) return res.status(403).json({ msg: 'Not authorized' });
+
+    const member = await User.findById(memberId);
+    if (!member) return res.status(404).json({ msg: 'Member not found' });
+    if (!member.isTeamManaged || !member.company || member.company.toString() !== adminUser.company.toString()) {
+      return res.status(403).json({ msg: 'This user is not a team-managed recruiter in your organization' });
+    }
+
+    member.teamPermissions = permissions;
+    await member.save();
+
+    res.json({ msg: 'Permissions updated', teamPermissions: member.teamPermissions });
+  } catch (err) {
+    console.error('Update Team Member Permissions Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Toggle team member seat (activate/deactivate user seat)
+// @route   PUT /api/company/team/:memberId/seat
+const toggleTeamMemberSeat = async (req, res) => {
+  try {
+    const adminUser = await User.findById(req.user.id).populate('subscription');
+    if (!adminUser || !adminUser.company) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    const { isActiveSeat } = req.body;
+    const member = await User.findById(req.params.memberId);
+    
+    if (!member) {
+      return res.status(404).json({ msg: 'Member not found' });
+    }
+
+    if (isActiveSeat) {
+      const plan = adminUser.subscriptionDetails || adminUser.subscription;
+      const userSeatsFeature = plan?.features?.find(f => f.name === 'User seats');
+      const limit = userSeatsFeature?.isActive ? Number(userSeatsFeature.value) : 1;
+
+      // Count currently active team members
+      const activeMembers = await User.countDocuments({
+        $or: [
+          { company: adminUser.company },
+          { employerCompany: adminUser.company }
+        ],
+        isActiveSeat: true,
+        _id: { $ne: adminUser._id }
+      });
+
+      if (activeMembers >= limit) {
+        return res.status(400).json({ 
+          msg: `Seat limit reached. Your plan allows ${limit} active user seat(s).` 
+        });
+      }
+    }
+
+    member.isActiveSeat = isActiveSeat;
+    await member.save();
+
+    res.json({ msg: `Seat ${isActiveSeat ? 'activated' : 'deactivated'} successfully`, isActiveSeat });
+  } catch (err) {
+    console.error('Toggle Seat Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Get activity history for delegated team members (org admin only)
+// @route   GET /api/company/team-activity
+const getTeamActivity = async (req, res) => {
+  try {
+    const adminUser = await User.findById(req.user.id);
+    if (!adminUser) return res.status(404).json({ msg: 'User not found' });
+
+    if (!adminUser.company) {
+      const found = await Company.findOne({ admin_email: adminUser.email });
+      if (found) { adminUser.company = found._id; await adminUser.save(); }
+      else return res.json({ logs: [], total: 0, page: 1, limit: 10 });
+    }
+
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit) || 10, 1);
+    const { memberId } = req.query;
+
+    const filter = { company: adminUser.company };
+    if (memberId) filter.actor = memberId;
+
+    const [logs, total] = await Promise.all([
+      TeamActivityLog.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      TeamActivityLog.countDocuments(filter)
+    ]);
+
+    res.json({ logs, total, page, limit });
+  } catch (err) {
+    console.error('Get Team Activity Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
@@ -292,91 +450,12 @@ const getOrgEmployees = async (req, res) => {
     if (!user || !user.company) return res.json([]);
 
     const employees = await User.find({ employerCompany: user.company })
-      .select('name email avatar companyProfile createdAt')
+      .select('name email avatar companyProfile createdAt display_id isActiveSeat')
       .lean();
 
     res.json(employees);
   } catch (err) {
     console.error('Get Org Employees Error:', err);
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
-
-// @desc    Send an invite to an existing user to join as an org employee
-// @route   POST /api/company/employees
-const addOrgEmployee = async (req, res) => {
-  try {
-    const adminUser = await User.findById(req.user.id);
-    if (!adminUser) return res.status(404).json({ msg: 'User not found' });
-
-    if (!adminUser.company) {
-      const found = await Company.findOne({ admin_email: adminUser.email });
-      if (found) {
-        adminUser.company = found._id;
-        await adminUser.save();
-      } else {
-        return res.status(400).json({ msg: 'Please complete your company profile in Settings before adding employees.' });
-      }
-    }
-
-    // Check user seats limit
-    const userWithSub = await User.findById(req.user.id).populate('subscription');
-    const subscription = userWithSub?.subscription;
-    if (subscription) {
-      const currentMemberCount = await User.countDocuments({ 
-        $or: [
-          { company: adminUser.company },
-          { employerCompany: adminUser.company }
-        ]
-      });
-      
-      if (currentMemberCount >= subscription.userSeats) {
-        return res.status(400).json({ 
-          msg: `Seat limit reached. Your plan allows only ${subscription.userSeats} seat(s). Please upgrade your subscription.` 
-        });
-      }
-    }
-
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ msg: 'Email is required' });
-
-    const existing = await User.findOne({ email: email.toLowerCase() }).populate('role');
-    if (!existing) {
-      return res.status(404).json({ msg: 'No recruiter found with that email. They must be registered first.' });
-    }
-
-    if (existing.role?.name !== 'recruiter') {
-      return res.status(400).json({ msg: 'No recruiter found with that email. Please ensure the user is registered as a recruiter.' });
-    }
-
-    if (existing.employerCompany && existing.employerCompany.toString() === adminUser.company.toString()) {
-        return res.status(400).json({ msg: 'This user is already a part of your team.' });
-    }
-
-    if (existing.employerCompany) {
-      return res.status(400).json({ msg: 'This employee already belongs to another organization.' });
-    }
-
-    // Set the invite
-    existing.pendingCompanyInvite = adminUser.company;
-    await existing.save();
-
-    const company = await Company.findById(adminUser.company);
-
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-        <h2 style="color: #1d4ed8;">You have been invited to join ${company?.name || 'an organization'}</h2>
-        <p>Hi ${existing.name},</p>
-        <p>${company?.name || 'An organization'} has invited you to join their team on CT Portal.</p>
-        <p>Please log in to your account and accept the invite from your dashboard.</p>
-      </div>
-    `;
-
-    await sendEmail({ email, subject: `Invitation to join ${company?.name || 'an organization'}`, html: htmlContent });
-
-    res.status(200).json({ msg: `Invite sent to ${email} successfully.` });
-  } catch (err) {
-    console.error('Add Org Employee Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
@@ -430,23 +509,48 @@ const searchCompanies = async (req, res) => {
 // @route   POST /api/recruiter/request-join/:companyId
 const requestJoinCompany = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { companyId } = req.params;
     const { statusType } = req.body; // 'Current' or 'Previous'
+
+    const user = await User.findById(userId).populate('subscription');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const plan = user.subscription;
+    const requestsFeature = plan?.features?.find(f => f.name === 'Requests');
+    const limit = requestsFeature?.isActive ? Number(requestsFeature.value) : 0;
+    
+    const used = user.joinRequestsUsed || 0;
+
+    if (limit <= 0 || used >= limit) {
+      return res.status(403).json({
+        msg: limit <= 0 
+          ? 'Join requests are not available in your current plan. Please upgrade to send requests.'
+          : `Join request limit reached. Your plan allows ${limit} requests.`,
+        requiresUpgrade: true,
+        limit,
+        used
+      });
+    }
+
     const company = await Company.findById(companyId);
     if (!company) return res.status(404).json({ msg: 'Company not found' });
 
     if (!company.pendingJoinRequests) company.pendingJoinRequests = [];
     
     // Check if already requested
-    if (company.pendingJoinRequests.some(reqItem => reqItem.user.toString() === req.user.id)) {
+    if (company.pendingJoinRequests.some(reqItem => reqItem.user.toString() === userId)) {
       return res.status(400).json({ msg: 'You have already sent a request to this company.' });
     }
 
     company.pendingJoinRequests.push({
-      user: req.user.id,
+      user: userId,
       statusType: statusType || 'Current'
     });
     await company.save();
+
+    user.joinRequestsUsed = used + 1;
+    await user.save();
 
     res.json({ msg: 'Join request sent successfully.' });
   } catch (err) {
@@ -482,12 +586,21 @@ const getJoinRequests = async (req, res) => {
   }
 };
 
-// @desc    Accept a join request from a recruiter
+// @desc    Accept a join request from a recruiter — the admin picks Employee or Recruiter
+//          (+ permissions if Recruiter) at accept time, same as the invite flow.
 // @route   POST /api/company/join-requests/:userId/accept
 const acceptJoinRequest = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const { userId } = req.params;
+    const { type, permissions } = req.body;
+
+    if (!['employee', 'recruiter'].includes(type)) {
+      return res.status(400).json({ msg: 'type must be employee or recruiter' });
+    }
+    const grantedPermissions = type === 'recruiter' && Array.isArray(permissions) ? permissions : [];
+    const invalidPerm = grantedPermissions.find(p => !TEAM_PERMISSIONS.includes(p));
+    if (invalidPerm) return res.status(400).json({ msg: `Invalid permission: ${invalidPerm}` });
 
     const company = await Company.findById(user.company);
     if (!company) return res.status(404).json({ msg: 'Company not found' });
@@ -503,31 +616,18 @@ const acceptJoinRequest = async (req, res) => {
     // Update the recruiter
     const recruiter = await User.findById(userId);
     if (recruiter) {
-      if (!recruiter.companyHistory) recruiter.companyHistory = [];
-      
       if (requestedStatusType === 'Current') {
-        // Mark existing current as previous
-        recruiter.companyHistory.forEach(h => {
-          if (h.status === 'Current') {
-            h.status = 'Previous';
-            h.leftAt = new Date();
-          }
-        });
+        // Active membership — grant the chosen type/permissions via the shared helpers.
+        if (type === 'employee') {
+          await promoteToOrgEmployee(recruiter, company._id);
+        } else {
+          await grantRecruiterTeamAccess(recruiter, company._id, grantedPermissions);
+        }
+      } else {
+        // 'Previous' — just record history, no active access grant (matches prior behavior).
+        if (!recruiter.companyHistory) recruiter.companyHistory = [];
+        recruiter.companyHistory.push({ company: company._id, status: 'Previous', joinedAt: new Date() });
       }
-      
-      // Add new company
-      recruiter.companyHistory.push({
-        company: company._id,
-        status: requestedStatusType,
-        joinedAt: new Date()
-      });
-
-      if (requestedStatusType === 'Current') {
-        recruiter.company = company._id;
-        if (!recruiter.companyProfile) recruiter.companyProfile = {};
-        recruiter.companyProfile.adminRole = 'Member';
-      }
-      
       await recruiter.save();
     }
 
@@ -584,19 +684,77 @@ const toggleCompanyAutoRenew = async (req, res) => {
   }
 };
 
+// @desc    Get sent join requests for a recruiter
+// @route   GET /api/recruiter/my-requests
+const getMyJoinRequests = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const companies = await Company.find({ 'pendingJoinRequests.user': userId })
+      .select('name logo admin_email pendingJoinRequests');
+    
+    const requests = companies.map(company => {
+      const reqInfo = company.pendingJoinRequests.find(r => r.user.toString() === userId);
+      return {
+        _id: company._id,
+        name: company.name,
+        logo: company.logo,
+        admin_email: company.admin_email,
+        statusType: reqInfo?.statusType,
+        requestedAt: reqInfo?.requestedAt,
+        status: 'pending'
+      };
+    });
+    
+    res.json(requests);
+  } catch (err) {
+    console.error('Get My Join Requests Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Revoke a join request to a company
+// @route   DELETE /api/recruiter/request-join/:companyId
+const revokeJoinRequest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { companyId } = req.params;
+    
+    const company = await Company.findById(companyId);
+    if (!company) return res.status(404).json({ msg: 'Company not found' });
+    
+    company.pendingJoinRequests = company.pendingJoinRequests.filter(reqItem => reqItem.user.toString() !== userId);
+    await company.save();
+    
+    const user = await User.findById(userId);
+    if (user && user.joinRequestsUsed > 0) {
+       user.joinRequestsUsed -= 1;
+       await user.save();
+    }
+    
+    res.json({ msg: 'Join request revoked successfully' });
+  } catch (err) {
+    console.error('Revoke Join Request Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   getRecruiterProfile,
   updateRecruiterProfile,
   getTeamMembers,
-  inviteTeamMember,
+  addTeamMember,
   removeTeamMember,
+  updateTeamMemberPermissions,
+  toggleTeamMemberSeat,
+  getTeamActivity,
   getOrgEmployees,
-  addOrgEmployee,
   removeOrgEmployee,
   searchCompanies,
   requestJoinCompany,
   getJoinRequests,
   acceptJoinRequest,
   rejectJoinRequest,
-  toggleCompanyAutoRenew
+  toggleCompanyAutoRenew,
+  getMyJoinRequests,
+  revokeJoinRequest
 };

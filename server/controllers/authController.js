@@ -253,6 +253,14 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid Credentials' });
     }
 
+    if (user.role && (user.role.name === 'recruiter' || user.role.name === 'org_employee')) {
+      if (!user.isActiveSeat) {
+        return res.status(403).json({ 
+          msg: 'Your seat is not active. Please ask your organization administrator to assign you an active seat.' 
+        });
+      }
+    }
+
     if (!user.isVerified) {
       // Setup new OTP and resend
       const otp = generateOTP();
@@ -430,7 +438,7 @@ const getUserProfile = async (req, res) => {
   try {
     let user = await User.findById(req.user.id)
       .select('-password')
-      .populate(['role', 'subscription', 'pendingCompanyInvite']);
+      .populate(['role', 'subscription', 'pendingCompanyInvite.company']);
     
     // If not found in User collection, check Admin collection
     if (!user) {
@@ -451,6 +459,15 @@ const getUserProfile = async (req, res) => {
     }
 
     const roleName = user.role.name;
+    
+    if (roleName === 'recruiter' || roleName === 'org_employee') {
+      if (!user.isActiveSeat) {
+        return res.status(403).json({ 
+          msg: 'Your seat is not active. Please ask your organization administrator to assign you an active seat.' 
+        });
+      }
+    }
+
     await ensureFreePlan(user, roleName);
 
     // Clear stale expiry for free/lifetime plans
@@ -489,7 +506,9 @@ const getUserProfile = async (req, res) => {
       counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
       employerCompany: user.employerCompany || null,
       employerCompanyName,
-      pendingCompanyInvite: user.pendingCompanyInvite || null,
+      pendingCompanyInvite: user.pendingCompanyInvite?.company ? user.pendingCompanyInvite : null,
+      isTeamManaged: user.isTeamManaged || false,
+      teamPermissions: user.teamPermissions || [],
       purchasedFeatures: user.purchasedFeatures || [],
       hasInchargeDrives: await hasInchargeDrives(user._id),
       display_id: user.display_id,
