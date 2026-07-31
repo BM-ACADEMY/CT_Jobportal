@@ -286,6 +286,10 @@ const userSchema = new mongoose.Schema({
   lastLogoutAt: {
     type: Date
   },
+  isActiveSeat: {
+    type: Boolean,
+    default: false
+  },
   sessionLogs: [{
     loginAt: { type: Date, default: Date.now },
     logoutAt: { type: Date, default: null },

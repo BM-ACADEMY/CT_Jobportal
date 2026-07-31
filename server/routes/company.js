@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getRecruiterProfile, updateRecruiterProfile, getTeamMembers, addTeamMember, removeTeamMember, updateTeamMemberPermissions, getTeamActivity, getOrgEmployees, removeOrgEmployee, getJoinRequests, acceptJoinRequest, rejectJoinRequest, toggleCompanyAutoRenew } = require('../controllers/recruiterController');
+const { getRecruiterProfile, updateRecruiterProfile, getTeamMembers, addTeamMember, removeTeamMember, updateTeamMemberPermissions, toggleTeamMemberSeat, getTeamActivity, getOrgEmployees, removeOrgEmployee, getJoinRequests, acceptJoinRequest, rejectJoinRequest, toggleCompanyAutoRenew } = require('../controllers/recruiterController');
 const { getIncomingDriveRequests, respondToDriveRequest } = require('../controllers/companyDriveController');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
@@ -23,6 +23,7 @@ router.put('/profile', upload.fields([
 router.get('/team', getTeamMembers);
 router.post('/team/invite', addTeamMember);
 router.put('/team/:memberId/permissions', updateTeamMemberPermissions);
+router.put('/team/:memberId/seat', toggleTeamMemberSeat);
 router.get('/team-activity', getTeamActivity);
 router.delete('/team/:memberId', removeTeamMember);
 

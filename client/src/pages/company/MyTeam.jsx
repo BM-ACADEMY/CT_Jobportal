@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Plus, Trash2, Mail, Loader2, Pencil, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Users, Plus, Trash2, Mail, Loader2, Pencil, ChevronLeft, ChevronRight, Clock, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
@@ -34,7 +35,10 @@ const MyTeam = () => {
         axios.get(`${API}/company/employees`, { headers })
       ]);
       const recruiters = teamRes.data.map(m => ({ ...m, kind: 'recruiter' }));
-      const employees = employeesRes.data.map(m => ({ ...m, kind: 'employee' }));
+      const recruiterIds = new Set(recruiters.map(r => r._id));
+      const employees = employeesRes.data
+        .filter(m => !recruiterIds.has(m._id))
+        .map(m => ({ ...m, kind: 'employee' }));
       setMembers([...recruiters, ...employees]);
     } catch (err) {
       console.error(err);
@@ -106,6 +110,18 @@ const MyTeam = () => {
       toast.error(err.response?.data?.msg || 'Failed to update permissions');
     } finally {
       setSavingPermissions(false);
+    }
+  };
+
+  const handleSeatToggle = async (member, checked) => {
+    try {
+      await axios.put(`${API}/company/team/${member._id}/seat`, { isActiveSeat: checked }, { headers });
+      toast.success(`Seat ${checked ? 'activated' : 'deactivated'} for ${member.name}`);
+      fetchRoster();
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to update seat status');
+      // fetchRoster() on error to revert optimistic UI if we had it, but here we just re-fetch
+      fetchRoster();
     }
   };
 
@@ -257,16 +273,28 @@ const MyTeam = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {m.kind === 'recruiter' && (
-                        <button
-                          onClick={() => openEditPermissions(m)}
-                          className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all outline-none"
-                          title="Manage Permissions"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                      )}
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 border border-slate-100 px-3 py-1.5 rounded-xl bg-slate-50/50">
+                        {m.isActiveSeat ? <ShieldCheck size={14} className="text-emerald-500" /> : <ShieldAlert size={14} className="text-slate-400" />}
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-2">
+                          Active Seat
+                        </span>
+                        <Checkbox 
+                          checked={m.isActiveSeat} 
+                          onCheckedChange={(checked) => handleSeatToggle(m, checked)} 
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        {m.kind === 'recruiter' && (
+                          <button
+                            onClick={() => openEditPermissions(m)}
+                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all outline-none"
+                            title="Manage Permissions"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                        )}
                       <button
                         onClick={() => setRemoveTarget({ _id: m._id, kind: m.kind })}
                         className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all outline-none"
@@ -275,6 +303,7 @@ const MyTeam = () => {
                         <Trash2 size={18} />
                       </button>
                     </div>
+                  </div>
                   </div>
                 ))}
               </div>

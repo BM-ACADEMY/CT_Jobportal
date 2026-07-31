@@ -253,6 +253,14 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid Credentials' });
     }
 
+    if (user.role && (user.role.name === 'recruiter' || user.role.name === 'org_employee')) {
+      if (!user.isActiveSeat) {
+        return res.status(403).json({ 
+          msg: 'Your seat is not active. Please ask your organization administrator to assign you an active seat.' 
+        });
+      }
+    }
+
     if (!user.isVerified) {
       // Setup new OTP and resend
       const otp = generateOTP();
@@ -451,6 +459,15 @@ const getUserProfile = async (req, res) => {
     }
 
     const roleName = user.role.name;
+    
+    if (roleName === 'recruiter' || roleName === 'org_employee') {
+      if (!user.isActiveSeat) {
+        return res.status(403).json({ 
+          msg: 'Your seat is not active. Please ask your organization administrator to assign you an active seat.' 
+        });
+      }
+    }
+
     await ensureFreePlan(user, roleName);
 
     // Clear stale expiry for free/lifetime plans

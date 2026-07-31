@@ -183,7 +183,7 @@ const getTeamMembers = async (req, res) => {
       ],
       _id: { $ne: userId } 
     })
-      .select('name email avatar recruiterProfile companyProfile role companyHistory createdAt')
+      .select('name email avatar recruiterProfile companyProfile role companyHistory createdAt display_id isActiveSeat')
       .populate('role', 'name');
 
     const mappedMembers = members.map(m => {
@@ -194,7 +194,10 @@ const getTeamMembers = async (req, res) => {
         email: m.email,
         avatar: m.avatar,
         statusType: hist ? hist.status : 'Current',
-        role: m.role
+        role: m.role,
+        display_id: m.display_id,
+        isActiveSeat: m.isActiveSeat,
+        teamPermissions: m.teamPermissions
       };
     });
 
@@ -359,6 +362,54 @@ const updateTeamMemberPermissions = async (req, res) => {
   }
 };
 
+// @desc    Toggle team member seat (activate/deactivate user seat)
+// @route   PUT /api/company/team/:memberId/seat
+const toggleTeamMemberSeat = async (req, res) => {
+  try {
+    const adminUser = await User.findById(req.user.id).populate('subscription');
+    if (!adminUser || !adminUser.company) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    const { isActiveSeat } = req.body;
+    const member = await User.findById(req.params.memberId);
+    
+    if (!member) {
+      return res.status(404).json({ msg: 'Member not found' });
+    }
+
+    if (isActiveSeat) {
+      const plan = adminUser.subscriptionDetails || adminUser.subscription;
+      const userSeatsFeature = plan?.features?.find(f => f.name === 'User seats');
+      const limit = userSeatsFeature?.isActive ? Number(userSeatsFeature.value) : 1;
+
+      // Count currently active team members
+      const activeMembers = await User.countDocuments({
+        $or: [
+          { company: adminUser.company },
+          { employerCompany: adminUser.company }
+        ],
+        isActiveSeat: true,
+        _id: { $ne: adminUser._id }
+      });
+
+      if (activeMembers >= limit) {
+        return res.status(400).json({ 
+          msg: `Seat limit reached. Your plan allows ${limit} active user seat(s).` 
+        });
+      }
+    }
+
+    member.isActiveSeat = isActiveSeat;
+    await member.save();
+
+    res.json({ msg: `Seat ${isActiveSeat ? 'activated' : 'deactivated'} successfully`, isActiveSeat });
+  } catch (err) {
+    console.error('Toggle Seat Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 // @desc    Get activity history for delegated team members (org admin only)
 // @route   GET /api/company/team-activity
 const getTeamActivity = async (req, res) => {
@@ -399,7 +450,7 @@ const getOrgEmployees = async (req, res) => {
     if (!user || !user.company) return res.json([]);
 
     const employees = await User.find({ employerCompany: user.company })
-      .select('name email avatar companyProfile createdAt')
+      .select('name email avatar companyProfile createdAt display_id isActiveSeat')
       .lean();
 
     res.json(employees);
@@ -633,6 +684,60 @@ const toggleCompanyAutoRenew = async (req, res) => {
   }
 };
 
+// @desc    Get sent join requests for a recruiter
+// @route   GET /api/recruiter/my-requests
+const getMyJoinRequests = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const companies = await Company.find({ 'pendingJoinRequests.user': userId })
+      .select('name logo admin_email pendingJoinRequests');
+    
+    const requests = companies.map(company => {
+      const reqInfo = company.pendingJoinRequests.find(r => r.user.toString() === userId);
+      return {
+        _id: company._id,
+        name: company.name,
+        logo: company.logo,
+        admin_email: company.admin_email,
+        statusType: reqInfo?.statusType,
+        requestedAt: reqInfo?.requestedAt,
+        status: 'pending'
+      };
+    });
+    
+    res.json(requests);
+  } catch (err) {
+    console.error('Get My Join Requests Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Revoke a join request to a company
+// @route   DELETE /api/recruiter/request-join/:companyId
+const revokeJoinRequest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { companyId } = req.params;
+    
+    const company = await Company.findById(companyId);
+    if (!company) return res.status(404).json({ msg: 'Company not found' });
+    
+    company.pendingJoinRequests = company.pendingJoinRequests.filter(reqItem => reqItem.user.toString() !== userId);
+    await company.save();
+    
+    const user = await User.findById(userId);
+    if (user && user.joinRequestsUsed > 0) {
+       user.joinRequestsUsed -= 1;
+       await user.save();
+    }
+    
+    res.json({ msg: 'Join request revoked successfully' });
+  } catch (err) {
+    console.error('Revoke Join Request Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 module.exports = {
   getRecruiterProfile,
   updateRecruiterProfile,
@@ -640,6 +745,7 @@ module.exports = {
   addTeamMember,
   removeTeamMember,
   updateTeamMemberPermissions,
+  toggleTeamMemberSeat,
   getTeamActivity,
   getOrgEmployees,
   removeOrgEmployee,
@@ -648,5 +754,7 @@ module.exports = {
   getJoinRequests,
   acceptJoinRequest,
   rejectJoinRequest,
-  toggleCompanyAutoRenew
+  toggleCompanyAutoRenew,
+  getMyJoinRequests,
+  revokeJoinRequest
 };

@@ -15,7 +15,16 @@ export const GuestRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <Loader />;
   if (user) {
-    const roleRedirects = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', jobseeker: '/jobseeker' };
+    const roleRedirects = {
+      admin: '/admin',
+      subadmin: '/subadmin',
+      recruiter: '/company',
+      company: '/company',
+      jobseeker: '/jobseeker',
+      org_employee: '/employee',
+      college: '/college',
+      drive_incharge: '/incharge'
+    };
     return <Navigate to={roleRedirects[user.role] || '/jobseeker'} replace />;
   }
   return children;
@@ -30,7 +39,16 @@ export const PrivateRoute = ({ children, roles, permissionKey }) => {
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) {
-    const roleRedirects = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', jobseeker: '/jobseeker' };
+    const roleRedirects = {
+      admin: '/admin',
+      subadmin: '/subadmin',
+      recruiter: '/company',
+      company: '/company',
+      jobseeker: '/jobseeker',
+      org_employee: '/employee',
+      college: '/college',
+      drive_incharge: '/incharge'
+    };
     return <Navigate to={roleRedirects[user.role] || '/jobseeker'} replace />;
   }
   if (

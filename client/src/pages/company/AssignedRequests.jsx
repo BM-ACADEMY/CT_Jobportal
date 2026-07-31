@@ -27,8 +27,11 @@ const JoinRequestsModule = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [joinRequests, setJoinRequests] = useState([]);
+  const [acceptedMembers, setAcceptedMembers] = useState([]);
+  const [acceptedSearchQuery, setAcceptedSearchQuery] = useState('');
   const [loadingReqs, setLoadingReqs] = useState(false);
   const [myCompanies, setMyCompanies] = useState([]);
+  const [myRequests, setMyRequests] = useState([]);
   const [page, setPage] = useState(1);
   const [quota, setQuota] = useState(null);
 
@@ -37,8 +40,18 @@ const JoinRequestsModule = () => {
     setLoadingReqs(true);
     try {
       if (user.role === 'company') {
-        const reqs = await axios.get(`${API}/company/join-requests`, { headers: authHeader() });
-        setJoinRequests(reqs.data);
+        const [reqsRes, teamRes, employeesRes] = await Promise.all([
+          axios.get(`${API}/company/join-requests`, { headers: authHeader() }),
+          axios.get(`${API}/company/team`, { headers: authHeader() }),
+          axios.get(`${API}/company/employees`, { headers: authHeader() })
+        ]);
+        setJoinRequests(reqsRes.data);
+        const recruiters = teamRes.data.map(m => ({ ...m, kind: 'recruiter' }));
+        const recruiterIds = new Set(recruiters.map(r => r._id));
+        const employees = employeesRes.data
+          .filter(m => !recruiterIds.has(m._id))
+          .map(m => ({ ...m, kind: 'employee' }));
+        setAcceptedMembers([...recruiters, ...employees]);
       } else if (user.role === 'recruiter') {
         const res = await axios.get(`${API}/recruiter/profile`, { headers: authHeader() });
         
@@ -57,6 +70,9 @@ const JoinRequestsModule = () => {
           // Fallback if no history but has company
           setMyCompanies([{ ...res.data.company, status: 'Current' }]);
         }
+
+        const reqs = await axios.get(`${API}/recruiter/my-requests`, { headers: authHeader() });
+        setMyRequests(reqs.data);
       }
     } catch (err) {
       console.error(err);
@@ -119,6 +135,16 @@ const JoinRequestsModule = () => {
       fetchData();
     } catch (err) {
       toast.error('Action failed');
+    }
+  };
+
+  const handleRevokeRequest = async (companyId) => {
+    try {
+      await axios.delete(`${API}/recruiter/request-join/${companyId}`, { headers: authHeader() });
+      toast.success('Join request revoked');
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to revoke request');
     }
   };
 
@@ -238,6 +264,44 @@ const JoinRequestsModule = () => {
           )}
         </div>
 
+        {myRequests.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mt-6">
+            <h3 className="text-sm font-bold text-slate-900 mb-4">Requested Companies</h3>
+            <div className="space-y-3">
+              {myRequests.map((req, i) => (
+                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 gap-4">
+                   <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10 rounded-lg shadow-sm border border-slate-200">
+                        <AvatarImage src={req.logo} />
+                        <AvatarFallback className="rounded-lg font-bold bg-slate-100 text-slate-600">
+                          {req.name?.charAt(0) || 'C'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{req.name || 'Company'}</h4>
+                        <p className="text-[10px] text-slate-500">{req.admin_email}</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                     <Badge className="bg-amber-100 text-amber-700 border-none text-[10px] uppercase">
+                       {req.status}
+                     </Badge>
+                     <Button 
+                       onClick={() => handleRevokeRequest(req._id)} 
+                       size="sm" 
+                       variant="outline" 
+                       className="h-8 text-xs font-bold border-rose-200 text-rose-600 hover:bg-rose-50"
+                     >
+                       Revoke
+                     </Button>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+
         {myCompanies.length > 0 && (
             <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mt-6">
               <h3 className="text-sm font-bold text-slate-900 mb-4">Organizations you worked at</h3>
@@ -340,6 +404,60 @@ const JoinRequestsModule = () => {
               </>
           )}
         </div>
+
+        {acceptedMembers.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">Accepted Requests</h3>
+                <p className="text-xs text-slate-500">Members who have successfully joined your organization.</p>
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Search by ID, name or email..."
+                  value={acceptedSearchQuery}
+                  onChange={(e) => setAcceptedSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 h-9 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {acceptedMembers
+                .filter(m => {
+                  if (!acceptedSearchQuery) return true;
+                  const q = acceptedSearchQuery.toLowerCase();
+                  return m.name?.toLowerCase().includes(q) || 
+                         m.email?.toLowerCase().includes(q) || 
+                         m.display_id?.toLowerCase().includes(q);
+                })
+                .map(member => (
+                <div key={member._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-emerald-100 bg-emerald-50/30 gap-4">
+                   <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10 rounded-lg shadow-sm border border-slate-200">
+                        <AvatarImage src={member.avatar?.startsWith('http') ? member.avatar : `${API.replace('/api', '')}${member.avatar}`} />
+                        <AvatarFallback className="rounded-lg font-bold bg-emerald-100 text-emerald-700">
+                          {member.name?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{member.name}</h4>
+                        <p className="text-[10px] text-slate-500">{member.email}</p>
+                        {member.display_id && <p className="text-[10px] text-slate-400 mt-0.5">ID: {member.display_id}</p>}
+                      </div>
+                   </div>
+                   <div className="flex items-center">
+                     <Badge className="bg-emerald-100 text-emerald-700 border-none text-[10px] uppercase">
+                       {member.kind}
+                     </Badge>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
 
         <ConfirmDialog
           open={!!acceptTarget}
