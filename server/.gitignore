@@ -1,4 +1,5 @@
 # Logs
+.env
 logs
 *.log
 npm-debug.log*
@@ -13,7 +14,7 @@ dist-ssr
 .vscode/
 .idea/
 .DS_Store
-.env
+.env.local
 
 # env files
 server/.env
