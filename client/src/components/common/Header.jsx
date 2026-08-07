@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut, Settings, Menu, ChevronDown } from 'lucide-react';
+import { Search, Bell, User, LogOut, Settings, Menu, ChevronDown, BadgeCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { 
   DropdownMenu, 
@@ -94,6 +94,14 @@ const Header = () => {
   const role = user?.role || 'jobseeker';
   const config = roleConfig[role] || roleConfig.jobseeker;
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      navigate(`/jobs?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white">
       <div className="max-w-[1440px] mx-auto px-6 md:px-10 h-20 flex items-center justify-between gap-6">
@@ -118,6 +126,9 @@ const Header = () => {
                 <Input 
                     placeholder="Identify roles, companies or skillsets..." 
                     className="h-11 pl-11 rounded-xl bg-slate-50 border-transparent focus:border-emerald-100 focus:bg-white focus:ring-4 focus:ring-emerald-50 transition-all font-medium text-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearch}
                 />
             </div>
         </div>
@@ -146,7 +157,10 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                     <div className="flex items-center gap-3 cursor-pointer pl-6 border-l border-slate-100 h-10 group transition-all">
                         <div className="hidden sm:flex flex-col items-end leading-none">
-                            <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{user?.name || 'Authorized User'}</p>
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors flex items-center gap-1.5">
+                              {user?.name || 'Authorized User'}
+                              {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={14} className="text-blue-500 shrink-0" />}
+                            </p>
                             <span className="text-[8px] px-2 py-0.5 rounded-full border border-slate-100 bg-slate-50/50 mt-1 uppercase tracking-widest font-bold text-slate-400">
                                 {config.label}
                             </span>
@@ -168,7 +182,10 @@ const Header = () => {
                 <DropdownMenuContent align="end" className="w-64 mt-3 rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 p-2 bg-white animate-in slide-in-from-top-2 duration-300">
                     <DropdownMenuLabel className="px-4 py-4 mb-1">
                         <div className="flex flex-col space-y-1.5">
-                            <p className="text-sm font-bold text-slate-900">{user?.name || 'User Account'}</p>
+                            <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                              {user?.name || 'User Account'}
+                              {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={14} className="text-blue-500 shrink-0" />}
+                            </p>
                             <p className="text-[10px] font-medium text-slate-400 truncate">{user?.email}</p>
                         </div>
                     </DropdownMenuLabel>

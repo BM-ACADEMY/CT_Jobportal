@@ -1,5 +1,5 @@
 const Assessment = require('../models/Assessment');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('../utils/aiHelper');
 
 // @desc    Generate or fetch a skill assessment
 // @route   GET /api/assessments/public?skill=X&difficulty=Y
@@ -55,38 +55,64 @@ You are an expert technical interviewer and examination engine. Your task is to 
 ]
 `;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.7
-      }
-    });
-
-    const resultObj = await model.generateContent(prompt);
-    let responseText = resultObj.response.text();
-    
-    // Strip markdown formatting if present
-    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
     let questions;
     try {
+      if (!process.env.OPENROUTER_API_KEY) {
+        throw new Error("OPENROUTER_API_KEY is not set in environment");
+      }
+      
+      const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7
+        }
+      });
+  
+      const resultObj = await model.generateContent(prompt);
+      let responseText = resultObj.response.text();
+      
+      // Strip markdown formatting if present
+      responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      
       questions = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('JSON Parse Error for Assessment:', parseError);
-      return res.status(500).json({ msg: 'Failed to parse AI generated assessment format' });
+      
+      // Save newly generated questions to cache
+      const newAssessment = new Assessment({
+        skill,
+        difficulty,
+        questions
+      });
+      await newAssessment.save();
+  
+      return res.json({ msg: 'Generated new assessment', questions });
+
+    } catch (genErr) {
+      console.warn('AI Assessment Generation failed (falling back to cache/mock):', genErr.message);
+      
+      // Fallback 1: Try to get from cache
+      const cachedAssessment = await Assessment.findOne({ skill, difficulty });
+      if (cachedAssessment && cachedAssessment.questions?.length > 0) {
+        return res.json({ msg: 'Fetched from cache', questions: cachedAssessment.questions });
+      } 
+      
+      // Fallback 2: Generate mock questions so the UI doesn't crash
+      const mockQuestions = Array.from({ length: 10 }).map((_, i) => ({
+        id: i + 1,
+        question: `[Mock] Sample question ${i + 1} about ${skill} (${difficulty})?`,
+        options: {
+          a: 'Correct mock answer',
+          b: 'Incorrect mock answer 1',
+          c: 'Incorrect mock answer 2',
+          d: 'Incorrect mock answer 3'
+        },
+        correct_option: 'a',
+        explanation: 'This is a fallback mock assessment because the AI generation failed or API key was missing.'
+      }));
+      
+      return res.json({ msg: 'Mock assessment', questions: mockQuestions });
     }
-
-    // Save to cache
-    const newAssessment = new Assessment({
-      skill,
-      difficulty,
-      questions
-    });
-    await newAssessment.save();
-
-    res.json({ msg: 'Generated new assessment', questions });
 
   } catch (err) {
     console.error('Assessment Generation Error:', err);

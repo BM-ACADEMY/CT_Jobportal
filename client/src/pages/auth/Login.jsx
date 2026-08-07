@@ -28,9 +28,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('jobseeker');
-
-  const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company' || selectedRole === 'college';
+  const selectedRole = 'jobseeker';
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -60,61 +58,50 @@ const LoginPage = () => {
     <div className="min-h-screen flex bg-white">
 
       {/* ─── Left Panel ─── */}
-      <div
-        className={`hidden lg:flex w-[40%] flex-shrink-0 relative overflow-hidden flex-col justify-between p-16 transition-all duration-700
-          ${isRecruiter ? 'bg-[#064e3b]' : 'bg-[#064e3b]'}`}
-      >
+      <div className="hidden lg:flex w-[40%] flex-shrink-0 relative overflow-hidden flex-col justify-between p-16 transition-all duration-700 bg-[#064e3b]">
         {/* Background decorative elements */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-white/[0.03] -translate-y-1/2 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-white/[0.03] translate-y-1/3 -translate-x-1/4" />
 
         <div className="flex flex-col justify-between h-full relative z-10">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 no-underline">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-              <span className={`font-bold text-lg text-emerald-600`}>N</span>
-            </div>
-            <span className="text-white font-bold text-2xl tracking-tighter">naukri</span>
-          </Link>
+          <div>
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-3 no-underline mb-16">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                <span className={`font-bold text-lg text-emerald-600`}>V</span>
+              </div>
+              <span className="text-white font-bold text-2xl tracking-tighter">velaivaaipu</span>
+            </Link>
 
           <div className="space-y-8">
             <div className="space-y-2">
-               <p className={`font-bold text-[10px] uppercase tracking-[0.3em] text-emerald-400`}>
-                 {isRecruiter ? 'Enterprise Solutions' : 'Career Intelligence'}
+               <p className="font-bold text-[10px] uppercase tracking-[0.3em] text-emerald-400">
+                 Career Intelligence
                </p>
                <h2 className="text-white font-bold text-4xl leading-tight">
-                 {isRecruiter ? (
-                   <>Accelerate your<br />organizational growth with<br /><span className="text-emerald-400">elite talent.</span></>
-                 ) : (
-                   <>Engineer your<br />professional future<br /><span className="text-emerald-400">with precision.</span></>
-                 )}
+                 Empowering your<br />career journey<br /><span className="text-emerald-400">with precision.</span>
                </h2>
             </div>
             
             <p className="text-slate-400 text-base font-medium leading-relaxed max-w-sm">
-              {isRecruiter
-                ? 'Leverage AI-driven matching and streamlined pipeline management tools.'
-                : 'Access exclusive opportunities and data-driven career insights tailored for you.'}
+              Connect with top opportunities, track applications, and take control of your professional future.
             </p>
 
             <div className="flex flex-col gap-4">
-              {(isRecruiter ? [
-                'Unlimited verified job postings',
-                'Advanced candidate matching AI',
-                'Strategic recruitment analytics',
-              ] : [
+              {[
                 'Curated career opportunities',
                 'AI-optimized resume intelligence',
                 'Real-time application tracking',
-              ]).map((text, i) => (
+              ].map((text, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-400`}>
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center bg-emerald-500/20 text-emerald-400">
                     <CircleCheck size={12} />
                   </div>
                   <span className="text-slate-300 text-sm font-medium">{text}</span>
                 </div>
               ))}
             </div>
+          </div>
           </div>
 
           <div className="bg-white/[0.03] backdrop-blur-sm rounded-[24px] p-8 border border-white/5 space-y-4">
@@ -123,14 +110,10 @@ const LoginPage = () => {
             </div>
             <div className="space-y-1">
                <p className="text-white font-medium text-sm leading-relaxed italic">
-                 {isRecruiter
-                   ? '"The quality of candidates and the ease of use are unparalleled in the industry."'
-                   : '"Transformed my job search from overwhelming to highly strategic. Incredible platform."'}
+                 "Transformed my job search from overwhelming to highly strategic. Incredible platform."
                </p>
                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                 {isRecruiter
-                   ? 'Talent Lead, Microsoft'
-                   : 'Senior Systems Architect'}
+                 Senior Systems Architect
                </p>
             </div>
           </div>
@@ -147,32 +130,11 @@ const LoginPage = () => {
               Authentication
             </h1>
             <p className="text-slate-500 text-sm font-medium">
-              Access your {isRecruiter ? 'hiring' : 'career'} control center.
+              Access your career control center.
             </p>
           </div>
 
-          {/* Role Toggle */}
-          <div className="grid grid-cols-4 gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100">
-            {[
-              { key: 'jobseeker', label: 'Seeker', Icon: Briefcase, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { key: 'recruiter', label: 'Recruiter', Icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { key: 'company', label: 'Organization', Icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { key: 'college', label: 'College', Icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            ].map(role => {
-              const active = selectedRole === role.key;
-              return (
-                <button
-                  key={role.key}
-                  onClick={() => setSelectedRole(role.key)}
-                  className={`flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all duration-300 text-[11px] font-bold uppercase tracking-tight
-                    ${active ? `bg-white shadow-sm border border-slate-100 ${role.color}` : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  <role.Icon size={14} />
-                  <span>{role.label}</span>
-                </button>
-              );
-            })}
-          </div>
+
 
           {error && (
             <Alert variant="destructive" className="rounded-xl border-rose-100 bg-rose-50/50 py-3">
@@ -196,6 +158,7 @@ const LoginPage = () => {
                         <Input 
                           placeholder="name@organization.com" 
                           {...field} 
+                          onChange={(e) => field.onChange(e.target.value.toLowerCase())}
                           className="h-12 pl-11 rounded-xl border-slate-200 bg-white focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
                         />
                       </div>

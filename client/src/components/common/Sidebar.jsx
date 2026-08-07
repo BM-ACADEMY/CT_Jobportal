@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode
+  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findPermissionKeyForPath } from '../../config/teamPermissions';
@@ -326,7 +326,10 @@ const Sidebar = () => {
             <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-slate-900 truncate tracking-tight">{user?.name || 'Authorized User'}</p>
+            <p className="text-xs font-bold text-slate-900 truncate tracking-tight flex items-center gap-1">
+              {user?.name || 'Authorized User'}
+              {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={14} className="text-blue-500 shrink-0" />}
+            </p>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate mt-0.5">{role} Access</p>
           </div>
           <ChevronRight size={14} className="text-slate-300 group-hover:text-emerald-500 transition-colors" />

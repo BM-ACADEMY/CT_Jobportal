@@ -379,6 +379,9 @@ const Applicants = () => {
                       <h4 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-tight truncate">
                         {app.applicant?.name}
                       </h4>
+                      {app.applicant?.profileVerificationStatus === 'Verified' && (
+                        <BadgeCheck size={16} className="text-blue-500 shrink-0" title="Verified Profile" />
+                      )}
                       {app.isPriority && (
                         <BadgeCheck size={16} className="text-blue-500 fill-blue-50 shrink-0" title="Priority Application" />
                       )}

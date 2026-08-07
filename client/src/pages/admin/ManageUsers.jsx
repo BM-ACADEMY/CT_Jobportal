@@ -7,9 +7,9 @@ import {
   Search, 
   Loader2, 
   Eye, 
-  Edit2, 
   ShieldAlert, 
   ShieldCheck,
+  BadgeCheck,
   User as UserIcon,
   Mail,
   Phone,
@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/dialog";
 // Note: Dialog kept for the Edit modal
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -46,8 +49,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const ManageUsers = () => {
@@ -57,19 +58,6 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    email: '',
-    role: '',
-    profile: {
-      phone: '',
-      location: '',
-      bio: '',
-      headline: ''
-    }
-  });
 
   const fetchUsers = async () => {
     try {
@@ -155,36 +143,20 @@ const ManageUsers = () => {
     navigate(`/admin/users/${user._id}`);
   };
 
-  const handleEditClick = (user) => {
-    setSelectedUser(user);
-    setEditForm({
-      name: user.name || '',
-      email: user.email || '',
-      role: user.role?._id || '',
-      profile: {
-        phone: user.profile?.phone || '',
-        location: user.profile?.location || '',
-        bio: user.profile?.bio || '',
-        headline: user.profile?.headline || ''
-      }
-    });
-    setEditModalOpen(true);
-  };
-
-  const handleUpdateUser = async (e) => {
-    e.preventDefault();
+  const handleStatusChange = async (userId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${selectedUser._id}`, editForm, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('User updated successfully');
-      setEditModalOpen(false);
-      fetchUsers();
+      const res = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${userId}/verification-status`, 
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Profile status updated');
+      setUsers(users.map(u => u._id === userId ? { ...u, profileVerificationStatus: res.data.profileVerificationStatus } : u));
     } catch (err) {
-      toast.error('Failed to update user');
+      toast.error('Failed to update status');
     }
   };
+
 
   const handleStartConversation = async (recipientId) => {
     try {
@@ -216,7 +188,8 @@ const ManageUsers = () => {
         <thead>
           <tr className="border-b border-slate-100">
             <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest">Identity</th>
-            <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Status</th>
+            <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Email Auth</th>
+            <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Admin Verification</th>
             <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-center">Registration</th>
             <th className="p-6 text-[10px] font-bold uppercase text-slate-400 tracking-widest text-right">Actions</th>
           </tr>
@@ -224,7 +197,7 @@ const ManageUsers = () => {
         <tbody className="divide-y divide-slate-50">
           {(data || []).length === 0 ? (
             <tr>
-              <td colSpan="4" className="p-20 text-center text-slate-400 font-medium text-sm italic">No {roleLabel} records identified.</td>
+              <td colSpan="5" className="p-20 text-center text-slate-400 font-medium text-sm italic">No {roleLabel} records identified.</td>
             </tr>
           ) : (
             Array.isArray(data) && data.map((user) => (
@@ -240,6 +213,9 @@ const ManageUsers = () => {
                     <div className="space-y-0.5">
                       <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
                         {user.name}
+                        {user?.profileVerificationStatus === 'Verified' && (
+                          <BadgeCheck size={16} className="text-blue-500 shrink-0" title="Verified Profile" />
+                        )}
                         {user.isAdminBlocked && (
                           <span className="text-[8px] font-bold uppercase text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-100">
                              BLOCKED
@@ -253,11 +229,26 @@ const ManageUsers = () => {
                     </div>
                   </div>
                 </td>
+                <td className="p-6 text-center">
+                  <div className="flex justify-center">
+                    {user.isVerified ? (
+                      <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100 text-[9px] font-bold uppercase px-3 py-1">Verified</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-slate-400 border-slate-200 bg-slate-50 text-[9px] font-bold uppercase px-3 py-1">Unverified</Badge>
+                    )}
+                  </div>
+                </td>
                 <td className="p-6">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${user.isVerified ? 'bg-emerald-500' : 'bg-orange-400'}`} />
-                    <span className="text-[10px] font-bold uppercase tracking-tight text-slate-500">
-                      {user.isVerified ? 'Verified' : 'Pending'}
+                  <div className="flex flex-col items-center justify-center gap-1.5">
+                    <Switch
+                      checked={user.profileVerificationStatus === 'Verified'}
+                      onCheckedChange={(checked) => handleStatusChange(user._id, checked ? 'Verified' : 'Pending')}
+                      className={`${user.profileVerificationStatus === 'Verified' ? 'data-[state=checked]:bg-emerald-600' : 'data-[state=unchecked]:bg-slate-200'}`}
+                    />
+                    <span className={`text-[9px] font-bold uppercase tracking-widest ${
+                      user.profileVerificationStatus === 'Verified' ? 'text-emerald-600' : 'text-slate-400'
+                    }`}>
+                      {user.profileVerificationStatus === 'Verified' ? 'Verified' : 'Unverified'}
                     </span>
                   </div>
                 </td>
@@ -270,9 +261,6 @@ const ManageUsers = () => {
                   <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <Button variant="ghost" size="icon" onClick={() => handleViewDetails(user)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all" title="Inspect">
                       <Eye size={16} />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(user)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all" title="Edit">
-                      <Edit2 size={16} />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleToggleBlock(user._id)} className={`h-9 w-9 rounded-lg transition-all ${
                         user.isAdminBlocked ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:text-red-600 hover:bg-red-50'
@@ -360,74 +348,6 @@ const ManageUsers = () => {
         </Card>
       </Tabs>
 
-      {/* Edit User Modal - Elegant Style */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-xl rounded-[24px] p-0 border-slate-200 shadow-2xl overflow-hidden bg-white">
-          <DialogHeader className="p-8 border-b border-slate-100 bg-white">
-            <div className="space-y-1">
-               <DialogTitle className="text-2xl font-bold text-[#0f172a] tracking-tight">Account Configuration</DialogTitle>
-               <DialogDescription className="text-sm text-slate-500 font-medium">Modify administrative access and account permissions.</DialogDescription>
-            </div>
-          </DialogHeader>
-
-          <form onSubmit={handleUpdateUser} className="flex flex-col bg-white">
-            <div className="p-8 space-y-10">
-               <div className="flex items-center gap-5 p-5 rounded-xl bg-slate-50/50 border border-slate-100">
-                  <Avatar className="h-14 w-14 rounded-xl border border-white shadow-sm">
-                    <AvatarImage src={selectedUser?.avatar} className="rounded-xl" />
-                    <AvatarFallback className="bg-slate-100 text-slate-400 font-bold">
-                      {selectedUser?.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                     <p className="text-sm font-bold text-slate-900">{selectedUser?.name}</p>
-                     <p className="text-xs font-medium text-slate-500">{selectedUser?.email}</p>
-                  </div>
-               </div>
-
-               <div className="space-y-3">
-                  <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1">Assigned Access Role</Label>
-                  <Select 
-                    value={editForm.role} 
-                    onValueChange={(val) => setEditForm({...editForm, role: val})}
-                  >
-                    <SelectTrigger className="rounded-xl border-slate-200 h-12 font-bold text-sm bg-white focus:ring-0 focus:border-emerald-600 transition-all">
-                      <SelectValue placeholder="Select access level" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                      {Array.isArray(roles) && roles.map(role => (
-                        <SelectItem key={role._id} value={role._id} className="text-sm py-2">
-                          {role.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-start gap-2 text-[10px] font-medium text-amber-600 px-1 bg-amber-50/50 p-2 rounded-lg border border-amber-100">
-                    <AlertCircle size={14} className="shrink-0" /> 
-                    <span>Modifying roles will immediately alter user permissions and feature access levels across the platform.</span>
-                  </div>
-               </div>
-            </div>
-
-            <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex gap-4 justify-end">
-              <Button 
-                type="button" 
-                variant="ghost" 
-                className="rounded-xl h-11 px-8 font-bold text-sm text-slate-500 hover:bg-slate-100 transition-all" 
-                onClick={() => setEditModalOpen(false)}
-              >
-                Discard
-              </Button>
-              <Button 
-                type="submit" 
-                className="rounded-xl h-11 px-8 font-bold text-sm bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm"
-              >
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       <ConfirmDialog
         open={!!deleteTarget}

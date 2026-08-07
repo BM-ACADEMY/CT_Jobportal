@@ -7,6 +7,7 @@ const {
   getUserDetails,
   updateUser,
   deleteUser,
+  updateUserVerificationStatus,
   toggleBlockUser,
   getRoles,
   getCompanies,
@@ -43,6 +44,7 @@ router.get('/users/:id/applications', getUserApplications);
 router.patch('/users/:id/extend-subscription', extendSubscription);
 router.get('/roles', getRoles);
 router.put('/users/:id', updateUser);
+router.put('/users/:id/verification-status', updateUserVerificationStatus);
 router.delete('/users/:id', deleteUser);
 router.patch('/users/:id/block', toggleBlockUser);
 

@@ -933,7 +933,7 @@ const getJobQuota = async (req, res) => {
   }
 };
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('../utils/aiHelper');
 
 // @desc    Calculate match score before applying
 // @route   GET /api/jobs/:jobId/pre-match
@@ -982,7 +982,7 @@ const calculatePreMatch = async (req, res) => {
       4. "verdict": A short summary justifying the score.
     `;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       generationConfig: {
@@ -1141,7 +1141,7 @@ const bulkAiMatch = async (req, res) => {
     
     res.json({ msg: `AI bulk match processing started for ${appsToProcess.length} candidates. It may take a few moments. Refresh the page soon to see the updated scores.` });
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       generationConfig: { responseMimeType: "application/json", temperature: 0.2 }

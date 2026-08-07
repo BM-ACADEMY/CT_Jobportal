@@ -289,6 +289,9 @@ const CandidateSearch = () => {
                   <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
                     {candidate.name}
                   </p>
+                  {candidate.profileVerificationStatus === 'Verified' && (
+                    <BadgeCheck size={16} className="text-blue-500 shrink-0" title="Verified Profile" />
+                  )}
                   {candidate.isPriority && (
                     <BadgeCheck size={16} className="text-blue-500 fill-blue-50" title="Priority Candidate" />
                   )}

@@ -56,7 +56,7 @@ const generateToken = (userId, roleName) => {
 // @route   POST /api/auth/register
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role, collegeName, collegeEmail, collegePhone, tpoPhone } = req.body;
+    const { name, email, password, role, collegeName, collegeEmail, collegePhone, tpoPhone, phone } = req.body;
     const normalizedEmail = email.toLowerCase();
 
     // Password Validation: 6 chars, 1 capital, 1 number, 1 symbol
@@ -96,7 +96,10 @@ const registerUser = async (req, res) => {
       isVerified: false,
       otp,
       otpExpiry,
-      ...(role === 'college' && tpoPhone ? { profile: { phone: tpoPhone } } : {}),
+      profile: {
+        phone: phone || (role === 'college' && tpoPhone ? tpoPhone : '')
+      },
+      ...(role === 'college' && tpoPhone ? {} : {}), // Keep college-specific profile logic as needed or handle above
     });
 
     await user.save();
@@ -238,14 +241,15 @@ const verifyOtp = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email ? email.toLowerCase() : '';
 
-    const user = await User.findOne({ email }).populate(['role', 'subscription']);
+    const user = await User.findOne({ email: normalizedEmail }).populate(['role', 'subscription']);
     if (!user) {
       return res.status(400).json({ msg: 'Invalid Credentials' });
     }
 
     if (user.isAdminBlocked) {
-      return res.status(403).json({ msg: 'Your account has been blocked by the administrator. Please contact support.' });
+      return res.status(403).json({ msg: 'Access denied: Account blocked.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);

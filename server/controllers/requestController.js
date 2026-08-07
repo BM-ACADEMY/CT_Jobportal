@@ -2,7 +2,7 @@ const User = require('../models/User');
 const AdminRequest = require('../models/AdminRequest');
 const Role = require('../models/Role');
 const mongoose = require('mongoose');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('../utils/aiHelper');
 
 // @desc    Book a career counselling session
 // @route   POST /api/requests/counselling
@@ -246,7 +246,7 @@ const submitAiResumeReviewRequest = async (req, res) => {
       6. "actionableSteps": An array of 3-4 specific steps they should take to improve their resume.
     `;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       generationConfig: {
@@ -357,7 +357,7 @@ const submitSalaryBenchmarkRequest = async (req, res) => {
       7. "skillsThatBoostSalary": An array of 3 to 4 strings detailing specific skills that can significantly increase compensation for this role.
     `;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       generationConfig: {

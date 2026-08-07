@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  profileVerificationStatus: {
+    type: String,
+    enum: ['Pending', 'Verified', 'Rejected'],
+    default: 'Pending'
+  },
   otp: {
     type: String,
     default: null,

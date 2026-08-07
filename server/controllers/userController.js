@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const pdfParse = require('pdf-parse');
 const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
 
@@ -495,7 +495,7 @@ const generateAIResume = async (req, res) => {
       Generate realistic placeholder content based on the provided skills and experience level if specific details are not provided. Use strong action verbs and include keywords that will be helpful to find this desired position. Ensure the JSON is perfectly valid. Do not use markdown.
     `;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       generationConfig: {
@@ -570,7 +570,7 @@ const analyzeResume = async (req, res) => {
       Do not include any markdown formatting or surrounding text, just the raw JSON object.
     `;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       generationConfig: {

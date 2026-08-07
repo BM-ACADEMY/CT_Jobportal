@@ -242,7 +242,11 @@ const PostJob = () => {
             jobType: job.jobType || 'Full-time',
             workMode: job.workMode || 'On-site',
             location: job.location || '',
-            salary: job.salary || { min: '', max: '', currency: 'INR', isRangeHidden: false },
+            salary: job.salary ? {
+                ...job.salary,
+                min: job.salary.min ? job.salary.min / 100000 : '',
+                max: job.salary.max ? job.salary.max / 100000 : ''
+            } : { min: '', max: '', currency: 'INR', isRangeHidden: false },
             timings: job.timings || '',
             shifts: job.shifts || '',
             skillsRequired: job.skillsRequired || [],
@@ -320,6 +324,11 @@ const PostJob = () => {
 
             const submissionData = {
                 ...formData,
+                salary: {
+                    ...formData.salary,
+                    min: formData.salary.min ? Number(formData.salary.min) * 100000 : 0,
+                    max: formData.salary.max ? Number(formData.salary.max) * 100000 : 0,
+                },
                 postedAs: user?.company ? formData.postedAs : 'recruiter',
                 status
             };
@@ -585,7 +594,7 @@ const PostJob = () => {
                                         <div className="space-y-1">
                                             <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Compensation</p>
                                             <p className="text-xl font-bold">
-                                                {selectedJob.salary.isRangeHidden ? 'As per Industry' : `₹ ${selectedJob.salary.min} - ${selectedJob.salary.max} LPA`}
+                                                {selectedJob.salary.isRangeHidden ? 'As per Industry' : `₹ ${(selectedJob.salary.min / 100000).toFixed(1)} - ${(selectedJob.salary.max / 100000).toFixed(1)} LPA`}
                                             </p>
                                         </div>
                                         <div className="space-y-1">
