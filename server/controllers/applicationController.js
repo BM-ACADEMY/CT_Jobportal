@@ -504,7 +504,7 @@ exports.inviteToAssessment = async (req, res) => {
   }
 };
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('../utils/aiHelper');
 
 exports.calculateApplicationMatch = async (req, res) => {
   try {
@@ -553,7 +553,7 @@ exports.calculateApplicationMatch = async (req, res) => {
       4. "verdict": A short summary justifying the score.
     `;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
       generationConfig: {

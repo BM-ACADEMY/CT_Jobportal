@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { GraduationCap, CheckCircle2, XCircle, Clock, FileText, Search } from 'lucide-react';
+import { GraduationCap, CheckCircle2, XCircle, Clock, FileText, Search, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useNavigate } from 'react-router-dom';
 
 const statusStyles = {
   verified: 'bg-emerald-50 text-emerald-700',
@@ -16,6 +17,7 @@ const CollegeVerification = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [acting, setActing] = useState(null);
+  const navigate = useNavigate();
 
   const fetchColleges = async () => {
     try {
@@ -91,6 +93,9 @@ const CollegeVerification = () => {
                 )}
               </div>
               <div className="flex gap-2 shrink-0">
+                <Button size="sm" variant="outline" onClick={() => navigate(`/admin/colleges/${c._id}`)} className="rounded-lg text-xs font-bold gap-1 h-9 text-slate-600 border-slate-200 hover:bg-slate-50">
+                  <Eye size={13} /> View
+                </Button>
                 <Button size="sm" disabled={acting === c._id || c.verificationStatus === 'verified'} onClick={() => act(c._id, 'verified')} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1 h-9">
                   <CheckCircle2 size={13} /> Verify
                 </Button>

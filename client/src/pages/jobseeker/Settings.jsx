@@ -19,6 +19,7 @@ import ImageCropperModal from "@/components/shared/ImageCropperModal";
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import { Country, State, City } from 'country-state-city';
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
 const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
@@ -66,7 +67,7 @@ const DataDisplay = ({ label, value, icon: Icon, isEditing, children }) => {
 };
 
 const Settings = () => {
-    const { user, updateUser } = useAuth();
+    const { user, updateUser, refreshUser } = useAuth();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -121,6 +122,71 @@ const Settings = () => {
     const [newSkill, setNewSkill] = useState('');
     const [newJobTitle, setNewJobTitle] = useState('');
     const [newRemoteLocation, setNewRemoteLocation] = useState('');
+
+    // Location Dropdown States
+    const [locCountry, setLocCountry] = useState('IN');
+    const [locState, setLocState] = useState('');
+    const [locCity, setLocCity] = useState('');
+
+    useEffect(() => {
+        if (!isEditing) return;
+        
+        // When editing starts, try to parse current location
+        const currLoc = formData.profile.location || '';
+        if (currLoc) {
+            const parts = currLoc.split(',').map(s => s.trim());
+            // Format expected: "City, State, Country"
+            if (parts.length >= 3) {
+                const cityName = parts[0];
+                const stateName = parts[1];
+                const countryName = parts.slice(2).join(', ');
+                
+                const ctry = Country.getAllCountries().find(c => c.name.toLowerCase() === countryName.toLowerCase());
+                if (ctry) {
+                    setLocCountry(ctry.isoCode);
+                    const st = State.getStatesOfCountry(ctry.isoCode).find(s => s.name.toLowerCase() === stateName.toLowerCase());
+                    if (st) {
+                        setLocState(st.isoCode);
+                        const ct = City.getCitiesOfState(ctry.isoCode, st.isoCode).find(c => c.name.toLowerCase() === cityName.toLowerCase());
+                        if (ct) {
+                            setLocCity(ct.name);
+                        } else {
+                            setLocCity(cityName);
+                        }
+                    }
+                }
+            } else if (parts.length === 1 && parts[0].toLowerCase() === 'chennai') { // legacy default handling
+                setLocCountry('IN');
+                const st = State.getStatesOfCountry('IN').find(s => s.name === 'Tamil Nadu');
+                if (st) setLocState(st.isoCode);
+                setLocCity('Chennai');
+            }
+        }
+    }, [isEditing]);
+
+    useEffect(() => {
+        if (!isEditing) return;
+        let finalStr = '';
+        if (locCountry) {
+            const countryName = Country.getCountryByCode(locCountry)?.name || '';
+            const stateName = locState ? (State.getStateByCodeAndCountry(locState, locCountry)?.name || '') : '';
+            const cityName = locCity || '';
+            
+            const arr = [];
+            if (cityName) arr.push(cityName);
+            if (stateName) arr.push(stateName);
+            if (countryName) arr.push(countryName);
+            
+            finalStr = arr.join(', ');
+        }
+        setFormData(prev => ({
+            ...prev,
+            profile: {
+                ...prev.profile,
+                location: finalStr
+            }
+        }));
+    }, [locCountry, locState, locCity, isEditing]);
 
     // Campus / college link state
     const [campusStudent, setCampusStudent] = useState(null);
@@ -359,9 +425,10 @@ const Settings = () => {
             const res = await axios.post(`${API_USER_URL}/upload-image?type=${type === 'coverPic' ? 'cover' : 'profile'}`, uploadData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
+            const cacheBustedUrl = `${res.data.imageUrl}?t=${new Date().getTime()}`;
             setFormData(prev => ({
                 ...prev,
-                [type]: res.data.imageUrl
+                [type]: cacheBustedUrl
             }));
             await refreshUser();
             toast.success("Image updated successfully");
@@ -693,6 +760,7 @@ const Settings = () => {
                                     value={
                                         <div className="flex items-center gap-2">
                                             {formData.name}
+                                            {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={16} className="text-blue-500" title="Verified Profile" />}
                                             {isPriority && <BadgeCheck size={16} className="text-blue-500 fill-blue-50" title="Priority Candidate" />}
                                         </div>
                                     } 
@@ -789,20 +857,62 @@ const Settings = () => {
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Current Location" value={formData.profile.location} icon={MapPin} isEditing={isEditing}>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Current Location</Label>
-                                        <div className="relative">
-                                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                                            <Input 
-                                                placeholder="e.g. Chennai, Tamil Nadu" 
-                                                value={formData.profile.location}
-                                                onChange={(e) => setFormData({...formData, profile: {...formData.profile, location: e.target.value}})}
-                                                className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
-                                            />
+                                <div className="md:col-span-2">
+                                    <DataDisplay label="Current Location" value={formData.profile.location} icon={MapPin} isEditing={isEditing}>
+                                        <div className="space-y-1.5">
+                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Current Location (Nationality, State, District)</Label>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="relative">
+                                                    <select 
+                                                        value={locCountry}
+                                                        onChange={(e) => { setLocCountry(e.target.value); setLocState(''); setLocCity(''); }}
+                                                        className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none"
+                                                    >
+                                                        <option value="">Select Nationality</option>
+                                                        {Country.getAllCountries().map(c => (
+                                                            <option key={c.isoCode} value={c.isoCode}>{c.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                    </div>
+                                                </div>
+                                                <div className="relative">
+                                                    <select 
+                                                        value={locState}
+                                                        onChange={(e) => { setLocState(e.target.value); setLocCity(''); }}
+                                                        disabled={!locCountry}
+                                                        className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none disabled:opacity-50"
+                                                    >
+                                                        <option value="">Select State</option>
+                                                        {locCountry && State.getStatesOfCountry(locCountry).map(s => (
+                                                            <option key={s.isoCode} value={s.isoCode}>{s.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                    </div>
+                                                </div>
+                                                <div className="relative">
+                                                    <select 
+                                                        value={locCity}
+                                                        onChange={(e) => setLocCity(e.target.value)}
+                                                        disabled={!locState}
+                                                        className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none disabled:opacity-50"
+                                                    >
+                                                        <option value="">Select District</option>
+                                                        {locState && locCountry && City.getCitiesOfState(locCountry, locState).map(c => (
+                                                            <option key={c.name} value={c.name}>{c.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </DataDisplay>
+                                    </DataDisplay>
+                                </div>
                             </div>
                             
                             <DataDisplay label="Professional Summary" value={formData.profile.bio} isEditing={isEditing}>

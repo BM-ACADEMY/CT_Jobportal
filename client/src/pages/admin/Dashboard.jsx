@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Users, Building2, Briefcase, TrendingUp, ShieldCheck, Activity, ChevronRight } from 'lucide-react';
+import { Users, Building2, Briefcase, TrendingUp, ShieldCheck, Activity, ChevronRight, DollarSign, PieChart as PieChartIcon } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import axios from 'axios';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+
+const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444', '#ec4899'];
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({ users: 0, jobs: 0, companies: 0 });
+  const [stats, setStats] = useState({ users: 0, jobs: 0, companies: 0, totalRevenue: 0, revenueData: [], subscriptionData: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +27,7 @@ const AdminDashboard = () => {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       {/* Premium Header Container */}
       <div className="relative rounded-[32px] bg-slate-900 p-10 text-white shadow-2xl overflow-hidden group">
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
@@ -43,12 +46,11 @@ const AdminDashboard = () => {
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
-          { label: 'Job Inventory', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'hover:border-emerald-200' },
-          { label: 'Organizations', value: loading ? '...' : stats.companies, color: 'text-blue-600', bg: 'bg-blue-50', icon: Building2, border: 'hover:border-blue-200' },
-          { label: 'Colleges', value: loading ? '...' : stats.colleges || 0, color: 'text-violet-600', bg: 'bg-violet-50', icon: ShieldCheck, border: 'hover:border-violet-200' },
-          { label: 'Uptime', value: '99.9%', icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50', border: 'hover:border-amber-200' }
-        ].slice(0, 4).map((stat, i) => (
+          { label: 'Total Revenue', value: loading ? '...' : `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
+          { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'hover:border-emerald-200' },
+          { label: 'Job Inventory', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'hover:border-blue-200' },
+          { label: 'Organizations', value: loading ? '...' : stats.companies, color: 'text-violet-600', bg: 'bg-violet-50', icon: Building2, border: 'hover:border-violet-200' }
+        ].map((stat, i) => (
           <Card key={i} className={`rounded-[32px] border-slate-200/60 shadow-sm bg-white transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50 ${stat.border}`}>
             <CardContent className="p-8 relative overflow-hidden">
               <div className="absolute -right-4 -top-4 w-32 h-32 bg-slate-50 rounded-full opacity-50" />
@@ -68,6 +70,117 @@ const AdminDashboard = () => {
 
       {/* Main Section */}
       <div className="flex flex-col xl:flex-row gap-8">
+        {/* Revenue Line Chart */}
+        <div className="flex-1 min-w-0">
+          <section className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm h-full flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+               <div className="flex items-center gap-3">
+                  <TrendingUp size={18} className="text-emerald-600" />
+                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">Revenue Growth</h2>
+               </div>
+               <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
+                  Monthly Trajectory
+               </div>
+            </div>
+
+            <div className="flex-1 min-h-[350px]">
+              {loading ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Graph...</p>
+                </div>
+              ) : stats.revenueData?.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={stats.revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }}
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }}
+                      tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                      dx={-10}
+                    />
+                    <RechartsTooltip 
+                      cursor={{ stroke: '#f1f5f9', strokeWidth: 2 }}
+                      contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                      itemStyle={{ color: '#10b981', fontWeight: '900' }}
+                      formatter={(value) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#10b981" 
+                      strokeWidth={4} 
+                      dot={{ r: 6, strokeWidth: 3, fill: '#fff' }} 
+                      activeDot={{ r: 8, fill: '#10b981', stroke: '#fff', strokeWidth: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No revenue data available</p>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* Subscription Pie Chart */}
+        <div className="xl:w-[420px] flex flex-col gap-8">
+           <section className="bg-white p-8 rounded-[32px] border border-slate-200/60 shadow-sm flex flex-col flex-1">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+                  <PieChartIcon size={18} className="text-indigo-600" /> Subscription Distribution
+                </h2>
+              </div>
+              
+              <div className="flex-1 min-h-[300px] flex items-center justify-center relative">
+                {loading ? (
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Data...</p>
+                ) : stats.subscriptionData?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.subscriptionData}
+                        cx="50%"
+                        cy="45%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {stats.subscriptionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip 
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        itemStyle={{ fontWeight: 'bold' }}
+                      />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36} 
+                        iconType="circle"
+                        formatter={(value) => <span className="text-xs font-bold text-slate-600">{value}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No active subscriptions</p>
+                )}
+              </div>
+           </section>
+        </div>
+      </div>
+
+      {/* System Telemetry Section */}
+      <div className="flex flex-col xl:flex-row gap-8 mt-8">
         {/* Audit Logs */}
         <div className="flex-1 min-w-0">
           <section className="bg-white p-8 rounded-[24px] border border-slate-200 shadow-sm">

@@ -60,14 +60,15 @@ const CompanyLogin = () => {
             <div className="absolute bottom-1/4 -left-20 w-64 h-64 rounded-full border-[20px] border-white" />
         </div>
 
-        <Link to="/" className="flex items-center gap-3 no-underline relative z-10 group">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-xl group-hover:scale-110 transition-transform">
-            <span className="text-emerald-700 font-black text-lg">N</span>
-          </div>
-          <span className="text-white font-black text-2xl tracking-tighter">naukri <span className="text-emerald-400">Business</span></span>
-        </Link>
+        <div className="relative z-10 flex flex-col h-full">
+          <Link to="/" className="flex items-center gap-3 no-underline mb-16 group">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-xl group-hover:scale-110 transition-transform">
+              <span className="text-emerald-700 font-black text-lg">V</span>
+            </div>
+            <span className="text-white font-black text-2xl tracking-tighter">velaivaaipu <span className="text-emerald-400">Business</span></span>
+          </Link>
 
-        <div className="relative z-10">
+          <div>
           <h2 className="text-5xl font-black leading-[1.1] mb-6 tracking-tight">
             Scale your <span className="text-emerald-400">engineering</span> teams faster.
           </h2>
@@ -89,6 +90,7 @@ const CompanyLogin = () => {
                 <span className="text-emerald-50/90 text-sm font-bold">{text}</span>
               </div>
             ))}
+          </div>
           </div>
         </div>
 

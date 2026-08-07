@@ -10,6 +10,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 const VerifyOtpPage = () => {
   const { state } = useLocation();
@@ -136,6 +137,7 @@ const VerifyOtpPage = () => {
               value={otp} 
               onChange={setOtp} 
               onComplete={handleVerify}
+              pattern={REGEXP_ONLY_DIGITS}
               className="gap-3"
             >
               <InputOTPGroup className="gap-2">

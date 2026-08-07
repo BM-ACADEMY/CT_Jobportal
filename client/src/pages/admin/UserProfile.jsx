@@ -6,7 +6,7 @@ import {
   ArrowLeft, Mail, Phone, MapPin, Briefcase, User as UserIcon,
   FileText, ExternalLink, Globe, GraduationCap, Building2,
   Calendar, Loader2, ShieldCheck, ShieldAlert, Layers, Star,
-  MessageSquare, Clock, DollarSign, Target
+  MessageSquare, Clock, DollarSign, Target, BadgeCheck
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -171,6 +171,9 @@ const UserProfile = () => {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{user.name}</h1>
+                  {user?.profileVerificationStatus === 'Verified' && (
+                    <BadgeCheck size={20} className="text-blue-500 shrink-0" title="Verified Profile" />
+                  )}
                   {user.display_id && (
                     <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-black tracking-wider px-2 py-0.5">
                       {user.display_id}

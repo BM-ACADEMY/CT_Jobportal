@@ -6,6 +6,8 @@ const Role = require('../models/Role');
 const Company = require('../models/Company');
 const Job = require('../models/Job');
 const Application = require('../models/Application');
+const Payment = require('../models/Payment');
+const Subscription = require('../models/Subscription');
 const sendEmail = require('../utils/sendEmail');
 
 const generateToken = (id, roleName) => {
@@ -122,11 +124,85 @@ const getDashboardStats = async (req, res) => {
     const companyCount = await Company.countDocuments();
     const jobCount = await Job.countDocuments();
 
+    // 1. Total Revenue (sum of all completed payments)
+    const revenueResult = await Payment.aggregate([
+      { $match: { status: 'completed' } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+
+    // 2. Revenue Data (Last 4 months)
+    const fourMonthsAgo = new Date();
+    fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 3);
+    fourMonthsAgo.setDate(1);
+    fourMonthsAgo.setHours(0,0,0,0);
+
+    const revenueDataResult = await Payment.aggregate([
+      { 
+        $match: { 
+          status: 'completed',
+          createdAt: { $gte: fourMonthsAgo }
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" }
+          },
+          revenue: { $sum: "$amount" }
+        }
+      }
+    ]);
+
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    
+    // Initialize array with last 4 months with 0 revenue
+    const last4MonthsData = [];
+    const currentDate = new Date();
+    for (let i = 3; i >= 0; i--) {
+      const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      last4MonthsData.push({
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        name: months[d.getMonth()],
+        revenue: 0
+      });
+    }
+
+    // Merge actual data
+    revenueDataResult.forEach(r => {
+      const match = last4MonthsData.find(m => m.year === r._id.year && m.month === r._id.month);
+      if (match) {
+        match.revenue = r.revenue;
+      }
+    });
+
+    const revenueData = last4MonthsData.map(m => ({ name: m.name, revenue: m.revenue }));
+
+    // 3. Subscription Count Pie Chart (Users per subscription)
+    const subscriptionResult = await User.aggregate([
+      { $match: { subscription: { $ne: null } } },
+      { $group: { _id: "$subscription", count: { $sum: 1 } } },
+      { 
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "_id",
+          as: "subDetails"
+        }
+      },
+      { $unwind: "$subDetails" },
+      { $project: { name: "$subDetails.name", value: "$count" } }
+    ]);
+
     res.json({
       users: userCount,
       companies: companyCount,
       jobs: jobCount,
-      // For demonstration, you could add daily traffic or other metrics here
+      totalRevenue,
+      revenueData,
+      subscriptionData: subscriptionResult
     });
   } catch (err) {
     console.error('Stats Error:', err.message);
@@ -154,6 +230,22 @@ const deleteUser = async (req, res) => {
     res.json({ msg: 'User deleted successfully' });
   } catch (err) {
     console.error('Delete User Error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// @desc    Update user verification status
+// @route   PUT /api/admin/users/:id/verification-status
+const updateUserVerificationStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['Pending', 'Verified', 'Rejected'].includes(status)) {
+      return res.status(400).json({ msg: 'Invalid status' });
+    }
+    const user = await User.findByIdAndUpdate(req.params.id, { profileVerificationStatus: status }, { new: true }).select('-password').populate('role', 'name');
+    res.json(user);
+  } catch (err) {
+    console.error('Update User Verification Status Error:', err.message);
     res.status(500).send('Server Error');
   }
 };
@@ -457,6 +549,7 @@ module.exports = {
   getUserDetails,
   updateUser,
   deleteUser,
+  updateUserVerificationStatus,
   toggleBlockUser,
   getRoles,
   getCompanies,

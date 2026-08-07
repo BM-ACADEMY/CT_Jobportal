@@ -10,6 +10,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 const ForgotPasswordPage = () => {
   const { forgotPassword, resetPassword } = useAuth();
@@ -136,7 +137,8 @@ const ForgotPasswordPage = () => {
                 <InputOTP 
                   maxLength={6} 
                   value={otp} 
-                  onChange={setOtp} 
+                  onChange={setOtp}
+                  pattern={REGEXP_ONLY_DIGITS}
                   className="gap-3"
                 >
                   <InputOTPGroup className="gap-2">

@@ -97,6 +97,7 @@ import EmployeeDashboard from '../pages/employee/Dashboard';
 import WriteReview from '../pages/shared/WriteReview';
 import ManageReviews from '../pages/admin/ManageReviews';
 import AdminCollegeVerification from '../pages/admin/CollegeVerification';
+import CollegeKycDetails from '../pages/admin/CollegeKycDetails';
 
 // College pages
 import CollegeDashboard from '../pages/college/Dashboard';
@@ -404,6 +405,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminCollegeVerification />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/colleges/:id"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <CollegeKycDetails />
             </PrivateRoute>
           }
         />

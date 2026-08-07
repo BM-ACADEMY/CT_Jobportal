@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, User, CircleCheck, Briefcase, Building2, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, CircleCheck, Briefcase, Building2, ShieldCheck, ArrowLeft, Phone } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import PhoneInputPkg from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
+const PhoneInput = PhoneInputPkg.default || PhoneInputPkg;
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -21,10 +24,13 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 const registerSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }).regex(/^[a-zA-Z\s]+$/, { message: "Name must contain only alphabets" }),
   email: z.string().email({ message: "Enter a valid email address" }).toLowerCase(),
+  countryCode: z.string().min(1, { message: "Country code is required" }),
+  mobileNumber: z.string().regex(/^\d+$/, { message: "Mobile number must contain only digits" }),
   password: z.string().min(6, { message: "Minimum 6 characters" }).regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/\\|~`\-]).{6,}$/, {
     message: "1 uppercase, 1 number, and 1 symbol required"
   }),
@@ -36,6 +42,17 @@ const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
+}).refine((data) => {
+  if (data.countryCode === '+91') return data.mobileNumber.length === 10;
+  if (data.countryCode === '+1') return data.mobileNumber.length === 10;
+  if (data.countryCode === '+44') return data.mobileNumber.length === 10;
+  if (data.countryCode === '+971') return data.mobileNumber.length === 9;
+  if (data.countryCode === '+61') return data.mobileNumber.length === 9;
+  if (data.countryCode === '+65') return data.mobileNumber.length === 8;
+  return data.mobileNumber.length >= 7 && data.mobileNumber.length <= 10;
+}, {
+  message: "Invalid mobile number length for the selected country",
+  path: ["mobileNumber"],
 });
 
 const RegisterPage = () => {
@@ -60,6 +77,8 @@ const RegisterPage = () => {
     defaultValues: {
       name: "",
       email: "",
+      countryCode: "+91",
+      mobileNumber: "",
       password: "",
       confirmPassword: "",
       collegeName: "",
@@ -108,6 +127,7 @@ const RegisterPage = () => {
     const result = await register({
       name: values.name,
       email: values.email,
+      phone: `${values.countryCode}${values.mobileNumber}`,
       password: values.password,
       role: selectedRole,
       ...(selectedRole === 'college' ? {
@@ -163,14 +183,15 @@ const RegisterPage = () => {
         <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5" />
         <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-white/5" />
 
-        <Link to="/" className="flex items-center gap-3 no-underline relative z-10">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-lg">
-            <span className={`font-black text-lg ${isRecruiter ? 'text-emerald-600' : 'text-emerald-500'}`}>N</span>
-          </div>
-          <span className="text-white font-black text-2xl tracking-tighter">naukri</span>
-        </Link>
+        <div className="flex flex-col relative z-10">
+          <Link to="/" className="flex items-center gap-3 no-underline mb-16">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+              <span className={`font-black text-lg ${isRecruiter ? 'text-emerald-600' : 'text-emerald-500'}`}>V</span>
+            </div>
+            <span className="text-white font-black text-2xl tracking-tighter">velaivaaipu</span>
+          </Link>
 
-        <div className="relative z-10">
+          <div>
           <p className={`font-black text-[10px] uppercase tracking-[0.2em] mb-4 
             ${isRecruiter ? 'text-emerald-200' : 'text-teal-200'}`}>
             {isRecruiter ? 'FOR EMPLOYERS' : 'FOR JOB SEEKERS'}
@@ -206,6 +227,7 @@ const RegisterPage = () => {
               </div>
             ))}
           </div>
+          </div>
         </div>
 
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 shadow-xl relative z-10">
@@ -237,7 +259,7 @@ const RegisterPage = () => {
                   Create your account
                 </h1>
                 <p className="text-muted-foreground text-sm font-bold">
-                  Join millions of professionals on Naukri
+                  Join millions of professionals on Velaivaaipu
                 </p>
               </div>
 
@@ -284,7 +306,15 @@ const RegisterPage = () => {
                         <FormControl>
                           <div className="relative">
                             <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                            <Input placeholder={selectedRole === 'college' ? 'TPO name' : 'Full name'} {...field} className="h-12 pl-12 rounded-xl" />
+                            <Input 
+                              placeholder={selectedRole === 'college' ? 'TPO name' : 'Full name'} 
+                              {...field} 
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                field.onChange(val);
+                              }}
+                              className="h-12 pl-12 rounded-xl" 
+                            />
                           </div>
                         </FormControl>
                         <FormMessage className="text-[11px] font-bold" />
@@ -300,7 +330,44 @@ const RegisterPage = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                            <Input placeholder={selectedRole === 'college' ? 'TPO email address' : 'Email address'} {...field} className="h-12 pl-12 rounded-xl" />
+                            <Input 
+                              placeholder={selectedRole === 'college' ? 'TPO email address' : 'Email address'} 
+                              {...field} 
+                              onChange={(e) => field.onChange(e.target.value.toLowerCase())}
+                              className="h-12 pl-12 rounded-xl" 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage className="text-[11px] font-bold" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="mobileNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="relative">
+                            <PhoneInput
+                              country={'in'}
+                              value={form.watch('countryCode').replace('+', '') + field.value}
+                              onChange={(phone, country) => {
+                                if (country && country.dialCode) {
+                                  form.setValue('countryCode', '+' + country.dialCode, { shouldValidate: true });
+                                  const rawNumber = phone.slice(country.dialCode.length);
+                                  field.onChange(rawNumber);
+                                }
+                              }}
+                              inputProps={{
+                                name: 'mobileNumber',
+                                required: true,
+                              }}
+                              inputClass="!w-full !h-12 !pl-[52px] !rounded-xl !border-input !bg-background !text-sm focus:!ring-2 focus:!ring-ring focus:!outline-none"
+                              buttonClass="!border-input !bg-background !rounded-l-xl !w-[45px] hover:!bg-muted"
+                              dropdownClass="!bg-background !text-foreground"
+                            />
                           </div>
                         </FormControl>
                         <FormMessage className="text-[11px] font-bold" />
@@ -514,6 +581,7 @@ const RegisterPage = () => {
                   value={otp} 
                   onChange={setOtp} 
                   onComplete={handleVerifyOtp}
+                  pattern={REGEXP_ONLY_DIGITS}
                   className="gap-3"
                 >
                   <InputOTPGroup className="gap-2">
