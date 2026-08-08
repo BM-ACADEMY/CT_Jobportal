@@ -1,4 +1,5 @@
 const Ticket = require('../models/Ticket');
+const User = require('../models/User');
 const path = require('path');
 const fs = require('fs');
 
@@ -54,29 +55,39 @@ const getMyTickets = async (req, res) => {
 // @route GET /api/tickets/admin/all
 const getAllTickets = async (req, res) => {
   try {
-    const { status, category, severity, search } = req.query;
-    let query = {};
+    const { status, category, severity, search, page = 1, limit = 20 } = req.query;
+    const query = {};
 
     if (status && status !== 'all') query.status = status;
     if (category && category !== 'all') query.category = category;
     if (severity && severity !== 'all') query.severity = severity;
 
-    const tickets = await Ticket.find(query)
-      .populate('user', 'name email display_id')
-      .sort({ createdAt: -1 });
-
-    let result = tickets;
     if (search) {
-      const s = search.toLowerCase();
-      result = tickets.filter(t =>
-        t.user?.name?.toLowerCase().includes(s) ||
-        t.user?.email?.toLowerCase().includes(s) ||
-        t.accountIdentity?.toLowerCase().includes(s) ||
-        t._id.toString().includes(s)
-      );
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const matchingUsers = await User.find({ $or: [{ name: regex }, { email: regex }] }).select('_id');
+      query.$or = [
+        { user: { $in: matchingUsers.map(u => u._id) } },
+        { accountIdentity: regex },
+        { $expr: { $regexMatch: { input: { $toString: '$_id' }, regex: search, options: 'i' } } }
+      ];
     }
 
-    res.json(result);
+    const [tickets, total, openCount, inProgressCount, criticalCount] = await Promise.all([
+      Ticket.find(query)
+        .populate('user', 'name email display_id')
+        .sort({ createdAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit)),
+      Ticket.countDocuments(query),
+      Ticket.countDocuments({ ...query, status: 'open' }),
+      Ticket.countDocuments({ ...query, status: 'in_progress' }),
+      Ticket.countDocuments({ ...query, severity: 'critical' })
+    ]);
+
+    res.json({
+      tickets, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1),
+      stats: { total, open: openCount, inProgress: inProgressCount, critical: criticalCount }
+    });
   } catch (err) {
     console.error('Get All Tickets Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

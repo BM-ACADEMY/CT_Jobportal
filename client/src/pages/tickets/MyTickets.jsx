@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, AlertCircle, CheckCircle2, RefreshCw,
-  ChevronRight, MessageCircle, Lock
+  ChevronDown, ChevronUp, MessageCircle, Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -38,6 +38,7 @@ const MyTickets = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [chatLoading, setChatLoading] = useState(null);
+  const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -144,13 +145,13 @@ const MyTickets = () => {
             return (
               <div
                 key={t._id}
-                className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-all group"
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden group"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div
-                    className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => navigate(`/tickets/${t._id}`)}
-                  >
+                <div 
+                  className="flex items-start justify-between gap-4 p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                  onClick={() => setExpanded(expanded === t._id ? null : t._id)}
+                >
+                  <div className="flex-1 min-w-0">
                     {/* Badges */}
                     <div className="flex items-center gap-2 flex-wrap mb-2">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold ${statusCfg.color}`}>
@@ -181,7 +182,7 @@ const MyTickets = () => {
                     {/* Chat with Support — only on active tickets */}
                     {isActive ? (
                       <button
-                        onClick={() => handleChatWithSupport(t._id)}
+                        onClick={(e) => { e.stopPropagation(); handleChatWithSupport(t._id); }}
                         disabled={chatLoading === t._id}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all disabled:opacity-60"
                       >
@@ -197,13 +198,42 @@ const MyTickets = () => {
                       </span>
                     )}
 
-                    <ChevronRight
-                      size={15}
-                      className="text-slate-300 group-hover:text-slate-500 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/tickets/${t._id}`)}
-                    />
+                    {expanded === t._id ? (
+                      <ChevronUp
+                        size={15}
+                        className="text-slate-300 group-hover:text-slate-500 transition-colors"
+                      />
+                    ) : (
+                      <ChevronDown
+                        size={15}
+                        className="text-slate-300 group-hover:text-slate-500 transition-colors"
+                      />
+                    )}
                   </div>
                 </div>
+
+                {/* Expanded detail */}
+                {expanded === t._id && (
+                  <div className="border-t border-slate-100 p-5 space-y-5 bg-slate-50/30">
+                    {/* Diagnostics */}
+                    {Object.keys(t.diagnostics || {}).length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Diagnostics Provided</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {Object.entries(t.diagnostics).map(([k, v]) => v ? (
+                            <div key={k} className="bg-white rounded-xl border border-slate-200 p-3">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{k.replace(/([A-Z])/g, ' $1').trim()}</p>
+                              <p className="text-xs font-semibold text-slate-700 break-words">{v}</p>
+                            </div>
+                          ) : null)}
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-500">
+                      <span className="font-semibold">Diagnostics Consent:</span> {t.diagnosticsConsent ? '✅ Granted' : '❌ Not Granted'}
+                    </p>
+                  </div>
+                )}
               </div>
             );
           })}

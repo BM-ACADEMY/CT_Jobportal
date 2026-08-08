@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import Pagination from '@/components/shared/Pagination';
 
 const ManageUsers = () => {
   const navigate = useNavigate();
@@ -57,20 +58,24 @@ const ManageUsers = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+  const [activeTab, setActiveTab] = useState('jobseeker');
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const params = { role: activeTab, page, limit: 20 };
+      if (search) params.search = search;
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params
       });
-      if (Array.isArray(res.data)) {
-        setUsers(res.data);
-      } else {
-        console.error('API returned non-array data for users:', res.data);
-        setUsers([]);
-      }
+      setUsers(Array.isArray(res.data.users) ? res.data.users : []);
+      setTotal(res.data.total);
+      setPages(res.data.pages);
     } catch (err) {
       console.error('Error fetching users:', err);
       toast.error('Failed to load users');
@@ -100,8 +105,19 @@ const ManageUsers = () => {
 
   useEffect(() => {
     fetchUsers();
+  }, [activeTab, page]);
+
+  useEffect(() => {
     fetchRoles();
   }, []);
+
+  const handleTabChange = (tab) => { setActiveTab(tab); setPage(1); };
+
+  const handleSearchEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    setPage(1);
+    if (page === 1) fetchUsers();
+  };
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -117,8 +133,8 @@ const ManageUsers = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('User deleted successfully');
-      setUsers(users.filter(u => u._id !== id));
       setDeleteTarget(null);
+      fetchUsers();
     } catch (err) {
       toast.error('Failed to delete user');
     } finally {
@@ -170,16 +186,6 @@ const ManageUsers = () => {
       console.error(err);
       toast.error("Failed to start conversation");
     }
-  };
-
-  const filterUsersByRole = (roleName) => {
-    return (Array.isArray(users) ? users : []).filter(user => {
-      const matchesRole = user.role?.name === roleName;
-      const matchesSearch = user.name?.toLowerCase().includes(search.toLowerCase()) || 
-                           user.email?.toLowerCase().includes(search.toLowerCase()) ||
-                           user.display_id?.toLowerCase().includes(search.toLowerCase());
-      return matchesRole && matchesSearch;
-    });
   };
 
   const UserTable = ({ data, roleLabel }) => (
@@ -301,13 +307,14 @@ const ManageUsers = () => {
               placeholder="Search by name, email, or unique ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchEnter}
             />
           </div>
         </div>
         <div className="h-px bg-slate-200 w-full" />
       </div>
 
-      <Tabs defaultValue="jobseeker" className="w-full space-y-8">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-8">
         <TabsList className="bg-slate-100/50 p-1 flex gap-1 rounded-xl border border-slate-200 w-fit">
           <TabsTrigger value="jobseeker" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
             Job Seekers
@@ -317,6 +324,9 @@ const ManageUsers = () => {
           </TabsTrigger>
           <TabsTrigger value="company" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
             Organizations
+          </TabsTrigger>
+          <TabsTrigger value="org_employee" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
+            Team Members
           </TabsTrigger>
           <TabsTrigger value="college" className="rounded-lg px-6 py-2 font-bold text-xs text-slate-500 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all uppercase tracking-tight">
             Colleges
@@ -330,20 +340,10 @@ const ManageUsers = () => {
               <p className="text-xs font-bold text-slate-400">Syncing directory...</p>
             </div>
           ) : (
-            <>
-              <TabsContent value="jobseeker" className="m-0">
-                <UserTable data={filterUsersByRole('jobseeker')} roleLabel="Job Seeker" />
-              </TabsContent>
-              <TabsContent value="recruiter" className="m-0">
-                <UserTable data={filterUsersByRole('recruiter')} roleLabel="Recruiter" />
-              </TabsContent>
-              <TabsContent value="company" className="m-0">
-                <UserTable data={filterUsersByRole('company')} roleLabel="Company Admin" />
-              </TabsContent>
-              <TabsContent value="college" className="m-0">
-                <UserTable data={filterUsersByRole('college')} roleLabel="College Admin" />
-              </TabsContent>
-            </>
+            <TabsContent value={activeTab} className="m-0">
+              <UserTable data={users} roleLabel={activeTab} />
+              <Pagination page={page} pages={pages} total={total} onPageChange={setPage} itemLabel="users" />
+            </TabsContent>
           )}
         </Card>
       </Tabs>

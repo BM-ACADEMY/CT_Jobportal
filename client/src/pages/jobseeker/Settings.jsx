@@ -5,7 +5,7 @@ import {
   User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Plus, X, Upload, FileText, CheckCircle2, Loader2,
   Save, Trash2, LayoutGrid, Clock, Target, Eye, EyeOff, Globe, MapPinned, Settings2, Download, BadgeCheck,
-  XCircle, AlertCircle
+  XCircle, AlertCircle, Building2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import ImageCropperModal from "@/components/shared/ImageCropperModal";
+import PhoneNumberInput from "@/components/shared/PhoneNumberInput";
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
@@ -518,7 +519,7 @@ const Settings = () => {
             ...formData,
             profile: {
                 ...formData.profile,
-                experience: [...formData.profile.experience, { company: '', role: '', duration: '', description: '' }]
+                experience: [...formData.profile.experience, { company: '', role: '', location: '', duration: '', description: '' }]
             }
         });
     };
@@ -528,7 +529,7 @@ const Settings = () => {
             ...formData,
             profile: {
                 ...formData.profile,
-                qualification: [...formData.profile.qualification, { degree: '', institution: '', year: '' }]
+                qualification: [...formData.profile.qualification, { degree: '', institution: '', year: '', startYear: '', endYear: '', currentlyPursuing: false }]
             }
         });
     };
@@ -845,15 +846,10 @@ const Settings = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="relative">
-                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
-                                            <Input 
-                                                placeholder="+91 00000 00000" 
-                                                value={formData.profile.phone}
-                                                onChange={(e) => setFormData({...formData, profile: {...formData.profile, phone: e.target.value}})}
-                                                className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
-                                            />
-                                        </div>
+                                        <PhoneNumberInput
+                                            value={formData.profile.phone}
+                                            onChange={(phone) => setFormData({...formData, profile: {...formData.profile, phone}})}
+                                        />
                                     </div>
                                 </DataDisplay>
 
@@ -958,8 +954,8 @@ const Settings = () => {
                                             <X size={16} />
                                         </Button>
                                     )}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                        <DataDisplay label="Qualification Degree" value={item.degree} isEditing={isEditing}>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <DataDisplay label="Qualification Degree" value={item.degree} isEditing={isEditing} icon={GraduationCap}>
                                             <div className="space-y-1.5">
                                                 <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Degree</Label>
                                                 <Input 
@@ -973,7 +969,7 @@ const Settings = () => {
                                                 />
                                             </div>
                                         </DataDisplay>
-                                        <DataDisplay label="Academic Institution" value={item.institution} isEditing={isEditing}>
+                                        <DataDisplay label="Academic Institution" value={item.institution} isEditing={isEditing} icon={Building2}>
                                             <div className="space-y-1.5">
                                                 <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Institution</Label>
                                                 <Input 
@@ -987,20 +983,64 @@ const Settings = () => {
                                                 />
                                             </div>
                                         </DataDisplay>
-                                        <DataDisplay label="Completion Year" value={item.year} isEditing={isEditing}>
+                                        <DataDisplay label="Start Year" value={item.startYear} isEditing={isEditing} icon={Clock}>
                                             <div className="space-y-1.5">
-                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Year</Label>
+                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Start Year</Label>
                                                 <Input 
-                                                    value={item.year}
+                                                    value={item.startYear || ''}
                                                     onChange={(e) => {
                                                         const newQual = [...formData.profile.qualification];
-                                                        newQual[idx].year = e.target.value;
+                                                        newQual[idx].startYear = e.target.value;
                                                         setFormData({...formData, profile: {...formData.profile, qualification: newQual}});
                                                     }}
                                                     className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
                                                 />
                                             </div>
                                         </DataDisplay>
+                                        <div className="space-y-4">
+                                            {isEditing && (
+                                                <div className="flex items-center gap-2 mt-1 mb-2">
+                                                    <input 
+                                                        type="checkbox"
+                                                        id={`pursuing-${idx}`}
+                                                        checked={item.currentlyPursuing || false}
+                                                        onChange={(e) => {
+                                                            const newQual = [...formData.profile.qualification];
+                                                            newQual[idx].currentlyPursuing = e.target.checked;
+                                                            if (e.target.checked) {
+                                                                newQual[idx].year = '';
+                                                                newQual[idx].endYear = '';
+                                                            }
+                                                            setFormData({...formData, profile: {...formData.profile, qualification: newQual}});
+                                                        }}
+                                                        className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600 cursor-pointer"
+                                                    />
+                                                    <Label htmlFor={`pursuing-${idx}`} className="text-sm font-bold text-slate-700 cursor-pointer">Currently Pursuing</Label>
+                                                </div>
+                                            )}
+                                            
+                                            {(!item.currentlyPursuing) ? (
+                                                <DataDisplay label="Passout Year" value={item.year || item.endYear} isEditing={isEditing} icon={CheckCircle2}>
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Passout Year</Label>
+                                                        <Input 
+                                                            value={item.year || item.endYear || ''}
+                                                            onChange={(e) => {
+                                                                const newQual = [...formData.profile.qualification];
+                                                                newQual[idx].year = e.target.value;
+                                                                newQual[idx].endYear = e.target.value;
+                                                                setFormData({...formData, profile: {...formData.profile, qualification: newQual}});
+                                                            }}
+                                                            className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
+                                                        />
+                                                    </div>
+                                                </DataDisplay>
+                                            ) : (
+                                                !isEditing && (
+                                                    <DataDisplay label="Passout Year" value="Currently Pursuing" isEditing={false} icon={Loader2} />
+                                                )
+                                            )}
+                                        </div>
                                     </div>
                                     {idx < formData.profile.qualification.length - 1 && <div className="h-px bg-slate-50 my-6" />}
                                 </div>
@@ -1045,7 +1085,7 @@ const Settings = () => {
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                         <div className="space-y-6">
-                                            <DataDisplay label="Organization Name" value={item.company} isEditing={isEditing}>
+                                            <DataDisplay label="Organization Name" value={item.company} isEditing={isEditing} icon={Building2}>
                                                 <div className="space-y-1.5">
                                                     <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Company</Label>
                                                     <Input 
@@ -1059,7 +1099,7 @@ const Settings = () => {
                                                     />
                                                 </div>
                                             </DataDisplay>
-                                            <DataDisplay label="Designation" value={item.role} isEditing={isEditing}>
+                                            <DataDisplay label="Designation" value={item.role} isEditing={isEditing} icon={Briefcase}>
                                                 <div className="space-y-1.5">
                                                     <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Role</Label>
                                                     <Input 
@@ -1073,7 +1113,21 @@ const Settings = () => {
                                                     />
                                                 </div>
                                             </DataDisplay>
-                                            <DataDisplay label="Tenure Period" value={item.duration} isEditing={isEditing}>
+                                            <DataDisplay label="Location" value={item.location} isEditing={isEditing} icon={MapPin}>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Location</Label>
+                                                    <Input 
+                                                        value={item.location}
+                                                        onChange={(e) => {
+                                                            const newExp = [...formData.profile.experience];
+                                                            newExp[idx].location = e.target.value;
+                                                            setFormData({...formData, profile: {...formData.profile, experience: newExp}});
+                                                        }}
+                                                        className="h-11 rounded-xl bg-white border-slate-200 font-medium text-sm focus:border-emerald-300 focus:ring-emerald-100 transition-all" 
+                                                    />
+                                                </div>
+                                            </DataDisplay>
+                                            <DataDisplay label="Tenure Period" value={item.duration} isEditing={isEditing} icon={Clock}>
                                                 <div className="space-y-1.5">
                                                     <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Duration</Label>
                                                     <Input 
@@ -1088,11 +1142,11 @@ const Settings = () => {
                                                 </div>
                                             </DataDisplay>
                                         </div>
-                                        <DataDisplay label="Role responsibilities" value={item.description} isEditing={isEditing}>
+                                        <DataDisplay label="Role responsibilities" value={item.description} isEditing={isEditing} icon={FileText}>
                                             <div className="space-y-1.5 h-full">
                                                 <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Description</Label>
                                                 <textarea 
-                                                    className="w-full h-[180px] p-4 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300 transition-all"
+                                                    className="w-full h-full min-h-[180px] p-4 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300 transition-all resize-none"
                                                     placeholder="Detail your accomplishments and key contributions..."
                                                     value={item.description}
                                                     onChange={(e) => {
@@ -1543,7 +1597,7 @@ const Settings = () => {
                                                     </div>
                                                     <div className="space-y-1">
                                                         <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
-                                                        <Input value={reapplyForm.phone} onChange={(e) => setReapplyForm(p => ({ ...p, phone: e.target.value }))} className="h-10 rounded-xl bg-white border-slate-200 font-medium text-sm" />
+                                                        <PhoneNumberInput value={reapplyForm.phone} onChange={(phone) => setReapplyForm(p => ({ ...p, phone }))} />
                                                     </div>
                                                 </div>
                                                 <Button type="submit" disabled={reapplying} className="h-10 px-6 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest">
@@ -1620,12 +1674,7 @@ const Settings = () => {
                                         </div>
                                         <div className="space-y-1.5">
                                             <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
-                                            <Input
-                                                value={joinForm.phone}
-                                                onChange={(e) => setJoinForm(p => ({ ...p, phone: e.target.value }))}
-                                                placeholder="e.g. 9876543210"
-                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
-                                            />
+                                            <PhoneNumberInput value={joinForm.phone} onChange={(phone) => setJoinForm(p => ({ ...p, phone }))} />
                                         </div>
                                     </div>
                                     <Button type="submit" disabled={joiningCollege} className="h-11 px-6 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest">

@@ -10,7 +10,7 @@ const {
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 
 router.use(verifyToken);
-router.use(authorizeRoles('recruiter', 'company'));
+router.use(authorizeRoles('recruiter', 'company', 'org_employee'));
 
 router.post('/', scheduleInterview);
 router.get('/recruiter', getRecruiterInterviews);

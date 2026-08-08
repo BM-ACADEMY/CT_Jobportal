@@ -7,6 +7,7 @@ import { QrCode, Plus, Users, Calendar, Copy, ExternalLink, ToggleLeft, ToggleRi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -19,6 +20,16 @@ const STAGE_OPTIONS = [
   { value: 'selected', label: 'Selected' },
   { value: 'rejected', label: 'Rejected' },
 ];
+
+const STAGE_BADGE_COLORS = {
+  registered: 'bg-slate-100 text-slate-600 border-slate-200',
+  stage1: 'bg-blue-50 text-blue-700 border-blue-100',
+  stage2: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  final_interview: 'bg-violet-50 text-violet-700 border-violet-100',
+  certificate_verification: 'bg-amber-50 text-amber-700 border-amber-100',
+  selected: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  rejected: 'bg-rose-50 text-rose-700 border-rose-100',
+};
 
 const emptyCompanyRow = { name: '', packageLPA: '', tierPolicy: 'regular', contactName: '', contactEmail: '' };
 const emptyForm = { title: '', batchYear: new Date().getFullYear(), departments: '', description: '', companies: [{ ...emptyCompanyRow }], minCGPA: '', maxArrears: '', rounds: '' };
@@ -93,6 +104,7 @@ const Drives = () => {
   const saveDrive = async (e) => {
     e.preventDefault();
     if (!form.title) return toast.error('Title is required');
+    if (!form.batchYear) return toast.error('Batch year is required');
     setCreating(true);
     try {
       const payload = {
@@ -665,8 +677,8 @@ const Drives = () => {
                                 )}
                               </div>
                             </div>
-                            <span className="font-bold uppercase text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 whitespace-nowrap">
-                              {appStatus}
+                            <span className={`font-bold uppercase text-[10px] px-2 py-0.5 rounded-full border whitespace-nowrap ${STAGE_BADGE_COLORS[appStatus] || STAGE_BADGE_COLORS.registered}`}>
+                              {appStatus.replace(/_/g, ' ')}
                             </span>
                           </label>
                         );
@@ -847,7 +859,7 @@ const Drives = () => {
                   <form onSubmit={submitInchargeInvite} className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
                     <Input value={inchargeForm.name} onChange={e => setInchargeForm(p => ({ ...p, name: e.target.value }))} placeholder="Name" className="rounded-lg h-9 text-xs" />
                     <Input value={inchargeForm.email} onChange={e => setInchargeForm(p => ({ ...p, email: e.target.value }))} placeholder="Email" className="rounded-lg h-9 text-xs" />
-                    <Input value={inchargeForm.phone} onChange={e => setInchargeForm(p => ({ ...p, phone: e.target.value }))} placeholder="Phone" className="rounded-lg h-9 text-xs" />
+                    <PhoneNumberInput value={inchargeForm.phone} onChange={phone => setInchargeForm(p => ({ ...p, phone }))} size="sm" />
                     
                     {detailData.drive?.companies?.length > 0 && (
                       <div className="md:col-span-3 bg-slate-50 p-2 rounded-lg border border-slate-100">

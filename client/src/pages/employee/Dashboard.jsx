@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Briefcase, FileText, MessageCircle, Star, Settings,
+  Briefcase, FileText, MessageCircle, Users, Settings,
   Building2, CheckCircle2, ArrowRight, Sparkles, Lock
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -63,7 +63,7 @@ const EmployeeDashboard = () => {
              Welcome back, {user?.name?.split(' ')[0] || 'Employee'}
           </h1>
           <p className="text-sm md:text-base text-slate-400 font-medium max-w-xl leading-relaxed">
-             Browse open roles, monitor application statuses, and collaborate seamlessly utilizing your organizational toolset.
+             Post openings, review candidates, and manage hiring alongside your organization's team.
           </p>
           {planName && (
             <Badge className="mt-2 bg-teal-500/20 text-teal-300 border-teal-500/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-xl backdrop-blur-md">
@@ -82,30 +82,30 @@ const EmployeeDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickCard
             icon={Briefcase}
-            label="Browse Jobs"
-            desc="Explore thousands of open positions."
-            to="/jobs"
+            label="My Jobs"
+            desc="View and manage your posted openings."
+            to="/company/jobs"
             color="text-blue-600"
           />
           <QuickCard
             icon={FileText}
-            label="My Applications"
-            desc="Track the status of your applications."
-            to="/employee/applications"
+            label="Post Job"
+            desc="Create a new job opening."
+            to="/company/post-job"
             color="text-violet-600"
           />
           <QuickCard
-            icon={Star}
-            label="Saved Jobs"
-            desc="Jobs you've bookmarked for later."
-            to="/dashboard/saved-jobs"
+            icon={Users}
+            label="Find Candidates"
+            desc="Search and shortlist candidates."
+            to="/company/candidate-search"
             color="text-amber-600"
           />
           <QuickCard
             icon={MessageCircle}
             label="Messages"
-            desc="Communicate with recruiters directly."
-            to="/employee/messages"
+            desc="Communicate with candidates and your team."
+            to="/company/messages"
             color="text-emerald-600"
           />
         </div>

@@ -8,6 +8,7 @@ import * as z from "zod";
 import PhoneInputPkg from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 const PhoneInput = PhoneInputPkg.default || PhoneInputPkg;
+import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -51,7 +52,7 @@ const registerSchema = z.object({
   if (data.countryCode === '+65') return data.mobileNumber.length === 8;
   return data.mobileNumber.length >= 7 && data.mobileNumber.length <= 10;
 }, {
-  message: "Invalid mobile number length for the selected country",
+  message: "Enter a valid phone number",
   path: ["mobileNumber"],
 });
 
@@ -352,12 +353,24 @@ const RegisterPage = () => {
                           <div className="relative">
                             <PhoneInput
                               country={'in'}
+                              disableCountryGuess
                               value={form.watch('countryCode').replace('+', '') + field.value}
                               onChange={(phone, country) => {
                                 if (country && country.dialCode) {
                                   form.setValue('countryCode', '+' + country.dialCode, { shouldValidate: true });
                                   const rawNumber = phone.slice(country.dialCode.length);
-                                  field.onChange(rawNumber);
+                                  // Cap at the selected country's actual digit length (e.g. 10 for
+                                  // India) as the user types, instead of only flagging it on submit.
+                                  // country.format is prefixed with the dial code's own dots + a
+                                  // space (e.g. India's is "+.. .....-....."), so only the segment
+                                  // after the first space is the national-number format to count.
+                                  let maxDigits = 15;
+                                  if (country.format) {
+                                    const spaceIdx = country.format.indexOf(' ');
+                                    const nationalFormat = spaceIdx === -1 ? country.format : country.format.slice(spaceIdx + 1);
+                                    maxDigits = (nationalFormat.match(/\./g) || []).length;
+                                  }
+                                  field.onChange(rawNumber.slice(0, maxDigits));
                                 }
                               }}
                               inputProps={{
@@ -383,10 +396,7 @@ const RegisterPage = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
-                              <div className="relative">
-                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                                <Input placeholder="TPO phone number" {...field} className="h-12 pl-12 rounded-xl" />
-                              </div>
+                              <PhoneNumberInput value={field.value} onChange={field.onChange} />
                             </FormControl>
                             <FormMessage className="text-[11px] font-bold" />
                           </FormItem>
@@ -428,10 +438,7 @@ const RegisterPage = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
-                              <div className="relative">
-                                <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                                <Input placeholder="College phone number" {...field} className="h-12 pl-12 rounded-xl" />
-                              </div>
+                              <PhoneNumberInput value={field.value} onChange={field.onChange} />
                             </FormControl>
                             <FormMessage className="text-[11px] font-bold" />
                           </FormItem>

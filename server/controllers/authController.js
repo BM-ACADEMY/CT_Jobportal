@@ -6,6 +6,7 @@ const Company = require('../models/Company');
 const Subscription = require('../models/Subscription');
 const CampusDrive = require('../models/CampusDrive');
 const sendEmail = require('../utils/sendEmail');
+const { hasCompanyAccess } = require('../utils/companyAccess');
 
 // "Manage Drive" is a capability layered on top of whatever role a user already has —
 // surfaced on every user payload so the client can show the sidebar entry regardless of role.
@@ -221,6 +222,7 @@ const verifyOtp = async (req, res) => {
         downloadsUsed: user.downloadsUsed || 0,
         messagesUsed: user.messagesUsed || 0,
         counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+        company: user.company || null,
         employerCompany: user.employerCompany || null,
         employerCompanyName,
         purchasedFeatures: user.purchasedFeatures || [],
@@ -255,14 +257,6 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ msg: 'Invalid Credentials' });
-    }
-
-    if (user.role && (user.role.name === 'recruiter' || user.role.name === 'org_employee')) {
-      if (!user.isActiveSeat) {
-        return res.status(403).json({ 
-          msg: 'Your seat is not active. Please ask your organization administrator to assign you an active seat.' 
-        });
-      }
     }
 
     if (!user.isVerified) {
@@ -325,8 +319,12 @@ const loginUser = async (req, res) => {
         downloadsUsed: user.downloadsUsed || 0,
         messagesUsed: user.messagesUsed || 0,
         counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+        company: user.company || null,
         employerCompany: user.employerCompany || null,
         employerCompanyName,
+        isTeamManaged: user.isTeamManaged || false,
+        isActiveSeat: user.isActiveSeat || false,
+        hasCompanyAccess: hasCompanyAccess(user),
         purchasedFeatures: user.purchasedFeatures || [],
         hasInchargeDrives: await hasInchargeDrives(user._id),
         display_id: user.display_id,
@@ -463,14 +461,6 @@ const getUserProfile = async (req, res) => {
     }
 
     const roleName = user.role.name;
-    
-    if (roleName === 'recruiter' || roleName === 'org_employee') {
-      if (!user.isActiveSeat) {
-        return res.status(403).json({ 
-          msg: 'Your seat is not active. Please ask your organization administrator to assign you an active seat.' 
-        });
-      }
-    }
 
     await ensureFreePlan(user, roleName);
 
@@ -508,10 +498,13 @@ const getUserProfile = async (req, res) => {
       jobsUsed: user.jobsUsed || 0,
       messagesUsed: user.messagesUsed || 0,
       counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
+      company: user.company || null,
       employerCompany: user.employerCompany || null,
       employerCompanyName,
       pendingCompanyInvite: user.pendingCompanyInvite?.company ? user.pendingCompanyInvite : null,
       isTeamManaged: user.isTeamManaged || false,
+      isActiveSeat: user.isActiveSeat || false,
+      hasCompanyAccess: hasCompanyAccess(user),
       teamPermissions: user.teamPermissions || [],
       purchasedFeatures: user.purchasedFeatures || [],
       hasInchargeDrives: await hasInchargeDrives(user._id),

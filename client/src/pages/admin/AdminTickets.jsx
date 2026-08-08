@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Pagination from '@/components/shared/Pagination';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -41,8 +42,12 @@ const AdminTickets = () => {
   const [editState, setEditState] = useState({});
   const [saving, setSaving] = useState(null);
   const [chatLoading, setChatLoading] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState({ total: 0, open: 0, inProgress: 0, critical: 0 });
 
-  useEffect(() => { fetchTickets(); }, [statusFilter, categoryFilter, severityFilter]);
+  useEffect(() => { fetchTickets(); }, [statusFilter, categoryFilter, severityFilter, page]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -53,16 +58,34 @@ const AdminTickets = () => {
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
       if (severityFilter !== 'all') params.set('severity', severityFilter);
       if (search) params.set('search', search);
+      params.set('page', page);
+      params.set('limit', 20);
       const res = await axios.get(`${API}/tickets/admin/all?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setTickets(res.data);
+      setTickets(res.data.tickets);
+      setTotal(res.data.total);
+      setPages(res.data.pages);
+      setStats(res.data.stats);
     } catch {
       toast.error('Failed to load tickets');
     } finally {
       setLoading(false);
     }
   };
+
+  // Search only runs on Enter (not live-as-you-type); fetches page 1 directly rather than
+  // relying on setPage(1) + the effect, since that would no-op (and skip the refetch) when
+  // the user is already on page 1.
+  const handleSearchEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    setPage(1);
+    if (page === 1) fetchTickets();
+  };
+
+  const setStatusFilterAndResetPage = (s) => { setStatusFilter(s); setPage(1); };
+  const setCategoryFilterAndResetPage = (c) => { setCategoryFilter(c); setPage(1); };
+  const setSeverityFilterAndResetPage = (sv) => { setSeverityFilter(sv); setPage(1); };
 
   // Open or create a conversation, auto-send ticket details, then navigate to messages
   const handleChat = async (ticket) => {
@@ -152,21 +175,6 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
   const setEdit = (id, field, value) =>
     setEditState(prev => ({ ...prev, [id]: { ...(prev[id] || {}), [field]: value } }));
 
-  const openCount = tickets.filter(t => t.status === 'open').length;
-  const inProgressCount = tickets.filter(t => t.status === 'in_progress').length;
-  const criticalCount = tickets.filter(t => t.severity === 'critical').length;
-
-  const filtered = tickets.filter(t => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      t.user?.name?.toLowerCase().includes(s) ||
-      t.user?.email?.toLowerCase().includes(s) ||
-      t._id.toLowerCase().includes(s) ||
-      t.accountIdentity?.toLowerCase().includes(s)
-    );
-  });
-
   return (
     <div className="max-w-7xl mx-auto space-y-6 py-6 px-2">
       {/* Header */}
@@ -178,10 +186,10 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total Tickets',  value: tickets.length,  color: 'text-slate-800' },
-          { label: 'Open',           value: openCount,        color: 'text-blue-600' },
-          { label: 'In Progress',    value: inProgressCount,  color: 'text-amber-600' },
-          { label: 'Critical (P1)',  value: criticalCount,    color: 'text-red-600' },
+          { label: 'Total Tickets',  value: stats.total,      color: 'text-slate-800' },
+          { label: 'Open',           value: stats.open,       color: 'text-blue-600' },
+          { label: 'In Progress',    value: stats.inProgress, color: 'text-amber-600' },
+          { label: 'Critical (P1)',  value: stats.critical,   color: 'text-red-600' },
         ].map(s => (
           <div key={s.label} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{s.label}</p>
@@ -198,7 +206,7 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && fetchTickets()}
+              onKeyDown={handleSearchEnter}
               placeholder="Search by name, email, ID…"
               className="pl-9 rounded-xl"
             />
@@ -207,7 +215,7 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
           {/* Status filter */}
           <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
             {['all', 'open', 'in_progress', 'resolved', 'closed'].map(s => (
-              <button key={s} onClick={() => setStatusFilter(s)}
+              <button key={s} onClick={() => setStatusFilterAndResetPage(s)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statusFilter === s ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}>
                 {s === 'in_progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
@@ -215,7 +223,7 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
           </div>
 
           {/* Severity */}
-          <select value={severityFilter} onChange={e => setSeverityFilter(e.target.value)}
+          <select value={severityFilter} onChange={e => setSeverityFilterAndResetPage(e.target.value)}
             className="h-9 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
             <option value="all">All Severities</option>
             <option value="critical">🔴 Critical</option>
@@ -224,7 +232,7 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
           </select>
 
           {/* Category */}
-          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
+          <select value={categoryFilter} onChange={e => setCategoryFilterAndResetPage(e.target.value)}
             className="h-9 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
             <option value="all">All Categories</option>
             {Object.entries(CATEGORY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -238,12 +246,12 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : tickets.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-100 p-16 text-center">
             <AlertCircle size={32} className="mx-auto text-slate-200 mb-3" />
             <p className="text-slate-500 font-medium">No tickets match your filters.</p>
           </div>
-        ) : filtered.map(t => {
+        ) : tickets.map(t => {
           const isOpen = expanded === t._id;
           const edit = editState[t._id] || {};
           const stCfg = STATUS_CONFIG[t.status] || STATUS_CONFIG.open;
@@ -382,6 +390,12 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
           );
         })}
       </div>
+
+      {pages > 1 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <Pagination page={page} pages={pages} total={total} onPageChange={setPage} itemLabel="tickets" />
+        </div>
+      )}
     </div>
   );
 };

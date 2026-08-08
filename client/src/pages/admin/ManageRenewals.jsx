@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import Pagination from '@/components/shared/Pagination';
 
 const ManageRenewals = () => {
   const [renewals, setRenewals] = useState([]);
@@ -22,24 +23,44 @@ const ManageRenewals = () => {
   const [saving, setSaving] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState({ active: 0, expiringSoon: 0, expired: 0, autoRenew: 0 });
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     fetchRenewals();
-  }, []);
+  }, [statusFilter, page]);
 
   useEffect(() => {
     setSelectedUserIds([]);
   }, [statusFilter, searchTerm]);
 
+  const setStatusFilterAndResetPage = (s) => { setStatusFilter(s); setPage(1); };
+
+  const handleSearchEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    setPage(1);
+    if (page === 1) fetchRenewals();
+  };
+
   const fetchRenewals = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const params = { page, limit: 20 };
+      if (statusFilter !== 'all') params.status = statusFilter;
+      if (searchTerm) params.search = searchTerm;
       const res = await axios.get(`${API_BASE_URL}/payments/admin/renewals`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params
       });
-      setRenewals(res.data);
+      setRenewals(res.data.renewals);
+      setTotal(res.data.total);
+      setPages(res.data.pages);
+      setStats(res.data.stats);
     } catch (error) {
       console.error('Error fetching renewals:', error);
       toast.error('Failed to load renewals data');
@@ -50,7 +71,7 @@ const ManageRenewals = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedUserIds(filteredRenewals.map(r => r._id));
+      setSelectedUserIds(renewals.map(r => r._id));
     } else {
       setSelectedUserIds([]);
     }
@@ -89,17 +110,6 @@ const ManageRenewals = () => {
     return 'active';
   };
 
-  const filteredRenewals = renewals.filter(r => {
-    const nameMatch = r.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      r.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      r.subscription?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    if (!nameMatch) return false;
-
-    if (statusFilter === 'all') return true;
-    const status = getStatus(r.subscriptionExpiry);
-    return status === statusFilter;
-  });
-
   const handleExtend = async () => {
     if (!selectedUser) return;
     setSaving(true);
@@ -120,7 +130,7 @@ const ManageRenewals = () => {
     }
   };
 
-  if (loading) {
+  if (loading && renewals.length === 0 && page === 1) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
@@ -129,9 +139,7 @@ const ManageRenewals = () => {
     );
   }
 
-  const activeCount = renewals.filter(r => getStatus(r.subscriptionExpiry) === 'active').length;
-  const expiringCount = renewals.filter(r => getStatus(r.subscriptionExpiry) === 'expiring_soon').length;
-  const expiredCount = renewals.filter(r => getStatus(r.subscriptionExpiry) === 'expired').length;
+  const { active: activeCount, expiringSoon: expiringCount, expired: expiredCount, autoRenew: autoRenewCount } = stats;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20 pt-4 px-2">
@@ -149,6 +157,7 @@ const ManageRenewals = () => {
               placeholder="Search user or plan name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearchEnter}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             />
           </div>
@@ -156,7 +165,7 @@ const ManageRenewals = () => {
             {['all', 'active', 'expiring_soon', 'expired'].map(status => (
               <button
                 key={status}
-                onClick={() => setStatusFilter(status)}
+                onClick={() => setStatusFilterAndResetPage(status)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   statusFilter === status 
                     ? 'bg-white text-slate-900 shadow-sm' 
@@ -190,7 +199,7 @@ const ManageRenewals = () => {
         <div className="bg-white border border-slate-100 p-6 rounded-2xl shadow-sm">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Auto-Renew Enabled</p>
           <p className="text-2xl font-bold text-indigo-600">
-            {renewals.filter(r => r.autoRenew).length}
+            {autoRenewCount}
           </p>
         </div>
       </div>
@@ -210,8 +219,8 @@ const ManageRenewals = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredRenewals.length > 0 ? (
-                filteredRenewals.map((r) => {
+              {renewals.length > 0 ? (
+                renewals.map((r) => {
                   const status = getStatus(r.subscriptionExpiry);
                   const expiryDate = r.subscriptionExpiry ? new Date(r.subscriptionExpiry) : null;
                   const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / 86400000) : null;
@@ -326,6 +335,7 @@ const ManageRenewals = () => {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} pages={pages} total={total} onPageChange={setPage} itemLabel="renewals" />
       </div>
 
       {/* Extension Modal */}

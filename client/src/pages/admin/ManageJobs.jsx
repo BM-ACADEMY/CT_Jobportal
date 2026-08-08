@@ -7,28 +7,32 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import Pagination from '@/components/shared/Pagination';
 
 const ManageJobs = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, totalApplicants: 0 });
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const recruiterId = searchParams.get('recruiter');
 
   const fetchJobs = async () => {
+    setLoading(true);
     try {
-      const url = recruiterId 
-        ? `${import.meta.env.VITE_API_BASE_URL}/admin/jobs?recruiter=${recruiterId}`
-        : `${import.meta.env.VITE_API_BASE_URL}/admin/jobs`;
-      const res = await axios.get(url);
-      if (Array.isArray(res.data)) {
-        setJobs(res.data);
-      } else {
-        console.error('API returned non-array data for jobs:', res.data);
-        setJobs([]);
-      }
+      const params = { page, limit: 20 };
+      if (recruiterId) params.recruiter = recruiterId;
+      if (search) params.search = search;
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs`, { params });
+      setJobs(Array.isArray(res.data.jobs) ? res.data.jobs : []);
+      setTotal(res.data.total);
+      setPages(res.data.pages);
+      setStats(res.data.stats);
     } catch (err) {
       console.error('Error fetching jobs:', err);
       toast.error('Failed to load jobs');
@@ -40,7 +44,13 @@ const ManageJobs = () => {
 
   useEffect(() => {
     fetchJobs();
-  }, []);
+  }, [page, recruiterId]);
+
+  const handleSearchEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    setPage(1);
+    if (page === 1) fetchJobs();
+  };
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -53,19 +63,14 @@ const ManageJobs = () => {
     try {
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${id}`);
       toast.success('Job deleted successfully');
-      setJobs(jobs.filter(j => j._id !== id));
       setDeleteTarget(null);
+      fetchJobs();
     } catch (err) {
       toast.error('Failed to delete job');
     } finally {
       setDeleting(false);
     }
   };
-
-  const filteredJobs = (Array.isArray(jobs) ? jobs : []).filter(job => 
-    (job.title && job.title.toLowerCase().includes(search.toLowerCase())) || 
-    (job.company?.name && job.company.name.toLowerCase().includes(search.toLowerCase()))
-  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-12">
@@ -85,6 +90,7 @@ const ManageJobs = () => {
               placeholder="Search by title or company..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchEnter}
             />
           </div>
         </div>
@@ -94,10 +100,10 @@ const ManageJobs = () => {
       {/* Metrics Row - Elegant Style */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
         {[
-          { label: 'Total Jobs Listed', value: (jobs || []).length, color: 'text-slate-900', bg: 'bg-slate-50/50' },
-          { label: 'Active Jobs', value: (jobs || []).filter(j => j.status === 'active').length, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-          { label: 'Inactive Jobs', value: (jobs || []).filter(j => j.status !== 'active').length, color: 'text-rose-600', bg: 'bg-rose-50/50' },
-          { label: 'Total Applications', value: (jobs || []).reduce((acc, job) => acc + (job.applicantsCount || 0), 0), color: 'text-blue-600', bg: 'bg-blue-50/50' }
+          { label: 'Total Jobs Listed', value: stats.total, color: 'text-slate-900', bg: 'bg-slate-50/50' },
+          { label: 'Active Jobs', value: stats.active, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
+          { label: 'Inactive Jobs', value: stats.inactive, color: 'text-rose-600', bg: 'bg-rose-50/50' },
+          { label: 'Total Applications', value: stats.totalApplicants, color: 'text-blue-600', bg: 'bg-blue-50/50' }
         ].map((stat, i) => (
           <Card key={i} className="p-6 rounded-[24px] border-slate-200 shadow-sm bg-white">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
@@ -127,12 +133,12 @@ const ManageJobs = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {(filteredJobs || []).length === 0 ? (
+                {(jobs || []).length === 0 ? (
                   <tr>
                     <td colSpan="6" className="p-20 text-center text-slate-400 font-medium text-sm italic">No records identified.</td>
                   </tr>
                 ) : (
-                  Array.isArray(filteredJobs) && filteredJobs.map((job) => (
+                  Array.isArray(jobs) && jobs.map((job) => (
                     <tr key={job._id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="p-6">
                         <div className="flex items-center gap-4">
@@ -203,6 +209,7 @@ const ManageJobs = () => {
             </table>
           </div>
         )}
+        <Pagination page={page} pages={pages} total={total} onPageChange={setPage} itemLabel="jobs" />
       </Card>
 
       <ConfirmDialog

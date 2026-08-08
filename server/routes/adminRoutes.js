@@ -16,6 +16,7 @@ const {
   deleteJob,
   verifyAdminLoginOTP,
   updateAdminProfile,
+  changeAdminPassword,
   verifyAdminEmailOTP,
   toggleAdmin2FA,
   getUserApplications,
@@ -35,6 +36,7 @@ router.get('/dashboard-stats', getDashboardStats);
 
 // Admin Settings
 router.put('/profile', updateAdminProfile);
+router.patch('/change-password', changeAdminPassword);
 router.post('/verify-email-otp', verifyAdminEmailOTP);
 router.patch('/2fa', toggleAdmin2FA);
 

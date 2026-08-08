@@ -42,6 +42,7 @@ const {
   exportCredentialsSheet,
   uploadProofDocument,
   getAllCollegesForAdmin,
+  getCollegeByIdForAdmin,
   adminVerifyCollege,
   generatePrincipalPasskey,
   getPrincipalExecutiveReport,
@@ -120,6 +121,7 @@ router.get('/public/company-drive/:token/export', exportCompanyDriveStudents);
 
 // ── Admin routes ────────────────────────────────────────────────────────────
 router.get('/admin/all-colleges', verifyToken, authorizeRoles('admin'), getAllCollegesForAdmin);
+router.get('/admin/colleges/:collegeId', verifyToken, authorizeRoles('admin'), getCollegeByIdForAdmin);
 router.put('/admin/verify/:collegeId', verifyToken, authorizeRoles('admin'), adminVerifyCollege);
 
 // ── TPO authenticated routes ────────────────────────────────────────────────

@@ -34,14 +34,14 @@ router.patch('/counselling/:id/cancel', authorizeRoles('jobseeker'), cancelMySes
 router.patch('/counselling/:id', authorizeRoles('jobseeker'), updateMySession);
 router.patch('/:id/select-slot', authorizeRoles('jobseeker'), selectSlot);
 
-router.post('/website-request', authorizeRoles('recruiter', 'company'), submitWebsiteRequest);
+router.post('/website-request', authorizeRoles('recruiter', 'company', 'org_employee'), submitWebsiteRequest);
 
 router.get('/admin', isAdmin, getAdminRequests);
 router.get('/admin/assignees', isAdmin, getAssignees);
 router.patch('/admin/:id', isAdmin, updateRequestStatus);
 router.patch('/admin/:id/assign', isAdmin, adminAssignRequest);
 
-router.get('/assigned', authorizeRoles('recruiter', 'company'), getAssignedRequests);
-router.patch('/assigned/:id', authorizeRoles('recruiter', 'company'), updateAssignedRequest);
+router.get('/assigned', authorizeRoles('recruiter', 'company', 'org_employee'), getAssignedRequests);
+router.patch('/assigned/:id', authorizeRoles('recruiter', 'company', 'org_employee'), updateAssignedRequest);
 
 module.exports = router;

@@ -4,6 +4,7 @@ const Application = require('../models/Application');
 const Role = require('../models/Role');
 const { getEffectivePlanLimit } = require('../utils/getEffectivePlanLimit');
 const { logTeamActivity } = require('../utils/teamActivityLog');
+const { hasCompanyAccess } = require('../utils/companyAccess');
 const { parse } = require('csv-parse/sync');
 const crypto = require('crypto');
 
@@ -148,7 +149,7 @@ const cloneJob = async (req, res) => {
     }
 
     // Verify ownership
-    if (jobToClone.recruiter.toString() !== userId && (!user.company || !jobToClone.company || jobToClone.company.toString() !== user.company.toString())) {
+    if (jobToClone.recruiter.toString() !== userId && (!user.company || !jobToClone.company || jobToClone.company.toString() !== user.company.toString() || !hasCompanyAccess(user))) {
       return res.status(403).json({ msg: 'Not authorized to clone this job' });
     }
 
@@ -183,7 +184,7 @@ const getCompanyJobs = async (req, res) => {
     if (!user) return res.json([]);
 
     let query = { recruiter: userId };
-    if (user.company) {
+    if (user.company && hasCompanyAccess(user)) {
       query = { $or: [{ company: user.company }, { recruiter: userId }] };
     }
 
@@ -210,7 +211,7 @@ const updateJob = async (req, res) => {
     }
 
     // Verify ownership
-    if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString())) {
+    if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString() || !hasCompanyAccess(user))) {
       return res.status(403).json({ msg: 'Not authorized to update this job' });
     }
 
@@ -285,7 +286,7 @@ const deleteJob = async (req, res) => {
     }
 
     // Verify ownership
-    if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString())) {
+    if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString() || !hasCompanyAccess(user))) {
       return res.status(403).json({ msg: 'Not authorized to delete this job' });
     }
 
@@ -484,7 +485,7 @@ const getCompanyJobsWithStats = async (req, res) => {
     if (!user) return res.json([]);
 
     let query = { recruiter: userId };
-    if (user.company) {
+    if (user.company && hasCompanyAccess(user)) {
       query = { $or: [{ company: user.company }, { recruiter: userId }] };
     }
 
@@ -521,7 +522,7 @@ const getRecruiterAnalytics = async (req, res) => {
     if (!user) return res.json({ totalJobs: 0, totalApplicants: 0, shortlisted: 0, rejected: 0, activeJobs: 0, monthlyData: [] });
 
     let query = { recruiter: userId };
-    if (user.company) {
+    if (user.company && hasCompanyAccess(user)) {
       query = { $or: [{ company: user.company }, { recruiter: userId }] };
     }
 

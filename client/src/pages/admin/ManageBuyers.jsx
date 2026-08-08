@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Pagination from '@/components/shared/Pagination';
 
 const ManageBuyers = () => {
   const navigate = useNavigate();
@@ -16,20 +17,38 @@ const ManageBuyers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [stats, setStats] = useState({ totalUniquePayers: 0, totalSpentAll: 0, avgOrderVal: 0 });
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     fetchBuyers();
-  }, []);
+  }, [roleFilter, page]);
+
+  const setRoleFilterAndResetPage = (r) => { setRoleFilter(r); setPage(1); };
+
+  const handleSearchEnter = (e) => {
+    if (e.key !== 'Enter') return;
+    setPage(1);
+    if (page === 1) fetchBuyers();
+  };
 
   const fetchBuyers = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const params = { page, limit: 20 };
+      if (roleFilter !== 'all') params.role = roleFilter;
+      if (searchTerm) params.search = searchTerm;
       const res = await axios.get(`${API_BASE_URL}/payments/admin/buyers`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        params
       });
-      setBuyers(res.data);
+      setBuyers(res.data.buyers);
+      setPages(res.data.pages);
+      setStats(res.data.stats);
     } catch (error) {
       console.error('Error fetching buyers:', error);
       toast.error('Failed to load buyers ledger data');
@@ -38,22 +57,7 @@ const ManageBuyers = () => {
     }
   };
 
-  const filteredBuyers = buyers.filter(b => {
-    const matchesSearch = 
-      b.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.user?.display_id?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-    if (!matchesSearch) return false;
-    
-    if (roleFilter === 'all') return true;
-    if (roleFilter === 'employer') {
-      return b.user?.role === 'recruiter' || b.user?.role === 'company';
-    }
-    return b.user?.role === roleFilter;
-  });
-
-  if (loading) {
+  if (loading && buyers.length === 0 && page === 1) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
@@ -62,8 +66,7 @@ const ManageBuyers = () => {
     );
   }
 
-  const totalSpentAll = buyers.reduce((acc, curr) => acc + (curr.totalSpent || 0), 0);
-  const avgOrderVal = buyers.length > 0 ? (totalSpentAll / buyers.length) : 0;
+  const { totalUniquePayers, totalSpentAll, avgOrderVal } = stats;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20 pt-4 px-2">
@@ -87,7 +90,7 @@ const ManageBuyers = () => {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setRoleFilter(tab.id)}
+              onClick={() => setRoleFilterAndResetPage(tab.id)}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                 roleFilter === tab.id
                   ? 'bg-white text-slate-900 shadow-sm'
@@ -107,6 +110,7 @@ const ManageBuyers = () => {
             placeholder="Search customers name or display ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleSearchEnter}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:bg-white"
           />
         </div>
@@ -116,7 +120,7 @@ const ManageBuyers = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="bg-white border border-slate-100 p-6 rounded-2xl shadow-sm">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Unique Payers</p>
-          <p className="text-2xl font-bold text-indigo-600">{filteredBuyers.length}</p>
+          <p className="text-2xl font-bold text-indigo-600">{totalUniquePayers}</p>
         </div>
         <div className="bg-white border border-slate-100 p-6 rounded-2xl shadow-sm">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lifetime Billing Volume</p>
@@ -143,8 +147,8 @@ const ManageBuyers = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredBuyers.length > 0 ? (
-                filteredBuyers.map((b) => (
+              {buyers.length > 0 ? (
+                buyers.map((b) => (
                   <tr key={b.user?._id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
@@ -234,6 +238,7 @@ const ManageBuyers = () => {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} pages={pages} total={totalUniquePayers} onPageChange={setPage} itemLabel="buyers" />
       </div>
     </div>
   );

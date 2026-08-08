@@ -214,8 +214,30 @@ const getDashboardStats = async (req, res) => {
 // @route   GET /api/admin/users
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password').populate('role', 'name').sort({ createdAt: -1 });
-    res.json(users);
+    const { role, search, page = 1, limit = 20 } = req.query;
+    const filter = {};
+
+    if (role) {
+      const roleDoc = await Role.findOne({ name: role });
+      filter.role = roleDoc ? roleDoc._id : null;
+    }
+
+    if (search) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ name: regex }, { email: regex }, { display_id: regex }];
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('-password')
+        .populate('role', 'name')
+        .sort({ createdAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit)),
+      User.countDocuments(filter)
+    ]);
+
+    res.json({ users, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1) });
   } catch (err) {
     console.error('Get Users Error:', err.message);
     res.status(500).send('Server Error');
@@ -278,15 +300,32 @@ const deleteCompany = async (req, res) => {
 // @route   GET /api/admin/jobs
 const getJobs = async (req, res) => {
   try {
-    const { recruiter } = req.query;
+    const { recruiter, search, page = 1, limit = 20 } = req.query;
     const filter = {};
     if (recruiter) filter.recruiter = recruiter;
 
-    const jobs = await Job.find(filter)
-      .populate('company')
-      .populate('recruiter', 'name email')
-      .sort({ createdAt: -1 });
-    res.json(jobs);
+    if (search) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const matchingCompanyIds = await Company.find({ name: regex }).distinct('_id');
+      filter.$or = [{ title: regex }, { company: { $in: matchingCompanyIds } }];
+    }
+
+    const [jobs, total, activeCount, applicantsAgg] = await Promise.all([
+      Job.find(filter)
+        .populate('company')
+        .populate('recruiter', 'name email')
+        .sort({ createdAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit)),
+      Job.countDocuments(filter),
+      Job.countDocuments({ ...filter, status: 'active' }),
+      Job.aggregate([{ $match: filter }, { $group: { _id: null, sum: { $sum: { $ifNull: ['$applicantsCount', 0] } } } }])
+    ]);
+
+    res.json({
+      jobs, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1),
+      stats: { total, active: activeCount, inactive: total - activeCount, totalApplicants: applicantsAgg[0]?.sum || 0 }
+    });
   } catch (err) {
     console.error('Get Jobs Error:', err.message);
     res.status(500).send('Server Error');
@@ -466,6 +505,35 @@ const updateAdminProfile = async (req, res) => {
   }
 };
 
+// @desc    Change Admin password
+// @route   PATCH /api/admin/change-password
+const changeAdminPassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ msg: 'Current and new password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ msg: 'New password must be at least 8 characters' });
+    }
+
+    const admin = await Admin.findById(req.user.id);
+    if (!admin) return res.status(404).json({ msg: 'Admin not found' });
+
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+    if (!isMatch) return res.status(400).json({ msg: 'Current password is incorrect' });
+
+    const salt = await bcrypt.genSalt(10);
+    admin.password = await bcrypt.hash(newPassword, salt);
+    await admin.save();
+
+    res.json({ msg: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Change Admin Password Error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 // @desc    Verify Admin Email OTP
 // @route   POST /api/admin/verify-email-otp
 const verifyAdminEmailOTP = async (req, res) => {
@@ -558,6 +626,7 @@ module.exports = {
   deleteJob,
   verifyAdminLoginOTP,
   updateAdminProfile,
+  changeAdminPassword,
   verifyAdminEmailOTP,
   toggleAdmin2FA,
   getUserApplications,
