@@ -45,21 +45,26 @@ const getMyReview = async (req, res) => {
 // @route GET /api/reviews/admin/all
 const getAllReviews = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, page = 1, limit = 20 } = req.query;
     let query = {};
     if (status && status !== 'all') {
       query.status = status;
     }
-    
-    const reviews = await Review.find(query)
-      .populate('user', 'name avatar role display_id')
-      .populate({
-        path: 'user',
-        populate: { path: 'role', select: 'name' }
-      })
-      .sort({ createdAt: -1 });
-      
-    res.json(reviews);
+
+    const [reviews, total] = await Promise.all([
+      Review.find(query)
+        .populate('user', 'name avatar role display_id')
+        .populate({
+          path: 'user',
+          populate: { path: 'role', select: 'name' }
+        })
+        .sort({ createdAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit)),
+      Review.countDocuments(query)
+    ]);
+
+    res.json({ reviews, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1) });
   } catch (err) {
     console.error('Get All Reviews Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

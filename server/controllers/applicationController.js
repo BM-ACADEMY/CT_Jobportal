@@ -5,6 +5,7 @@ const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
 const { logTeamActivity } = require('../utils/teamActivityLog');
+const { hasCompanyAccess } = require('../utils/companyAccess');
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -163,14 +164,20 @@ exports.applyJob = async (req, res) => {
 exports.getJobApplicants = async (req, res) => {
   try {
     const { jobId } = req.params;
-    
+
     // Check if the job belongs to the recruiter/company
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ msg: 'Job not found' });
-    
-    // For now, allow recruiters to see their own job applicants
-    // In a more complex setup, we'd check req.user.id === job.recruiter
-    
+
+    if (req.user.role !== 'admin') {
+      const user = await User.findById(req.user.id);
+      const isOwner = job.recruiter.toString() === req.user.id;
+      const isCompanyManaged = user?.company && job.company && job.company.toString() === user.company.toString() && hasCompanyAccess(user);
+      if (!isOwner && !isCompanyManaged) {
+        return res.status(403).json({ msg: 'Not authorized to view these applicants' });
+      }
+    }
+
     const applicants = await Application.find({ job: jobId })
       .populate('applicant', 'name email profileImage profile')
       .sort({ createdAt: -1 });
@@ -187,9 +194,21 @@ exports.updateApplicationStatus = async (req, res) => {
     const { id } = req.params;
     const { status, isPriority } = req.body;
 
-    const existing = await Application.findById(id).select('status');
+    const existing = await Application.findById(id).select('status job');
     if (!existing) return res.status(404).json({ msg: 'Application not found' });
     const statusChanged = status !== undefined && status !== existing.status;
+
+    if (req.user.role !== 'admin') {
+      const [job, user] = await Promise.all([
+        Job.findById(existing.job).select('recruiter company'),
+        User.findById(req.user.id)
+      ]);
+      const isOwner = job && job.recruiter.toString() === req.user.id;
+      const isCompanyManaged = job && user?.company && job.company && job.company.toString() === user.company.toString() && hasCompanyAccess(user);
+      if (!isOwner && !isCompanyManaged) {
+        return res.status(403).json({ msg: 'Not authorized to update this application' });
+      }
+    }
 
     const updateFields = {};
     if (status !== undefined) updateFields.status = status;

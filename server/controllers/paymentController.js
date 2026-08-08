@@ -14,6 +14,7 @@ const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const Coupon = require('../models/Coupon');
+const { reconcileTeamSeats } = require('../utils/teamMembership');
 
 const RECURRING_ROLES = ['college', 'company'];
 const STUDENT_LIMIT_UNLIMITED = 100000;
@@ -198,6 +199,10 @@ const verifyPayment = async (req, res) => {
     user.counsellingSessionsUsed = 0;
 
     await user.save();
+
+    // Plan just changed (upgrade/downgrade) — trim any active team seats that now exceed
+    // the new plan's limit. Upgrades are a no-op here since the count never exceeds a higher limit.
+    await reconcileTeamSeats(user, plan).catch(err => console.error('Seat Reconciliation Error:', err.message));
 
     // Deactivate existing completed plans (supersede them)
     try {
@@ -405,6 +410,8 @@ const verifySubscriptionPayment = async (req, res) => {
     user.autoRenew = true;
     await user.save();
 
+    await reconcileTeamSeats(user, plan).catch(err => console.error('Seat Reconciliation Error:', err.message));
+
     let record = null;
 
     if (plan.role === 'college') {
@@ -553,6 +560,7 @@ const cancelSubscription = async (req, res) => {
 
     // Downgrade to free plan
     user.subscription = freePlan._id;
+    user.subscriptionDetails = freePlan.toObject();
     user.subscriptionExpiry = null;
     user.autoRenew = false;
     user.downloadsUsed = 0;
@@ -561,6 +569,8 @@ const cancelSubscription = async (req, res) => {
     user.messagesUsed = 0;
     user.counsellingSessionsUsed = 0;
     await user.save();
+
+    await reconcileTeamSeats(user, freePlan).catch(err => console.error('Seat Reconciliation Error:', err.message));
 
     res.json({ success: true, msg: 'Subscription cancelled. You are now on the Free plan.' });
   } catch (err) {
@@ -571,12 +581,41 @@ const cancelSubscription = async (req, res) => {
 
 const getRenewals = async (req, res) => {
   try {
-    const users = await User.find({ subscription: { $ne: null } })
-      .populate('subscription')
-      .select('name email role subscription subscriptionExpiry autoRenew display_id')
-      .sort({ subscriptionExpiry: 1 });
-    const renewals = users.filter(u => u.subscription && u.subscription.price > 0);
-    res.json(renewals);
+    const { page = 1, limit = 20, status, search } = req.query;
+    const paidPlanIds = await Subscription.find({ price: { $gt: 0 } }).distinct('_id');
+    const baseFilter = { subscription: { $in: paidPlanIds } };
+    const filter = { ...baseFilter };
+
+    const now = new Date();
+    const sevenDaysOut = new Date(now.getTime() + 7 * 86400000);
+    if (status === 'expired') filter.subscriptionExpiry = { $lt: now };
+    else if (status === 'expiring_soon') filter.subscriptionExpiry = { $gte: now, $lte: sevenDaysOut };
+    else if (status === 'active') filter.subscriptionExpiry = { $gt: sevenDaysOut };
+
+    if (search) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const matchingPlanIds = await Subscription.find({ name: regex }).distinct('_id');
+      filter.$or = [{ name: regex }, { email: regex }, { subscription: { $in: matchingPlanIds } }];
+    }
+
+    const [renewals, total, activeCount, expiringCount, expiredCount, autoRenewCount] = await Promise.all([
+      User.find(filter)
+        .populate('subscription')
+        .select('name email role subscription subscriptionExpiry autoRenew display_id')
+        .sort({ subscriptionExpiry: 1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit)),
+      User.countDocuments(filter),
+      User.countDocuments({ ...baseFilter, subscriptionExpiry: { $gt: sevenDaysOut } }),
+      User.countDocuments({ ...baseFilter, subscriptionExpiry: { $gte: now, $lte: sevenDaysOut } }),
+      User.countDocuments({ ...baseFilter, subscriptionExpiry: { $lt: now } }),
+      User.countDocuments({ ...baseFilter, autoRenew: true })
+    ]);
+
+    res.json({
+      renewals, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1),
+      stats: { active: activeCount, expiringSoon: expiringCount, expired: expiredCount, autoRenew: autoRenewCount }
+    });
   } catch (err) {
     console.error('Get Renewals Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });
@@ -636,12 +675,18 @@ const approveRefund = async (req, res) => {
       const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: userRoleName });
       if (freePlan) {
         user.subscription = freePlan._id;
+        user.subscriptionDetails = freePlan.toObject();
       } else {
         user.subscription = null;
+        user.subscriptionDetails = null;
       }
       user.subscriptionExpiry = null;
       user.autoRenew = false;
       await user.save();
+
+      if (freePlan) {
+        await reconcileTeamSeats(user, freePlan).catch(err => console.error('Seat Reconciliation Error:', err.message));
+      }
     }
 
     res.json({ success: true, msg: 'Refund approved. Subscription revoked.' });
@@ -674,34 +719,64 @@ const rejectRefund = async (req, res) => {
 
 const getBuyers = async (req, res) => {
   try {
-    const payments = await Payment.find({ status: { $in: ['completed', 'superseded', 'refunded'] } })
-      .populate('user', 'name email role avatar display_id')
-      .populate('plan', 'name price duration')
-      .sort({ createdAt: -1 });
+    const { page = 1, limit = 20, search, role } = req.query;
 
-    const buyersMap = {};
-    payments.forEach(p => {
-      if (!p.user) return;
-      const uid = p.user._id.toString();
-      if (!buyersMap[uid]) {
-        buyersMap[uid] = {
-          user: p.user,
-          totalSpent: 0,
-          transactionsCount: 0,
-          lastPurchase: null,
-        };
-      }
-      if (p.status === 'completed' || p.status === 'superseded') {
-        buyersMap[uid].totalSpent += p.amount || 0;
-      }
-      buyersMap[uid].transactionsCount += 1;
-      if (!buyersMap[uid].lastPurchase || new Date(p.createdAt) > new Date(buyersMap[uid].lastPurchase.createdAt)) {
-        buyersMap[uid].lastPurchase = p;
+    const pipeline = [
+      { $match: { status: { $in: ['completed', 'superseded', 'refunded'] } } },
+      // Sorted before $group so $first below reliably picks each buyer's most recent payment
+      { $sort: { createdAt: -1 } },
+      { $group: {
+          _id: '$user',
+          totalSpent: { $sum: { $cond: [{ $in: ['$status', ['completed', 'superseded']] }, '$amount', 0] } },
+          transactionsCount: { $sum: 1 },
+          lastPurchase: { $first: '$$ROOT' }
+        }
+      },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $lookup: { from: 'roles', localField: 'user.role', foreignField: '_id', as: 'user.roleDoc' } },
+      { $unwind: { path: '$user.roleDoc', preserveNullAndEmptyArrays: true } },
+      { $addFields: { 'user.role': '$user.roleDoc.name' } },
+      { $lookup: { from: 'subscriptions', localField: 'lastPurchase.plan', foreignField: '_id', as: 'lastPurchase.plan' } },
+      { $unwind: { path: '$lastPurchase.plan', preserveNullAndEmptyArrays: true } }
+    ];
+
+    if (role && role !== 'all') {
+      pipeline.push({ $match: { 'user.role': role === 'employer' ? { $in: ['recruiter', 'company'] } : role } });
+    }
+
+    if (search) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      pipeline.push({ $match: { $or: [{ 'user.name': regex }, { 'user.email': regex }, { 'user.display_id': regex }] } });
+    }
+
+    pipeline.push({
+      $facet: {
+        data: [
+          { $sort: { 'lastPurchase.createdAt': -1 } },
+          { $skip: (parseInt(page) - 1) * parseInt(limit) },
+          { $limit: parseInt(limit) },
+          { $project: {
+              _id: 0,
+              user: { _id: 1, name: 1, email: 1, role: 1, avatar: 1, display_id: 1 },
+              totalSpent: 1, transactionsCount: 1,
+              lastPurchase: { _id: 1, createdAt: 1, paymentMethod: 1, razorpay_payment_id: 1, plan: { name: 1 } }
+            }
+          }
+        ],
+        summary: [{ $group: { _id: null, count: { $sum: 1 }, totalSpentAll: { $sum: '$totalSpent' } } }]
       }
     });
 
-    const buyers = Object.values(buyersMap);
-    res.json(buyers);
+    const [result] = await Payment.aggregate(pipeline);
+    const buyers = result.data;
+    const total = result.summary[0]?.count || 0;
+    const totalSpentAll = result.summary[0]?.totalSpentAll || 0;
+
+    res.json({
+      buyers, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1),
+      stats: { totalUniquePayers: total, totalSpentAll, avgOrderVal: total > 0 ? totalSpentAll / total : 0 }
+    });
   } catch (err) {
     console.error('Get Buyers Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

@@ -5,7 +5,12 @@ const { getIncomingDriveRequests, respondToDriveRequest } = require('../controll
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
 
-// All company routes require authentication and 'company' role
+// Read-only team roster — any delegated team member (recruiter or org_employee) can see who's
+// on their team; full management (invite/remove/edit-permissions/seat-toggle) stays owner-only
+// below. Defined ahead of the router-wide 'company' gate so it can allow the broader role set.
+router.get('/team/roster', verifyToken, authorizeRoles('company', 'recruiter', 'org_employee'), getTeamMembers);
+
+// All other company routes require authentication and 'company' role
 router.use(verifyToken);
 router.use(authorizeRoles('company'));
 

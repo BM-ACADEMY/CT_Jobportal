@@ -650,8 +650,8 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
                 <Input
                   type="number"
                   min="0"
-                  value={form.isCustomPrice ? '' : form.price}
-                  onChange={e => set('price', Number(e.target.value))}
+                  value={form.isCustomPrice ? '' : (form.price || '')}
+                  onChange={e => set('price', Number(e.target.value) || 0)}
                   disabled={form.isCustomPrice}
                   className={`h-11 rounded-xl border-slate-200 text-sm ${form.isCustomPrice ? 'bg-slate-50 opacity-60' : ''}`}
                   required={!form.isCustomPrice}

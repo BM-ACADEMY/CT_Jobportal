@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Key, History, Activity, Lock, Users, MonitorSmartphone, Mail, User, Edit2, CheckCircle2, CreditCard } from 'lucide-react';
+import { Shield, Key, History, Activity, Lock, Users, MonitorSmartphone, Mail, User, Edit2, CheckCircle2, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -108,6 +108,12 @@ const AdminSettings = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [showPasswords, setShowPasswords] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false
+  });
+  const togglePasswordVisibility = (field) => setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
 
   useEffect(() => {
     if (user) {
@@ -190,12 +196,24 @@ const AdminSettings = () => {
     if (passwords.newPassword !== passwords.confirmPassword) {
       return toast.error("Passwords don't match");
     }
+    if (passwords.newPassword.length < 8) {
+      return toast.error('New password must be at least 8 characters');
+    }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/change-password`, {
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
       setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
       toast.success('Password updated securely');
-    }, 1000);
+    } catch (error) {
+      toast.error(error.response?.data?.msg || 'Failed to update password');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggle2FA = async () => {
@@ -281,21 +299,28 @@ const AdminSettings = () => {
               <form onSubmit={handlePasswordUpdate} className="space-y-4">
                 <h3 className="text-sm font-semibold text-slate-900 border-b pb-2 mb-4">Update Admin Password</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Input 
-                    type="password" placeholder="Current Password" required
-                    value={passwords.currentPassword}
-                    onChange={(e) => setPasswords({...passwords, currentPassword: e.target.value})}
-                  />
-                  <Input 
-                    type="password" placeholder="New Password" required
-                    value={passwords.newPassword}
-                    onChange={(e) => setPasswords({...passwords, newPassword: e.target.value})}
-                  />
-                  <Input 
-                    type="password" placeholder="Confirm Password" required
-                    value={passwords.confirmPassword}
-                    onChange={(e) => setPasswords({...passwords, confirmPassword: e.target.value})}
-                  />
+                  {[
+                    { field: 'currentPassword', placeholder: 'Current Password' },
+                    { field: 'newPassword', placeholder: 'New Password' },
+                    { field: 'confirmPassword', placeholder: 'Confirm Password' },
+                  ].map(({ field, placeholder }) => (
+                    <div key={field} className="relative">
+                      <Input
+                        type={showPasswords[field] ? 'text' : 'password'} placeholder={placeholder} required
+                        value={passwords[field]}
+                        onChange={(e) => setPasswords({ ...passwords, [field]: e.target.value })}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility(field)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPasswords[field] ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  ))}
                 </div>
                 <div className="flex justify-end">
                   <Button type="submit" variant="outline" disabled={loading}>Update Password</Button>

@@ -219,6 +219,14 @@ export const PAGE_SOP = {
       'Check the Activity tab to see what each recruiter has done.'
     ]
   },
+  teamRoster: {
+    title: 'My Team',
+    whatItIs: 'Everyone with access to your organization’s recruiting workspace, and whether their seat is active.',
+    howItWorks: [
+      'This is a read-only view — invites, removals, and permission changes are managed by your organization admin.',
+      'A member without an active seat has limited access until the admin reassigns one.'
+    ]
+  },
   videoInterview: {
     title: 'Video Interview',
     whatItIs: 'Conduct live video interviews with candidates directly on the platform.',

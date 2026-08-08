@@ -21,7 +21,9 @@ const PostJob = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
-    const [viewMode, setViewMode] = useState('list'); // 'list', 'create', 'detail'
+    // Defaults to 'create' — this page's job is posting, not re-listing what "My Jobs" already
+    // shows. 'list'/'detail' stay reachable (e.g. after a successful post, or a Cancel click).
+    const [viewMode, setViewMode] = useState('create');
     const [jobs, setJobs] = useState([]);
     const [selectedJob, setSelectedJob] = useState(null);
     const [editingJobId, setEditingJobId] = useState(null);

@@ -380,8 +380,7 @@ const toggleTeamMemberSeat = async (req, res) => {
 
     if (isActiveSeat) {
       const plan = adminUser.subscriptionDetails || adminUser.subscription;
-      const userSeatsFeature = plan?.features?.find(f => f.name === 'User seats');
-      const limit = userSeatsFeature?.isActive ? Number(userSeatsFeature.value) : 1;
+      const limit = plan?.userSeats || 1;
 
       // Count currently active team members
       const activeMembers = await User.countDocuments({

@@ -23,7 +23,7 @@ const PageSOPBanner = ({ pageKey }) => {
   };
 
   return (
-    <div className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:p-5 relative z-50 animate-in fade-in slide-in-from-top-2 duration-500">
+    <div className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:p-5 relative">
       <button
         onClick={handleDismiss}
         className="absolute top-3 right-3 text-emerald-400 hover:text-emerald-700 p-1 rounded-lg hover:bg-emerald-100/60 transition-colors"

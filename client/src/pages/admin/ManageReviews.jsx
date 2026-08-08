@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Check, X, Star, MessageSquareQuote, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Pagination from '@/components/shared/Pagination';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -11,10 +12,15 @@ const ManageReviews = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [processing, setProcessing] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchReviews();
-  }, [filter]);
+  }, [filter, page]);
+
+  const setFilterAndResetPage = (f) => { setFilter(f); setPage(1); };
 
   const fetchReviews = async () => {
     setLoading(true);
@@ -22,11 +28,15 @@ const ManageReviews = () => {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       if (filter !== 'all') params.set('status', filter);
-      
+      params.set('page', page);
+      params.set('limit', 20);
+
       const res = await axios.get(`${API}/reviews/admin/all?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setReviews(res.data);
+      setReviews(res.data.reviews);
+      setTotal(res.data.total);
+      setPages(res.data.pages);
     } catch (err) {
       toast.error('Failed to load reviews');
     } finally {
@@ -61,7 +71,7 @@ const ManageReviews = () => {
         <Filter size={16} className="text-slate-400 ml-2" />
         <div className="flex gap-1 ml-2 bg-slate-100 p-1 rounded-xl">
           {['all', 'pending', 'approved', 'rejected'].map(s => (
-            <button key={s} onClick={() => setFilter(s)}
+            <button key={s} onClick={() => setFilterAndResetPage(s)}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
                 filter === s ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'
               }`}>
@@ -149,6 +159,12 @@ const ManageReviews = () => {
           ))
         )}
       </div>
+
+      {pages > 1 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <Pagination page={page} pages={pages} total={total} onPageChange={setPage} itemLabel="reviews" />
+        </div>
+      )}
     </div>
   );
 };

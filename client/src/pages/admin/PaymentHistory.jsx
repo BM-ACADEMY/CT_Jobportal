@@ -17,11 +17,38 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'superseded', label: 'Superseded' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'refund_pending', label: 'Refund Pending' },
+  { value: 'refunded', label: 'Refunded' },
+];
+
+// Kept in sync with STATUS_OPTIONS/Payment.status so the badge shown in the table always
+// matches what the status filter actually checks against (was previously a 3-way bucket that
+// lumped pending/cancelled/refunded etc. all into a red "Failed" badge, so filtering by the
+// real 'failed' status wouldn't match rows the table had visually labeled "Failed").
+const STATUS_BADGES = {
+  completed: { label: 'Verified', icon: CheckCircle2, className: 'bg-emerald-50 text-emerald-600' },
+  pending: { label: 'Pending', icon: Clock, className: 'bg-amber-50 text-amber-600' },
+  failed: { label: 'Failed', icon: XCircle, className: 'bg-rose-50 text-rose-600' },
+  superseded: { label: 'Superseded', icon: Shield, className: 'bg-slate-50 text-slate-400' },
+  cancelled: { label: 'Cancelled', icon: XCircle, className: 'bg-slate-50 text-slate-500' },
+  refund_pending: { label: 'Refund Pending', icon: Clock, className: 'bg-amber-50 text-amber-600' },
+  refunded: { label: 'Refunded', icon: CheckCircle2, className: 'bg-blue-50 text-blue-600' },
+};
 
 const AdminPaymentHistory = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -46,14 +73,17 @@ const AdminPaymentHistory = () => {
     }
   };
 
-  const filteredPayments = payments.filter(p => 
-    p.plan?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.razorpay_payment_id?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPayments = payments.filter(p => {
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    const matchesSearch =
+      p.plan?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.razorpay_payment_id?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
 
   const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
   const paginatedPayments = filteredPayments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -86,9 +116,33 @@ const AdminPaymentHistory = () => {
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             />
           </div>
-          <Button variant="outline" className="rounded-xl h-10 border-slate-200 text-slate-600 hover:bg-slate-50">
-            <Filter size={16} className="mr-2" /> Filter
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`rounded-xl h-10 border-slate-200 hover:bg-slate-50 ${statusFilter !== 'all' ? 'text-emerald-700 border-emerald-200 bg-emerald-50' : 'text-slate-600'}`}
+              >
+                <Filter size={16} className="mr-2" />
+                {statusFilter === 'all' ? 'Filter' : STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-2 rounded-xl">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-1 pb-2">Filter by Status</p>
+              <div className="space-y-0.5">
+                {STATUS_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setStatusFilter(opt.value)}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      statusFilter === opt.value ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button className="rounded-xl h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 uppercase tracking-widest">
             <Download size={14} className="mr-2" /> Export CSV
           </Button>
@@ -175,19 +229,15 @@ const AdminPaymentHistory = () => {
                       </p>
                     </td>
                     <td className="px-6 py-5">
-                      {payment.status === 'completed' ? (
-                        <Badge className="bg-emerald-50 text-emerald-600 border-none px-2.5 py-0.5 rounded-lg flex items-center gap-1 w-fit shadow-none">
-                          <CheckCircle2 size={10} /> Verified
-                        </Badge>
-                      ) : payment.status === 'superseded' ? (
-                        <Badge className="bg-slate-50 text-slate-400 border-none px-2.5 py-0.5 rounded-lg flex items-center gap-1 w-fit shadow-none">
-                          <Shield size={10} /> Superseded
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-rose-50 text-rose-600 border-none px-2.5 py-0.5 rounded-lg flex items-center gap-1 w-fit shadow-none">
-                          <XCircle size={10} /> Failed
-                        </Badge>
-                      )}
+                      {(() => {
+                        const badge = STATUS_BADGES[payment.status] || STATUS_BADGES.failed;
+                        const StatusIcon = badge.icon;
+                        return (
+                          <Badge className={`${badge.className} border-none px-2.5 py-0.5 rounded-lg flex items-center gap-1 w-fit shadow-none`}>
+                            <StatusIcon size={10} /> {badge.label}
+                          </Badge>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex flex-col items-end">

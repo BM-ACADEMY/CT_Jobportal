@@ -86,13 +86,18 @@ const coreMenus = {
     { icon: Headphones,      label: 'Tickets & Queries', path: '/admin/tickets' },
     { icon: MessageSquareQuote, label: 'Manage Reviews', path: '/admin/reviews' },
   ],
+  // A team member added via the "employee" invite flow (role becomes org_employee rather than
+  // staying 'recruiter') — same recruiter-shaped workspace as coreMenus.recruiter, just with its
+  // own Overview page, since org_employee is functionally a delegated recruiter, not a jobseeker.
   org_employee: [
-    { icon: Home,           label: 'Overview',      path: '/employee' },
-    { icon: Briefcase,      label: 'Search Jobs',   path: '/jobs' },
-    { icon: Building2,      label: 'Organizations', path: '/companies' },
-    { icon: FileText,       label: 'Applications',  path: '/employee/applications' },
-    { icon: Star,           label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
-    { icon: Headphones,     label: 'Tickets & Queries', path: '/tickets/my' },
+    { icon: LayoutDashboard, label: 'Overview',          path: '/employee' },
+    { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
+    { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
+    { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
+    { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
+    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
+    { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
 };
@@ -129,9 +134,11 @@ const premiumMenus = {
     { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
   ],
   org_employee: [
-    { icon: Video,     label: 'Video Interview', path: '/employee/video-interview',     featureKey: 'hasVideoInterview' },
-    { icon: Activity,  label: 'Scheduling',      path: '/employee/interview-scheduling', featureKey: 'hasInterviewScheduling' },
-    { icon: MessageCircle, label: 'Messaging',      path: '/employee/messages',             featureKey: 'hasMessageRecruiters' },
+    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
   ],
 };
 
@@ -263,13 +270,27 @@ const Sidebar = () => {
   }
 
   // A team-managed recruiter (delegated by an org admin, not the owner or a solo recruiter)
-  // only sees nav entries for pages their admin has actually granted.
+  // only sees nav entries for pages their admin has actually granted. org_employee accounts
+  // are NOT granularly gated this way — the "employee" invite type always grants a fixed
+  // baseline (see acceptJoinRequest/acceptCompanyInvite forcing permissions to [] for them),
+  // so they get the full org_employee menu unconditionally.
   const isPermissionBlocked = (path) => {
     if (!(role === 'recruiter' && user?.isTeamManaged === true)) return false;
     const key = findPermissionKeyForPath(path);
     return key ? !(user.teamPermissions || []).includes(key) : false;
   };
   coreItems = coreItems.filter(i => !isPermissionBlocked(i.path));
+
+  // Delegated team members (not the owner, who already gets the full /company/team management
+  // page from coreMenus.company) get a read-only "My Team" roster so they can see who else has
+  // access — inserted after Find Candidates, before Requests, matching the owner's menu order.
+  const isDelegatedTeamMember = (role === 'recruiter' && user?.isTeamManaged === true) || role === 'org_employee';
+  if (isDelegatedTeamMember && !coreItems.find(i => i.path === '/company/team-roster')) {
+    const requestsIdx = coreItems.findIndex(i => i.path === '/company/requests');
+    const teamItem = { icon: UserCog, label: 'My Team', path: '/company/team-roster' };
+    if (requestsIdx === -1) coreItems.push(teamItem);
+    else coreItems.splice(requestsIdx, 0, teamItem);
+  }
 
   const premiumItems = (premiumMenus[role] || []).filter(i => !isPermissionBlocked(i.path));
 

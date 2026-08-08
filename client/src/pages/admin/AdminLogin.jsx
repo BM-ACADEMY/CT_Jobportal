@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldCheck, Loader2 } from 'lucide-react';
+import { ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminLogin = () => {
@@ -9,6 +9,7 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showOtpInput, setShowOtpInput] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [adminId, setAdminId] = useState('');
   
@@ -94,15 +95,23 @@ const AdminLogin = () => {
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
                     Secure Password
                   </label>
-                  <div className="mt-1">
+                  <div className="mt-1 relative">
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="appearance-none block w-full px-4 h-12 border border-slate-200 bg-white rounded-xl shadow-sm placeholder-slate-300 text-slate-900 focus:outline-none focus:ring-0 focus:border-emerald-600 sm:text-sm transition-all font-medium"
+                      className="appearance-none block w-full px-4 pr-11 h-12 border border-slate-200 bg-white rounded-xl shadow-sm placeholder-slate-300 text-slate-900 focus:outline-none focus:ring-0 focus:border-emerald-600 sm:text-sm transition-all font-medium"
                       placeholder="••••••••"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                 </div>
               </>

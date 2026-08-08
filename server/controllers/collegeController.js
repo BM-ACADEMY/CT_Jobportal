@@ -370,7 +370,10 @@ const createDrive = async (req, res) => {
     const college = await getCollegeForTPO(req.user.id);
     const { title, batchYear, departments, description, companyName, packageLPA, tierPolicy, companies, eligibility, rounds } = req.body;
 
-    if (!title || !batchYear) return res.status(400).json({ msg: 'Title and batch year are required' });
+    if (!title || !batchYear) {
+      const missing = [!title && 'Title', !batchYear && 'Batch year'].filter(Boolean);
+      return res.status(400).json({ msg: `${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} required` });
+    }
 
     // Generate URL-safe drive code
     const driveCode = `${college.code || 'CAMP'}-${batchYear}-${crypto.randomBytes(3).toString('hex')}`.toLowerCase();
@@ -1914,11 +1917,37 @@ const uploadProofDocument = async (req, res) => {
 // @route   GET /api/college/admin/all-colleges
 const getAllCollegesForAdmin = async (req, res) => {
   try {
-    const colleges = await College.find()
+    const { page = 1, limit = 20, search } = req.query;
+    const filter = {};
+    if (search) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ name: regex }, { code: regex }];
+    }
+
+    const [colleges, total] = await Promise.all([
+      College.find(filter)
+        .populate('tpoUser', 'name email profile')
+        .populate('verifiedBy', 'name email')
+        .sort({ createdAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit)),
+      College.countDocuments(filter)
+    ]);
+
+    res.json({ colleges, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1) });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server Error', error: err.message });
+  }
+};
+
+// @route   GET /api/college/admin/colleges/:collegeId
+const getCollegeByIdForAdmin = async (req, res) => {
+  try {
+    const college = await College.findById(req.params.collegeId)
       .populate('tpoUser', 'name email profile')
-      .populate('verifiedBy', 'name email')
-      .sort({ createdAt: -1 });
-    res.json(colleges);
+      .populate('verifiedBy', 'name email');
+    if (!college) return res.status(404).json({ msg: 'College not found' });
+    res.json(college);
   } catch (err) {
     res.status(500).json({ msg: 'Server Error', error: err.message });
   }
@@ -2646,6 +2675,7 @@ module.exports = {
   getCompanyMatchStatus,
   uploadProofDocument,
   getAllCollegesForAdmin,
+  getCollegeByIdForAdmin,
   adminVerifyCollege,
   generatePrincipalPasskey,
   getPrincipalExecutiveReport,

@@ -18,11 +18,22 @@ const createGroup = async (req, res) => {
       return res.status(400).json({ msg: 'You must be associated with a company to create a group.' });
     }
 
+    // Only teammates (same company) may be added at creation — prevents pulling in a
+    // recruiter from another company or an unrelated user outside the invite/request flow.
+    let validatedMemberIds = [];
+    if (members && members.length) {
+      const validMembers = await User.find({
+        _id: { $in: members },
+        $or: [{ company: companyId }, { employerCompany: companyId }]
+      }).select('_id');
+      validatedMemberIds = validMembers.map(m => m._id.toString());
+    }
+
     const group = new CollaborationGroup({
       name,
       company: companyId,
       admin: adminId,
-      members: [...new Set([adminId, ...(members || [])])],
+      members: [...new Set([adminId, ...validatedMemberIds])],
       description,
       avatar
     });
@@ -75,6 +86,16 @@ const addMembers = async (req, res) => {
     // Check if requester is admin or member
     if (!group.members.includes(adminId)) {
       return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    // Only teammates (same company) may be added — prevents pulling in a recruiter from
+    // another company or an unrelated user outside the invite/request flow.
+    const validMembers = await User.find({
+      _id: { $in: memberIds },
+      $or: [{ company: group.company }, { employerCompany: group.company }]
+    }).select('_id');
+    if (validMembers.length !== (memberIds || []).length) {
+      return res.status(403).json({ msg: 'Can only add members from your own organization' });
     }
 
     group.members = [...new Set([...group.members, ...memberIds])];

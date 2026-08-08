@@ -6,6 +6,7 @@ import { Users, Search, Filter, Download, Upload, ChevronDown, ShieldCheck, X, C
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -721,7 +722,7 @@ const Students = () => {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Phone</label>
-                  <Input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} className="rounded-xl h-10" />
+                  <PhoneNumberInput value={editForm.phone} onChange={phone => setEditForm(p => ({ ...p, phone }))} size="sm" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">CGPA</label>

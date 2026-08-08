@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
+import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
 import { 
   User, Mail, Phone, MapPin, Briefcase, Building2, 
   Plus, X, Upload, FileText, CheckCircle2, Loader2, Sparkles,
@@ -625,17 +626,13 @@ const RecruiterSettings = () => {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="relative">
-                                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                                    <Input 
-                                                        value={formData.recruiterProfile.phone}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData, 
-                                                            recruiterProfile: {...formData.recruiterProfile, phone: e.target.value}
-                                                        })}
-                                                        className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
-                                                    />
-                                                </div>
+                                                <PhoneNumberInput
+                                                    value={formData.recruiterProfile.phone}
+                                                    onChange={(phone) => setFormData({
+                                                        ...formData,
+                                                        recruiterProfile: {...formData.recruiterProfile, phone}
+                                                    })}
+                                                />
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Job Title</Label>

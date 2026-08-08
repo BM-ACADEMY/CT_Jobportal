@@ -12,19 +12,19 @@ router.get('/matching', verifyToken, authorizeRoles('jobseeker'), getMatchingJob
 router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), calculatePreMatch);
 
 // --- Recruiter / Company Routes ---
-router.post('/', verifyToken, authorizeRoles('recruiter', 'company'), createJob);
-router.post('/import-pipeline', verifyToken, authorizeRoles('recruiter', 'company'), upload.single('file'), importPipeline);
-router.get('/company-jobs', verifyToken, authorizeRoles('recruiter', 'company'), getCompanyJobs);
-router.get('/company-jobs-stats', verifyToken, authorizeRoles('recruiter', 'company'), getCompanyJobsWithStats);
-router.get('/analytics', verifyToken, authorizeRoles('recruiter', 'company'), getRecruiterAnalytics);
-router.get('/quota', verifyToken, authorizeRoles('recruiter', 'company'), getJobQuota);
-router.get('/candidates/search', verifyToken, authorizeRoles('recruiter', 'company'), searchCandidates);
-router.get('/candidates/:candidateId/profile', verifyToken, authorizeRoles('recruiter', 'company'), viewCandidateProfile);
-router.get('/:jobId/matched-candidates', verifyToken, authorizeRoles('recruiter', 'company'), getAICandidateMatches);
-router.post('/:jobId/bulk-ai-match', verifyToken, authorizeRoles('recruiter', 'company'), bulkAiMatch);
-router.post('/:id/clone', verifyToken, authorizeRoles('recruiter', 'company'), cloneJob);
-router.put('/:id', verifyToken, authorizeRoles('recruiter', 'company'), updateJob);
-router.delete('/:id', verifyToken, authorizeRoles('recruiter', 'company'), deleteJob);
+router.post('/', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), createJob);
+router.post('/import-pipeline', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), upload.single('file'), importPipeline);
+router.get('/company-jobs', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getCompanyJobs);
+router.get('/company-jobs-stats', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getCompanyJobsWithStats);
+router.get('/analytics', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getRecruiterAnalytics);
+router.get('/quota', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getJobQuota);
+router.get('/candidates/search', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), searchCandidates);
+router.get('/candidates/:candidateId/profile', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), viewCandidateProfile);
+router.get('/:jobId/matched-candidates', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getAICandidateMatches);
+router.post('/:jobId/bulk-ai-match', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), bulkAiMatch);
+router.post('/:id/clone', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), cloneJob);
+router.put('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), updateJob);
+router.delete('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), deleteJob);
 
 // --- Public / General Routes ---
 router.get('/', optionalVerifyToken, getAllJobs);

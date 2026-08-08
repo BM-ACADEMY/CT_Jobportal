@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link } from 'react-router-dom';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
+import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
 
 const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
 
@@ -142,7 +143,7 @@ const CampusDrives = () => {
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Phone Number</Label>
-              <Input value={joinForm.phone} onChange={e => setJoinForm(p => ({ ...p, phone: e.target.value }))} placeholder="e.g. 9876543210" className="h-11 rounded-xl" />
+              <PhoneNumberInput value={joinForm.phone} onChange={phone => setJoinForm(p => ({ ...p, phone }))} />
             </div>
           </div>
           <Button type="submit" disabled={joining} className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
@@ -193,7 +194,7 @@ const CampusDrives = () => {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Phone Number</Label>
-                <Input value={reapplyForm.phone} onChange={e => setReapplyForm(p => ({ ...p, phone: e.target.value }))} className="h-10 rounded-xl" />
+                <PhoneNumberInput value={reapplyForm.phone} onChange={phone => setReapplyForm(p => ({ ...p, phone }))} size="sm" />
               </div>
             </div>
             <Button type="submit" disabled={reapplying} className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-10">

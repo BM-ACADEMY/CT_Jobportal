@@ -20,18 +20,11 @@ const CollegeKycDetails = () => {
 
   const fetchCollege = async () => {
     try {
-      // Instead of a single endpoint, we can use the all-colleges and filter, since this is for admin panel
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/college/admin/all-colleges`);
-      const colleges = Array.isArray(res.data) ? res.data : [];
-      const found = colleges.find(c => c._id === id);
-      if (found) {
-        setCollege(found);
-      } else {
-        toast.error('College not found');
-        navigate('/admin/colleges');
-      }
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/college/admin/colleges/${id}`);
+      setCollege(res.data);
     } catch {
-      toast.error('Failed to load college details');
+      toast.error('College not found');
+      navigate('/admin/colleges');
     } finally {
       setLoading(false);
     }

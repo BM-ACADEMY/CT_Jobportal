@@ -73,11 +73,15 @@ const userSchema = new mongoose.Schema({
     qualification: [{
       degree: { type: String },
       institution: { type: String },
-      year: { type: String }
+      year: { type: String }, // Legacy passout year
+      startYear: { type: String },
+      endYear: { type: String },
+      currentlyPursuing: { type: Boolean, default: false }
     }],
     experience: [{
       company: { type: String },
       role: { type: String },
+      location: { type: String },
       duration: { type: String },
       description: { type: String }
     }],
@@ -127,13 +131,17 @@ const userSchema = new mongoose.Schema({
     experience: [{
       company: { type: String },
       role: { type: String },
+      location: { type: String },
       duration: { type: String },
       description: { type: String }
     }],
     qualification: [{
       degree: { type: String },
       institution: { type: String },
-      year: { type: String }
+      year: { type: String },
+      startYear: { type: String },
+      endYear: { type: String },
+      currentlyPursuing: { type: Boolean, default: false }
     }],
     certifications: [{
       name: { type: String },
