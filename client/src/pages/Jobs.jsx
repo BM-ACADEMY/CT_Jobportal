@@ -9,6 +9,16 @@ import {
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { fuzzySearch, matchesForKey, tokenize } from '../utils/fuzzySearch';
+import HighlightText from '../components/shared/HighlightText';
+
+const SEARCH_FIELD_LABELS = {
+  title: 'Job Title',
+  'company.name': 'Company',
+  location: 'Location',
+  description: 'Description',
+  skillsRequired: 'Skills',
+};
 
 const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote', 'Freelance'];
 const SALARY_RANGES = [
@@ -72,15 +82,31 @@ const Jobs = () => {
   const expRange = EXPERIENCE_RANGES[selectedExperience];
 
   const filteredJobs = useMemo(() => {
-    let result = jobs.filter(job => {
-      const matchesSearch =
-        job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    // Fuzzy, typo-tolerant, substring-anywhere matching (not exact-word) across the job title,
+    // company, description, and skills — a single-letter typo like "pondicheryd" still finds
+    // "Pondicherry". Each surviving job carries `_fuzzyMatches` for the highlight rendering below.
+    let ranked = searchTerm.trim()
+      ? fuzzySearch(jobs, searchTerm, [
+          { name: 'title', weight: 3 },
+          { name: 'company.name', weight: 2 },
+          { name: 'skillsRequired', weight: 2, getFn: job => tokenize(job.skillsRequired) },
+          { name: 'description', weight: 1, getFn: job => tokenize(job.description) },
+          { name: 'location', weight: 1 },
+        ])
+      : jobs.map(job => ({ ...job, _fuzzyMatches: [] }));
 
-      const matchesLocation = !locationTerm ||
-        job.location?.toLowerCase().includes(locationTerm.toLowerCase());
+    if (locationTerm.trim()) {
+      // fuzzySearch overwrites `_fuzzyMatches` with this pass's own matches, so the search-term
+      // box's matches (captured above) need to be saved first and merged back in afterward —
+      // both boxes should be able to highlight independently once a job survives both filters.
+      const searchMatchesById = new Map(ranked.map(job => [job._id, job._fuzzyMatches]));
+      ranked = fuzzySearch(ranked, locationTerm, ['location']).map(job => ({
+        ...job,
+        _fuzzyMatches: [...(searchMatchesById.get(job._id) || []), ...(job._fuzzyMatches || [])],
+      }));
+    }
 
+    let result = ranked.filter(job => {
       const matchesType = selectedTypes.length === 0 ||
         selectedTypes.some(type => job.jobType?.includes(type));
 
@@ -93,16 +119,20 @@ const Jobs = () => {
       const matchesExperience = selectedExperience === 0 ||
         (jobExpMin <= expRange.max && (jobExpMax >= expRange.min || jobExpMax === 0 || !jobExpMax));
 
-      return matchesSearch && matchesLocation && matchesType && matchesSalary && matchesExperience;
+      return matchesType && matchesSalary && matchesExperience;
     });
 
-    result = [...result].sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-      if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-      if (sortBy === 'salary_desc') return (b.salary?.min || 0) - (a.salary?.min || 0);
-      if (sortBy === 'salary_asc') return (a.salary?.min || 0) - (b.salary?.min || 0);
-      return 0;
-    });
+    // A search term implies relevance ranking already did the ordering (best match first);
+    // otherwise fall back to the explicit sort control.
+    if (!searchTerm.trim()) {
+      result = [...result].sort((a, b) => {
+        if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+        if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+        if (sortBy === 'salary_desc') return (b.salary?.min || 0) - (a.salary?.min || 0);
+        if (sortBy === 'salary_asc') return (a.salary?.min || 0) - (b.salary?.min || 0);
+        return 0;
+      });
+    }
 
     return result;
   }, [jobs, searchTerm, locationTerm, selectedTypes, selectedSalary, selectedExperience, sortBy]);
@@ -419,7 +449,9 @@ const Jobs = () => {
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <h3 className="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition-colors truncate">{job.title}</h3>
+                                  <h3 className="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition-colors truncate">
+                                    <HighlightText text={job.title} ranges={matchesForKey(job._fuzzyMatches, 'title')} />
+                                  </h3>
                                   {job.isPriority && (
                                     <span title="Priority Hiring Partner" className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
                                       <Star size={9} className="fill-amber-500 text-amber-500" /> Priority
@@ -428,7 +460,7 @@ const Jobs = () => {
                                 </div>
                                 <p className="text-slate-500 text-sm font-medium mt-0.5 flex items-center gap-1.5">
                                   <Building2 size={13} className="text-slate-400" />
-                                  {job.company?.name}
+                                  <HighlightText text={job.company?.name} ranges={matchesForKey(job._fuzzyMatches, 'company.name')} />
                                 </p>
                               </div>
                               <div className="shrink-0 flex items-center gap-2">
@@ -440,7 +472,8 @@ const Jobs = () => {
 
                             <div className="flex flex-wrap items-center gap-2 mt-4">
                               <Badge className="bg-slate-100 text-slate-600 border-none text-[11px] font-semibold px-3 py-1 rounded-lg hover:bg-slate-100">
-                                <MapPin size={11} className="mr-1" />{job.location || 'Remote'}
+                                <MapPin size={11} className="mr-1" />
+                                <HighlightText text={job.location || 'Remote'} ranges={matchesForKey(job._fuzzyMatches, 'location')} />
                               </Badge>
                               {job.jobType && (
                                 <Badge className="bg-blue-50 text-blue-700 border-none text-[11px] font-semibold px-3 py-1 rounded-lg hover:bg-blue-50">
@@ -452,6 +485,18 @@ const Jobs = () => {
                                   {job.experienceLevel}
                                 </Badge>
                               )}
+                              {/* Fields that matched but aren't otherwise shown on this card (description,
+                                  skills) — surfaces *why* a result came up even when the matched text itself
+                                  isn't visible here. */}
+                              {(job._fuzzyMatches || [])
+                                .map(m => SEARCH_FIELD_LABELS[m.key])
+                                .filter(label => label && label !== 'Job Title' && label !== 'Company' && label !== 'Location')
+                                .filter((label, i, arr) => arr.indexOf(label) === i)
+                                .map(label => (
+                                  <Badge key={label} className="bg-amber-50 text-amber-700 border-none text-[11px] font-semibold px-3 py-1 rounded-lg hover:bg-amber-50">
+                                    Matched in {label}
+                                  </Badge>
+                                ))}
                               <span className="flex items-center text-slate-400 text-[11px] font-semibold ml-auto">
                                 <Clock size={12} className="mr-1.5" />
                                 {new Date(job.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}

@@ -588,87 +588,105 @@ const searchCandidates = async (req, res) => {
       });
     }
 
-    const { 
-      q = '', qReq = 'false', 
-      skills = '', skillsReq = 'false', 
-      location = '', locationReq = 'false', 
-      degree = '', degreeReq = 'false', 
-      experienceRole = '', experienceRoleReq = 'false', 
-      page = 1 
+    const {
+      q = '', qReq = 'false',
+      skills = '', skillsReq = 'false',
+      location = '', locationReq = 'false',
+      degree = '', degreeReq = 'false',
+      experienceRole = '', experienceRoleReq = 'false',
+      page = 1
     } = req.query;
-    
+
     const perPage = 20;
-    const skip = (parseInt(page) - 1) * perPage;
-
-    const query = { 'role': { $exists: true } };
-    const compulsory = [];
-    const optional = [];
-
-    if (q) {
-      const cond = {
-        $or: [
-          { name: { $regex: q, $options: 'i' } },
-          { 'profile.headline': { $regex: q, $options: 'i' } },
-          { 'profile.preferredRole': { $regex: q, $options: 'i' } },
-          { 'profile.experience.company': { $regex: q, $options: 'i' } },
-          { 'profile.experience.role': { $regex: q, $options: 'i' } },
-          { 'profile.qualification.degree': { $regex: q, $options: 'i' } },
-          { 'profile.qualification.institution': { $regex: q, $options: 'i' } }
-        ]
-      };
-      if (qReq === 'true') compulsory.push(cond); else optional.push(cond);
-    }
-    if (skills) {
-      const skillList = skills.split(',').map(s => s.trim()).filter(Boolean);
-      const cond = { 'profile.skills': { $all: skillList.map(s => new RegExp(s, 'i')) } };
-      if (skillsReq === 'true') compulsory.push(cond); else optional.push(cond);
-    }
-    if (location) {
-      const cond = { 'profile.location': { $regex: location, $options: 'i' } };
-      if (locationReq === 'true') compulsory.push(cond); else optional.push(cond);
-    }
-    if (degree) {
-      const cond = { 'profile.qualification.degree': { $regex: degree, $options: 'i' } };
-      if (degreeReq === 'true') compulsory.push(cond); else optional.push(cond);
-    }
-    if (experienceRole) {
-      const cond = { 'profile.experience.role': { $regex: experienceRole, $options: 'i' } };
-      if (experienceRoleReq === 'true') compulsory.push(cond); else optional.push(cond);
-    }
-
-    const finalAnd = [];
-    if (compulsory.length > 0) {
-      finalAnd.push(...compulsory);
-    }
-    if (optional.length > 0) {
-      finalAnd.push({ $or: optional });
-    }
-
-    if (finalAnd.length > 0) query.$and = finalAnd;
 
     // Only search jobseekers
     const Role = require('../models/Role');
     const seekerRole = await Role.findOne({ name: 'jobseeker' });
-    if (seekerRole) query.role = seekerRole._id;
+    const baseQuery = { role: { $exists: true } };
+    if (seekerRole) baseQuery.role = seekerRole._id;
 
-    const candidatesData = await User.find(query)
+    // Fuzzy/typo-tolerant matching (q, location, degree, experienceRole) can't be pushed down
+    // into a Mongo $regex the way an exact search could, so those fields are ranked in memory —
+    // fine at this collection's size (a few hundred jobseekers), same as the fuzzy-rank approach
+    // used elsewhere in the app. `skills` stays a Mongo-level exact match: it's picked from known
+    // skill tags rather than freely typed, so there's no typo to tolerate there.
+    const { fuzzyRank } = require('../utils/fuzzySearch');
+    const allCandidates = await User.find(baseQuery)
       .select('name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification subscription purchasedFeatures priorityApplicationsUsed')
-      .populate('subscription')
-      .skip(skip)
-      .limit(perPage)
       .lean();
 
-    const checkPriorityBadge = require('../utils/checkPriorityBadge');
+    const skillList = skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const skillRegexes = skillList.map(s => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
 
-    const candidates = candidatesData.map(c => {
-      const isPriority = checkPriorityBadge(c);
-      delete c.subscription;
-      delete c.purchasedFeatures;
-      delete c.priorityApplicationsUsed;
-      return { ...c, isPriority };
+    // Fuzzy-match membership sets — a candidate "satisfies" a fuzzy condition if they're in the
+    // ranked result set for that field's query.
+    const qMatches = q ? new Set(fuzzyRank(allCandidates, q, [
+      'name', 'profile.headline', 'profile.preferredRole',
+      'profile.experience.company', 'profile.experience.role',
+      'profile.qualification.degree', 'profile.qualification.institution',
+    ]).map(c => String(c._id))) : null;
+
+    const locationMatches = location
+      ? new Set(fuzzyRank(allCandidates, location, ['profile.location']).map(c => String(c._id)))
+      : null;
+
+    const degreeMatches = degree
+      ? new Set(fuzzyRank(allCandidates, degree, ['profile.qualification.degree']).map(c => String(c._id)))
+      : null;
+
+    const experienceRoleMatches = experienceRole
+      ? new Set(fuzzyRank(allCandidates, experienceRole, ['profile.experience.role']).map(c => String(c._id)))
+      : null;
+
+    const conditions = []; // { required: bool, test: (candidate) => bool }
+    if (q) conditions.push({ required: qReq === 'true', test: c => qMatches.has(String(c._id)) });
+    if (skills) conditions.push({
+      required: skillsReq === 'true',
+      test: c => skillRegexes.every(re => (c.profile?.skills || []).some(s => re.test(s))),
     });
+    if (location) conditions.push({ required: locationReq === 'true', test: c => locationMatches.has(String(c._id)) });
+    if (degree) conditions.push({ required: degreeReq === 'true', test: c => degreeMatches.has(String(c._id)) });
+    if (experienceRole) conditions.push({ required: experienceRoleReq === 'true', test: c => experienceRoleMatches.has(String(c._id)) });
 
-    const total = await User.countDocuments(query);
+    const compulsoryConds = conditions.filter(c => c.required);
+    const optionalConds = conditions.filter(c => !c.required);
+
+    let filtered = allCandidates.filter(c =>
+      compulsoryConds.every(cond => cond.test(c)) &&
+      (optionalConds.length === 0 || optionalConds.some(cond => cond.test(c)))
+    );
+
+    // Relevance order when there's a free-text query; otherwise keep a stable name sort.
+    if (q) {
+      const scoreById = new Map(fuzzyRank(allCandidates, q, [
+        'name', 'profile.headline', 'profile.preferredRole',
+        'profile.experience.company', 'profile.experience.role',
+        'profile.qualification.degree', 'profile.qualification.institution',
+      ]).map(c => [String(c._id), c._fuzzyScore]));
+      filtered = [...filtered].sort((a, b) => (scoreById.get(String(a._id)) ?? 1) - (scoreById.get(String(b._id)) ?? 1));
+    } else {
+      filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
+    const total = filtered.length;
+    const skip = (parseInt(page) - 1) * perPage;
+    const pageItems = filtered.slice(skip, skip + perPage);
+
+    const checkPriorityBadge = require('../utils/checkPriorityBadge');
+    const subscriptionById = new Map();
+    if (pageItems.length > 0) {
+      const subs = await User.find({ _id: { $in: pageItems.map(c => c._id) } }).select('subscription purchasedFeatures priorityApplicationsUsed').populate('subscription').lean();
+      subs.forEach(s => subscriptionById.set(String(s._id), s));
+    }
+
+    const candidates = pageItems.map(c => {
+      const withSub = { ...c, ...subscriptionById.get(String(c._id)) };
+      const isPriority = checkPriorityBadge(withSub);
+      delete withSub.subscription;
+      delete withSub.purchasedFeatures;
+      delete withSub.priorityApplicationsUsed;
+      return { ...withSub, isPriority };
+    });
 
     res.json({ candidates, total, limit, used: user.searchUsed, remaining: limit === 0 ? null : limit - user.searchUsed });
   } catch (err) {

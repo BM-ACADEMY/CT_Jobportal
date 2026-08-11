@@ -3,8 +3,11 @@ import {
   FileText, Plus, Trash2, Download, ArrowLeft, Edit3, Palette,
   User, AlignLeft, Briefcase, BookOpen, Code2, FolderGit2, Award,
   ChevronRight, ChevronUp, ChevronDown, Eye, EyeOff, Copy,
-  Clock, Check, MoreHorizontal, Sparkles, X
+  Clock, Check, MoreHorizontal, Sparkles, X, Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import AIGenerateModal from './AIGenerateModal';
@@ -839,17 +842,39 @@ const ResumePreview = ({ resume: R, style: ST }) => {
 };
 
 // ─── PDF Download ─────────────────────────────────────────────────────────────
-const downloadPDF = (pageFormat) => {
+// Rasterizes the resume preview and saves it straight to disk via jsPDF's blob-based .save() —
+// no new tab, no print dialog. Long resumes get sliced across multiple pages since the source
+// is one tall canvas.
+const downloadPDF = async (pageFormat, fileName) => {
   const el = document.getElementById('resume-preview');
   if (!el) return;
-  const size = pageFormat === 'letter' ? 'Letter' : 'A4';
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Resume</title>
-    <style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#fff;}ul{list-style-type:disc;}
-    @media print{@page{size:${size};margin:0;}body{print-color-adjust:exact;-webkit-print-color-adjust:exact;}}
-    </style></head><body>${el.outerHTML}</body></html>`);
-  w.document.close();
-  w.addEventListener('load', () => { w.focus(); w.print(); });
+
+  const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+  // JPEG over PNG cuts file size by ~90% for this mostly-white, text-heavy content — a PNG export
+  // at this scale ran to 7MB+ per resume, which is a slow, wasteful download for what's a couple
+  // pages of text.
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+  const pdf = new jsPDF({ unit: 'mm', format: pageFormat === 'letter' ? 'letter' : 'a4' });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+  pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+
+  while (heightLeft > 0) {
+    position -= pageHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+
+  const safeName = (fileName || 'resume').trim().replace(/[^a-z0-9\-_ ]/gi, '').replace(/\s+/g, '-') || 'resume';
+  pdf.save(`${safeName}.pdf`);
 };
 
 // ─── Resume Card ──────────────────────────────────────────────────────────────
@@ -1012,6 +1037,7 @@ const Editor = ({ resumeId, initialData, onBack }) => {
   const [mobileTab, setMobileTab] = useState('edit');
   const [saved, setSaved] = useState(true);
   const [editName, setEditName] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     setSaved(false);
@@ -1078,9 +1104,21 @@ const Editor = ({ resumeId, initialData, onBack }) => {
               </button>
             ))}
           </div>
-          <button onClick={() => downloadPDF(style.pageFormat)}
-            className="flex items-center gap-2 h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-colors">
-            <Download size={13} /> Download PDF
+          <button
+            disabled={downloading}
+            onClick={async () => {
+              setDownloading(true);
+              try {
+                await downloadPDF(style.pageFormat, name);
+              } catch {
+                toast.error('Failed to generate PDF. Please try again.');
+              } finally {
+                setDownloading(false);
+              }
+            }}
+            className="flex items-center gap-2 h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+            {downloading ? 'Generating…' : 'Download PDF'}
           </button>
         </div>
       </div>
