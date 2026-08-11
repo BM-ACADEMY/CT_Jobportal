@@ -80,6 +80,18 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ msg: 'Free plans do not require a Razorpay order' });
     }
 
+    // Block before money changes hands — a delegated team member paying for an org-tier plan
+    // here would still get rejected at verifyPayment, but only after being charged with no refund.
+    if (plan.role === 'company' && req.user.role === 'org_employee') {
+      return res.status(403).json({ msg: 'Only your organization admin can change the organization plan.' });
+    }
+    if (plan.role === 'company') {
+      const requestingUser = await User.findById(req.user.id).select('isTeamManaged');
+      if (requestingUser?.isTeamManaged) {
+        return res.status(403).json({ msg: 'Only your organization admin can change the organization plan.' });
+      }
+    }
+
     const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
     const { couponCode } = req.body;
     const gstPercentage = await fetchGstPercentage();
@@ -185,6 +197,14 @@ const verifyPayment = async (req, res) => {
     const { autoRenew } = req.body;
 
     const user = await User.findById(req.user.id);
+
+    // Only the actual org owner may purchase a company-tier plan — a delegated team member
+    // (a recruiter added by the org admin, or an org_employee) manages recruiting only and
+    // never billing, regardless of what the client UI shows/hides.
+    if (plan.role === 'company' && (user.isTeamManaged || req.user.role === 'org_employee')) {
+      return res.status(403).json({ msg: 'Only your organization admin can change the organization plan.' });
+    }
+
     user.subscription = plan._id;
     user.subscriptionDetails = plan.toObject();
     user.subscriptionExpiry = expiryDate;
@@ -199,6 +219,17 @@ const verifyPayment = async (req, res) => {
     user.counsellingSessionsUsed = 0;
 
     await user.save();
+
+    // This self-service (non-recurring) purchase path only updates the owner's own User doc.
+    // For a company-tier plan, also sync the Company doc — team members resolve their effective
+    // plan from Company.subscription (see authController.js), not the owner's User doc, so
+    // without this a team member would never see a plan the owner just paid for.
+    if (plan.role === 'company' && user.company) {
+      await Company.findByIdAndUpdate(user.company, {
+        subscription: plan._id,
+        subscriptionExpiry: expiryDate
+      }).catch(err => console.error('Company Subscription Sync Error:', err.message));
+    }
 
     // Plan just changed (upgrade/downgrade) — trim any active team seats that now exceed
     // the new plan's limit. Upgrades are a no-op here since the count never exceeds a higher limit.
@@ -301,6 +332,15 @@ const createSubscriptionOrder = async (req, res) => {
     if (plan.price === 0) return res.status(400).json({ msg: 'Free plans do not require billing' });
     if (!RECURRING_ROLES.includes(plan.role)) {
       return res.status(400).json({ msg: 'Recurring subscriptions are only available for college and company plans' });
+    }
+
+    // Only the actual org owner may purchase a company-tier plan — same rule as the one-time
+    // purchase path in verifyPayment.
+    if (plan.role === 'company') {
+      const requestingUser = await User.findById(req.user.id).select('isTeamManaged');
+      if (requestingUser?.isTeamManaged || req.user.role === 'org_employee') {
+        return res.status(403).json({ msg: 'Only your organization admin can change the organization plan.' });
+      }
     }
 
     let baseAmount = plan.price;

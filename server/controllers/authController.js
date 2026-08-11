@@ -195,14 +195,22 @@ const verifyOtp = async (req, res) => {
     await ensureFreePlan(user, roleName);
     await recordLogin(user);
 
-    let subscription = user.subscription;
-    let subscriptionExpiry = user.subscriptionExpiry;
+    // `subscription` stays the user's own individual plan — it governs their personal
+    // capacity (e.g. job postings made for themselves) and is what they purchase on the
+    // Subscription page. `organizationSubscription` is the org's plan, kept fully separate,
+    // for org-shared features (ATS, analytics, etc.) that only apply while team-managed.
     let employerCompanyName = null;
+    let organizationSubscription = null;
+    let organizationSubscriptionExpiry = null;
 
-    if (roleName === 'org_employee' && user.employerCompany) {
-      const employer = await Company.findById(user.employerCompany).populate('subscription');
-      subscription = employer?.subscription || null;
-      subscriptionExpiry = employer?.subscriptionExpiry || null;
+    const employerCompanyId = roleName === 'org_employee'
+      ? user.employerCompany
+      : (roleName === 'recruiter' && user.isTeamManaged) ? user.company : null;
+
+    if (employerCompanyId) {
+      const employer = await Company.findById(employerCompanyId).populate('subscription');
+      organizationSubscription = employer?.subscription || null;
+      organizationSubscriptionExpiry = employer?.subscriptionExpiry || null;
       employerCompanyName = employer?.name || null;
     }
 
@@ -217,8 +225,10 @@ const verifyOtp = async (req, res) => {
         coverPic: user.coverPic,
         profile: user.profile,
         savedJobs: user.savedJobs || [],
-        subscription,
-        subscriptionExpiry,
+        subscription: user.subscription,
+        subscriptionExpiry: user.subscriptionExpiry,
+        organizationSubscription,
+        organizationSubscriptionExpiry,
         downloadsUsed: user.downloadsUsed || 0,
         messagesUsed: user.messagesUsed || 0,
         counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
@@ -292,14 +302,18 @@ const loginUser = async (req, res) => {
     await ensureFreePlan(user, roleName);
     await recordLogin(user);
 
-    let subscription = user.subscription;
-    let subscriptionExpiry = user.subscriptionExpiry;
     let employerCompanyName = null;
+    let organizationSubscription = null;
+    let organizationSubscriptionExpiry = null;
 
-    if (roleName === 'org_employee' && user.employerCompany) {
-      const employer = await Company.findById(user.employerCompany).populate('subscription');
-      subscription = employer?.subscription || null;
-      subscriptionExpiry = employer?.subscriptionExpiry || null;
+    const employerCompanyId = roleName === 'org_employee'
+      ? user.employerCompany
+      : (roleName === 'recruiter' && user.isTeamManaged) ? user.company : null;
+
+    if (employerCompanyId) {
+      const employer = await Company.findById(employerCompanyId).populate('subscription');
+      organizationSubscription = employer?.subscription || null;
+      organizationSubscriptionExpiry = employer?.subscriptionExpiry || null;
       employerCompanyName = employer?.name || null;
     }
 
@@ -314,8 +328,10 @@ const loginUser = async (req, res) => {
         coverPic: user.coverPic,
         profile: user.profile,
         savedJobs: user.savedJobs || [],
-        subscription,
-        subscriptionExpiry,
+        subscription: user.subscription,
+        subscriptionExpiry: user.subscriptionExpiry,
+        organizationSubscription,
+        organizationSubscriptionExpiry,
         downloadsUsed: user.downloadsUsed || 0,
         messagesUsed: user.messagesUsed || 0,
         counsellingSessionsUsed: user.counsellingSessionsUsed || 0,
@@ -470,14 +486,22 @@ const getUserProfile = async (req, res) => {
       await user.save();
     }
 
-    let subscription = user.subscription;
-    let subscriptionExpiry = user.subscriptionExpiry;
     let employerCompanyName = null;
+    let organizationSubscription = null;
+    let organizationSubscriptionExpiry = null;
 
-    if (roleName === 'org_employee' && user.employerCompany) {
-      const employer = await Company.findById(user.employerCompany).populate('subscription');
-      subscription = employer?.subscription || null;
-      subscriptionExpiry = employer?.subscriptionExpiry || null;
+    // org_employee resolves via employerCompany; a team-managed recruiter (delegated by an org
+    // admin, distinguished from a solo recruiter by isTeamManaged) resolves via company instead.
+    // This is kept fully separate from `subscription` (the user's own plan, governing their
+    // personal capacity) — it's exposed only for org-shared features that key off the org's plan.
+    const employerCompanyId = roleName === 'org_employee'
+      ? user.employerCompany
+      : (roleName === 'recruiter' && user.isTeamManaged) ? user.company : null;
+
+    if (employerCompanyId) {
+      const employer = await Company.findById(employerCompanyId).populate('subscription');
+      organizationSubscription = employer?.subscription || null;
+      organizationSubscriptionExpiry = employer?.subscriptionExpiry || null;
       employerCompanyName = employer?.name || null;
     }
 
@@ -490,8 +514,10 @@ const getUserProfile = async (req, res) => {
       coverPic: user.coverPic,
       profile: user.profile,
       savedJobs: user.savedJobs || [],
-      subscription,
-      subscriptionExpiry,
+      subscription: user.subscription,
+      subscriptionExpiry: user.subscriptionExpiry,
+      organizationSubscription,
+      organizationSubscriptionExpiry,
       autoRenew: user.autoRenew || false,
       downloadsUsed: user.downloadsUsed || 0,
       searchUsed: user.searchUsed || 0,

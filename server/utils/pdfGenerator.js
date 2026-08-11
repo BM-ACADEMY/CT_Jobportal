@@ -8,6 +8,68 @@ const bufferFromDoc = (doc) => new Promise((resolve, reject) => {
   doc.end();
 });
 
+const BRAND = '#10b981';
+const INK = '#0f172a';
+const MUTED = '#475569';
+const FAINT = '#94a3b8';
+
+// PDFKit auto-paginates any `.text()` call whose y-position would land past the page's bottom
+// margin — even with an explicit x/y — which turns absolute-positioned overlay text (watermarks,
+// footers sitting in the margin) into a runaway page-creation loop once combined with a
+// 'pageAdded' listener. Suppressing addPage() for the duration of the call sidesteps this
+// entirely: the decorative text still draws at its given coordinates, it just can't trigger a
+// page break while doing so.
+const withoutPagination = (doc, fn) => {
+  const realAddPage = doc.addPage.bind(doc);
+  doc.addPage = () => doc;
+  try {
+    fn();
+  } finally {
+    doc.addPage = realAddPage;
+  }
+};
+
+// Tiles a faint diagonal "VELAIVAAIPU" wordmark across the current page so a stray screenshot or
+// printout of a report is still traceable back to the platform it came from.
+const drawWatermark = (doc) => withoutPagination(doc, () => {
+  const { width, height } = doc.page;
+  doc.save();
+  doc.rotate(-40, { origin: [width / 2, height / 2] });
+  doc.font('Helvetica-Bold').fontSize(46).fillColor(BRAND).fillOpacity(0.06);
+  for (let y = 40; y < height - 40; y += 130) {
+    doc.text('VELAIVAAIPU', -width, y, { width: width * 3, align: 'center', lineBreak: false });
+  }
+  doc.restore();
+  doc.fillOpacity(1);
+});
+
+// Confidentiality notice + generation timestamp, pinned to the bottom margin of whichever page
+// it's called on — this data is private student placement records, not for general distribution.
+// The notice line wraps to 2 lines for most college names, so the timestamp's position is
+// measured off the actual wrapped height rather than a fixed offset — a fixed offset collided
+// with the notice's wrapped second line as soon as it ran to more than one line.
+const drawConfidentialFooter = (doc, recipientLabel) => withoutPagination(doc, () => {
+  const { width, height, margins } = doc.page;
+  const y = height - margins.bottom + 10;
+  const footerWidth = width - margins.left - margins.right;
+  const noticeText = `CONFIDENTIAL — prepared exclusively for ${recipientLabel}. Contains private student placement data; do not forward, publish, or share.`;
+  doc.font('Helvetica').fontSize(7.5).fillColor(FAINT);
+  const noticeHeight = doc.heightOfString(noticeText, { width: footerWidth, align: 'center' });
+  doc.text(noticeText, margins.left, y, { width: footerWidth, align: 'center' });
+  doc.text(
+    `Generated ${new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} · Velaivaaipu Job Portal`,
+    margins.left, y + noticeHeight + 2, { width: footerWidth, align: 'center' }
+  );
+});
+
+// Registers watermark + footer on every page of the document, including the implicit first page
+// PDFDocument creates on construction (must be wired before any content is written to it).
+const decoratePages = (doc, recipientLabel) => {
+  const decorate = () => { drawWatermark(doc); drawConfidentialFooter(doc, recipientLabel); };
+  decorate();
+  doc.on('pageAdded', decorate);
+};
+
 // @desc  MoU PDF for a college subscribing to a paid campus plan (spec 8.7)
 const generateMouPdf = async (college, plan) => {
   const doc = new PDFDocument({ size: 'A4', margin: 60 });
@@ -183,6 +245,9 @@ const drawTable = (doc, { startY, columns, rows, title }) => {
 //        distinct from the lighter auto-generated periodic report above.
 const generateSummaryReportPdf = (college, { stats, departments, drives, students }) => {
   const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  decoratePages(doc, college.name);
+  doc.x = doc.page.margins.left;
+  doc.y = doc.page.margins.top;
 
   // ── Cover / summary ──────────────────────────────────────────────────────
   doc.fontSize(20).font('Helvetica-Bold').fillColor('#0f172a').text('Placement Summary Report', { align: 'center' });
@@ -270,27 +335,89 @@ const generateSummaryReportPdf = (college, { stats, departments, drives, student
   return bufferFromDoc(doc);
 };
 
+// A small rounded stat card — used to lay the summary numbers out as a scannable grid instead of
+// a wall of "Label: N" text lines.
+const drawStatCard = (doc, { x, y, width, value, label, accent }) => {
+  const height = 52;
+  doc.roundedRect(x, y, width, height, 8).fillAndStroke('#f8fafc', '#e2e8f0');
+  doc.rect(x, y, 3, height).fill(accent || BRAND);
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(17).text(String(value), x + 12, y + 9, { width: width - 20 });
+  doc.fillColor(MUTED).font('Helvetica').fontSize(8).text(label, x + 12, y + 32, { width: width - 20 });
+};
+
 // @desc  Auto-generated placement report PDF (spec 8.6)
 const generatePlacementReportPdf = (college, stats, periodLabel) => {
   const doc = new PDFDocument({ size: 'A4', margin: 60 });
+  decoratePages(doc, college.name);
 
-  doc.fontSize(20).font('Helvetica-Bold').text('Placement Report', { align: 'center' });
-  doc.fontSize(12).font('Helvetica').fillColor('#475569').text(college.name, { align: 'center' });
-  doc.text(periodLabel, { align: 'center' });
-  doc.moveDown(2);
+  // ── Letterhead ────────────────────────────────────────────────────────────
+  const pageWidth = doc.page.width;
+  doc.rect(0, 0, pageWidth, 74).fill(BRAND);
+  doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(17).text('VELAIVAAIPU', doc.page.margins.left, 22);
+  doc.font('Helvetica').fontSize(8.5).fillColor('#d1fae5').text('Campus Placement Intelligence', doc.page.margins.left, 44);
 
-  doc.fillColor('#000').fontSize(12).font('Helvetica-Bold').text('Summary');
-  doc.font('Helvetica').fontSize(11);
-  doc.text(`Total Students: ${stats.totalStudents}`);
-  doc.text(`Registered: ${stats.registered}  |  Active: ${stats.active}  |  Applied: ${stats.applied}`);
-  doc.text(`Interviewing: ${stats.interviewing}  |  Placed: ${stats.placed}  |  Opted Out: ${stats.opted_out}`);
-  doc.text(`Success Rate: ${stats.successRate}%`);
-  doc.text(`Average Placement Salary: Rs ${stats.averageLPA || 0} LPA`);
+  const tagWidth = 96, tagHeight = 21;
+  const tagX = pageWidth - doc.page.margins.right - tagWidth;
+  doc.roundedRect(tagX, 22, tagWidth, tagHeight, 4).fill('#7f1d1d');
+  doc.fillColor('#fecaca').font('Helvetica-Bold').fontSize(8.5).text('CONFIDENTIAL', tagX, 28.5, { width: tagWidth, align: 'center' });
+
+  doc.x = doc.page.margins.left;
+  doc.y = 96;
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(20).text('Placement Report', { align: 'center' });
+  doc.font('Helvetica').fontSize(11.5).fillColor(MUTED).text(college.name, { align: 'center' });
+  doc.fontSize(9.5).fillColor(FAINT).text(periodLabel, { align: 'center' });
   doc.moveDown(1.5);
 
-  doc.font('Helvetica-Bold').fontSize(12).text('Department Breakdown');
-  doc.font('Helvetica').fontSize(11);
-  (stats.departments || []).forEach(d => doc.text(`${d.name}: ${d.count} students`));
+  // ── Summary stat grid ────────────────────────────────────────────────────
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(12).text('Summary', doc.page.margins.left, doc.y);
+  doc.moveDown(0.5);
+
+  const cards = [
+    { value: stats.totalStudents, label: 'Total Students', accent: BRAND },
+    { value: stats.registered, label: 'Registered', accent: '#3b82f6' },
+    { value: stats.active, label: 'Active', accent: '#3b82f6' },
+    { value: stats.applied, label: 'Applied', accent: '#8b5cf6' },
+    { value: stats.interviewing, label: 'Interviewing', accent: '#f59e0b' },
+    { value: stats.placed, label: 'Placed', accent: '#10b981' },
+    { value: stats.opted_out, label: 'Opted Out', accent: '#ef4444' },
+    { value: `${stats.successRate}%`, label: 'Success Rate', accent: '#06b6d4' },
+    { value: `Rs ${stats.averageLPA || 0} LPA`, label: 'Avg. Placement Salary', accent: '#ec4899' },
+  ];
+  const cols = 3, gap = 10;
+  const cardWidth = (pageWidth - doc.page.margins.left - doc.page.margins.right - gap * (cols - 1)) / cols;
+  const gridStartY = doc.y;
+  cards.forEach((c, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    drawStatCard(doc, {
+      x: doc.page.margins.left + col * (cardWidth + gap),
+      y: gridStartY + row * (52 + gap),
+      width: cardWidth,
+      value: c.value,
+      label: c.label,
+      accent: c.accent
+    });
+  });
+  doc.y = gridStartY + Math.ceil(cards.length / cols) * (52 + gap) + 10;
+  doc.x = doc.page.margins.left;
+
+  // ── Department breakdown ─────────────────────────────────────────────────
+  const departments = stats.departments || [];
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(12).text('Department Breakdown', doc.page.margins.left, doc.y);
+  doc.moveDown(0.8);
+
+  if (departments.length > 0) {
+    const barAreaY = doc.y;
+    drawBarChart(doc, {
+      x: doc.page.margins.left,
+      y: barAreaY,
+      width: pageWidth - doc.page.margins.left - doc.page.margins.right,
+      height: 100,
+      data: departments.map(d => ({ label: d.name, value: d.count }))
+    });
+    doc.y = barAreaY + 130;
+  } else {
+    doc.fillColor(FAINT).font('Helvetica').fontSize(9.5).text('No department records yet.');
+  }
 
   return bufferFromDoc(doc);
 };

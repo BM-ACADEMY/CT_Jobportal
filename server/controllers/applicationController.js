@@ -556,6 +556,35 @@ exports.calculateApplicationMatch = async (req, res) => {
       jobType: job.jobType || ''
     };
 
+    // With nothing but two job titles to compare (no skills on either side, no real job
+    // description — bulk-imported jobs often carry a placeholder like "Imported via CSV
+    // Pipeline"), the model has no grounded signal to score against. Asking it anyway produces
+    // a confident-looking percentage that swings between calls (observed 0%, 10%, 20% for the
+    // same identical input) — worse than useless, since it reads as a real assessment. Skip the
+    // AI call entirely and say so plainly instead of manufacturing a number.
+    const candidateHasSignal = candidateProfile.skills.length > 0
+      || candidateProfile.experience.length > 0
+      || candidateProfile.education.length > 0;
+    const jobHasSignal = jobRequirement.skillsRequired.length > 0
+      || (jobRequirement.description || '').trim().length > 40;
+
+    if (!candidateHasSignal || !jobHasSignal) {
+      application.matchAnalysis = {
+        matchPercentage: null,
+        matchedSkills: [],
+        missingSkills: [],
+        verdict: !candidateHasSignal && !jobHasSignal
+          ? 'This candidate has no listed skills, experience, or education, and this job has no listed required skills or description — there isn\'t enough information on either side for a reliable AI match.'
+          : !candidateHasSignal
+            ? 'This candidate has no listed skills, experience, or education, so there isn\'t enough information to reliably match them against this job.'
+            : 'This job has no listed required skills and no real description, so there isn\'t enough information to reliably match candidates against it.',
+        insufficientData: true,
+        lastCalculated: new Date()
+      };
+      await application.save();
+      return res.json({ msg: 'Match calculation complete', matchAnalysis: application.matchAnalysis });
+    }
+
     const prompt = `
       You are an expert HR recruitment AI. Analyze the match compatibility between the candidate profile and the job description provided below.
       
@@ -577,7 +606,7 @@ exports.calculateApplicationMatch = async (req, res) => {
       model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
-        temperature: 0.2
+        temperature: 0
       }
     });
 
@@ -590,6 +619,7 @@ exports.calculateApplicationMatch = async (req, res) => {
       matchedSkills: result.matchedSkills || [],
       missingSkills: result.missingSkills || [],
       verdict: result.verdict || '',
+      insufficientData: false,
       lastCalculated: new Date()
     };
     

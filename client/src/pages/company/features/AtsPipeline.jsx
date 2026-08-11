@@ -675,7 +675,11 @@ const AtsPipeline = () => {
 
                                 {/* AI Match Score Pill */}
                                 <div className="mt-3 flex items-center justify-between gap-2">
-                                  {matchScore !== undefined ? (
+                                  {app.matchAnalysis?.insufficientData ? (
+                                    <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1" title="Not enough profile/job data for a reliable AI match">
+                                      <Sparkles size={11} /> Not enough data
+                                    </span>
+                                  ) : matchScore !== undefined && matchScore !== null ? (
                                     <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
                                       matchScore >= 80
                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -903,12 +907,26 @@ const AtsPipeline = () => {
                     {calculatingAI ? (
                       <><Loader2 size={13} className="animate-spin" /> Analyzing...</>
                     ) : (
-                      <><RefreshCw size={13} /> {inspectApp.matchAnalysis?.matchPercentage !== undefined ? 'Re-Analyze' : 'Compute Match'}</>
+                      <><RefreshCw size={13} /> {inspectApp.matchAnalysis?.matchPercentage != null ? 'Re-Analyze' : 'Compute Match'}</>
                     )}
                   </Button>
                 </div>
 
-                {inspectApp.matchAnalysis?.matchPercentage !== undefined ? (
+                {calculatingAI ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-6 text-slate-400">
+                    <Loader2 size={20} className="animate-spin text-violet-500" />
+                    <p className="text-xs font-semibold">Running fresh AI analysis…</p>
+                  </div>
+                ) : inspectApp.matchAnalysis?.insufficientData ? (
+                  <div className="flex flex-col items-center gap-2 py-4 text-center">
+                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full uppercase tracking-widest">
+                      Not enough data
+                    </span>
+                    <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
+                      {inspectApp.matchAnalysis.verdict}
+                    </p>
+                  </div>
+                ) : inspectApp.matchAnalysis?.matchPercentage != null ? (
                   <div className="space-y-4 pt-2">
                     {/* Score Bar */}
                     <div className="flex items-center justify-between">

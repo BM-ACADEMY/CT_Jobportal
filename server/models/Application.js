@@ -26,6 +26,7 @@ const applicationSchema = new mongoose.Schema({
     matchedSkills: [String],
     missingSkills: [String],
     verdict: String,
+    insufficientData: Boolean,
     lastCalculated: Date
   },
   display_id: {

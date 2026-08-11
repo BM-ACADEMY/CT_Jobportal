@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { JitsiMeeting } from '@jitsi/react-sdk';
 import { useAuth } from '@/context/AuthContext';
+import { DatePicker, ConfigProvider } from 'antd';
+import dayjs from 'dayjs';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -70,81 +72,99 @@ const ScheduleModal = ({ jobs, onClose, onScheduled }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900">Schedule Video Interview</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
-        </div>
+    <div className="fixed inset-0 z-50 bg-black/40 overflow-y-auto">
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900">Schedule Video Interview</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+          </div>
 
-        {/* Job picker */}
-        <div>
-          <label className="text-xs font-bold text-slate-600 block mb-1.5">Job</label>
-          <div className="relative">
-            <button
-              onClick={() => setShowJobPicker(p => !p)}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 bg-slate-50 hover:border-rose-300"
-            >
-              <span className="flex items-center gap-2"><Briefcase size={14} className="text-rose-500" />{selectedJob ? selectedJob.title : 'Choose a job...'}</span>
-              <ChevronDown size={14} />
-            </button>
-            {showJobPicker && (
-              <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-                {jobs.map(job => (
-                  <button key={job._id} onClick={() => handleJobSelect(job)} className="w-full text-left px-4 py-2.5 text-sm hover:bg-rose-50 text-slate-700">
-                    {job.title}
+          {/* Job picker */}
+          <div>
+            <label className="text-xs font-bold text-slate-600 block mb-1.5">Job</label>
+            <div className="relative">
+              <button
+                onClick={() => setShowJobPicker(p => !p)}
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 bg-slate-50 hover:border-rose-300"
+              >
+                <span className="flex items-center gap-2"><Briefcase size={14} className="text-rose-500" />{selectedJob ? selectedJob.title : 'Choose a job...'}</span>
+                <ChevronDown size={14} />
+              </button>
+              {showJobPicker && (
+                <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                  {jobs.map(job => (
+                    <button key={job._id} onClick={() => handleJobSelect(job)} className="w-full text-left px-4 py-2.5 text-sm hover:bg-rose-50 text-slate-700">
+                      {job.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Applicant picker */}
+          <div>
+            <label className="text-xs font-bold text-slate-600 block mb-1.5">Candidate</label>
+            {loadingApplicants ? (
+              <div className="flex items-center gap-2 text-slate-400 text-sm"><Loader2 size={14} className="animate-spin" /> Loading...</div>
+            ) : (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {applicants.length === 0 ? (
+                  <p className="text-sm text-slate-400">{selectedJob ? 'No eligible candidates found for this job' : 'Select a job first'}</p>
+                ) : applicants.map(app => (
+                  <button
+                    key={app._id}
+                    onClick={() => !app.hasScheduledInterview && setSelectedApp(app)}
+                    disabled={app.hasScheduledInterview}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                      selectedApp?._id === app._id ? 'border-rose-400 bg-rose-50' :
+                      app.hasScheduledInterview ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed' :
+                      'border-slate-100 hover:border-rose-200'
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                      {app.applicant?.name?.[0]?.toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-900 truncate">{app.applicant?.name}</p>
+                      <p className="text-[10px] text-slate-500">{app.applicant?.profile?.headline || app.status}</p>
+                    </div>
+                    {app.hasScheduledInterview && <Badge className="text-[9px] bg-blue-50 text-blue-700 border-none">Scheduled</Badge>}
                   </button>
                 ))}
               </div>
             )}
           </div>
-        </div>
 
-        {/* Applicant picker */}
-        <div>
-          <label className="text-xs font-bold text-slate-600 block mb-1.5">Candidate</label>
-          {loadingApplicants ? (
-            <div className="flex items-center gap-2 text-slate-400 text-sm"><Loader2 size={14} className="animate-spin" /> Loading...</div>
-          ) : (
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {applicants.length === 0 ? (
-                <p className="text-sm text-slate-400">{selectedJob ? 'No eligible candidates found for this job' : 'Select a job first'}</p>
-              ) : applicants.map(app => (
-                <button
-                  key={app._id}
-                  onClick={() => !app.hasScheduledInterview && setSelectedApp(app)}
-                  disabled={app.hasScheduledInterview}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                    selectedApp?._id === app._id ? 'border-rose-400 bg-rose-50' :
-                    app.hasScheduledInterview ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed' :
-                    'border-slate-100 hover:border-rose-200'
-                  }`}
-                >
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                    {app.applicant?.name?.[0]?.toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">{app.applicant?.name}</p>
-                    <p className="text-[10px] text-slate-500">{app.applicant?.profile?.headline || app.status}</p>
-                  </div>
-                  {app.hasScheduledInterview && <Badge className="text-[9px] bg-blue-50 text-blue-700 border-none">Scheduled</Badge>}
-                </button>
-              ))}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold text-slate-600 block mb-1.5">Date & Time</label>
+              <ConfigProvider theme={{
+                token: {
+                  controlHeight: 40,
+                  borderRadius: 12,
+                  colorBorder: '#e2e8f0',
+                  colorPrimary: '#f43f5e',
+                  fontFamily: 'inherit',
+                  fontSize: 14,
+                }
+              }}>
+                <DatePicker
+                  showTime={{ format: 'HH:mm' }}
+                  format="DD-MM-YYYY HH:mm"
+                  placement="topLeft"
+                  getPopupContainer={(trigger) => trigger.parentNode}
+                  value={scheduledAt ? dayjs(scheduledAt) : null}
+                  onChange={(date) => {
+                    setScheduledAt(date ? date.toISOString() : '');
+                  }}
+                  disabledDate={(current) => current && current < dayjs().startOf('day')}
+                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm outline-none hover:border-rose-300 focus:border-rose-400 focus-within:border-rose-400 focus-within:shadow-[0_0_0_2px_rgba(244,63,94,0.1)]"
+                  placeholder="Select date and time"
+                />
+              </ConfigProvider>
             </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-bold text-slate-600 block mb-1.5">Date & Time</label>
-            <input
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={e => setScheduledAt(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-              className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-rose-400"
-            />
-          </div>
           <div>
             <label className="text-xs font-bold text-slate-600 block mb-1.5">Duration (mins)</label>
             <select
@@ -192,7 +212,8 @@ const ScheduleModal = ({ jobs, onClose, onScheduled }) => {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 const NativeMeetingRoom = ({ interview, onClose, userName }) => {

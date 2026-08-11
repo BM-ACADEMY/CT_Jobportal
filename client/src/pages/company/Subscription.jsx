@@ -4,13 +4,14 @@ import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import {
-  ShieldCheck, Zap, Crown, Clock, AlertCircle, RefreshCw, Download, XCircle, CheckCircle2
+  ShieldCheck, Zap, Crown, Clock, AlertCircle, RefreshCw, Download, XCircle, CheckCircle2, Info
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PricingCard from '../../components/subscription/PricingCard';
 import CheckoutModal from '../../components/subscription/CheckoutModal';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
 const STATUS_CONFIG = {
   completed:  { label: 'Active',       badge: 'bg-emerald-50 text-emerald-600', icon: CheckCircle2 },
@@ -210,6 +211,7 @@ const SubscriptionPage = () => {
   const [autoRenew, setAutoRenew] = useState(!!user?.autoRenew);
   const [savingAutoRenew, setSavingAutoRenew] = useState(false);
   const [payments, setPayments] = useState([]);
+  const [downgradePlan, setDowngradePlan] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -294,13 +296,21 @@ const SubscriptionPage = () => {
 
   const isRecurringRole = (role) => role === 'college' || role === 'company';
 
+  // Only warn when switching away from an active, paid plan to a cheaper one — a fresh
+  // purchase or an expired-plan renewal isn't "downgrading" anything that was paid for.
+  // Custom-priced plans (e.g. Enterprise) store price:0 as a placeholder, not an actual
+  // price, so they're never comparable and can't be flagged as a downgrade.
+  const isDowngrade = (plan) =>
+    !isExpired && currentPlan && currentPlan.price > 0 && !plan.isCustomPrice &&
+    plan._id !== currentPlan._id && plan.price < currentPlan.price;
+
   const handleUpgrade = (plan) => {
-    if (plan.price === 0) {
-      handleProceedPayment(plan);
+    if (isDowngrade(plan)) {
+      setDowngradePlan(plan);
       return;
     }
-    if (isRecurringRole(plan.role)) {
-      setCheckoutPlan(plan);
+    if (plan.price === 0) {
+      handleProceedPayment(plan);
       return;
     }
     setCheckoutPlan(plan);
@@ -450,6 +460,12 @@ const SubscriptionPage = () => {
 
   const defaultTab = user?.role === 'company' ? 'company' : user?.role === 'college' ? 'college' : 'recruiter';
 
+  // A delegated team member (a recruiter added by an org admin, or an org_employee) doesn't own
+  // billing for the organization — only the org admin purchases/changes the org's plan. They may
+  // freely purchase a recruiter-tier plan for their own personal use (fully separate from the
+  // org's plan — see `organizationSubscription`), but never see or buy an organization-tier plan.
+  const isRestrictedTeamMember = (user?.role === 'recruiter' && user?.isTeamManaged) || user?.role === 'org_employee';
+
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-20 pt-4">
       <PageSOPBanner pageKey="companySubscription" />
@@ -464,6 +480,25 @@ const SubscriptionPage = () => {
           onProceed={handleProceedPayment}
         />
       )}
+
+      {/* Downgrade confirmation */}
+      <ConfirmDialog
+        open={!!downgradePlan}
+        onOpenChange={(open) => { if (!open) setDowngradePlan(null); }}
+        title="Downgrade your plan?"
+        description={`You're switching from ${currentPlan?.name || 'your current plan'} to ${downgradePlan?.name || 'this plan'}. Any amount already paid for your current plan is non-refundable, and you'll lose access to features exclusive to your current tier once the change takes effect.`}
+        confirmLabel="Downgrade Anyway"
+        destructive
+        onConfirm={() => {
+          const plan = downgradePlan;
+          setDowngradePlan(null);
+          if (plan.price === 0) {
+            handleProceedPayment(plan);
+          } else {
+            setCheckoutPlan(plan);
+          }
+        }}
+      />
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
@@ -526,7 +561,7 @@ const SubscriptionPage = () => {
             </div>
           </div>
 
-          {/* Auto-renew toggle */}
+          {/* Auto-renew toggle — this is the user's own personal plan, so it's always theirs to manage */}
           {!isExpired && (
             <div className="flex items-center justify-between rounded-xl bg-white/70 border border-white px-4 py-3">
               <div className="flex items-center gap-2.5">
@@ -557,7 +592,7 @@ const SubscriptionPage = () => {
       {/* Plans */}
       <div id="plans-section" className="space-y-8">
         <Tabs defaultValue={defaultTab} className="w-full space-y-8">
-          {user?.role !== 'recruiter' && user?.role !== 'company' && user?.role !== 'college' && (
+          {user?.role !== 'recruiter' && user?.role !== 'company' && user?.role !== 'college' && user?.role !== 'org_employee' && (
             <div className="flex justify-center">
               <TabsList className="bg-slate-100 p-1 rounded-xl w-fit">
                 <TabsTrigger value="recruiter" className="rounded-lg px-8 py-2.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
@@ -578,6 +613,14 @@ const SubscriptionPage = () => {
           ) : (
             <>
               <TabsContent value="recruiter" className="m-0">
+                {isRestrictedTeamMember && user?.organizationSubscription && (
+                  <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-start gap-2.5">
+                    <Info size={16} className="text-slate-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-600 font-medium">
+                      Your organization ({user.employerCompanyName || 'your company'}) is on the <span className="font-bold">{user.organizationSubscription.name}</span> plan — that's managed by your organization admin. The plans below are separate: buy one for your own personal use.
+                    </p>
+                  </div>
+                )}
                 {plans.filter(p => p.role === 'recruiter').length === 0 ? (
                   <div className="text-center py-16 rounded-2xl border border-dashed border-slate-200">
                     <Zap size={32} className="text-slate-200 mx-auto mb-3" />
