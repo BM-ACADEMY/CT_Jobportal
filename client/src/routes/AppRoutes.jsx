@@ -118,16 +118,16 @@ const RoleRedirect = () => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   const routes = {
-    admin: '/admin',
+    admin: '/admin/dashboard',
     subadmin: '/subadmin',
-    recruiter: '/company',
-    company: '/company',
-    jobseeker: '/jobseeker',
+    recruiter: '/company/dashboard',
+    company: '/company/dashboard',
+    jobseeker: '/candidate',
     org_employee: '/employee',
-    college: '/college',
+    college: '/college/dashboard',
     drive_incharge: '/incharge',
   };
-  return <Navigate to={routes[user.role] || '/jobseeker'} replace />;
+  return <Navigate to={routes[user.role] || '/candidate'} replace />;
 };
 
 const AppRoutes = () => {
@@ -145,7 +145,7 @@ const AppRoutes = () => {
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/job/:id" element={<JobDetails />} />
         <Route path="/companies" element={<Companies />} />
-        <Route path="/company-profile/:id" element={<CompanyProfilePage />} />
+        <Route path="/companies/:id" element={<CompanyProfilePage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/terms" element={<TermsAndConditions />} />
@@ -197,7 +197,7 @@ const AppRoutes = () => {
         <Route path="/social-auth-success" element={<SocialAuthSuccess />} />
         <Route path="/complete-social-profile" element={<CompleteSocialProfile />} />
         <Route
-          path="/admin-login"
+          path="/admin/login"
           element={
             <GuestRoute>
               <AdminLogin />
@@ -247,7 +247,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/jobseeker/*"
+          path="/candidate/*"
           element={
             <PrivateRoute roles={['jobseeker']}>
               <JobSeekerDashboard />
@@ -255,7 +255,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/jobseeker/profile/:id"
+          path="/candidate/profile/:id"
           element={
             <PrivateRoute>
               <PublicProfile />
@@ -263,7 +263,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/jobseeker/settings"
+          path="/candidate/settings"
           element={
             <PrivateRoute roles={['jobseeker']}>
               <JobSeekerSettings />
@@ -271,26 +271,26 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/jobseeker/subscription"
+          path="/candidate/subscription"
           element={
             <PrivateRoute roles={['jobseeker']}>
               <JobSeekerSubscription />
             </PrivateRoute>
           }
         />
-        <Route path="/jobseeker/applications" element={<PrivateRoute roles={['jobseeker']}><MyApplications /></PrivateRoute>} />
-        <Route path="/jobseeker/campus-drives" element={<PrivateRoute roles={['jobseeker']}><CampusDrives /></PrivateRoute>} />
-        <Route path="/jobseeker/campus-drives/:id" element={<PrivateRoute roles={['jobseeker']}><CampusDriveDetails /></PrivateRoute>} />
-        <Route path="/jobseeker/resume-builder" element={<PrivateRoute roles={['jobseeker']}><ResumeBuilder /></PrivateRoute>} />
-        <Route path="/jobseeker/job-alerts" element={<PrivateRoute roles={['jobseeker']}><JobAlerts /></PrivateRoute>} />
-        <Route path="/jobseeker/profile-insights" element={<PrivateRoute roles={['jobseeker']}><ProfileInsights /></PrivateRoute>} />
-        <Route path="/jobseeker/messages" element={<PrivateRoute roles={['jobseeker']}><FeatureGate featureKey="hasMessageRecruiters" subscriptionPath="/jobseeker/subscription"><Messages /></FeatureGate></PrivateRoute>} />
-        <Route path="/jobseeker/career-counselling" element={<PrivateRoute roles={['jobseeker']}><CareerCounselling /></PrivateRoute>} />
-        <Route path="/jobseeker/mock-interviews" element={<PrivateRoute roles={['jobseeker']}><MockInterviews /></PrivateRoute>} />
-        <Route path="/jobseeker/skill-tests" element={<PrivateRoute roles={['jobseeker']}><SkillTests /></PrivateRoute>} />
-        <Route path="/jobseeker/ai-resume-review" element={<PrivateRoute roles={['jobseeker']}><AiResumeReview /></PrivateRoute>} />
-        <Route path="/jobseeker/payment-history" element={<PrivateRoute roles={['jobseeker']}><PaymentHistory /></PrivateRoute>} />
-        <Route path="/jobseeker/pay-per-features" element={<PrivateRoute roles={['jobseeker']}><PayPerFeatures /></PrivateRoute>} />
+        <Route path="/candidate/applications" element={<PrivateRoute roles={['jobseeker']}><MyApplications /></PrivateRoute>} />
+        <Route path="/candidate/campus-drives" element={<PrivateRoute roles={['jobseeker']}><CampusDrives /></PrivateRoute>} />
+        <Route path="/candidate/campus-drives/:id" element={<PrivateRoute roles={['jobseeker']}><CampusDriveDetails /></PrivateRoute>} />
+        <Route path="/candidate/resume-builder" element={<PrivateRoute roles={['jobseeker']}><ResumeBuilder /></PrivateRoute>} />
+        <Route path="/candidate/job-alerts" element={<PrivateRoute roles={['jobseeker']}><JobAlerts /></PrivateRoute>} />
+        <Route path="/candidate/profile-insights" element={<PrivateRoute roles={['jobseeker']}><ProfileInsights /></PrivateRoute>} />
+        <Route path="/candidate/messages" element={<PrivateRoute roles={['jobseeker']}><FeatureGate featureKey="hasMessageRecruiters" subscriptionPath="/candidate/subscription"><Messages /></FeatureGate></PrivateRoute>} />
+        <Route path="/candidate/career-counselling" element={<PrivateRoute roles={['jobseeker']}><CareerCounselling /></PrivateRoute>} />
+        <Route path="/candidate/mock-interviews" element={<PrivateRoute roles={['jobseeker']}><MockInterviews /></PrivateRoute>} />
+        <Route path="/candidate/skill-tests" element={<PrivateRoute roles={['jobseeker']}><SkillTests /></PrivateRoute>} />
+        <Route path="/candidate/ai-resume-review" element={<PrivateRoute roles={['jobseeker']}><AiResumeReview /></PrivateRoute>} />
+        <Route path="/candidate/payment-history" element={<PrivateRoute roles={['jobseeker']}><PaymentHistory /></PrivateRoute>} />
+        <Route path="/candidate/pay-per-features" element={<PrivateRoute roles={['jobseeker']}><PayPerFeatures /></PrivateRoute>} />
 
         <Route
           path="/company/settings"
@@ -301,7 +301,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/company/post-job"
+          path="/company/jobs/new"
           element={
             <PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="post_job">
               <PostJob />
@@ -325,12 +325,12 @@ const AppRoutes = () => {
           }
         />
         <Route path="/company/jobs" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="my_jobs"><MyJobs /></PrivateRoute>} />
-        <Route path="/company/candidate-search" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="candidate_search"><CandidateSearch /></PrivateRoute>} />
+        <Route path="/company/candidates" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="candidate_search"><CandidateSearch /></PrivateRoute>} />
         <Route path="/company/requests" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><AssignedRequests /></PrivateRoute>} />
         <Route path="/company/ats-pipeline" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="ats_pipeline"><FeatureGate featureKey="hasATSPipeline" subscriptionPath="/company/subscription"><AtsPipeline /></FeatureGate></PrivateRoute>} />
         <Route path="/company/analytics" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="analytics"><FeatureGate featureKey="hasAnalyticsDashboard" subscriptionPath="/company/subscription"><Analytics /></FeatureGate></PrivateRoute>} />
         <Route path="/company/bulk-messaging" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="bulk_messaging"><FeatureGate featureKey="hasBulkMessaging" subscriptionPath="/company/subscription"><BulkMessaging /></FeatureGate></PrivateRoute>} />
-        <Route path="/company/bulk-applications" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="bulk_applicant_management"><FeatureGate featureKey="hasBulkApplicantManagement" subscriptionPath="/company/subscription"><BulkApplicantManagement /></FeatureGate></PrivateRoute>} />
+        <Route path="/company/bulk-hiring" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="bulk_applicant_management"><FeatureGate featureKey="hasBulkApplicantManagement" subscriptionPath="/company/subscription"><BulkApplicantManagement /></FeatureGate></PrivateRoute>} />
         <Route path="/company/profile-management" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><CompanyProfileManagement /></PrivateRoute>} />
         <Route path="/company/team" element={<PrivateRoute roles={['company']}><MyTeam /></PrivateRoute>} />
         <Route path="/company/team-roster" element={<PrivateRoute roles={['recruiter', 'org_employee']}><TeamRoster /></PrivateRoute>} />
@@ -340,7 +340,15 @@ const AppRoutes = () => {
         <Route path="/company/messages" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="messages"><Messages /></PrivateRoute>} />
         <Route path="/company/drive-requests" element={<PrivateRoute roles={['company']}><DriveRequests /></PrivateRoute>} />
         <Route path="/company/payment-history" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><PaymentHistory /></PrivateRoute>} />
-        <Route path="/company/pay-per-features" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><PayPerFeatures /></PrivateRoute>} />
+        <Route path="/company/unlocks" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><PayPerFeatures /></PrivateRoute>} />
+        <Route
+          path="/company/dashboard"
+          element={
+            <PrivateRoute roles={['recruiter', 'company', 'college']}>
+              <CompanyDashboard />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/company/*"
           element={
@@ -355,7 +363,8 @@ const AppRoutes = () => {
         <Route path="/employee/settings" element={<PrivateRoute roles={['org_employee']}><JobSeekerSettings /></PrivateRoute>} />
 
         {/* College (TPO) */}
-        <Route path="/college" element={<PrivateRoute roles={['college']}><CollegeDashboard /></PrivateRoute>} />
+        <Route path="/college/dashboard" element={<PrivateRoute roles={['college']}><CollegeDashboard /></PrivateRoute>} />
+        <Route path="/college" element={<Navigate to="/college/dashboard" replace />} />
         <Route path="/college/students" element={<PrivateRoute roles={['college']}><CollegeStudents /></PrivateRoute>} />
         <Route path="/college/drives" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
         <Route path="/college/drives/new" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
@@ -367,13 +376,14 @@ const AppRoutes = () => {
 
         {/* Admin */}
         <Route
-          path="/admin"
+          path="/admin/dashboard"
           element={
             <PrivateRoute roles={['admin']}>
               <AdminDashboard />
             </PrivateRoute>
           }
         />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route
           path="/admin/users"
           element={

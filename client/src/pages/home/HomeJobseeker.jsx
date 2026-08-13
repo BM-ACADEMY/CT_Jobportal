@@ -226,7 +226,7 @@ const HomeJobseeker = () => {
             <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter">Your Resume, Perfected</h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
-            <Link to="/jobseeker/ai-resume-review" className="group flex flex-col p-8 rounded-3xl border-2 border-slate-200 hover:border-slate-900 bg-white transition-all">
+            <Link to="/candidate/ai-resume-review" className="group flex flex-col p-8 rounded-3xl border-2 border-slate-200 hover:border-slate-900 bg-white transition-all">
               <div className="w-14 h-14 rounded-2xl bg-slate-950 text-emerald-400 flex items-center justify-center mb-6"><Sparkles size={24} /></div>
               <h3 className="font-bold text-slate-900 text-xl mb-2">AI Resume Review</h3>
               <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-1">Get expert feedback on strengths, weaknesses and keyword gaps.</p>
@@ -239,7 +239,7 @@ const HomeJobseeker = () => {
                 <span className="text-emerald-600 text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">Request a review <ArrowRight size={14} /></span>
               )}
             </Link>
-            <Link to="/jobseeker/resume-builder" className="group flex flex-col p-8 rounded-3xl border-2 border-slate-200 hover:border-slate-900 bg-white transition-all">
+            <Link to="/candidate/resume-builder" className="group flex flex-col p-8 rounded-3xl border-2 border-slate-200 hover:border-slate-900 bg-white transition-all">
               <div className="w-14 h-14 rounded-2xl bg-slate-950 text-emerald-400 flex items-center justify-center mb-6"><Wand2 size={24} /></div>
               <h3 className="font-bold text-slate-900 text-xl mb-2">Build Your Resume</h3>
               <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-1">Create a polished, recruiter-ready resume in minutes.</p>

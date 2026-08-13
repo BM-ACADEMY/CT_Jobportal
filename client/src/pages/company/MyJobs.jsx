@@ -146,7 +146,7 @@ const MyJobs = () => {
             </Link>
           )}
           <Button
-            onClick={() => navigate('/company/post-job')}
+            onClick={() => navigate('/company/jobs/new')}
             disabled={quota && !quota.unlimited && quota.used >= quota.limit}
             className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest gap-2 disabled:opacity-50"
           >
@@ -216,7 +216,7 @@ const MyJobs = () => {
             {jobs.length === 0 ? "Post your first job to start attracting candidates." : "Try adjusting your search or filter."}
           </p>
           {jobs.length === 0 && (
-            <Button onClick={() => navigate('/company/post-job')} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
+            <Button onClick={() => navigate('/company/jobs/new')} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
               Post a Job
             </Button>
           )}
@@ -293,7 +293,7 @@ const MyJobs = () => {
                     <Users size={13} /> View Applicants
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => navigate(`/company/post-job?edit=${job._id}`)}
+                    onClick={() => navigate(`/company/jobs/new?edit=${job._id}`)}
                     className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
                   >
                     <Edit2 size={13} /> Edit Job

@@ -78,7 +78,7 @@ const ProfileInsights = () => {
       featureKey="hasProfileViewInsights"
       featureName="Profile Insights"
       description="Discover who's viewing your profile and track your visibility across companies and recruiters."
-      subscriptionPath="/jobseeker/subscription"
+      subscriptionPath="/candidate/subscription"
     >
       <div className="space-y-8 pb-12">
         <PageSOPBanner pageKey="profileInsights" />

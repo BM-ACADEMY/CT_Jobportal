@@ -79,7 +79,7 @@ const CandidateSearch = () => {
     try {
       const res = await axios.get(`${API}/jobs/candidates/${candidateId}/profile`, { headers });
       setQuota({ limit: res.data.limit, used: res.data.used, remaining: res.data.remaining });
-      navigate(`/jobseeker/profile/${candidateId}`);
+      navigate(`/candidate/profile/${candidateId}`);
     } catch (err) {
       if (err.response?.status === 403 && err.response?.data?.requiresUpgrade) {
         setLimitReached(true);

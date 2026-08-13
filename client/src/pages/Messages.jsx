@@ -273,7 +273,7 @@ const Messages = () => {
               }
             </div>
             {atLimit && (
-              <Link to="/jobseeker/subscription" className="flex items-center gap-1 shrink-0 font-bold hover:underline">
+              <Link to="/candidate/subscription" className="flex items-center gap-1 shrink-0 font-bold hover:underline">
                 <Sparkles size={11} /> Upgrade
               </Link>
             )}

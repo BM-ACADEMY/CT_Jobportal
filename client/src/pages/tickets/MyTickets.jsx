@@ -79,7 +79,7 @@ const MyTickets = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      navigate('/jobseeker/messages', { state: { conversationId: convRes.data._id } });
+      navigate('/candidate/messages', { state: { conversationId: convRes.data._id } });
     } catch (err) {
       const msg = err.response?.data?.msg;
       if (err.response?.data?.noActiveTicket) {

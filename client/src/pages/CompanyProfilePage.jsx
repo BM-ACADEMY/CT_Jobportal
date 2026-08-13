@@ -360,7 +360,7 @@ const CompanyProfilePage = () => {
                 <h4 className="font-bold text-slate-900">Career Assistance</h4>
                 <p className="text-xs text-slate-500 font-medium">Need help getting noticed by {company.name}?</p>
               </div>
-              <Link to="/jobseeker/resume-builder" className="block">
+              <Link to="/candidate/resume-builder" className="block">
                 <Button variant="outline" className="w-full rounded-xl border-slate-100 font-bold text-xs uppercase tracking-widest hover:bg-emerald-50 hover:text-emerald-600">Optimize Resume</Button>
               </Link>
             </CardContent>

@@ -90,12 +90,12 @@ const HomeRecruiter = () => {
               Post a job in minutes and reach millions of qualified candidates with AI-powered matching.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/company/post-job">
+              <Link to="/company/jobs/new">
                 <Button className="h-14 px-10 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-base shadow-lg shadow-emerald-500/25 transition-all hover:scale-105">
                   Post a Job <ArrowRight size={18} className="ml-2" />
                 </Button>
               </Link>
-              <Link to="/company">
+              <Link to="/company/dashboard">
                 <Button variant="outline" className="h-14 px-10 rounded-2xl bg-transparent border-white/30 text-white hover:bg-white/10 font-bold text-base">
                   Go to Dashboard
                 </Button>
@@ -173,7 +173,7 @@ const HomeRecruiter = () => {
                 "Every great hire starts with a job post." Yours could be the next one candidates see.
               </p>
             </div>
-            <Link to="/company/post-job">
+            <Link to="/company/jobs/new">
               <Button className="h-14 px-10 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold shrink-0">
                 Post Your Job <ArrowRight size={18} className="ml-2" />
               </Button>

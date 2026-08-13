@@ -60,7 +60,7 @@ const SkillScoreBento = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
-                onClick={() => navigate('/jobseeker/skill-tests')}
+                onClick={() => navigate('/candidate/skill-tests')}
                 className="p-6 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-900 transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-4">

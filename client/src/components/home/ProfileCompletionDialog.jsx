@@ -54,7 +54,7 @@ const ProfileCompletionDialog = ({ open, onDismiss, completion = 0 }) => {
               Later
             </Button>
             <Button
-              onClick={() => { onDismiss(); navigate('/jobseeker/settings'); }}
+              onClick={() => { onDismiss(); navigate('/candidate/settings'); }}
               className="flex-1 h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold gap-1.5"
             >
               Complete Now <ArrowRight size={15} />

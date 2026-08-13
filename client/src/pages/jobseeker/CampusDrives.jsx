@@ -211,7 +211,7 @@ const CampusDrives = () => {
       ) : (
         <div className="grid gap-4">
           {drives.map(drive => (
-            <Link key={drive._id} to={`/jobseeker/campus-drives/${drive._id}`} className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:border-emerald-200 transition-colors block">
+            <Link key={drive._id} to={`/candidate/campus-drives/${drive._id}`} className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:border-emerald-200 transition-colors block">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h3 className="text-sm font-black text-slate-900 group-hover:text-emerald-700">{drive.title}</h3>

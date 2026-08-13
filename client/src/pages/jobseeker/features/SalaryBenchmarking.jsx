@@ -371,7 +371,7 @@ const SalaryBenchmarking = () => (
   <FeatureGate
     featureKey="hasSalaryBenchmarking"
     description="Get personalised salary reports comparing your role against real market data and company-specific benchmarks."
-    subscriptionPath="/jobseeker/subscription"
+    subscriptionPath="/candidate/subscription"
   >
     <SalaryBenchmarkingContent />
   </FeatureGate>

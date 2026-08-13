@@ -103,7 +103,7 @@ const JobAlerts = () => {
       featureKey="jobAlerts"
       featureName="Job Alerts"
       description="Get notified instantly when jobs matching your criteria are posted — never miss the right opportunity."
-      subscriptionPath="/jobseeker/subscription"
+      subscriptionPath="/candidate/subscription"
     >
       <div className="space-y-8 pb-12">
         <PageSOPBanner pageKey="jobAlerts" />
@@ -119,7 +119,7 @@ const JobAlerts = () => {
             <p className="text-sm text-slate-500">Dynamic alerts based on your profile requirements.</p>
           </div>
           <Button 
-            onClick={() => navigate('/jobseeker/settings?tab=preferences')}
+            onClick={() => navigate('/candidate/settings?tab=preferences')}
             className="h-10 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm gap-2 shrink-0"
           >
             <Plus size={15} /> Update Preferences

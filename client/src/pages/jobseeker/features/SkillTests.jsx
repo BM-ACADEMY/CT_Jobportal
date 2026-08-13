@@ -126,7 +126,7 @@ const SkillTests = () => {
             <Button 
               onClick={() => {
                 if (canTakeTest) navigate('/free-assessment');
-                else navigate('/jobseeker/subscription');
+                else navigate('/candidate/subscription');
               }}
               className={`h-12 px-8 rounded-xl font-bold shadow-lg ${canTakeTest ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white gap-2'}`}
             >

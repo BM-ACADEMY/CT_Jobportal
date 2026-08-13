@@ -246,7 +246,7 @@ const JobSeekerDashboard = () => {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-600 leading-relaxed">Elevate your application with a professional CV. Use our Pro templates to stand out to top recruiters.</p>
-            <Button onClick={() => navigate('/jobseeker/resume-builder')} className="w-full h-12 bg-slate-900 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 text-xs uppercase tracking-widest">
+            <Button onClick={() => navigate('/candidate/resume-builder')} className="w-full h-12 bg-slate-900 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 text-xs uppercase tracking-widest">
               Craft My Resume
             </Button>
           </CardContent>

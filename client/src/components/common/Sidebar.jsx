@@ -16,23 +16,23 @@ import { hasFeature } from '../subscription/FeatureGate';
 // ─── Core nav (always visible) ───────────────────────────────────────────────
 const coreMenus = {
   jobseeker: [
-    { icon: Home,        label: 'Overview',      path: '/jobseeker' },
+    { icon: Home,        label: 'Overview',      path: '/candidate' },
     { icon: Briefcase,   label: 'Search Jobs',   path: '/jobs' },
     { icon: Building2,   label: 'Organizations', path: '/companies' },
-    { icon: FileText,    label: 'Applications',  path: '/jobseeker/applications' },
-    { icon: GraduationCap, label: 'Campus Drives', path: '/jobseeker/campus-drives' },
+    { icon: FileText,    label: 'Applications',  path: '/candidate/applications' },
+    { icon: GraduationCap, label: 'Campus Drives', path: '/candidate/campus-drives' },
     { icon: Star,        label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
-    { icon: CreditCard,  label: 'Subscription',  path: '/jobseeker/subscription' },
-    { icon: ShoppingBag, label: 'Pay-per Features', path: '/jobseeker/pay-per-features' },
-    { icon: History,     label: 'Payment History', path: '/jobseeker/payment-history' },
+    { icon: CreditCard,  label: 'Subscription',  path: '/candidate/subscription' },
+    { icon: ShoppingBag, label: 'Pay-per Features', path: '/candidate/pay-per-features' },
+    { icon: History,     label: 'Payment History', path: '/candidate/payment-history' },
     { icon: Headphones,  label: 'Tickets & Queries', path: '/tickets/my' },
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   recruiter: [
-    { icon: LayoutDashboard, label: 'Overview',          path: '/company' },
+    { icon: LayoutDashboard, label: 'Overview',          path: '/company/dashboard' },
     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
-    { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
+    { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
+    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
@@ -40,10 +40,10 @@ const coreMenus = {
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   company: [
-    { icon: LayoutDashboard, label: 'Overview',          path: '/company' },
+    { icon: LayoutDashboard, label: 'Overview',          path: '/company/dashboard' },
     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
-    { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
+    { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
+    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
     { icon: UserCog,         label: 'My Team',           path: '/company/team' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
@@ -52,7 +52,7 @@ const coreMenus = {
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   college: [
-    { icon: LayoutDashboard, label: 'Overview',          path: '/college' },
+    { icon: LayoutDashboard, label: 'Overview',          path: '/college/dashboard' },
     { icon: Users,           label: 'Students',          path: '/college/students' },
     { icon: Activity,        label: 'Campus Drives',     path: '/college/drives' },
     { icon: ShieldCheck,     label: 'ID Verification',   path: '/college/verification' },
@@ -64,7 +64,7 @@ const coreMenus = {
     { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
   ],
   admin: [
-    { icon: LayoutDashboard, label: 'Command Center', path: '/admin' },
+    { icon: LayoutDashboard, label: 'Command Center', path: '/admin/dashboard' },
     { icon: Users,           label: 'Users Account',  path: '/admin/users' },
     { icon: Briefcase,       label: 'Job Inventory',  path: '/admin/jobs' },
     { icon: GraduationCap,   label: 'College KYC',    path: '/admin/colleges' },
@@ -92,8 +92,8 @@ const coreMenus = {
   org_employee: [
     { icon: LayoutDashboard, label: 'Overview',          path: '/employee' },
     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
-    { icon: Briefcase,       label: 'Post Job',          path: '/company/post-job' },
-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidate-search' },
+    { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
+    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
     { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
@@ -105,14 +105,14 @@ const coreMenus = {
 // ─── Premium feature nav per role ────────────────────────────────────────────
 const premiumMenus = {
   jobseeker: [
-    { icon: FileText,      label: 'Resume Builder',      path: '/jobseeker/resume-builder',      featureKey: 'hasResumeBuilder' },
-    { icon: Bell,          label: 'Job Alerts',          path: '/jobseeker/job-alerts',          featureKey: 'jobAlerts' },
-    { icon: Sparkles,      label: 'Take Assessment',     path: '/jobseeker/skill-tests' },
-    { icon: Users,         label: 'Profile Insights',    path: '/jobseeker/profile-insights',    featureKey: 'hasProfileViewInsights' },
-    { icon: Star,          label: 'Career Counselling',  path: '/jobseeker/career-counselling',  featureKey: 'hasCareerCounselling' },
-    { icon: Mic,           label: 'Mock Interviews',     path: '/jobseeker/mock-interviews',     featureKey: 'hasMockInterviews' },
-    { icon: BookOpen,      label: 'AI Profile Review',    path: '/jobseeker/ai-resume-review',    featureKey: 'hasAiResumeReview' },
-    { icon: MessageCircle, label: 'Direct Messages',     path: '/jobseeker/messages',            featureKey: 'hasMessageRecruiters' },
+    { icon: FileText,      label: 'Resume Builder',      path: '/candidate/resume-builder',      featureKey: 'hasResumeBuilder' },
+    { icon: Bell,          label: 'Job Alerts',          path: '/candidate/job-alerts',          featureKey: 'jobAlerts' },
+    { icon: Sparkles,      label: 'Take Assessment',     path: '/candidate/skill-tests' },
+    { icon: Users,         label: 'Profile Insights',    path: '/candidate/profile-insights',    featureKey: 'hasProfileViewInsights' },
+    { icon: Star,          label: 'Career Counselling',  path: '/candidate/career-counselling',  featureKey: 'hasCareerCounselling' },
+    { icon: Mic,           label: 'Mock Interviews',     path: '/candidate/mock-interviews',     featureKey: 'hasMockInterviews' },
+    { icon: BookOpen,      label: 'AI Profile Review',    path: '/candidate/ai-resume-review',    featureKey: 'hasAiResumeReview' },
+    { icon: MessageCircle, label: 'Direct Messages',     path: '/candidate/messages',            featureKey: 'hasMessageRecruiters' },
   ],
   recruiter: [
     { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
@@ -295,7 +295,7 @@ const Sidebar = () => {
   const premiumItems = (premiumMenus[role] || []).filter(i => !isPermissionBlocked(i.path));
 
   const isActive = (path) => {
-    const rootRoutes = ['/jobseeker', '/company', '/admin', '/subadmin', '/employee', '/college', '/incharge'];
+    const rootRoutes = ['/candidate', '/company/dashboard', '/admin/dashboard', '/subadmin', '/employee', '/college/dashboard', '/incharge'];
     if (rootRoutes.includes(path)) return location.pathname === path;
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
@@ -322,7 +322,7 @@ const Sidebar = () => {
       <div className="px-6 pt-8 pb-4">
         <div onClick={() => {
             const routes = { 
-                jobseeker: '/jobseeker/settings', 
+                jobseeker: '/candidate/settings', 
                 recruiter: '/company/settings',
                 company: '/company/settings',
                 college: '/college/settings',
@@ -330,7 +330,7 @@ const Sidebar = () => {
                 subadmin: '/subadmin/settings',
                 org_employee: '/employee/settings'
             };
-            navigate(routes[role] || '/jobseeker/settings');
+            navigate(routes[role] || '/candidate/settings');
         }} className="p-4 rounded-2xl border border-slate-100 flex items-center gap-4 bg-slate-50/30 group hover:bg-white hover:border-emerald-100 hover:shadow-md hover:shadow-emerald-600/5 transition-all duration-300 cursor-pointer">
           <div className="relative">
             <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm bg-white">
@@ -385,7 +385,7 @@ const Sidebar = () => {
                 : "Reach 100% to boost your visibility to recruiters by up to 3x."}
             </p>
             {profileCompletion < 100 && (
-              <button onClick={() => navigate('/jobseeker/settings')} className="mt-2.5 w-full py-1.5 rounded-lg bg-white/60 hover:bg-white text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200/50 relative z-10">
+              <button onClick={() => navigate('/candidate/settings')} className="mt-2.5 w-full py-1.5 rounded-lg bg-white/60 hover:bg-white text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200/50 relative z-10">
                 Complete Profile
               </button>
             )}

@@ -22,7 +22,7 @@ const CampusDriveDetails = () => {
         setDrive(found);
       } else {
         toast.error("Drive not found");
-        navigate('/jobseeker/campus-drives');
+        navigate('/candidate/campus-drives');
       }
     } catch (err) {
       toast.error("Failed to fetch drive details");
@@ -42,7 +42,7 @@ const CampusDriveDetails = () => {
         { recipientId: inChargeUserId },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }}
       );
-      navigate('/jobseeker/messages', { state: { conversationId: res.data._id } });
+      navigate('/candidate/messages', { state: { conversationId: res.data._id } });
     } catch (err) {
       toast.error('Failed to start conversation');
     }
@@ -75,7 +75,7 @@ const CampusDriveDetails = () => {
     <div className="max-w-4xl mx-auto space-y-6 py-6 animate-in fade-in duration-500">
       <div className="flex items-center gap-4">
         <button 
-          onClick={() => navigate('/jobseeker/campus-drives')}
+          onClick={() => navigate('/candidate/campus-drives')}
           className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all bg-white shadow-sm"
         >
           <ArrowLeft size={18} />

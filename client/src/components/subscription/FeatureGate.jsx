@@ -241,7 +241,7 @@ const LockedScreen = ({ featureKey, featureName, description, subscriptionPath }
         )}
 
         {/* CTA */}
-        <Link to={subscriptionPath || '/jobseeker/subscription'}>
+        <Link to={subscriptionPath || '/candidate/subscription'}>
           <Button className="h-11 px-8 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 gap-2">
             <Sparkles size={15} />
             Upgrade to Unlock
@@ -251,7 +251,7 @@ const LockedScreen = ({ featureKey, featureName, description, subscriptionPath }
 
         <p className="text-[11px] text-slate-400 font-medium mt-4">
           Already have a plan? Your feature may not be included — check your{' '}
-          <Link to={subscriptionPath || '/jobseeker/subscription'} className="text-emerald-600 hover:underline">
+          <Link to={subscriptionPath || '/candidate/subscription'} className="text-emerald-600 hover:underline">
             subscription settings
           </Link>
           .
@@ -268,7 +268,7 @@ const LockedScreen = ({ featureKey, featureName, description, subscriptionPath }
  * @param featureKey   - The plan field key e.g. 'hasResumeBuilder'
  * @param featureName  - Human-readable name (optional, derived from featureKey if absent)
  * @param description  - Short description shown on the lock screen
- * @param subscriptionPath - Path to the subscription page (default: /jobseeker/subscription)
+ * @param subscriptionPath - Path to the subscription page (default: /candidate/subscription)
  * @param children     - Rendered when feature is active
  */
 const FeatureGate = ({ featureKey, featureName, description, subscriptionPath, children }) => {
