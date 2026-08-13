@@ -83,7 +83,7 @@ const HomeCollege = () => {
                   Manage Drives <ArrowRight size={18} className="ml-2" />
                 </Button>
               </Link>
-              <Link to="/college">
+              <Link to="/college/dashboard">
                 <Button variant="outline" className="h-14 px-10 rounded-2xl bg-transparent border-white/30 text-white hover:bg-white/10 font-bold text-base">
                   Go to Dashboard
                 </Button>

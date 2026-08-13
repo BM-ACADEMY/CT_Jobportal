@@ -28,7 +28,7 @@ const roleConfig = {
     label: 'Recruiter',
     color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
     navItems: [
-      { label: 'Post Job', href: '/company/post-job' },
+      { label: 'Post Job', href: '/company/jobs/new' },
       { label: 'Applicants', href: '/company/applicants' },
       { label: 'Analytics', href: '/company/analytics' },
       { label: 'Settings', href: '/company/settings' },
@@ -38,7 +38,7 @@ const roleConfig = {
     label: 'Company',
     color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
     navItems: [
-      { label: 'Post Job', href: '/company/post-job' },
+      { label: 'Post Job', href: '/company/jobs/new' },
       { label: 'Applicants', href: '/company/applicants' },
       { label: 'Analytics', href: '/company/analytics' },
       { label: 'Settings', href: '/company/settings' },
@@ -194,7 +194,7 @@ const Header = () => {
                       <DropdownMenuItem 
                           onClick={() => {
                               const routes = {
-                                  jobseeker: '/jobseeker/settings',
+                                  jobseeker: '/candidate/settings',
                                   recruiter: '/company/settings',
                                   company: '/company/settings',
                                   college: '/college/settings',
@@ -202,7 +202,7 @@ const Header = () => {
                                   subadmin: '/subadmin/settings',
                                   org_employee: '/employee/settings'
                               };
-                              navigate(routes[user?.role] || '/jobseeker/settings');
+                              navigate(routes[user?.role] || '/candidate/settings');
                           }}
                           className="rounded-xl px-4 py-3 text-xs font-bold text-slate-600 cursor-pointer focus:bg-emerald-50 focus:text-emerald-600 transition-all uppercase tracking-widest"
                       >

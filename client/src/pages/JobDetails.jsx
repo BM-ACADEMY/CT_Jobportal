@@ -118,7 +118,7 @@ const JobDetails = () => {
     
     if (!hasFeature(user, 'hasJobMatchAnalysis')) {
       toast.error("Premium Feature: Please upgrade your plan or purchase Job Match Analysis to use this.");
-      navigate('/jobseeker/pay-per-features');
+      navigate('/candidate/pay-per-features');
       return;
     }
 
@@ -146,11 +146,11 @@ const JobDetails = () => {
     
     if (!hasFeature(user, 'hasSalaryBenchmarking')) {
       toast.error("Premium Feature: Please upgrade your plan or purchase Salary Benchmarking to use this.");
-      navigate('/jobseeker/pay-per-features');
+      navigate('/candidate/pay-per-features');
       return;
     }
 
-    navigate('/jobseeker/salary-benchmarking', {
+    navigate('/candidate/salary-benchmarking', {
       state: { jobRole: job.title, companyName: job.company?.name || '' }
     });
   };

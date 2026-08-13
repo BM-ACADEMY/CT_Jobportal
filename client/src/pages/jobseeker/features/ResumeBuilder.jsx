@@ -1226,7 +1226,7 @@ const ResumeBuilder = () => {
       featureKey="hasResumeBuilder"
       featureName="Resume Builder"
       description="Build professional, ATS-optimized resumes with live preview, full customization, and PDF download."
-      subscriptionPath="/jobseeker/subscription"
+      subscriptionPath="/candidate/subscription"
     >
       <PageSOPBanner pageKey="resumeBuilder" />
       {limitError && (

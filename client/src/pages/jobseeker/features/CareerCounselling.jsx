@@ -276,7 +276,7 @@ const UpgradeModal = ({ onClose }) => (
         <Button onClick={onClose} variant="outline" className="flex-1 rounded-xl h-10 text-xs font-bold">
           Close
         </Button>
-        <Link to="/jobseeker/subscription" className="flex-1">
+        <Link to="/candidate/subscription" className="flex-1">
           <Button className="w-full rounded-xl h-10 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md shadow-amber-500/20">
             Upgrade Now
           </Button>

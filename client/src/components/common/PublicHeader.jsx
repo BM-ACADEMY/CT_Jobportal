@@ -39,8 +39,8 @@ const PublicHeader = () => {
   }, [location.pathname]);
 
   const handleDashboardRedirect = () => {
-    const routes = { jobseeker: '/jobseeker', recruiter: '/company', company: '/company', admin: '/admin', subadmin: '/subadmin' };
-    navigate(routes[user?.role] || '/jobseeker');
+    const routes = { jobseeker: '/candidate', recruiter: '/company/dashboard', company: '/company/dashboard', admin: '/admin/dashboard', subadmin: '/subadmin' };
+    navigate(routes[user?.role] || '/candidate');
   };
 
   const isActive = (path) => {
@@ -126,7 +126,7 @@ const PublicHeader = () => {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        const routes = { jobseeker: '/jobseeker/settings', recruiter: '/company/settings', company: '/company/settings' };
+                        const routes = { jobseeker: '/candidate/settings', recruiter: '/company/settings', company: '/company/settings' };
                         navigate(routes[user?.role] || '/settings');
                       }}
                       className="rounded-xl px-3 py-2.5 text-sm font-semibold cursor-pointer hover:bg-slate-50"

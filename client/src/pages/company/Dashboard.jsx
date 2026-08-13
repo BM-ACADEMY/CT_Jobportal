@@ -76,7 +76,7 @@ const CompanyDashboard = () => {
           </div>
           
           <Button
-            onClick={() => navigate('/company/post-job')}
+            onClick={() => navigate('/company/jobs/new')}
             className="shrink-0 h-14 px-8 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded-2xl transition-all duration-300 shadow-[0_0_40px_-10px_rgba(16,185,129,0.5)] hover:shadow-[0_0_60px_-15px_rgba(16,185,129,0.7)] flex items-center gap-2 group/btn hover:-translate-y-1 border-none uppercase text-[11px] tracking-[0.2em]"
           >
             <Plus size={18} className="group-hover/btn:rotate-90 transition-transform duration-500" />
@@ -121,7 +121,7 @@ const CompanyDashboard = () => {
           </div>
           <div className="flex flex-col gap-4">
             <button
-              onClick={() => navigate('/company/candidate-search')}
+              onClick={() => navigate('/company/candidates')}
               className="flex items-center gap-4 p-5 rounded-[20px] bg-white border border-slate-200/60 hover:border-emerald-200 hover:bg-emerald-50/30 hover:shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-0.5 transition-all text-left group"
             >
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 transition-colors group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-md shadow-sm">
@@ -186,7 +186,7 @@ const CompanyDashboard = () => {
               </div>
               <p className="text-base font-bold text-slate-700">No active postings yet</p>
               <p className="text-xs font-medium text-slate-500 mt-2 mb-6 max-w-sm mx-auto">Build your team by creating your first job listing and connecting with our talent pool.</p>
-              <Button onClick={() => navigate('/company/post-job')} className="rounded-xl h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest shadow-md shadow-emerald-500/20">
+              <Button onClick={() => navigate('/company/jobs/new')} className="rounded-xl h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest shadow-md shadow-emerald-500/20">
                 Create Posting
               </Button>
             </div>

@@ -91,14 +91,14 @@ const EmployeeDashboard = () => {
             icon={FileText}
             label="Post Job"
             desc="Create a new job opening."
-            to="/company/post-job"
+            to="/company/jobs/new"
             color="text-violet-600"
           />
           <QuickCard
             icon={Users}
             label="Find Candidates"
             desc="Search and shortlist candidates."
-            to="/company/candidate-search"
+            to="/company/candidates"
             color="text-amber-600"
           />
           <QuickCard

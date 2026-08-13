@@ -299,7 +299,7 @@ const CompanyCard = ({ item, onClick }) => {
           </span>
           {isCompany && item.subscription?.companyProfileType !== 'No' ? (
             <Link 
-              to={`/company-profile/${item._id}`}
+              to={`/companies/${item._id}`}
               onClick={(e) => e.stopPropagation()}
               className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 hover:gap-1.5 transition-all"
             >

@@ -501,7 +501,7 @@ const Applicants = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-52 rounded-xl p-1 border-slate-200 shadow-xl">
                         <DropdownMenuItem 
-                          onClick={() => navigate(`/jobseeker/profile/${app.applicant?._id}`)}
+                          onClick={() => navigate(`/candidate/profile/${app.applicant?._id}`)}
                           className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
                         >
                           <ExternalLink size={14} /> Full Dossier

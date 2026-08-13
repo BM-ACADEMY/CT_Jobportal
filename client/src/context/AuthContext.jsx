@@ -5,8 +5,8 @@ const AuthContext = createContext();
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/auth`;
 
 const getRoleRoute = (role) => {
-  const routes = { admin: '/admin', subadmin: '/subadmin', recruiter: '/company', company: '/company', jobseeker: '/jobseeker', org_employee: '/employee', college: '/college', drive_incharge: '/incharge' };
-  return routes[role] || '/jobseeker';
+  const routes = { admin: '/admin/dashboard', subadmin: '/subadmin', recruiter: '/company/dashboard', company: '/company/dashboard', jobseeker: '/candidate', org_employee: '/employee', college: '/college/dashboard', drive_incharge: '/incharge' };
+  return routes[role] || '/candidate';
 };
 
 export const AuthProvider = ({ children }) => {

@@ -16,16 +16,16 @@ export const GuestRoute = ({ children }) => {
   if (loading) return <Loader />;
   if (user) {
     const roleRedirects = {
-      admin: '/admin',
+      admin: '/admin/dashboard',
       subadmin: '/subadmin',
-      recruiter: '/company',
-      company: '/company',
-      jobseeker: '/jobseeker',
+      recruiter: '/company/dashboard',
+      company: '/company/dashboard',
+      jobseeker: '/candidate',
       org_employee: '/employee',
-      college: '/college',
+      college: '/college/dashboard',
       drive_incharge: '/incharge'
     };
-    return <Navigate to={roleRedirects[user.role] || '/jobseeker'} replace />;
+    return <Navigate to={roleRedirects[user.role] || '/candidate'} replace />;
   }
   return children;
 };
@@ -40,16 +40,16 @@ export const PrivateRoute = ({ children, roles, permissionKey }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) {
     const roleRedirects = {
-      admin: '/admin',
+      admin: '/admin/dashboard',
       subadmin: '/subadmin',
-      recruiter: '/company',
-      company: '/company',
-      jobseeker: '/jobseeker',
+      recruiter: '/company/dashboard',
+      company: '/company/dashboard',
+      jobseeker: '/candidate',
       org_employee: '/employee',
-      college: '/college',
+      college: '/college/dashboard',
       drive_incharge: '/incharge'
     };
-    return <Navigate to={roleRedirects[user.role] || '/jobseeker'} replace />;
+    return <Navigate to={roleRedirects[user.role] || '/candidate'} replace />;
   }
   if (
     permissionKey &&
@@ -57,7 +57,7 @@ export const PrivateRoute = ({ children, roles, permissionKey }) => {
     user.isTeamManaged === true &&
     !(user.teamPermissions || []).includes(permissionKey)
   ) {
-    return <Navigate to="/company" replace />;
+    return <Navigate to="/company/dashboard" replace />;
   }
   return children;
 };

@@ -76,10 +76,10 @@ const FreeAssessment = () => {
             questions,
             answers
           }); // Removed withCredentials: true as we use Bearer tokens
-          navigate('/jobseeker/skill-tests');
+          navigate('/candidate/skill-tests');
         } catch (err) {
           toast.error("Failed to save score, but redirecting.");
-          navigate('/jobseeker/skill-tests');
+          navigate('/candidate/skill-tests');
         }
       } else {
         setStep('lead');

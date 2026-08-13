@@ -401,7 +401,7 @@ const AtsPipeline = () => {
             <Briefcase size={40} className="text-slate-300 mx-auto mb-3" />
             <p className="text-base font-bold text-slate-700">No active job pipelines found</p>
             <p className="text-xs text-slate-400 mt-1 mb-5">Post a job to start receiving candidates and tracking them in the ATS Pipeline.</p>
-            <Button onClick={() => navigate('/company/post-job')} className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs">
+            <Button onClick={() => navigate('/company/jobs/new')} className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs">
               Post a Job
             </Button>
           </div>
@@ -1046,7 +1046,7 @@ const AtsPipeline = () => {
                 <Button
                   onClick={() => {
                     if (inspectApp.applicant?._id) {
-                      navigate(`/jobseeker/profile/${inspectApp.applicant._id}`);
+                      navigate(`/candidate/profile/${inspectApp.applicant._id}`);
                     }
                   }}
                   className="h-10 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold gap-1.5 shadow-md shadow-violet-500/20"
