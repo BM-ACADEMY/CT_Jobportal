@@ -14,7 +14,8 @@ export const SocketProvider = ({ children }) => {
     if (user) {
       const socketUrl = import.meta.env.VITE_API_DOMAIN || 'http://localhost:5000';
       const newSocket = io(socketUrl, {
-        transports: ['polling', 'websocket'] // Start on polling (reliable behind local firewalls/AV) and upgrade to websocket when possible
+        transports: ['polling', 'websocket'], // Start on polling (reliable behind local firewalls/AV) and upgrade to websocket when possible
+        auth: { token: localStorage.getItem('token') }
       });
       setSocket(newSocket);
 

@@ -3,6 +3,17 @@ const AdminRequest = require('../models/AdminRequest');
 const Role = require('../models/Role');
 const mongoose = require('mongoose');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
+const { notifyUser, notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
+
+const notifyAdminsOfServiceRequest = (req, request, user) => notifyRoles({
+  io: req.io,
+  roles: ['admin', 'subadmin'],
+  title: 'New service request',
+  message: `${user.name || 'A user'} requested ${request.type.replaceAll('_', ' ')}.`,
+  type: 'service_request',
+  link: '/admin/requests',
+  metadata: { requestId: request._id, requestType: request.type }
+}).catch(err => console.error('Service request notification failed:', err.message));
 
 // @desc    Book a career counselling session
 // @route   POST /api/requests/counselling
@@ -74,6 +85,7 @@ const submitCounsellingRequest = async (req, res) => {
       notes,
     });
     await request.save();
+    notifyAdminsOfServiceRequest(req, request, user);
 
     if (source === 'plan' && limit > 0) {
       user.counsellingSessionsUsed = (user.counsellingSessionsUsed || 0) + 1;
@@ -157,6 +169,7 @@ const submitMockInterviewRequest = async (req, res) => {
       careerGoal,
     });
     await request.save();
+    notifyAdminsOfServiceRequest(req, request, user);
 
     if (source === 'plan' && limit > 0) {
       user.mockInterviewsUsed = (user.mockInterviewsUsed || 0) + 1;
@@ -686,6 +699,16 @@ const updateRequestStatus = async (req, res) => {
 
     await request.save();
     res.json({ msg: 'Request updated successfully', request });
+
+    notifyUser({
+      io: req.io,
+      recipientId: request.user,
+      title: 'Service request updated',
+      message: `Your ${request.type.replaceAll('_', ' ')} request is now ${request.status}.`,
+      type: 'service_status',
+      link: request.type === 'mock_interview' ? '/candidate/mock-interviews' : '/candidate/career-counselling',
+      metadata: { requestId: request._id, status: request.status }
+    }).catch(err => console.error('Service status notification failed:', err.message));
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }
@@ -710,6 +733,16 @@ const adminAssignRequest = async (req, res) => {
     await request.save();
     
     if (assignedToPool && assignedToPool.length > 0) {
+      notifyUsers({
+        io: req.io,
+        recipientIds: assignedToPool,
+        title: 'New service request assigned',
+        message: `You were assigned a ${request.type.replaceAll('_', ' ')} request from ${request.user?.name || 'a user'}.`,
+        type: 'service_assignment',
+        link: '/company/requests',
+        metadata: { requestId: request._id, requestType: request.type }
+      }).catch(err => console.error('Assignment notification failed:', err.message));
+
       const assignees = await User.find({ _id: { $in: assignedToPool } }).select('name email');
       const sendEmail = require('../utils/sendEmail');
       
@@ -885,6 +918,7 @@ const submitWebsiteRequest = async (req, res) => {
       adminNotes
     });
     await request.save();
+    notifyAdminsOfServiceRequest(req, request, user);
 
     res.status(201).json({ msg: 'Website creation request submitted. Our team will review your requirements and reach out shortly.' });
   } catch (err) {

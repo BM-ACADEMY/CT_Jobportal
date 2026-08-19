@@ -43,6 +43,11 @@ const jobSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  validThrough: {
+    type: Date,
+    default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    index: true
+  },
   salary: {
     min: { type: Number },
     max: { type: Number },

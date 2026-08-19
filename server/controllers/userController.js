@@ -1,9 +1,20 @@
 const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const pdfParse = require('pdf-parse');
 const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
+
+// A JWT's role claim is fixed at sign-time — accepting an invite can change the user's actual
+// role (jobseeker -> org_employee, or a recruiter gaining team access) without the client ever
+// re-authenticating. Without reissuing the token here, authorizeRoles() on every subsequent
+// request keeps checking the *old* role until the user manually logs out and back in.
+const generateToken = (userId, roleName) => jwt.sign(
+  { id: userId, role: roleName },
+  process.env.JWT_SECRET || 'fallback_secret',
+  { expiresIn: '365d' }
+);
 
 // Helper to calculate profile completion
 const calculateCompletion = (user) => {
@@ -616,7 +627,10 @@ const acceptCompanyInvite = async (req, res) => {
 
     user.pendingCompanyInvite = undefined;
     await user.save();
-    res.json({ msg: 'Invite accepted. Your account is now part of the organization.' });
+    await user.populate('role');
+
+    const token = generateToken(user._id, user.role.name);
+    res.json({ msg: 'Invite accepted. Your account is now part of the organization.', token, role: user.role.name });
   } catch (err) {
     console.error('Accept Invite Error:', err);
     res.status(500).json({ msg: 'Server error' });

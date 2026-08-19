@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, User, LogOut, Settings, Menu, ChevronDown, BadgeCheck } from 'lucide-react';
+import { Search, Bell, LogOut, Settings, ChevronDown, BadgeCheck, CheckCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
+import axios from 'axios';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -90,11 +92,57 @@ const roleConfig = {
 
 const Header = () => {
   const { user, logout } = useAuth();
+  const socket = useSocket();
   const navigate = useNavigate();
   const role = user?.role || 'jobseeker';
   const config = roleConfig[role] || roleConfig.jobseeker;
+  const navItems = [...(config.navItems || []), { label: 'Blog', href: '/blog' }];
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const token = localStorage.getItem('token');
+    axios.get(`${import.meta.env.VITE_API_BASE_URL}/notifications?limit=30`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(({ data }) => {
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    }).catch(err => console.error('Failed to load notifications:', err));
+  }, [user]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const receiveNotification = notification => {
+      setNotifications(current => [notification, ...current].slice(0, 30));
+      setUnreadCount(current => current + 1);
+    };
+    socket.on('notification:new', receiveNotification);
+    return () => socket.off('notification:new', receiveNotification);
+  }, [socket]);
+
+  const openNotification = async notification => {
+    if (!notification.isRead) {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/notifications/${notification._id}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+      setNotifications(current => current.map(item => item._id === notification._id ? { ...item, isRead: true } : item));
+      setUnreadCount(current => Math.max(0, current - 1));
+    }
+    if (notification.link) navigate(notification.link);
+  };
+
+  const markAllNotificationsRead = async () => {
+    const token = localStorage.getItem('token');
+    await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/notifications/read-all`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setNotifications(current => current.map(item => ({ ...item, isRead: true })));
+    setUnreadCount(0);
+  };
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -135,7 +183,7 @@ const Header = () => {
 
         {/* Navigation */}
         <nav className="hidden lg:flex items-center gap-8">
-            {config.navItems?.map((item) => (
+            {navItems.map((item) => (
                 <Link 
                     key={item.href} 
                     to={item.href}
@@ -148,10 +196,54 @@ const Header = () => {
 
         {/* Actions */}
         <div className="flex items-center gap-6">
-            <Button variant="ghost" size="icon" className="relative h-11 w-11 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
-                <Bell size={20} />
-                <span className="absolute top-3 right-3 w-2 h-2 bg-emerald-600 border-2 border-white rounded-full" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative h-11 w-11 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
+                    <Bell size={20} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 text-white border-2 border-white rounded-full text-[9px] font-black flex items-center justify-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[360px] mt-3 rounded-2xl border border-slate-100 shadow-xl p-0 bg-white overflow-hidden">
+                <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Notifications</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{unreadCount} unread</p>
+                  </div>
+                  {unreadCount > 0 && (
+                    <Button variant="ghost" size="sm" onClick={markAllNotificationsRead} className="h-8 text-[10px] font-bold text-emerald-600">
+                      <CheckCheck className="w-3.5 h-3.5 mr-1" /> Mark all read
+                    </Button>
+                  )}
+                </div>
+                <div className="max-h-[420px] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <Bell className="w-6 h-6 mx-auto text-slate-300 mb-2" />
+                      <p className="text-xs font-medium text-slate-400">No notifications yet</p>
+                    </div>
+                  ) : notifications.map(notification => (
+                    <DropdownMenuItem
+                      key={notification._id}
+                      onClick={() => openNotification(notification)}
+                      className={`block px-5 py-4 rounded-none border-b border-slate-50 cursor-pointer focus:bg-slate-50 ${notification.isRead ? 'bg-white' : 'bg-emerald-50/60'}`}
+                    >
+                      <div className="flex gap-3">
+                        <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${notification.isRead ? 'bg-slate-200' : 'bg-emerald-500'}`} />
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900">{notification.title}</p>
+                          <p className="text-[11px] text-slate-500 mt-1 leading-relaxed line-clamp-2">{notification.message}</p>
+                          <p className="text-[9px] text-slate-400 mt-2">{new Date(notification.createdAt).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>

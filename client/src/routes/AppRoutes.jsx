@@ -22,6 +22,8 @@ import CompanyProfilePage from '../pages/CompanyProfilePage';
 import Contact from '../pages/Contact';
 import HowItWorks from '../pages/HowItWorks';
 import TermsAndConditions from '../pages/TermsAndConditions';
+import Blog from '../pages/Blog';
+import BlogDetails from '../pages/BlogDetails';
 import LoginPage from '../pages/auth/Login';
 import RegisterPage from '../pages/auth/Register';
 import VerifyOtpPage from '../pages/auth/VerifyOtp';
@@ -143,12 +145,15 @@ const AppRoutes = () => {
         <Route path="/company-drive/:token" element={<CompanyDriveView />} />
         <Route path="/incharge/accept/:driveId/:token" element={<AcceptInchargeInvite />} />
         <Route path="/jobs" element={<Jobs />} />
+        <Route path="/jobs/:location" element={<Jobs />} />
         <Route path="/job/:id" element={<JobDetails />} />
         <Route path="/companies" element={<Companies />} />
         <Route path="/companies/:id" element={<CompanyProfilePage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/:slug" element={<BlogDetails />} />
       </Route>
 
 

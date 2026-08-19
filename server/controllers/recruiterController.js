@@ -551,6 +551,18 @@ const requestJoinCompany = async (req, res) => {
     user.joinRequestsUsed = used + 1;
     await user.save();
 
+    const { notifyUsers } = require('../utils/inAppNotifications');
+    const companyUsers = await User.find({ company: company._id }).select('_id');
+    notifyUsers({
+      io: req.io,
+      recipientIds: companyUsers.map(companyUser => companyUser._id),
+      title: 'New company join request',
+      message: `${user.name} requested to join ${company.name}.`,
+      type: 'company_join_request',
+      link: '/company/team',
+      metadata: { companyId: company._id, requesterId: user._id }
+    }).catch(err => console.error('Company join notification failed:', err.message));
+
     res.json({ msg: 'Join request sent successfully.' });
   } catch (err) {
     console.error('Request Join Error:', err);

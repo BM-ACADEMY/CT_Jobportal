@@ -20,6 +20,7 @@ const { getOrCreateConversation } = require('../utils/conversationHelper');
 const { saveBufferToUploads } = require('../utils/fileStorage');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
+const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -1227,6 +1228,7 @@ const updateStudentStatus = async (req, res) => {
     const { status } = req.body;
     const validStatuses = ['unplaced', 'registered', 'active', 'applied', 'shortlisted', 'interviewing', 'placed', 'opted_out'];
     if (!validStatuses.includes(status)) return res.status(400).json({ msg: 'Invalid status' });
+    if (status === 'placed') return res.status(400).json({ msg: 'Use the Accreditation Placement Record and upload the offer letter before marking a student placed' });
 
     const student = await CollegeStudent.findOneAndUpdate(
       { _id: req.params.id, college: college._id },
@@ -1348,6 +1350,35 @@ const csvImport = async (req, res) => {
         .split(/[,;]/)
         .map(s => s.trim())
         .filter(Boolean);
+      const accreditationOutcome = (row.outcome || row.Outcome || '').trim();
+      const offerSourceRaw = (row.offerSource || row.offer_source || '').trim();
+      const normalizedOfferSource = offerSourceRaw.toLowerCase().startsWith('campus drive') ? 'Campus drive'
+        : offerSourceRaw.toLowerCase() === 'pool campus drive' ? 'Pool campus drive'
+        : offerSourceRaw.toLowerCase().startsWith('off-campus') ? 'Off-campus, verified'
+        : offerSourceRaw.toLowerCase() === 'platform application' ? 'Platform application' : '';
+      const accreditationData = accreditationOutcome ? {
+        gender: (row.gender || '').trim(),
+        programme: (row.programme || '').trim(),
+        outcome: accreditationOutcome,
+        placement: {
+          employerName: (row.employerName || row.employer_name || '').trim(),
+          employerCity: (row.employerCity || row.employer_city || '').trim(),
+          designation: (row.designation || '').trim(),
+          packageLPA: parseFloat(row.packageLPA || row.package_lpa || 0) || 0,
+          offerDate: row.offerDate || row.offer_date || null,
+          offerSource: normalizedOfferSource,
+          driveReference: (row.driveReference || row.drive_reference || '').trim(),
+          evidenceUrl: (row.evidenceRef || row.evidence_ref || '').trim(),
+          verifiedBy: accreditationOutcome === 'Placed' ? req.user.id : null,
+          verifiedOn: accreditationOutcome === 'Placed' ? (row.verifiedOn || row.verified_on || new Date()) : null
+        },
+        progression: {
+          type: (row.progressionType || row.progression_type || '').trim() || (['Higher Studies', 'Qualified Competitive Exam'].includes(accreditationOutcome) ? accreditationOutcome : ''),
+          institutionJoined: (row.institutionJoined || row.institution_joined || '').trim(),
+          programmeJoined: (row.programmeJoined || row.programme_joined || '').trim(),
+          evidenceUrl: (row.progressionEvidenceRef || row.progression_evidence_ref || '').trim()
+        }
+      } : null;
 
       if (!name || !rollNumber) {
         results.errors.push({ row: rowNum, reason: 'Missing student name or roll number' });
@@ -1406,6 +1437,10 @@ const csvImport = async (req, res) => {
           collegeStudent.batchYear = batchYear || collegeStudent.batchYear;
           collegeStudent.cgpa = cgpa || collegeStudent.cgpa;
           collegeStudent.activeArrears = activeArrears !== undefined ? activeArrears : collegeStudent.activeArrears;
+          if (accreditationData) {
+            collegeStudent.accreditation = accreditationData;
+            if (accreditationOutcome === 'Placed') collegeStudent.placementStatus = 'placed';
+          }
           if (drive && !collegeStudent.driveApplications.some(da => da.drive.toString() === drive._id.toString())) {
             collegeStudent.driveApplications.push({ drive: drive._id, status: 'registered' });
           }
@@ -1429,6 +1464,10 @@ const csvImport = async (req, res) => {
           whatsappNumber: phone,
           placementStatus: 'registered'
         });
+        if (accreditationData) {
+          collegeStudent.accreditation = accreditationData;
+          if (accreditationOutcome === 'Placed') collegeStudent.placementStatus = 'placed';
+        }
         await collegeStudent.save();
         results.imported++;
 
@@ -1457,7 +1496,7 @@ const csvImport = async (req, res) => {
 const getCsvTemplate = async (req, res) => {
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename=student_import_template.csv');
-  res.send('rollNumber,name,phone,email,department,batchYear,cgpa,activeArrears,skills\nCS001,John Doe,9876543210,john@skct.campus,CS,2025,8.4,0,"Java;SQL;Communication"\nIT002,Jane Smith,9876543211,jane@skct.campus,IT,2025,7.9,0,"Python;Excel"\n');
+  res.send('rollNumber,name,phone,email,department,batchYear,cgpa,activeArrears,skills,gender,programme,outcome,employerName,employerCity,designation,packageLPA,offerDate,offerSource,driveReference,evidenceRef,progressionType,institutionJoined,programmeJoined,progressionEvidenceRef\nCS001,John Doe,9876543210,john@college.edu,CSE,2026,8.4,0,"Java;SQL;Communication",Male,B.E. Computer Science and Engineering,Placed,TCS,Chennai,Software Engineer,5.50,2026-04-15,Campus drive,DRV-2026-001,OFFER-CS001.pdf,,,,\nIT002,Jane Smith,9876543211,jane@college.edu,IT,2026,7.9,0,"Python;Excel",Female,B.Tech Information Technology,Higher Studies,,,,,,,,Higher Studies,IIT Madras,M.Tech Information Technology,ADM-IT002.pdf\n');
 };
 
 // @route   GET /api/college/students/credentials-export
@@ -1907,6 +1946,16 @@ const uploadProofDocument = async (req, res) => {
     college.verificationStatus = 'pending';
     await college.save();
 
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'College verification requested',
+      message: `${college.name} submitted proof for verification.`,
+      type: 'college_verification_request',
+      link: `/admin/colleges/${college._id}`,
+      metadata: { collegeId: college._id }
+    }).catch(err => console.error('College verification request notification failed:', err.message));
+
     res.json({ msg: 'Proof document uploaded. Pending verification by Platform Admin.', proofDocumentUrl: proofUrl, verificationStatus: college.verificationStatus });
   } catch (err) {
     if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
@@ -1970,6 +2019,20 @@ const adminVerifyCollege = async (req, res) => {
       college.verifiedAt = new Date();
     }
     await college.save();
+
+    if (status !== 'pending' && college.tpoUser?._id) {
+      notifyUser({
+        io: req.io,
+        recipientId: college.tpoUser._id,
+        title: status === 'verified' ? 'College verification approved' : 'College verification rejected',
+        message: status === 'verified'
+          ? `${college.name} is now verified.`
+          : `${college.name} verification was rejected. Please review and resubmit your proof.`,
+        type: 'college_verification',
+        link: '/college/settings',
+        metadata: { collegeId: college._id, status }
+      }).catch(err => console.error('College verification notification failed:', err.message));
+    }
 
     const recipientEmail = college.principalEmail || college.tpoUser?.email;
     if (recipientEmail && status !== 'pending') {
@@ -2117,7 +2180,8 @@ const STAGE_TO_PLACEMENT_STATUS = {
   stage2: 'interviewing',
   final_interview: 'interviewing',
   certificate_verification: 'interviewing',
-  selected: 'placed'
+  // Selection is provisional until the TPO records the offer and uploads evidence.
+  selected: 'shortlisted'
 };
 
 const ROUND_STATUS_LABELS = {
@@ -2580,6 +2644,21 @@ const activateProfile = async (req, res) => {
     student.isActivated = true;
     if (student.placementStatus === 'registered') student.placementStatus = 'active';
     await student.save();
+
+    const activatedStudent = await CollegeStudent.findById(student._id)
+      .populate('user', 'name')
+      .populate('college', 'tpoUser name');
+    if (activatedStudent?.college?.tpoUser) {
+      notifyUser({
+        io: req.io,
+        recipientId: activatedStudent.college.tpoUser,
+        title: 'Student profile activated',
+        message: `${activatedStudent.user?.name || 'A student'} activated their profile.`,
+        type: 'student_activated',
+        link: '/college/students',
+        metadata: { studentId: student._id }
+      }).catch(err => console.error('Student activation notification failed:', err.message));
+    }
 
     res.json({ msg: 'Profile activated', student });
   } catch (err) {

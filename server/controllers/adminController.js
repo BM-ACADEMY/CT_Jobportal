@@ -9,6 +9,7 @@ const Application = require('../models/Application');
 const Payment = require('../models/Payment');
 const Subscription = require('../models/Subscription');
 const sendEmail = require('../utils/sendEmail');
+const { notifyUser } = require('../utils/inAppNotifications');
 
 const generateToken = (id, roleName) => {
   return jwt.sign(
@@ -265,6 +266,20 @@ const updateUserVerificationStatus = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid status' });
     }
     const user = await User.findByIdAndUpdate(req.params.id, { profileVerificationStatus: status }, { new: true }).select('-password').populate('role', 'name');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    if (status !== 'Pending') {
+      notifyUser({
+        io: req.io,
+        recipientId: user._id,
+        title: status === 'Verified' ? 'Profile verification completed' : 'Profile verification rejected',
+        message: status === 'Verified'
+          ? 'Your account has been verified successfully.'
+          : 'Your verification was rejected. Please review your details and try again.',
+        type: 'profile_verification',
+        link: user.role?.name === 'college' ? '/college/settings' : user.role?.name === 'jobseeker' ? '/candidate/settings' : '/company/settings',
+        metadata: { status }
+      }).catch(err => console.error('User verification notification failed:', err.message));
+    }
     res.json(user);
   } catch (err) {
     console.error('Update User Verification Status Error:', err.message);
