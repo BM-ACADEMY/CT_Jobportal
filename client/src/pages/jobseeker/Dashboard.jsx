@@ -6,7 +6,7 @@ import RecommendedJobCard from '../../components/jobseeker/RecommendedJobCard';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles, TrendingUp, CircleCheck, Loader2 } from 'lucide-react';
+import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles, TrendingUp, CircleCheck, Loader2, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
 import { useAuth } from '../../context/AuthContext';
@@ -19,6 +19,47 @@ const JobSeekerDashboard = () => {
   const [recentJobs, setRecentJobs] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [campusStudent, setCampusStudent] = useState(null);
+  const [activating, setActivating] = useState(false);
+
+  const fetchCampusStudent = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/college/me/student`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCampusStudent(res.data);
+    } catch (err) {
+      // A job seeker who has not joined a college has no campus activation state.
+      if (err.response?.status !== 404) {
+        console.error('Error fetching campus profile:', err);
+      }
+      setCampusStudent(null);
+    }
+  };
+
+  const handleActivateProfile = async () => {
+    setActivating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/college/me/activate`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCampusStudent(current => ({
+        ...current,
+        ...(res.data?.student || {}),
+        isActivated: true,
+        placementStatus: res.data?.student?.placementStatus || 'active'
+      }));
+      toast.success('Profile activated — your TPO can now see you as active');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to activate profile');
+    } finally {
+      setActivating(false);
+    }
+  };
 
   const fetchMyApplications = async () => {
     try {
@@ -56,7 +97,7 @@ const JobSeekerDashboard = () => {
       }
     };
 
-    Promise.all([fetchMatchingJobs(), fetchRecentJobs(), fetchMyApplications()]).finally(() => setLoading(false));
+    Promise.all([fetchMatchingJobs(), fetchRecentJobs(), fetchMyApplications(), fetchCampusStudent()]).finally(() => setLoading(false));
   }, []);
 
   // Map backend jobs to RecommendedJobCard format
@@ -117,6 +158,39 @@ const JobSeekerDashboard = () => {
           </div>
         </div>
 
+        {campusStudent &&
+          campusStudent.idVerification?.status !== 'pending' &&
+          campusStudent.idVerification?.status !== 'rejected' && (
+            <div className={`p-6 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors ${campusStudent.isActivated ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {campusStudent.isActivated ? 'Your profile is active' : 'Activate your profile'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  {campusStudent.isActivated
+                    ? 'Your TPO can now see that you are actively using the portal.'
+                    : "Let your TPO know you're actively using the portal — this marks you as active on their dashboard."}
+                </p>
+              </div>
+              {campusStudent.isActivated ? (
+                <Badge className="h-10 px-5 rounded-full bg-emerald-600 hover:bg-emerald-600 text-white border-0 font-bold text-xs uppercase tracking-widest shrink-0 gap-2 shadow-sm cursor-default select-none">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Profile Activated
+                </Badge>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleActivateProfile}
+                  disabled={activating}
+                  className="h-11 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-widest shrink-0 transition-colors"
+                >
+                  {activating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                  Activate My Profile
+                </Button>
+              )}
+            </div>
+          )}
+
         {user?.pendingCompanyInvite && (
           <div className="bg-white border-2 border-emerald-500 rounded-3xl p-6 shadow-lg shadow-emerald-500/10 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-4 fade-in">
             <div className="flex items-center gap-4">
@@ -146,10 +220,17 @@ const JobSeekerDashboard = () => {
               >
                 Decline
               </Button>
-              <Button 
+              <Button
                 onClick={async () => {
                   try {
-                    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/accept-company-invite`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }});
+                    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/user/accept-company-invite`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }});
+                    // Accepting can change the account's role (e.g. jobseeker -> org_employee) —
+                    // the old token still has the old role baked in, so every role-gated request
+                    // would 403 with "insufficient permissions" until re-login unless we swap in
+                    // the fresh token the server just issued before reloading.
+                    if (res.data?.token) {
+                      localStorage.setItem('token', res.data.token);
+                    }
                     window.location.reload();
                   } catch (err) {
                     console.error(err);

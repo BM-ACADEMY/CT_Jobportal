@@ -223,6 +223,18 @@ const sendMessage = async (req, res) => {
         User.findById(senderId).select('name')
       ]);
       const recipient = conversation?.participants.find(p => p._id?.toString() !== senderId);
+      if (recipient?._id) {
+        const { notifyUser } = require('../utils/inAppNotifications');
+        notifyUser({
+          io: req.io,
+          recipientId: recipient._id,
+          title: `New message from ${sender?.name || 'a user'}`,
+          message: content || 'Sent you an attachment.',
+          type: 'message',
+          link: ['recruiter', 'company', 'org_employee'].includes(req.user.role) ? '/candidate/messages' : '/company/messages',
+          metadata: { conversationId, senderId }
+        }).catch(err => console.error('Message notification failed:', err.message));
+      }
       if (recipient?.email) {
         sendEmail({
           email: recipient.email,

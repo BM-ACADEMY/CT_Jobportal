@@ -11,12 +11,19 @@ const getDefaultRole = async () => {
   return role ? role._id : null;
 };
 
+// Picks the production callback URL when actually running in production (NODE_ENV=production,
+// as set by the process manager on the deployed server), and the local one otherwise — so
+// switching between local dev and production never requires hand-editing .env, and a stray
+// local test can't accidentally register a redirect_uri Google doesn't have on file.
+const callbackUrl = (envVar) =>
+  process.env.NODE_ENV === 'production' ? process.env[envVar] : (process.env[`${envVar}_LOCAL`] || process.env[envVar]);
+
 // Google Strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      callbackURL: callbackUrl('GOOGLE_CALLBACK_URL'),
       passReqToCallback: true,
       proxy: true
     },
@@ -77,7 +84,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
   passport.use(new GitHubStrategy({
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: process.env.GITHUB_CALLBACK_URL,
+      callbackURL: callbackUrl('GITHUB_CALLBACK_URL'),
       scope: ['user:email'],
       passReqToCallback: true
     },
@@ -167,7 +174,7 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
       tokenURL: 'https://www.linkedin.com/oauth/v2/accessToken',
       clientID: process.env.LINKEDIN_CLIENT_ID,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-      callbackURL: process.env.LINKEDIN_CALLBACK_URL,
+      callbackURL: callbackUrl('LINKEDIN_CALLBACK_URL'),
       scope: ['openid', 'profile', 'email'],
       passReqToCallback: true
     },

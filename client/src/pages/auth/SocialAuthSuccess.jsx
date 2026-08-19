@@ -14,25 +14,27 @@ const SocialAuthSuccess = () => {
     const userStr = params.get('user');
 
     if (token && userStr) {
-      try {
-        const userData = JSON.parse(decodeURIComponent(userStr));
-        
-        if (userData.isSocialIncomplete) {
-          // Redirect to complete profile page instead of logging in
-          navigate(`/complete-social-profile?token=${token}&userId=${userData.id}`);
-          return;
-        }
+      (async () => {
+        try {
+          const userData = JSON.parse(decodeURIComponent(userStr));
 
-        const result = completeSocialLogin(token, userData);
-        if (result.success) {
-          navigate(result.redirect);
-        } else {
+          if (userData.isSocialIncomplete) {
+            // Redirect to complete profile page instead of logging in
+            navigate(`/complete-social-profile?token=${token}&userId=${userData.id}`);
+            return;
+          }
+
+          const result = await completeSocialLogin(token, userData);
+          if (result.success) {
+            navigate(result.redirect);
+          } else {
+            navigate('/login');
+          }
+        } catch (err) {
+          console.error('Social Login Success Component Error:', err);
           navigate('/login');
         }
-      } catch (err) {
-        console.error('Social Login Success Component Error:', err);
-        navigate('/login');
-      }
+      })();
     } else {
       navigate('/login');
     }

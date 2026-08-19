@@ -6,11 +6,12 @@ import {
   Search, MapPin, Briefcase, IndianRupee, Clock, Loader2,
   SlidersHorizontal, X, ArrowRight, Building2, ChevronDown, ChevronUp, Star
 } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { fuzzySearch, matchesForKey, tokenize } from '../utils/fuzzySearch';
 import HighlightText from '../components/shared/HighlightText';
+import SEOHead from '../components/seo/SEOHead';
 
 const SEARCH_FIELD_LABELS = {
   title: 'Job Title',
@@ -44,13 +45,49 @@ const SORT_OPTIONS = [
   { label: 'Salary: Low to High', value: 'salary_asc' },
 ];
 
+const JOB_CORE_AREAS = [
+  ['IT and software', /\b(it|software|developer|programmer|web|frontend|backend|full.?stack|python|java|react|tech support|network)\b/i],
+  ['engineering', /\b(engineer|engineering|mechanical|civil|electrical|electronics|quality|production)\b/i],
+  ['manufacturing', /\b(manufactur|factory|plant|machine|operator|assembly)\b/i],
+  ['textiles and garments', /\b(textile|garment|apparel|knitwear|merchandis|fashion)\b/i],
+  ['sales and marketing', /\b(sales|marketing|business development|seo|social media|advertis)\b/i],
+  ['accounts and finance', /\b(account|finance|bank|tally|audit|billing|gst)\b/i],
+  ['customer support and BPO', /\b(customer|support|bpo|voice process|call cent|telecaller)\b/i],
+  ['healthcare', /\b(health|hospital|nurs|medical|pharma|clinic)\b/i],
+  ['education', /\b(teacher|teaching|education|trainer|faculty|school|college)\b/i],
+  ['logistics and delivery', /\b(logistic|warehouse|delivery|driver|transport|supply chain)\b/i],
+  ['hospitality and tourism', /\b(hotel|restaurant|hospitality|tourism|chef|steward|front office)\b/i],
+  ['HR and administration', /\b(hr|human resource|recruit|admin|office assistant)\b/i],
+];
+
+const getJobCoreAreas = (matchingJobs) => {
+  const searchableJobs = matchingJobs.map(job => [
+    job.title,
+    job.description,
+    job.company?.industry,
+    ...(job.skillsRequired || []),
+  ].filter(Boolean).join(' '));
+
+  return JOB_CORE_AREAS
+    .map(([label, pattern], order) => ({
+      label,
+      order,
+      count: searchableJobs.filter(value => pattern.test(value)).length,
+    }))
+    .filter(area => area.count > 0)
+    .sort((a, b) => b.count - a.count || a.order - b.order)
+    .slice(0, 4)
+    .map(area => area.label);
+};
+
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
+  const { location: routeLocation } = useParams();
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-  const [locationTerm, setLocationTerm] = useState(searchParams.get('loc') || '');
+  const [locationTerm, setLocationTerm] = useState(searchParams.get('loc') || (routeLocation ? decodeURIComponent(routeLocation).replace(/-/g, ' ') : ''));
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedSalary, setSelectedSalary] = useState(0);
   const [selectedExperience, setSelectedExperience] = useState(0);
@@ -153,6 +190,26 @@ const Jobs = () => {
   };
 
   const hasActiveFilters = searchTerm || locationTerm || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0;
+
+  const searchedLocation = locationTerm.trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, character => character.toUpperCase());
+  const jobsMetaTitle = loading
+    ? `Latest Jobs in ${searchedLocation || 'Tamil Nadu'} | Velaivaaipu`
+    : searchedLocation
+      ? `${filteredJobs.length} Latest Jobs in ${searchedLocation} | Velaivaaipu`
+      : `${filteredJobs.length} Latest Jobs in Tamil Nadu | Velaivaaipu`;
+  const jobCoreAreas = getJobCoreAreas(filteredJobs);
+  const metaLocation = searchedLocation ? `in ${searchedLocation}` : 'across Tamil Nadu';
+  const metaTail = 'Fresher and experienced roles from verified companies. Apply free.';
+  let jobsMetaDescription = `${filteredJobs.length}+ jobs ${metaLocation}. Latest private-sector openings. ${metaTail}`;
+  for (let areaCount = jobCoreAreas.length; areaCount > 0; areaCount -= 1) {
+    const candidate = `${filteredJobs.length}+ jobs ${metaLocation}. ${jobCoreAreas.slice(0, areaCount).join(', ')} openings. ${metaTail}`;
+    if (candidate.length <= 155) {
+      jobsMetaDescription = candidate;
+      break;
+    }
+  }
 
   const formatSalary = (salary) => {
     if (!salary || salary.isRangeHidden) return 'Not Disclosed';
@@ -265,6 +322,17 @@ const Jobs = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <SEOHead
+        title={jobsMetaTitle}
+        description={jobsMetaDescription}
+        path={routeLocation ? `/jobs/${routeLocation}` : '/jobs'}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: searchedLocation ? `Latest jobs in ${searchedLocation}` : 'Latest jobs in Tamil Nadu',
+          numberOfItems: filteredJobs.length,
+        }}
+      />
 
       {/* Top Hero Bar */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 pt-10 pb-14 px-6">

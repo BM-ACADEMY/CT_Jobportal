@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /verify-otp
+Disallow: /forgot-password
+Disallow: /payment/
+Disallow: /candidate/
+Disallow: /company/
+Disallow: /college/
+Disallow: /admin/
+Disallow: /*?utm_
+Disallow: /*?ref=
+Sitemap: https://velaivaaipu.in/sitemap.xml

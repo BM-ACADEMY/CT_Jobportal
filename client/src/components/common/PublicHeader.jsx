@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell, User, Settings, LogOut, ChevronDown,
-  Menu, X, Briefcase, Building2, Mail, Home
+  Menu, X, Briefcase, Building2, Mail, Home, Newspaper
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -16,6 +16,7 @@ const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/jobs', label: 'Find Jobs', icon: Briefcase },
   { to: '/companies', label: 'Companies', icon: Building2 },
+  { to: '/blog', label: 'Blog', icon: Newspaper },
   { to: '/contact', label: 'Contact', icon: Mail },
 ];
 

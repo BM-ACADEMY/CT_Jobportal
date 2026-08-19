@@ -77,6 +77,29 @@ const collegeStudentSchema = new mongoose.Schema({
     tierPolicy: { type: String, enum: ['regular', 'dream', 'super_dream'], default: 'regular' },
     placedAt: { type: Date, default: Date.now }
   }],
+  accreditation: {
+    gender: { type: String, enum: ['', 'Male', 'Female', 'Other'], default: '' },
+    programme: { type: String, trim: true, default: '' },
+    outcome: { type: String, enum: ['', 'Placed', 'Higher Studies', 'Qualified Competitive Exam', 'Not Placed'], default: '' },
+    placement: {
+      employerName: { type: String, trim: true, default: '' },
+      employerCity: { type: String, trim: true, default: '' },
+      designation: { type: String, trim: true, default: '' },
+      packageLPA: { type: Number, default: 0 },
+      offerDate: { type: Date },
+      offerSource: { type: String, enum: ['', 'Campus drive', 'Pool campus drive', 'Off-campus, verified', 'Platform application'], default: '' },
+      driveReference: { type: String, trim: true, default: '' },
+      evidenceUrl: { type: String, default: '' },
+      verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      verifiedOn: { type: Date }
+    },
+    progression: {
+      type: { type: String, enum: ['', 'Higher Studies', 'Qualified Competitive Exam'], default: '' },
+      institutionJoined: { type: String, trim: true, default: '' },
+      programmeJoined: { type: String, trim: true, default: '' },
+      evidenceUrl: { type: String, default: '' }
+    }
+  },
   readinessScore: {
     type: Number,
     default: 70

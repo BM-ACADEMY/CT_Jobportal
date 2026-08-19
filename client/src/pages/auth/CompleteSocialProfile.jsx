@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
-import { User, Briefcase, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { User, Briefcase, GraduationCap, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 const CompleteSocialProfile = () => {
   const { completeSocialLogin, user } = useAuth();
@@ -15,6 +15,8 @@ const CompleteSocialProfile = () => {
   const [role, setRole] = useState('jobseeker');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,7 +38,7 @@ const CompleteSocialProfile = () => {
       });
 
       const { user, token: newToken } = res.data;
-      const result = completeSocialLogin(newToken, user);
+      const result = await completeSocialLogin(newToken, user);
       if (result.success) {
         navigate(result.redirect);
       }
@@ -66,7 +68,7 @@ const CompleteSocialProfile = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-3">
               <label className="text-sm font-semibold text-slate-700">Select Your Role</label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <button
                   type="button"
                   onClick={() => setRole('jobseeker')}
@@ -103,6 +105,18 @@ const CompleteSocialProfile = () => {
                   <Briefcase className="w-6 h-6" />
                   <span className="text-xs font-bold">Company</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('college')}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                    role === 'college'
+                      ? 'border-blue-600 bg-blue-50 text-blue-600'
+                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
+                  }`}
+                >
+                  <GraduationCap className="w-6 h-6" />
+                  <span className="text-xs font-bold">College</span>
+                </button>
               </div>
             </div>
 
@@ -112,13 +126,20 @@ const CompleteSocialProfile = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="At least 6 characters"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-11 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
 
@@ -127,13 +148,20 @@ const CompleteSocialProfile = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repeat password"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-11 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
             </div>

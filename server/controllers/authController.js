@@ -53,6 +53,8 @@ const generateToken = (userId, roleName) => {
   );
 };
 
+const { notifyRoles } = require('../utils/inAppNotifications');
+
 // @desc    Register a new user (sends OTP)
 // @route   POST /api/auth/register
 const registerUser = async (req, res) => {
@@ -104,6 +106,16 @@ const registerUser = async (req, res) => {
     });
 
     await user.save();
+
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'New user registered',
+      message: `${name} registered as ${role}.`,
+      type: 'user_registered',
+      link: '/admin/users',
+      metadata: { userId: user._id, role }
+    }).catch(err => console.error('Registration notification failed:', err.message));
 
     if (role === 'college') {
       const College = require('../models/College');
@@ -659,6 +671,16 @@ const completeSocialProfile = async (req, res) => {
     user.role = roleDoc._id;
     user.isSocialIncomplete = false;
     await user.save();
+
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'New user registered',
+      message: `${user.name} completed registration as ${role}.`,
+      type: 'user_registered',
+      link: '/admin/users',
+      metadata: { userId: user._id, role }
+    }).catch(err => console.error('Social registration notification failed:', err.message));
 
     const populatedUser = await User.findById(userId).populate(['role', 'subscription']);
     const roleName = populatedUser.role.name;

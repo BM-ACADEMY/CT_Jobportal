@@ -31,6 +31,7 @@ import { hasFeature } from '../components/subscription/FeatureGate';
 import { toast } from 'sonner';
 import JobApplicationModal from '../components/jobs/JobApplicationModal';
 import ShareModal from '../components/jobs/ShareModal';
+import SEOHead from '../components/seo/SEOHead';
 
 const JobDetails = () => {
   const { id } = useParams();
@@ -214,8 +215,25 @@ const JobDetails = () => {
 
   if (!job) return null;
 
+  const companyName = job.company?.name || 'Velaivaaipu';
+  const city = job.location || 'Tamil Nadu';
+  const seoDescription = `${companyName} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}. Apply free on Velaivaaipu.`;
+  const jobSchema = {
+    '@context': 'https://schema.org', '@type': 'JobPosting',
+    title: job.title, description: job.description,
+    identifier: { '@type': 'PropertyValue', name: 'Velaivaaipu', value: job.display_id || job._id },
+    datePosted: job.createdAt, validThrough: job.validThrough,
+    employmentType: String(job.jobType || 'FULL_TIME').toUpperCase().replace(/[ -]/g, '_'),
+    hiringOrganization: { '@type': 'Organization', name: companyName, sameAs: job.company?.website },
+    jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: city, addressRegion: 'Tamil Nadu', addressCountry: 'IN' } },
+    directApply: true,
+    ...(job.workMode === 'Remote' ? { jobLocationType: 'TELECOMMUTE', applicantLocationRequirements: { '@type': 'Country', name: 'IN' } } : {}),
+    ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
+  };
+
   return (
     <div className="min-h-screen bg-white pb-32">
+      <SEOHead title={`${job.title} Job in ${city} — ${companyName} | Velaivaaipu`} description={seoDescription} path={`/job/${job._id}`} schema={jobSchema} />
       {/* ─── HEADER / BREADCRUMB ─── */}
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-12">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-primary transition-colors mb-4 group">

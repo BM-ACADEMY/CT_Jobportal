@@ -15,6 +15,7 @@ const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const Coupon = require('../models/Coupon');
 const { reconcileTeamSeats } = require('../utils/teamMembership');
+const { notifyRoles } = require('../utils/inAppNotifications');
 
 const RECURRING_ROLES = ['college', 'company'];
 const STUDENT_LIMIT_UNLIMITED = 100000;
@@ -306,7 +307,17 @@ const verifyPayment = async (req, res) => {
       // We don't return error here because the subscription was already updated
     }
 
-    res.json({ 
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'Plan purchased',
+      message: `${user.name || 'A user'} purchased the ${plan.name} plan.`,
+      type: 'plan_purchased',
+      link: '/admin/payment-history',
+      metadata: { userId: user._id, planId: plan._id }
+    }).catch(err => console.error('Plan purchase notification failed:', err.message));
+
+    res.json({
       success: true, 
       msg: 'Payment verified and subscription updated',
       user: {
@@ -540,6 +551,16 @@ const verifySubscriptionPayment = async (req, res) => {
     } catch (paymentErr) {
       console.error('Error saving subscription payment record:', paymentErr.message);
     }
+
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'Plan purchased',
+      message: `${record.name || 'An organization'} activated the ${plan.name} subscription.`,
+      type: 'plan_purchased',
+      link: '/admin/payment-history',
+      metadata: { planId: plan._id, subscriberId: record._id }
+    }).catch(err => console.error('Subscription notification failed:', err.message));
 
     res.json({ success: true, msg: 'Subscription active and registration completed', nextRenewalDate, record });
   } catch (err) {

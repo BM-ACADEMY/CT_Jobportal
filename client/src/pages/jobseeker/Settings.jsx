@@ -194,7 +194,6 @@ const Settings = () => {
     const [campusLoading, setCampusLoading] = useState(true);
     const [joinForm, setJoinForm] = useState({ collegeCode: '', rollNumber: '', department: '', batchYear: '', phone: '' });
     const [joiningCollege, setJoiningCollege] = useState(false);
-    const [activating, setActivating] = useState(false);
     const [reapplying, setReapplying] = useState(false);
     const [reapplyForm, setReapplyForm] = useState({ rollNumber: '', department: '', batchYear: '', phone: '' });
 
@@ -300,19 +299,6 @@ const Settings = () => {
             toast.error(err.response?.data?.msg || 'Failed to re-apply');
         } finally {
             setReapplying(false);
-        }
-    };
-
-    const handleActivate = async () => {
-        setActivating(true);
-        try {
-            await axios.post(`${API_COLLEGE_URL}/me/activate`);
-            toast.success('Profile activated — your TPO can now see you as active');
-            fetchCampusStudent();
-        } catch (err) {
-            toast.error(err.response?.data?.msg || 'Failed to activate');
-        } finally {
-            setActivating(false);
         }
     };
 
@@ -1614,14 +1600,8 @@ const Settings = () => {
                                             </div>
                                         </div>
                                     ) : !campusStudent.isActivated ? (
-                                        <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-between gap-4">
-                                            <div>
-                                                <h4 className="text-sm font-bold text-slate-900">Activate your profile</h4>
-                                                <p className="text-xs text-slate-500 mt-1">Let your TPO know you're actively using the portal — this flips your status to "active" on their dashboard.</p>
-                                            </div>
-                                            <Button onClick={handleActivate} disabled={activating} className="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest shrink-0">
-                                                {activating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Activate My Profile
-                                            </Button>
+                                        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center gap-2 text-xs font-bold text-amber-700">
+                                            <AlertCircle size={16} /> Your profile is approved but not active. Activate it from your dashboard.
                                         </div>
                                     ) : (
                                         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-2 text-xs font-bold text-emerald-600">

@@ -26,6 +26,7 @@ const collegeRoutes = require('./routes/collegeRoutes');
 const skillTestRoutes = require('./routes/skillTestRoutes');
 const whatsappRoutes = require('./routes/whatsapp');
 const couponRoutes = require('./routes/couponRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
 const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
@@ -39,6 +40,7 @@ require('./config/passport'); // Passport Configuration
 
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const server = http.createServer(app);
@@ -54,6 +56,17 @@ const PORT = process.env.PORT || 5000;
 // Socket.io Logic
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
+
+  const token = socket.handshake.auth?.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+      const userId = decoded.id || decoded.userId;
+      if (userId) socket.join(`user:${userId}`);
+    } catch (err) {
+      console.warn('Socket authentication failed:', err.message);
+    }
+  }
 
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
@@ -130,6 +143,7 @@ app.use('/api/college', collegeRoutes);
 app.use('/api/skill-tests', skillTestRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 // MongoDB Connection

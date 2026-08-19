@@ -6,6 +6,7 @@ const { emailWrapper } = require('../utils/emailTemplates');
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
 const { logTeamActivity } = require('../utils/teamActivityLog');
 const { hasCompanyAccess } = require('../utils/companyAccess');
+const { notifyUser, notifyUsers } = require('../utils/inAppNotifications');
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -125,6 +126,22 @@ exports.applyJob = async (req, res) => {
     // Increment applicants count in Job model
     await Job.findByIdAndUpdate(jobId, { $inc: { applicantsCount: 1 } });
 
+    const appliedJob = await Job.findById(jobId).select('title recruiter company');
+    if (appliedJob) {
+      const companyUsers = appliedJob.company
+        ? await User.find({ company: appliedJob.company }).select('_id')
+        : [];
+      notifyUsers({
+        io: req.io,
+        recipientIds: [appliedJob.recruiter, ...companyUsers.map(companyUser => companyUser._id)],
+        title: 'New job application',
+        message: `${user.name || 'A candidate'} applied for ${appliedJob.title}.`,
+        type: 'application_received',
+        link: `/company/applicants/${jobId}`,
+        metadata: { jobId, applicationId: application._id, applicantId }
+      }).catch(err => console.error('Application notification failed:', err.message));
+    }
+
     if (isPriority) {
       const jobWithRecruiter = await Job.findById(jobId).select('title recruiter').populate('recruiter', 'name email recruiterProfile.phone companyProfile.phone');
       if (jobWithRecruiter?.recruiter?.email) {
@@ -235,6 +252,19 @@ exports.updateApplicationStatus = async (req, res) => {
           <p><a href="${FRONTEND_URL}/jobseeker/applications" style="color:#059669;">View your applications</a></p>
         `)
       }).catch(() => {});
+    }
+
+    if (statusChanged && status !== 'withdrawn' && application.applicant?._id) {
+      const label = STATUS_LABELS[status] || status;
+      notifyUser({
+        io: req.io,
+        recipientId: application.applicant._id,
+        title: 'Application status updated',
+        message: `Your application for ${application.job?.title || 'the role'} is now ${label}.`,
+        type: 'application_status',
+        link: '/candidate/applications',
+        metadata: { applicationId: application._id, status }
+      }).catch(err => console.error('Application status notification failed:', err.message));
     }
 
     const applicantPhone = getUserPhone(application.applicant);

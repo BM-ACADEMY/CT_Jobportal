@@ -7,6 +7,7 @@ const { logTeamActivity } = require('../utils/teamActivityLog');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { parse } = require('csv-parse/sync');
 const crypto = require('crypto');
+const { notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -111,6 +112,42 @@ const createJob = async (req, res) => {
     });
 
     const job = await newJob.save();
+
+    if (job.status === 'active') {
+      notifyRoles({
+        io: req.io,
+        roles: ['admin', 'subadmin'],
+        title: 'New job posted',
+        message: `${user.name} posted “${job.title}”.`,
+        type: 'job_posted',
+        link: '/admin/jobs',
+        metadata: { jobId: job._id }
+      }).catch(err => console.error('Admin job notification failed:', err.message));
+
+      const seekerRole = await Role.findOne({ name: 'jobseeker' }).select('_id');
+      if (seekerRole) {
+        const skills = (job.skillsRequired || []).filter(Boolean);
+        const escapedTitle = (job.title || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const matchTerms = [...skills, job.title].filter(Boolean);
+        const seekers = await User.find({
+          role: seekerRole._id,
+          $or: [
+            { 'profile.skills': { $in: matchTerms.map(term => new RegExp(String(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')) } },
+            { 'profile.jobPreferences.jobTitles': { $in: matchTerms.map(term => new RegExp(String(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')) } },
+            { 'profile.preferredRole': { $regex: escapedTitle, $options: 'i' } }
+          ]
+        }).select('_id').limit(5000);
+        notifyUsers({
+          io: req.io,
+          recipientIds: seekers.map(seeker => seeker._id),
+          title: 'New matching job',
+          message: `${job.title} matches your profile and preferences.`,
+          type: 'job_match',
+          link: `/job/${job._id}`,
+          metadata: { jobId: job._id }
+        }).catch(err => console.error('Job match notification failed:', err.message));
+      }
+    }
 
     logTeamActivity({
       actor: { _id: user._id, name: user.name, company: user.company, role: user.role?.name },

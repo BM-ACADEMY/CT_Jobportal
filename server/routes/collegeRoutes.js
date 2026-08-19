@@ -5,6 +5,7 @@ const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware')
 const upload = require('../middleware/upload');
 const CampusDrive = require('../models/CampusDrive');
 const College = require('../models/College');
+const { getOverview, updateAccreditationRecord, exportAccreditation, searchEmployers, getImportTemplate, importPlacementCsv, importProgressionCsv } = require('../controllers/accreditationController');
 const {
   getDashboard,
   getDashboardStats,
@@ -138,6 +139,13 @@ router.get('/mou', verifyToken, authorizeRoles('college'), generateMou);
 router.get('/reports', verifyToken, authorizeRoles('college'), getPlacementReports);
 router.post('/reports/generate', verifyToken, authorizeRoles('college'), generatePlacementReport);
 router.get('/reports/summary-pdf', verifyToken, authorizeRoles('college'), downloadSummaryReport);
+router.get('/accreditation/overview', verifyToken, authorizeRoles('college'), getOverview);
+router.get('/accreditation/employers', verifyToken, authorizeRoles('college'), searchEmployers);
+router.get('/accreditation/template/:type', verifyToken, authorizeRoles('college'), getImportTemplate);
+router.post('/accreditation/import/placement', verifyToken, authorizeRoles('college'), csvUpload.single('file'), importPlacementCsv);
+router.post('/accreditation/import/progression', verifyToken, authorizeRoles('college'), csvUpload.single('file'), importProgressionCsv);
+router.get('/accreditation-export', verifyToken, authorizeRoles('college'), exportAccreditation);
+router.put('/students/:studentId/accreditation', verifyToken, authorizeRoles('college'), upload.single('evidence'), updateAccreditationRecord);
 
 // Drives
 router.post('/drives', verifyToken, authorizeRoles('college'), createDrive);

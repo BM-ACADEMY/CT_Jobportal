@@ -21,7 +21,7 @@ const statusColors = {
   opted_out: 'bg-red-50 text-red-600',
 };
 
-const statusUpdateOptions = ['unplaced', 'registered', 'active', 'applied', 'shortlisted', 'interviewing', 'placed', 'opted_out'];
+const statusUpdateOptions = ['unplaced', 'registered', 'active', 'applied', 'shortlisted', 'interviewing', 'opted_out'];
 const ACTIVITY_PAGE_SIZE = 5;
 
 const Students = () => {
@@ -45,6 +45,10 @@ const Students = () => {
   const [showImport, setShowImport] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [placementAccreditationFile, setPlacementAccreditationFile] = useState(null);
+  const [progressionAccreditationFile, setProgressionAccreditationFile] = useState(null);
+  const [importingAccreditationCsv, setImportingAccreditationCsv] = useState('');
+  const [accreditationImportResult, setAccreditationImportResult] = useState(null);
 
   // Detail drawer state
   const [detailId, setDetailId] = useState(null);
@@ -53,6 +57,11 @@ const Students = () => {
   const [savingStatus, setSavingStatus] = useState(false);
   const [activityPage, setActivityPage] = useState(1);
   const [verifying, setVerifying] = useState(false);
+  const emptyAccreditation = { gender: '', programme: '', outcome: 'Not Placed', employerName: '', employerCity: '', designation: '', packageLPA: '', offerDate: '', offerSource: '', driveReference: '', institutionJoined: '', programmeJoined: '' };
+  const [accreditationForm, setAccreditationForm] = useState(emptyAccreditation);
+  const [accreditationEvidence, setAccreditationEvidence] = useState(null);
+  const [savingAccreditation, setSavingAccreditation] = useState(false);
+  const [canonicalEmployers, setCanonicalEmployers] = useState([]);
 
   // Edit modal state
   const [editStudent, setEditStudent] = useState(null);
@@ -178,11 +187,30 @@ const Students = () => {
     try {
       const res = await axios.get(`${API}/college/students/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       setDetail(res.data);
+      const acc = res.data.student?.accreditation || {};
+      setAccreditationForm({ gender: acc.gender || '', programme: acc.programme || '', outcome: acc.outcome || (res.data.student?.placementStatus === 'placed' ? 'Placed' : 'Not Placed'), employerName: acc.placement?.employerName || '', employerCity: acc.placement?.employerCity || '', designation: acc.placement?.designation || '', packageLPA: acc.placement?.packageLPA || '', offerDate: acc.placement?.offerDate ? String(acc.placement.offerDate).slice(0, 10) : '', offerSource: acc.placement?.offerSource || '', driveReference: acc.placement?.driveReference || '', evidenceUrl: acc.placement?.evidenceUrl || '', institutionJoined: acc.progression?.institutionJoined || '', programmeJoined: acc.progression?.programmeJoined || '', progressionEvidenceUrl: acc.progression?.evidenceUrl || '' });
+      setAccreditationEvidence(null);
+      axios.get(`${API}/college/accreditation/employers`, { headers: { Authorization: `Bearer ${token}` } }).then(result => setCanonicalEmployers(result.data || [])).catch(() => {});
     } catch { toast.error('Failed to load student detail'); }
     finally { setDetailLoading(false); }
   };
 
   const closeDetail = () => { setDetailId(null); setDetail(null); };
+
+  const saveAccreditation = async event => {
+    event.preventDefault();
+    setSavingAccreditation(true);
+    try {
+      const form = new FormData();
+      Object.entries(accreditationForm).forEach(([key, value]) => form.append(key, value ?? ''));
+      if (accreditationEvidence) form.append('evidence', accreditationEvidence);
+      await axios.put(`${API}/college/students/${detail.student._id}/accreditation`, form, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Accreditation record and evidence saved');
+      openDetail(detail.student._id);
+      fetchStudents();
+    } catch (err) { toast.error(err.response?.data?.msg || 'Failed to save accreditation record'); }
+    finally { setSavingAccreditation(false); }
+  };
 
   const openEdit = (s) => {
     setEditStudent(s);
@@ -309,6 +337,29 @@ const Students = () => {
     } finally { setImporting(false); }
   };
 
+  const downloadAccreditationTemplate = async type => {
+    try {
+      const res = await axios.get(`${API}/college/accreditation/template/${type}`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
+      const anchor = document.createElement('a'); anchor.href = url; anchor.download = `accreditation_${type}_template.csv`; anchor.click(); window.URL.revokeObjectURL(url);
+    } catch { toast.error('Failed to download accreditation template'); }
+  };
+
+  const importAccreditationCsv = async type => {
+    const file = type === 'placement' ? placementAccreditationFile : progressionAccreditationFile;
+    if (!file) return toast.error(`Select a ${type} CSV file`);
+    setImportingAccreditationCsv(type);
+    try {
+      const form = new FormData(); form.append('file', file);
+      const res = await axios.post(`${API}/college/accreditation/import/${type}`, form, { headers: { Authorization: `Bearer ${token}` } });
+      setAccreditationImportResult({ type, ...res.data });
+      toast.success(res.data.msg);
+      if (type === 'placement') setPlacementAccreditationFile(null); else setProgressionAccreditationFile(null);
+      if (listUnlocked) fetchStudents();
+    } catch (err) { toast.error(err.response?.data?.msg || `Failed to import ${type} records`); }
+    finally { setImportingAccreditationCsv(''); }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
@@ -328,7 +379,7 @@ const Students = () => {
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={() => setShowImport(!showImport)} className="rounded-xl text-xs font-bold gap-1">
-            <Upload size={14} /> CSV Import
+            <Upload size={14} /> Bulk CSV Import
           </Button>
           <Button variant="outline" size="sm" onClick={downloadCredentials} className="rounded-xl text-xs font-bold gap-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50">
             <Download size={14} /> Export Credentials
@@ -339,17 +390,42 @@ const Students = () => {
       {/* CSV Import */}
       {showImport && (
         <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-3 animate-in fade-in duration-300">
-          <p className="text-sm font-bold text-slate-900">Import Students via CSV</p>
-          <p className="text-xs text-slate-500">Upload a CSV with columns: name, email, department, batchYear, rollNumber, phone, cgpa, activeArrears, skills</p>
+          <div>
+            <p className="text-sm font-bold text-slate-900">Bulk Student & Accreditation Import</p>
+            <p className="text-xs text-slate-500 mt-1">Use the updated combined template to create/update students and include their placement or progression record in the same CSV.</p>
+          </div>
           <div className="flex gap-2 items-center">
             <input type="file" accept=".csv" onChange={e => setImportFile(e.target.files[0])} className="text-xs flex-1" />
             <Button size="sm" onClick={handleImport} disabled={importing} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
-              {importing ? 'Importing...' : 'Import'}
+              {importing ? 'Importing...' : 'Import combined CSV'}
             </Button>
           </div>
           <button onClick={downloadTemplate} className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1">
-            <Download size={12} /> Download Template
+            <Download size={12} /> Download Students Upload Template
           </button>
+
+          <div className="border-t border-slate-100 pt-4 mt-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div><p className="text-xs font-black text-slate-900">Update accreditation records for existing students</p><p className="text-[10px] text-slate-500 mt-0.5">Students are matched by register number. Import the Placement Register first, then Progression.</p></div>
+              <div className="flex gap-3"><button onClick={() => downloadAccreditationTemplate('placement')} className="text-[10px] font-bold text-indigo-600 hover:underline">Placement template</button><button onClick={() => downloadAccreditationTemplate('progression')} className="text-[10px] font-bold text-indigo-600 hover:underline">Progression template</button></div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-2">
+                <p className="text-[11px] font-black text-indigo-950">Placement Register CSV</p>
+                <input type="file" accept=".csv,text/csv" onChange={event => setPlacementAccreditationFile(event.target.files?.[0] || null)} className="block w-full text-[10px]" />
+                <Button size="sm" onClick={() => importAccreditationCsv('placement')} disabled={!placementAccreditationFile || !!importingAccreditationCsv} className="h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold">{importingAccreditationCsv === 'placement' ? 'Importing…' : 'Bulk import placements'}</Button>
+              </div>
+              <div className="rounded-xl border border-purple-100 bg-purple-50/50 p-4 space-y-2">
+                <p className="text-[11px] font-black text-purple-950">Progression CSV</p>
+                <input type="file" accept=".csv,text/csv" onChange={event => setProgressionAccreditationFile(event.target.files?.[0] || null)} className="block w-full text-[10px]" />
+                <Button size="sm" onClick={() => importAccreditationCsv('progression')} disabled={!progressionAccreditationFile || !!importingAccreditationCsv} className="h-8 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold">{importingAccreditationCsv === 'progression' ? 'Importing…' : 'Bulk import progression'}</Button>
+              </div>
+            </div>
+            {accreditationImportResult && <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="flex flex-wrap gap-3 text-[10px] font-bold"><span>{accreditationImportResult.totalRows} rows</span><span className="text-emerald-600">{accreditationImportResult.imported} imported</span><span className="text-amber-600">{accreditationImportResult.warnings} warnings</span><span className="text-red-600">{accreditationImportResult.failed} failed</span><span className="text-orange-600">{accreditationImportResult.unmatched} unmatched</span></div>
+              {accreditationImportResult.issues?.length > 0 && <div className="max-h-32 overflow-y-auto mt-2 space-y-1">{accreditationImportResult.issues.map((issue,index) => <p key={`${issue.row}-${index}`} className="text-[9px] text-slate-600"><b>Row {issue.row}{issue.registerNumber ? ` · ${issue.registerNumber}` : ''}:</b> {issue.issue}</p>)}</div>}
+            </div>}
+          </div>
         </div>
       )}
 
@@ -607,6 +683,37 @@ const Students = () => {
                     {savingStatus && <span className="text-slate-400">Saving...</span>}
                   </div>
                 </div>
+
+                {/* Accreditation capture — source of truth for compliance exports */}
+                <form onSubmit={saveAccreditation} className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 space-y-4">
+                  <div>
+                    <p className="text-indigo-900 font-black uppercase text-[10px]">Accreditation Placement / Progression Record</p>
+                    <p className="text-[10px] text-indigo-600 mt-1">Required source data for the NAAC/NBA/AICTE/NIRF-ready export. Evidence is mandatory for every claimed outcome.</p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Gender *</span><select value={accreditationForm.gender} onChange={e => setAccreditationForm(p => ({ ...p, gender: e.target.value }))} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></label>
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Programme *</span><Input value={accreditationForm.programme} onChange={e => setAccreditationForm(p => ({ ...p, programme: e.target.value }))} placeholder="B.E. Computer Science and Engineering" className="h-9 bg-white" /></label>
+                    <label className="space-y-1 sm:col-span-2"><span className="font-bold text-slate-500">Outcome *</span><select value={accreditationForm.outcome} onChange={e => setAccreditationForm(p => ({ ...p, outcome: e.target.value }))} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2"><option>Not Placed</option><option>Placed</option><option>Higher Studies</option><option>Qualified Competitive Exam</option></select></label>
+                  </div>
+
+                  {accreditationForm.outcome === 'Placed' && <div className="grid sm:grid-cols-2 gap-3 border-t border-indigo-100 pt-3">
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Canonical employer *</span><Input list="canonical-employers" value={accreditationForm.employerName} onChange={e => setAccreditationForm(p => ({ ...p, employerName: e.target.value }))} placeholder="Select a registered company" className="h-9 bg-white" /><datalist id="canonical-employers">{canonicalEmployers.map(company => <option key={company._id} value={company.name}>{company.location}</option>)}</datalist><span className="text-[9px] text-slate-400">Only administrator-managed company names are accepted.</span></label>
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Employer city</span><Input value={accreditationForm.employerCity} onChange={e => setAccreditationForm(p => ({ ...p, employerCity: e.target.value }))} className="h-9 bg-white" /></label>
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Designation / role *</span><Input value={accreditationForm.designation} onChange={e => setAccreditationForm(p => ({ ...p, designation: e.target.value }))} className="h-9 bg-white" /></label>
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Package (LPA) *</span><Input type="number" min="0" step="0.01" value={accreditationForm.packageLPA} onChange={e => setAccreditationForm(p => ({ ...p, packageLPA: e.target.value }))} className="h-9 bg-white" /></label>
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Offer date *</span><Input type="date" value={accreditationForm.offerDate} onChange={e => setAccreditationForm(p => ({ ...p, offerDate: e.target.value }))} className="h-9 bg-white" /></label>
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Offer source *</span><select value={accreditationForm.offerSource} onChange={e => setAccreditationForm(p => ({ ...p, offerSource: e.target.value }))} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2"><option value="">Select</option><option>Campus drive</option><option>Pool campus drive</option><option>Off-campus, verified</option><option>Platform application</option></select></label>
+                    <label className="space-y-1 sm:col-span-2"><span className="font-bold text-slate-500">Drive / requisition reference</span><Input value={accreditationForm.driveReference} onChange={e => setAccreditationForm(p => ({ ...p, driveReference: e.target.value }))} placeholder="DRV-2026-037" className="h-9 bg-white" /></label>
+                  </div>}
+
+                  {['Higher Studies', 'Qualified Competitive Exam'].includes(accreditationForm.outcome) && <div className="grid sm:grid-cols-2 gap-3 border-t border-indigo-100 pt-3">
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Institution / examination *</span><Input value={accreditationForm.institutionJoined} onChange={e => setAccreditationForm(p => ({ ...p, institutionJoined: e.target.value }))} className="h-9 bg-white" /></label>
+                    <label className="space-y-1"><span className="font-bold text-slate-500">Programme joined / result *</span><Input value={accreditationForm.programmeJoined} onChange={e => setAccreditationForm(p => ({ ...p, programmeJoined: e.target.value }))} className="h-9 bg-white" /></label>
+                  </div>}
+
+                  {accreditationForm.outcome !== 'Not Placed' && <label className="block space-y-1 border-t border-indigo-100 pt-3"><span className="font-bold text-slate-500">{accreditationForm.outcome === 'Placed' ? 'Offer letter' : 'Admission letter / scorecard'} evidence *</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setAccreditationEvidence(e.target.files?.[0] || null)} className="block w-full rounded-lg border border-slate-200 bg-white p-2 text-[10px]" />{(accreditationForm.evidenceUrl || accreditationForm.progressionEvidenceUrl) && <a href={`${import.meta.env.VITE_API_DOMAIN}${accreditationForm.evidenceUrl || accreditationForm.progressionEvidenceUrl}`} target="_blank" rel="noreferrer" className="font-bold text-indigo-600 hover:underline">View evidence currently on record</a>}</label>}
+                  <Button type="submit" disabled={savingAccreditation} className="h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider">{savingAccreditation ? 'Saving & verifying…' : 'Save accreditation record'}</Button>
+                </form>
 
                 {/* ID Verification */}
                 <div>
