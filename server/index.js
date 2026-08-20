@@ -44,11 +44,33 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const server = http.createServer(app);
+
+const normalizeOrigin = (origin) => origin?.trim().replace(/\/$/, '');
+const allowedOrigins = new Set([
+  'https://velaivaaipu.in',
+  'https://www.velaivaaipu.in',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  ...((process.env.FRONTEND_URL || '').split(',').map(normalizeOrigin).filter(Boolean)),
+]);
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Requests without an Origin header are server-to-server, health checks, or
+    // same-origin traffic. Browser cross-origin requests must match the allowlist.
+    if (!origin || allowedOrigins.has(normalizeOrigin(origin))) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS origin not allowed: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 204,
+};
+
 const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
+  cors: corsOptions,
 });
 
 const PORT = process.env.PORT || 5000;
@@ -94,7 +116,9 @@ io.on('connection', (socket) => {
 });
 
 // Middleware
-app.use(cors());
+// Register CORS before logging, body parsing, sessions, and routes so successful
+// responses, validation errors, and automatic OPTIONS responses all include it.
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json());
 
