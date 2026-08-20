@@ -462,7 +462,7 @@ const AdminSettings = () => {
                       <Input 
                         value={tempBillingSettings.phone}
                         onChange={(e) => setTempBillingSettings({ ...tempBillingSettings, phone: e.target.value })}
-                        placeholder="e.g. +91 44 1234 5678"
+                        placeholder="e.g. +91 99445 09441"
                         required
                       />
                     </div>

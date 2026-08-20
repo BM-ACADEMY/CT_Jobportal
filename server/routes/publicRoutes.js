@@ -10,6 +10,8 @@ const Application = require('../models/Application');
 const College = require('../models/College');
 const CollegeStudent = require('../models/CollegeStudent');
 const PayPerFeature = require('../models/PayPerFeature');
+const ContactMessage = require('../models/ContactMessage');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc  GET /api/public/stats
 //        Real, aggregate platform counts for the public home page.
@@ -285,6 +287,56 @@ router.get('/pay-per-features', async (req, res) => {
     res.json(features);
   } catch (err) {
     console.error('Public Pay-Per Features Error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+});
+
+// @desc  POST /api/public/contact
+//        Saves a contact form submission and sends an email notification.
+router.post('/contact', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ msg: 'Please provide name, email, and message.' });
+    }
+
+    // Save to database
+    const newContactMessage = new ContactMessage({
+      name,
+      email,
+      subject: subject || 'No Subject',
+      message
+    });
+    await newContactMessage.save();
+
+    // Send email notification
+    const emailSubject = `New Contact Form Submission: ${subject || 'No Subject'}`;
+    const emailHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; padding: 20px; color: #333;">
+        <h2 style="color: #1d4ed8;">New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject || 'No Subject'}</p>
+        <hr style="border-top: 1px solid #eee; margin: 20px 0;" />
+        <p><strong>Message:</strong></p>
+        <p style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 5px;">${message}</p>
+      </div>
+    `;
+
+    const emailSent = await sendEmail({
+      email: 'abmvelaivaaipu@gmail.com, admin@bmtechx.in',
+      subject: emailSubject,
+      html: emailHtml
+    });
+
+    if (!emailSent) {
+      console.warn('Contact form saved, but email notification failed to send.');
+    }
+
+    res.status(201).json({ msg: 'Message sent successfully.' });
+  } catch (err) {
+    console.error('Public Contact Form Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });
   }
 });

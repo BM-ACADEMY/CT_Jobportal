@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,6 +7,7 @@ import {
   X, Link2, Camera
 } from 'lucide-react';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 const CONTACT_CARDS = [
   {
@@ -22,7 +22,7 @@ const CONTACT_CARDS = [
     icon: Phone,
     title: 'Call Us',
     desc: 'Mon–Fri, 9 AM to 6 PM IST.',
-    value: '+91 98765 43210',
+    value: '+91 99445 09441',
     color: 'text-blue-600',
     bg: 'bg-blue-50',
   },
@@ -59,10 +59,17 @@ const Contact = () => {
       return;
     }
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSubmitting(false);
-    setSubmitted(true);
-    toast.success('Message sent! We\'ll get back to you soon.');
+    try {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      await axios.post(`${apiUrl}/public/contact`, form);
+      setSubmitted(true);
+      toast.success('Message sent! We\'ll get back to you soon.');
+    } catch (err) {
+      console.error('Contact Form Error:', err);
+      toast.error(err.response?.data?.msg || 'Failed to send message. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

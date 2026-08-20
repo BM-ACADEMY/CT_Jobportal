@@ -39,7 +39,6 @@ const registerSchema = z.object({
   collegeName: z.string().optional(),
   collegeEmail: z.string().optional(),
   collegePhone: z.string().optional(),
-  tpoPhone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -85,7 +84,6 @@ const RegisterPage = () => {
       collegeName: "",
       collegeEmail: "",
       collegePhone: "",
-      tpoPhone: "",
     },
   });
 
@@ -118,8 +116,8 @@ const RegisterPage = () => {
 
   const onSubmit = async (values) => {
     if (selectedRole === 'college') {
-      if (!values.collegeName?.trim() || !values.collegeEmail?.trim() || !values.collegePhone?.trim() || !values.tpoPhone?.trim()) {
-        setError('Please fill in College Name, College Email, College Phone, and TPO Phone.');
+      if (!values.collegeName?.trim() || !values.collegeEmail?.trim() || !values.collegePhone?.trim()) {
+        setError('Please fill in College Name, College Email, and College Phone.');
         return;
       }
     }
@@ -135,7 +133,7 @@ const RegisterPage = () => {
         collegeName: values.collegeName,
         collegeEmail: values.collegeEmail,
         collegePhone: values.collegePhone,
-        tpoPhone: values.tpoPhone,
+        tpoPhone: `${values.countryCode}${values.mobileNumber}`,
       } : {}),
     });
     setLoading(false);
@@ -376,6 +374,7 @@ const RegisterPage = () => {
                               inputProps={{
                                 name: 'mobileNumber',
                                 required: true,
+                                placeholder: selectedRole === 'college' ? 'TPO number' : 'Mobile number'
                               }}
                               inputClass="!w-full !h-12 !pl-[52px] !rounded-xl !border-input !bg-background !text-sm focus:!ring-2 focus:!ring-ring focus:!outline-none"
                               buttonClass="!border-input !bg-background !rounded-l-xl !w-[45px] hover:!bg-muted"
@@ -390,18 +389,6 @@ const RegisterPage = () => {
 
                   {selectedRole === 'college' && (
                     <>
-                      <FormField
-                        control={form.control}
-                        name="tpoPhone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <PhoneNumberInput value={field.value} onChange={field.onChange} />
-                            </FormControl>
-                            <FormMessage className="text-[11px] font-bold" />
-                          </FormItem>
-                        )}
-                      />
                       <FormField
                         control={form.control}
                         name="collegeName"
@@ -438,7 +425,7 @@ const RegisterPage = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
-                              <PhoneNumberInput value={field.value} onChange={field.onChange} />
+                              <PhoneNumberInput value={field.value} onChange={field.onChange} inputProps={{ placeholder: 'College number' }} />
                             </FormControl>
                             <FormMessage className="text-[11px] font-bold" />
                           </FormItem>

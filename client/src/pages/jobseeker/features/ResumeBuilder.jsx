@@ -200,7 +200,7 @@ const PersonalForm = ({ d, set }) => (
     <div><FL>Job Title</FL><FI value={d.title} onChange={e => set('title', e.target.value)} placeholder="Senior Frontend Engineer" /></div>
     <div className="grid grid-cols-2 gap-3">
       <div><FL>Email *</FL><FI type="email" value={d.email} onChange={e => set('email', e.target.value)} placeholder="arjun@email.com" /></div>
-      <div><FL>Phone</FL><FI value={d.phone} onChange={e => set('phone', e.target.value)} placeholder="+91 98765 43210" /></div>
+      <div><FL>Phone</FL><FI value={d.phone} onChange={e => set('phone', e.target.value)} placeholder="+91 99445 09441" /></div>
     </div>
     <div><FL>Location</FL><FI value={d.location} onChange={e => set('location', e.target.value)} placeholder="Bangalore, Karnataka" /></div>
     <div className="grid grid-cols-2 gap-3">
