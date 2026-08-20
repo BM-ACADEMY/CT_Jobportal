@@ -2,10 +2,33 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const sources = [
-  { file: 'C:/Users/Administrator/Downloads/blog 6 .html', slug: 'it-jobs-in-pondicherry-for-freshers' },
-  { file: 'C:/Users/Administrator/Downloads/Blog 5 .html', slug: 'work-from-home-jobs-in-tamil-nadu' },
-  { file: 'C:/Users/Administrator/Downloads/blog 4.html', slug: 'private-jobs-in-pondicherry' },
+  { file: 'C:/Users/Administrator/Downloads/Blog 7 .html', slug: 'part-time-jobs-for-college-students-in-pondicherry', date: 'Aug 30, 2026' },
+  { file: 'C:/Users/Administrator/Downloads/blog 6 .html', slug: 'it-jobs-in-pondicherry-for-freshers', date: 'Aug 28, 2026' },
+  { file: 'C:/Users/Administrator/Downloads/Blog 5 .html', slug: 'work-from-home-jobs-in-tamil-nadu', date: 'Aug 26, 2026' },
+  { file: 'C:/Users/Administrator/Downloads/blog 4.html', slug: 'private-jobs-in-pondicherry', date: 'Aug 24, 2026' },
+  { file: 'C:/Users/Administrator/Downloads/Blog 3 .html', slug: 'walk-in-interviews-in-pondicherry', date: 'Aug 19, 2026' },
+  { file: 'C:/Users/Administrator/Downloads/fresher-jobs-in-pondicherry.html', slug: 'fresher-jobs-in-pondicherry', date: 'Aug 17, 2026' },
+  { file: 'C:/Users/Administrator/Downloads/jobs-in-pondicherry-today.html', slug: 'jobs-in-pondicherry-today', date: 'Aug 13, 2026' },
 ];
+
+// Keep every editorial image unique across the blog collection. Replacements are
+// applied during import so supplied article markup and heading order stay intact.
+const imageReplacements = {
+  'it-jobs-in-pondicherry-for-freshers': {
+    'https://images.unsplash.com/photo-1766066014237-00645c74e9c6?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1400&q=82',
+    'https://images.unsplash.com/photo-1580927752452-89d86da3fa0a?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=82',
+  },
+  'work-from-home-jobs-in-tamil-nadu': {
+    'https://images.unsplash.com/photo-1766066014237-00645c74e9c6?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=82',
+    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1400&q=82',
+  },
+  'jobs-in-pondicherry-today': {
+    'https://images.pexels.com/photos/4101343/pexels-photo-4101343.jpeg?auto=compress&cs=tinysrgb&w=1400': 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=1400&q=82',
+  },
+  'fresher-jobs-in-pondicherry': {
+    'https://images.pexels.com/photos/15505437/pexels-photo-15505437.jpeg?auto=compress&cs=tinysrgb&w=1400': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=82',
+  },
+};
 
 const stripTags = (value = '') => value.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
 const match = (html, expression) => html.match(expression)?.[1]?.trim() || '';
@@ -24,8 +47,14 @@ const repairEncoding = (value) => {
   return Buffer.from(bytes).toString('utf8');
 };
 
-const blogs = sources.map(({ file, slug }) => {
-  const html = repairEncoding(fs.readFileSync(file, 'utf8'));
+const blogs = sources.map(({ file, slug, date }) => {
+  let html = repairEncoding(fs.readFileSync(file, 'utf8'))
+    .replace(/https:\/\/wa\.me\/91X{10}/g, 'https://wa.me/919944509441')
+    .replace(/\+?91[- ]?X{10}/g, '+91 99445 09441')
+    .replace(/📅\s*2026/g, `📅 ${date}`);
+  for (const [currentImage, replacementImage] of Object.entries(imageReplacements[slug] || {})) {
+    html = html.replaceAll(currentImage, replacementImage);
+  }
   const title = stripTags(match(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i) || match(html, /<title[^>]*>([\s\S]*?)<\/title>/i));
   const style = match(html, /<style[^>]*>([\s\S]*?)<\/style>/i);
   const markup = match(html, /<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -37,7 +66,7 @@ const blogs = sources.map(({ file, slug }) => {
   const excerpt = paragraphs[0] || 'Practical career guidance for job seekers in Pondicherry and Tamil Nadu.';
   const wordCount = stripTags(markup).split(/\s+/).length;
 
-  return { slug, title, excerpt, category, date: '2026', readTime: `${Math.max(5, Math.ceil(wordCount / 220))} min read`, image, style, markup };
+  return { slug, title, excerpt, category, date, author: 'Velai Vaaipu', readTime: `${Math.max(5, Math.ceil(wordCount / 220))} min read`, image, style, markup };
 });
 
 const target = path.resolve('src/data/importedBlogs.js');

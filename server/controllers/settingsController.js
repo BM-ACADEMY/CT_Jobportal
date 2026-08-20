@@ -11,7 +11,7 @@ const getSettings = async (req, res) => {
         address: '12, MG Road, Shastri Nagar, Adyar, Chennai, Tamil Nadu',
         pincode: '600020',
         email: 'support@velaivaaipu.com',
-        phone: '+91 44 1234 5678',
+        phone: '+91 99445 09441',
         billingName: 'Velaivaaipu Tech Private Limited'
       });
     }

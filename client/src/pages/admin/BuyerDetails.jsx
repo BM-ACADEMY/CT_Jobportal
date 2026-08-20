@@ -51,7 +51,7 @@ const BuyerDetails = () => {
     address: '12, MG Road, Shastri Nagar, Adyar, Chennai, Tamil Nadu',
     pincode: '600020',
     email: 'support@velaivaaipu.com',
-    phone: '+91 44 1234 5678'
+    phone: '+91 99445 09441'
   });
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -87,7 +87,7 @@ const BuyerDetails = () => {
           address: res.data.address || '12, MG Road, Shastri Nagar, Adyar, Chennai, Tamil Nadu',
           pincode: res.data.pincode || '600020',
           email: res.data.email || 'support@velaivaaipu.com',
-          phone: res.data.phone || '+91 44 1234 5678'
+          phone: res.data.phone || '+91 99445 09441'
         });
       }
     } catch (error) {

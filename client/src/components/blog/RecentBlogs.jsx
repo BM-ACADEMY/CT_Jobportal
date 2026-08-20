@@ -24,6 +24,13 @@ const RecentBlogs = ({ compact = false }) => (
             <Link to={`/blog/${blog.slug}`} className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700">
               Read more <ArrowRight size={14} />
             </Link>
+            <div className={`${compact ? 'mt-3 pt-3' : 'mt-5 pt-4'} flex items-center gap-2.5 border-t border-slate-100`}>
+              <div className={`${compact ? 'h-8 w-8 text-[10px]' : 'h-9 w-9 text-xs'} flex shrink-0 items-center justify-center rounded-full bg-emerald-500 font-black text-white`} aria-hidden="true">V</div>
+              <div className="min-w-0">
+                <p className={`${compact ? 'text-xs' : 'text-sm'} truncate font-bold text-slate-900`}>{blog.author || 'Velai Vaaipu'}</p>
+                <time dateTime={blog.date} className="block text-[11px] text-slate-500">{blog.date}</time>
+              </div>
+            </div>
           </div>
         </article>
       ))}
