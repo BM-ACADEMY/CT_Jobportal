@@ -49,6 +49,7 @@ const normalizeOrigin = (origin) => origin?.trim().replace(/\/$/, '');
 const allowedOrigins = new Set([
   'https://velaivaaipu.in',
   'https://www.velaivaaipu.in',
+  'https://admin.velaivaaipu.in',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   ...((process.env.FRONTEND_URL || '').split(',').map(normalizeOrigin).filter(Boolean)),
