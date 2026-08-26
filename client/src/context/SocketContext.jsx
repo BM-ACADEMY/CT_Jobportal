@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
 const SocketContext = createContext();
@@ -11,16 +10,26 @@ export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      const socketUrl = import.meta.env.VITE_API_DOMAIN || 'http://localhost:5000';
-      const newSocket = io(socketUrl, {
-        transports: ['polling', 'websocket'], // Start on polling (reliable behind local firewalls/AV) and upgrade to websocket when possible
-        auth: { token: localStorage.getItem('token') }
-      });
-      setSocket(newSocket);
+    let active = true;
+    let connectedSocket;
 
-      return () => newSocket.close();
+    if (user) {
+      import('socket.io-client').then(({ io }) => {
+        if (!active) return;
+        const socketUrl = import.meta.env.VITE_API_DOMAIN || 'http://localhost:5000';
+        connectedSocket = io(socketUrl, {
+          transports: ['polling', 'websocket'],
+          auth: { token: localStorage.getItem('token') }
+        });
+        setSocket(connectedSocket);
+      });
     }
+
+    return () => {
+      active = false;
+      connectedSocket?.close();
+      setSocket(null);
+    };
   }, [user]);
 
   return (

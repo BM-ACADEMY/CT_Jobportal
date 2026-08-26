@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const sources = [
+  { file: 'C:/Users/Administrator/Downloads/Blog 10  (2).html', slug: 'jobs-in-tindivanam', date: 'Sep 5, 2026' },
+  { file: 'C:/Users/Administrator/Downloads/blog 9  (1).html', slug: 'jobs-in-villupuram', date: 'Sep 3, 2026' },
+  { file: 'C:/Users/Administrator/Downloads/Blog 8  (1).html', slug: 'jobs-in-cuddalore', date: 'Sep 1, 2026' },
   { file: 'C:/Users/Administrator/Downloads/Blog 7 .html', slug: 'part-time-jobs-for-college-students-in-pondicherry', date: 'Aug 30, 2026' },
   { file: 'C:/Users/Administrator/Downloads/blog 6 .html', slug: 'it-jobs-in-pondicherry-for-freshers', date: 'Aug 28, 2026' },
   { file: 'C:/Users/Administrator/Downloads/Blog 5 .html', slug: 'work-from-home-jobs-in-tamil-nadu', date: 'Aug 26, 2026' },
@@ -14,6 +17,15 @@ const sources = [
 // Keep every editorial image unique across the blog collection. Replacements are
 // applied during import so supplied article markup and heading order stay intact.
 const imageReplacements = {
+  'jobs-in-tindivanam': {
+    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1400&q=82',
+  },
+  'jobs-in-villupuram': {
+    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1400&q=82',
+  },
+  'jobs-in-cuddalore': {
+    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1400&q=82',
+  },
   'it-jobs-in-pondicherry-for-freshers': {
     'https://images.unsplash.com/photo-1766066014237-00645c74e9c6?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1400&q=82',
     'https://images.unsplash.com/photo-1580927752452-89d86da3fa0a?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=82',
@@ -55,9 +67,16 @@ const blogs = sources.map(({ file, slug, date }) => {
   for (const [currentImage, replacementImage] of Object.entries(imageReplacements[slug] || {})) {
     html = html.replaceAll(currentImage, replacementImage);
   }
+  html = html
+    .replace(/(<span[^>]*>\s*(?:📅|ðŸ“…)\s*)2026(\s*<\/span>)/g, `$1${date}$2`)
+    .replace(/📍\s*Tamil Nadu, India/g, '📍 Puducherry, Tamil Nadu, India');
   const title = stripTags(match(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i) || match(html, /<title[^>]*>([\s\S]*?)<\/title>/i));
   const style = match(html, /<style[^>]*>([\s\S]*?)<\/style>/i);
-  const markup = match(html, /<body[^>]*>([\s\S]*?)<\/body>/i);
+  let markup = match(html, /<body[^>]*>([\s\S]*?)<\/body>/i);
+  markup = markup
+    .replace(/<img\b(?![^>]*\bloading=)/gi, '<img loading="lazy" decoding="async"')
+    .replace(/<img loading="lazy" decoding="async"(?=[^>]*class=["'][^"']*(?:hero-img|hero-image))/i, '<img loading="eager" decoding="async" fetchpriority="high"')
+    .replace(/<a\b(?![^>]*\brel=)([^>]*href=["']https?:\/\/[^>]+)>/gi, '<a rel="noopener noreferrer"$1>');
   const image = match(markup, /<img[^>]+(?:class=["'][^"']*(?:hero-img|hero-image)[^"']*["'][^>]*src|src)=["']([^"']+)["']/i)
     || match(markup, /<img[^>]+src=["']([^"']+)["']/i);
   const category = stripTags(match(markup, /<(?:span|div)[^>]+class=["'][^"']*(?:pill|category)[^"']*["'][^>]*>([\s\S]*?)<\/(?:span|div)>/i)) || 'Career Guide';

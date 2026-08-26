@@ -20,7 +20,6 @@ import PhoneNumberInput from "@/components/shared/PhoneNumberInput";
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import { Country, State, City } from 'country-state-city';
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
 const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
@@ -128,9 +127,19 @@ const Settings = () => {
     const [locCountry, setLocCountry] = useState('IN');
     const [locState, setLocState] = useState('');
     const [locCity, setLocCity] = useState('');
+    const [geoData, setGeoData] = useState(null);
+
+    // The location dataset is several megabytes; fetch it only when the user
+    // actually edits their profile instead of delaying every Settings visit.
+    useEffect(() => {
+        if (isEditing && !geoData) {
+            import('country-state-city').then(setGeoData);
+        }
+    }, [isEditing, geoData]);
 
     useEffect(() => {
-        if (!isEditing) return;
+        if (!isEditing || !geoData) return;
+        const { Country, State, City } = geoData;
         
         // When editing starts, try to parse current location
         const currLoc = formData.profile.location || '';
@@ -163,10 +172,11 @@ const Settings = () => {
                 setLocCity('Chennai');
             }
         }
-    }, [isEditing]);
+    }, [isEditing, geoData]);
 
     useEffect(() => {
-        if (!isEditing) return;
+        if (!isEditing || !geoData) return;
+        const { Country, State } = geoData;
         let finalStr = '';
         if (locCountry) {
             const countryName = Country.getCountryByCode(locCountry)?.name || '';
@@ -187,7 +197,7 @@ const Settings = () => {
                 location: finalStr
             }
         }));
-    }, [locCountry, locState, locCity, isEditing]);
+    }, [locCountry, locState, locCity, isEditing, geoData]);
 
     // Campus / college link state
     const [campusStudent, setCampusStudent] = useState(null);
@@ -851,7 +861,7 @@ const Settings = () => {
                                                         className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none"
                                                     >
                                                         <option value="">Select Nationality</option>
-                                                        {Country.getAllCountries().map(c => (
+                                                        {geoData?.Country.getAllCountries().map(c => (
                                                             <option key={c.isoCode} value={c.isoCode}>{c.name}</option>
                                                         ))}
                                                     </select>
@@ -867,7 +877,7 @@ const Settings = () => {
                                                         className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none disabled:opacity-50"
                                                     >
                                                         <option value="">Select State</option>
-                                                        {locCountry && State.getStatesOfCountry(locCountry).map(s => (
+                                                        {locCountry && geoData?.State.getStatesOfCountry(locCountry).map(s => (
                                                             <option key={s.isoCode} value={s.isoCode}>{s.name}</option>
                                                         ))}
                                                     </select>
@@ -883,7 +893,7 @@ const Settings = () => {
                                                         className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none disabled:opacity-50"
                                                     >
                                                         <option value="">Select District</option>
-                                                        {locState && locCountry && City.getCitiesOfState(locCountry, locState).map(c => (
+                                                        {locState && locCountry && geoData?.City.getCitiesOfState(locCountry, locState).map(c => (
                                                             <option key={c.name} value={c.name}>{c.name}</option>
                                                         ))}
                                                     </select>

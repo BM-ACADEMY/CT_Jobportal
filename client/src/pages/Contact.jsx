@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { motion as Motion } from 'framer-motion';
 
 const CONTACT_CARDS = [
   {
@@ -81,7 +82,7 @@ const Contact = () => {
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/8 rounded-full blur-[100px] -ml-24 -mb-24 pointer-events-none" />
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-5 py-2 mb-6">
               <MessageSquare size={14} className="text-violet-400" />
               <span className="text-[11px] font-semibold uppercase tracking-widest text-violet-400">Get in Touch</span>
@@ -93,7 +94,7 @@ const Contact = () => {
             <p className="text-slate-400 text-lg font-medium max-w-xl mx-auto">
               Our team is ready to assist you with any questions about jobs, subscriptions, or your account.
             </p>
-          </motion.div>
+          </Motion.div>
         </div>
 
         {/* Bottom Wave */}
@@ -109,7 +110,7 @@ const Contact = () => {
         {/* Contact Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 -mt-2">
           {CONTACT_CARDS.map((card, i) => (
-            <motion.div
+            <Motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -124,7 +125,7 @@ const Contact = () => {
                 <p className="text-slate-400 text-xs font-medium mb-2">{card.desc}</p>
                 <p className={`text-sm font-bold ${card.color}`}>{card.value}</p>
               </div>
-            </motion.div>
+            </Motion.div>
           ))}
         </div>
 
@@ -135,7 +136,7 @@ const Contact = () => {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
               {submitted ? (
-                <motion.div
+                <Motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="flex flex-col items-center text-center py-10"
@@ -154,7 +155,7 @@ const Contact = () => {
                   >
                     Send Another Message
                   </Button>
-                </motion.div>
+                </Motion.div>
               ) : (
                 <>
                   <div className="mb-8">
@@ -319,7 +320,7 @@ const Contact = () => {
                   </div>
                 </button>
                 {openFaq === i && (
-                  <motion.div
+                  <Motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
@@ -327,7 +328,7 @@ const Contact = () => {
                     className="px-5 pb-5"
                   >
                     <p className="text-slate-500 text-sm font-medium leading-relaxed border-t border-slate-50 pt-4">{faq.a}</p>
-                  </motion.div>
+                  </Motion.div>
                 )}
               </div>
             ))}

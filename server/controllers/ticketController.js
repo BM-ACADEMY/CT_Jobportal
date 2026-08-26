@@ -2,6 +2,7 @@ const Ticket = require('../models/Ticket');
 const User = require('../models/User');
 const path = require('path');
 const fs = require('fs');
+const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 
 // @desc  Raise a new ticket
 // @route POST /api/tickets
@@ -31,6 +32,16 @@ const createTicket = async (req, res) => {
       severity,
       diagnosticsConsent: diagnosticsConsent === true || diagnosticsConsent === 'true'
     });
+
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'New support ticket',
+      message: `${accountIdentity || 'A user'} raised a ${severity || 'normal'} priority ${category || 'support'} ticket.`,
+      type: 'ticket_created',
+      link: '/admin/tickets',
+      metadata: { ticketId: ticket._id, severity, category }
+    }).catch(err => console.error('Ticket notification failed:', err.message));
 
     res.status(201).json(ticket);
   } catch (err) {
@@ -118,6 +129,16 @@ const updateTicket = async (req, res) => {
       .populate('user', 'name email display_id');
 
     if (!ticket) return res.status(404).json({ msg: 'Ticket not found' });
+
+    notifyUser({
+      io: req.io,
+      recipientId: ticket.user._id,
+      title: 'Support ticket updated',
+      message: `Your support ticket is now ${ticket.status.replaceAll('_', ' ')}.${ticket.conclusion ? ` ${ticket.conclusion}` : ''}`,
+      type: 'ticket_status',
+      link: '/tickets/my',
+      metadata: { ticketId: ticket._id, status: ticket.status }
+    }).catch(err => console.error('Ticket status notification failed:', err.message));
     res.json(ticket);
   } catch (err) {
     console.error('Update Ticket Error:', err.message);

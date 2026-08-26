@@ -13,6 +13,16 @@ const BLOG_UI_OVERRIDES = `
   ul, ol {
     padding-left: 1.65rem !important;
   }
+  li > ul,
+  li > ol {
+    margin-top: .55rem !important;
+    margin-bottom: .55rem !important;
+    padding-left: 1.75rem !important;
+  }
+  ol { list-style-type: decimal !important; }
+  ul { list-style-type: disc !important; }
+  ul ul { list-style-type: circle !important; }
+  ol ol { list-style-type: lower-alpha !important; }
   li {
     padding-left: .25rem;
   }
@@ -20,6 +30,69 @@ const BLOG_UI_OVERRIDES = `
     color: #059669;
     font-weight: 800;
   }
+
+  table {
+    overflow: hidden;
+    border: 1px solid #dbeafe !important;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+  }
+  table th {
+    border-color: #bfdbfe !important;
+    background: #e0f2fe !important;
+    color: #0f3b5f !important;
+  }
+  table td { border-color: #e2e8f0 !important; }
+  table tbody tr:nth-child(odd) { background: #f8fafc !important; }
+  table tbody tr:nth-child(even) { background: #ecfdf5 !important; }
+  table tbody tr:hover { background: #dbeafe !important; }
+
+  .faq-list {
+    display: grid;
+    gap: .8rem;
+    margin: 1.25rem 0 2.5rem;
+  }
+  details.faq-item {
+    overflow: hidden;
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, .05);
+  }
+  details.faq-item[open] { border-color: #86efac; }
+  details.faq-item summary {
+    position: relative;
+    padding: 1rem 3rem 1rem 1.1rem;
+    color: #0f172a;
+    font-weight: 750;
+    line-height: 1.45;
+    cursor: pointer;
+    list-style: none;
+  }
+  details.faq-item summary::-webkit-details-marker { display: none; }
+  details.faq-item summary::after {
+    content: '+';
+    position: absolute;
+    top: 50%;
+    right: 1.1rem;
+    width: 1.7rem;
+    height: 1.7rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #047857;
+    font-size: 1.25rem;
+    transform: translateY(-50%);
+  }
+  details.faq-item[open] summary::after { content: '−'; }
+  details.faq-item .faq-answer {
+    padding: 0 1.1rem 1rem;
+    border-top: 1px solid #f1f5f9;
+  }
+  details.faq-item .faq-answer > :first-child { margin-top: 1rem; }
+  details.faq-item .faq-answer > :last-child { margin-bottom: 0; }
 
   img {
     max-width: 100%;
@@ -191,6 +264,69 @@ const HtmlBlog = ({ blog }) => {
     if (!hostRef.current) return;
     const root = hostRef.current.shadowRoot || hostRef.current.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${blog.style}\n${BLOG_UI_OVERRIDES}</style>${blog.markup}`;
+
+    // Normalize supplied FAQ markup into native, keyboard-accessible accordions.
+    const faqHeading = [...root.querySelectorAll('h2')].find((heading) =>
+      heading.textContent.toLowerCase().includes('frequently asked')
+    );
+    if (faqHeading) {
+      const faqList = document.createElement('div');
+      faqList.className = 'faq-list';
+      let node = faqHeading.nextElementSibling;
+      while (node && node.tagName !== 'H2' && !node.classList.contains('final-cta')) {
+        const next = node.nextElementSibling;
+        if (node.matches('.faq-item')) {
+          const question = node.querySelector('h3');
+          const details = document.createElement('details');
+          details.className = 'faq-item';
+          const summary = document.createElement('summary');
+          summary.textContent = question?.textContent || 'Question';
+          question?.remove();
+          const answer = document.createElement('div');
+          answer.className = 'faq-answer';
+          while (node.firstChild) answer.appendChild(node.firstChild);
+          details.append(summary, answer);
+          faqList.appendChild(details);
+          node.remove();
+        } else if (node.tagName === 'H3') {
+          const details = document.createElement('details');
+          details.className = 'faq-item';
+          const summary = document.createElement('summary');
+          summary.textContent = node.textContent;
+          const answer = document.createElement('div');
+          answer.className = 'faq-answer';
+          let answerNode = next;
+          while (answerNode && answerNode.tagName !== 'H3' && answerNode.tagName !== 'H2' && !answerNode.classList.contains('final-cta')) {
+            const answerNext = answerNode.nextElementSibling;
+            answer.appendChild(answerNode);
+            answerNode = answerNext;
+          }
+          details.append(summary, answer);
+          faqList.appendChild(details);
+          node.remove();
+          node = answerNode;
+          continue;
+        }
+        node = next;
+      }
+      faqHeading.insertAdjacentElement('afterend', faqList);
+    }
+
+    // Use the same footer content and semantic structure for every imported blog.
+    const footer = root.querySelector('footer');
+    if (footer) {
+      footer.innerHTML = `<div class="footer-inner">
+        <div class="footer-brand">Velai Vaaipu</div>
+        <div class="footer-tagline">Find. Apply. Grow.</div>
+        <div class="footer-contact">
+          <h4>Contact Us</h4>
+          <p>📞 +91 99445 09441</p>
+          <p>📍 Puducherry, Tamil Nadu, India</p>
+        </div>
+        <hr class="footer-divider">
+        <div class="copyright">© 2026 Velai Vaaipu. All rights reserved.</div>
+      </div>`;
+    }
   }, [blog]);
 
   return <div ref={hostRef} className="block min-h-screen bg-slate-50" />;

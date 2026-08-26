@@ -261,7 +261,7 @@ const AtsPipeline = () => {
         const updatedJob = res.data.job;
         setJobs(jobs.map(j => j._id === updatedJob._id ? updatedJob : j));
         if (selectedJob?._id === updatedJob._id) {
-          fetchApplications(updatedJob._id); // Refresh board
+          fetchApplicants(); // Refresh board
         }
       } else {
         setJobs([res.data.job, ...jobs]);
