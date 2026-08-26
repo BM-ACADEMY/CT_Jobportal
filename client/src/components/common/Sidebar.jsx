@@ -56,6 +56,7 @@ const coreMenus = {
     { icon: Users,           label: 'Students',          path: '/college/students' },
     { icon: Activity,        label: 'Campus Drives',     path: '/college/drives' },
     { icon: ShieldCheck,     label: 'ID Verification',   path: '/college/verification' },
+    { icon: Users,           label: 'Placement Tools',    path: '/college/placement-tools' },
     { icon: FileText,        label: 'Reports & Passkey', path: '/college/reports' },
     { icon: CreditCard,      label: 'Subscription',      path: '/college/subscription' },
     { icon: History,         label: 'Payment History',   path: '/college/payment-history' },

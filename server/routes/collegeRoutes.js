@@ -67,10 +67,29 @@ const {
   activateProfile,
   getMyDrives,
   registerForDrive
+  ,getProfileCompletionDashboard
+  ,getDriveEligibility
+  ,addEligibleStudentsToDrive
+  ,getCollegeTeam
+  ,addCollegeTeamMember
+  ,updateCollegeTeamMember
+  ,getCollegeAuditLog
 } = require('../controllers/collegeController');
 
 // CSV upload uses memory storage (not disk)
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+const requireCollegePermission = (permission) => async (req, res, next) => {
+  try {
+    const college = await College.findOne({ $or: [{ tpoUser: req.user.id }, { 'teamMembers.user': req.user.id }] });
+    if (!college) return res.status(403).json({ msg: 'No college access' });
+    if (college.tpoUser.toString() === req.user.id) return next();
+    const member = college.teamMembers.find(m => m.user.toString() === req.user.id && m.isActive);
+    if (!member || !member.permissions.includes(permission)) return res.status(403).json({ msg: `You do not have ${permission} permission` });
+    req.collegeMember = member;
+    next();
+  } catch (err) { res.status(500).json({ msg: 'Permission check failed' }); }
+};
 
 // Grants access to a single drive's management routes to the owning college's TPO/admin,
 // OR to any authenticated user (regardless of their primary role — jobseeker, recruiter,
@@ -126,7 +145,7 @@ router.get('/admin/colleges/:collegeId', verifyToken, authorizeRoles('admin'), g
 router.put('/admin/verify/:collegeId', verifyToken, authorizeRoles('admin'), adminVerifyCollege);
 
 // ── TPO authenticated routes ────────────────────────────────────────────────
-router.get('/dashboard', verifyToken, authorizeRoles('college'), getDashboard);
+router.get('/dashboard', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), getDashboard);
 router.get('/me/dashboard-stats', verifyToken, authorizeRoles('college'), getDashboardStats);
 router.get('/profile', verifyToken, authorizeRoles('college'), getProfile);
 router.put('/profile', verifyToken, authorizeRoles('college'), updateProfile);
@@ -148,17 +167,17 @@ router.get('/accreditation-export', verifyToken, authorizeRoles('college'), expo
 router.put('/students/:studentId/accreditation', verifyToken, authorizeRoles('college'), upload.single('evidence'), updateAccreditationRecord);
 
 // Drives
-router.post('/drives', verifyToken, authorizeRoles('college'), createDrive);
-router.get('/drives', verifyToken, authorizeRoles('college'), getDrives);
+router.post('/drives', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), createDrive);
+router.get('/drives', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), getDrives);
 router.get('/drives/:driveId', verifyToken, requireDriveAccess, getDriveDetail);
 router.get('/drives/:driveId/students-export', verifyToken, requireDriveAccess, exportDriveStudents);
 router.get('/drives/:driveId/companies-export', verifyToken, requireDriveAccess, exportDriveCompanies);
-router.put('/drives/:driveId', verifyToken, authorizeRoles('college'), updateDrive);
+router.put('/drives/:driveId', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), updateDrive);
 router.post('/drives/:driveId/companies/:companyId/send-link', verifyToken, authorizeRoles('college'), sendCompanyLink);
 router.get('/companies/search', verifyToken, authorizeRoles('college'), searchRegisteredCompanies);
 router.post('/drives/:driveId/invite-company/:companyId', verifyToken, authorizeRoles('college'), requestCompanyForDrive);
 router.post('/drives/:driveId/companies/:companyEntryId/resend-invite', verifyToken, authorizeRoles('college'), resendCompanyInvite);
-router.delete('/drives/:driveId', verifyToken, authorizeRoles('college'), deleteDrive);
+router.delete('/drives/:driveId', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), deleteDrive);
 router.get('/drives/:driveId/regenerate-qr', verifyToken, authorizeRoles('college'), regenerateQR);
 router.put('/drives/:driveId/student-round', verifyToken, requireDriveAccess, updateDriveRoundStatus);
 router.post('/drives/:driveId/announcements', verifyToken, requireDriveAccess, postAnnouncement);
@@ -169,19 +188,28 @@ router.post('/drives/incharge/link/:driveId/:token', verifyToken, linkInchargeIn
 
 // Students
 router.get('/academic-years', verifyToken, authorizeRoles('college'), getAcademicYears);
-router.get('/students', verifyToken, authorizeRoles('college'), getStudents);
+router.get('/students', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), getStudents);
+router.get('/students-profile-completion', verifyToken, authorizeRoles('college'), getProfileCompletionDashboard);
 router.get('/students/csv-template', verifyToken, authorizeRoles('college'), getCsvTemplate);
 router.get('/students/credentials-export', verifyToken, authorizeRoles('college'), exportCredentialsSheet);
-router.post('/students/csv-import', verifyToken, authorizeRoles('college'), csvUpload.single('file'), csvImport);
+router.post('/students/csv-import', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), csvUpload.single('file'), csvImport);
 router.post('/students/bulk-upload', verifyToken, authorizeRoles('college'), csvUpload.single('file'), csvImport);
 router.post('/students/bulk-delete', verifyToken, authorizeRoles('college'), bulkDeleteStudents);
 router.get('/students/:id', verifyToken, authorizeRoles('college'), getStudentDetail);
-router.put('/students/:id', verifyToken, authorizeRoles('college'), updateStudentDetails);
-router.delete('/students/:id', verifyToken, authorizeRoles('college'), deleteStudent);
-router.put('/students/:id/status', verifyToken, authorizeRoles('college'), updateStudentStatus);
+router.put('/students/:id', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), updateStudentDetails);
+router.delete('/students/:id', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), deleteStudent);
+router.put('/students/:id/status', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), updateStudentStatus);
+
+// Eligibility automation and college team governance
+router.get('/drives/:driveId/eligibility', verifyToken, authorizeRoles('college'), getDriveEligibility);
+router.post('/drives/:driveId/add-eligible', verifyToken, authorizeRoles('college'), addEligibleStudentsToDrive);
+router.get('/team', verifyToken, authorizeRoles('college'), getCollegeTeam);
+router.post('/team', verifyToken, authorizeRoles('college'), addCollegeTeamMember);
+router.put('/team/:memberId', verifyToken, authorizeRoles('college'), updateCollegeTeamMember);
+router.get('/audit-log', verifyToken, authorizeRoles('college'), getCollegeAuditLog);
 
 // Verification
-router.get('/verification', verifyToken, authorizeRoles('college'), getVerificationQueue);
+router.get('/verification', verifyToken, authorizeRoles('college'), requireCollegePermission('verification'), getVerificationQueue);
 router.post('/students/:id/verify', verifyToken, authorizeRoles('college', 'admin'), verifyStudent);
 
 // Company match

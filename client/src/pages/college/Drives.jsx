@@ -32,7 +32,7 @@ const STAGE_BADGE_COLORS = {
 };
 
 const emptyCompanyRow = { name: '', packageLPA: '', tierPolicy: 'regular', contactName: '', contactEmail: '' };
-const emptyForm = { title: '', batchYear: new Date().getFullYear(), departments: '', description: '', companies: [{ ...emptyCompanyRow }], minCGPA: '', maxArrears: '', rounds: '' };
+const emptyForm = { title: '', batchYear: new Date().getFullYear(), departments: '', description: '', companies: [{ ...emptyCompanyRow }], minCGPA: '', maxArrears: '', requiredSkills: '', requireResume: false, requireVerifiedProfile: false, rounds: '' };
 
 const Drives = () => {
   const auth = useAuth();
@@ -58,6 +58,8 @@ const Drives = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [inchargeForm, setInchargeForm] = useState({ name: '', email: '', phone: '', assignedCompanies: [] });
   const [invitingIncharge, setInvitingIncharge] = useState(false);
+  const [eligibility, setEligibility] = useState(null);
+  const [addingEligible, setAddingEligible] = useState(false);
 
   useEffect(() => { fetchDrives(); }, []);
 
@@ -89,6 +91,9 @@ const Drives = () => {
           : [{ ...emptyCompanyRow }],
       minCGPA: drive.eligibility?.minCGPA ?? '',
       maxArrears: drive.eligibility?.maxArrears ?? '',
+      requiredSkills: (drive.eligibility?.requiredSkills || []).join(', '),
+      requireResume: Boolean(drive.eligibility?.requireResume),
+      requireVerifiedProfile: Boolean(drive.eligibility?.requireVerifiedProfile),
       rounds: (drive.rounds || []).map(r => r.name).join(', '),
     });
     setShowCreate(true);
@@ -125,6 +130,11 @@ const Drives = () => {
         eligibility: {
           minCGPA: form.minCGPA ? parseFloat(form.minCGPA) : 0,
           maxArrears: form.maxArrears !== '' ? parseInt(form.maxArrears) : 10,
+          allowedDepartments: form.departments.split(',').map(d => d.trim()).filter(Boolean),
+          batchYears: [parseInt(form.batchYear)],
+          requiredSkills: form.requiredSkills.split(',').map(s => s.trim()).filter(Boolean),
+          requireResume: form.requireResume,
+          requireVerifiedProfile: form.requireVerifiedProfile,
         },
         rounds: form.rounds.split(',').map(r => r.trim()).filter(Boolean).map((name, i) => ({ name, order: i + 1 })),
       };
@@ -183,10 +193,22 @@ const Drives = () => {
     setSelectedIds([]);
     setSelectedCompanyIdx(0);
     try {
-      const res = await axios.get(`${API}/college/drives/${drive._id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setDetailData(res.data);
+      const [res, eligibleRes] = await Promise.all([
+        axios.get(`${API}/college/drives/${drive._id}`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/college/drives/${drive._id}/eligibility`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      setDetailData(res.data); setEligibility(eligibleRes.data);
     } catch { toast.error('Failed to load drive detail'); }
     finally { setDetailLoading(false); }
+  };
+
+  const addEligibleStudents = async () => {
+    setAddingEligible(true);
+    try {
+      const { data } = await axios.post(`${API}/college/drives/${detailDrive._id}/add-eligible`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(data.msg); await openDetail(detailDrive); fetchDrives();
+    } catch (err) { toast.error(err.response?.data?.msg || 'Failed to add eligible students'); }
+    finally { setAddingEligible(false); }
   };
 
   const closeDetail = () => { setDetailDrive(null); setDetailData(null); };
@@ -487,6 +509,14 @@ const Drives = () => {
               <Input type="number" value={form.maxArrears} onChange={e => setForm(p => ({ ...p, maxArrears: e.target.value }))} placeholder="e.g. 0" className="mt-1 rounded-xl" />
             </div>
             <div className="md:col-span-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Required skills (comma-separated)</label>
+              <Input value={form.requiredSkills} onChange={e => setForm(p => ({ ...p, requiredSkills: e.target.value }))} placeholder="Java, SQL, Communication" className="mt-1 rounded-xl" />
+              <div className="flex flex-wrap gap-4 mt-2 text-xs font-semibold text-slate-600">
+                <label><input type="checkbox" checked={form.requireResume} onChange={e => setForm(p => ({ ...p, requireResume: e.target.checked }))} className="mr-1" /> Resume required</label>
+                <label><input type="checkbox" checked={form.requireVerifiedProfile} onChange={e => setForm(p => ({ ...p, requireVerifiedProfile: e.target.checked }))} className="mr-1" /> Verified ID required</label>
+              </div>
+            </div>
+            <div className="md:col-span-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Interview Rounds (comma-separated)</label>
               <Input value={form.rounds} onChange={e => setForm(p => ({ ...p, rounds: e.target.value }))} placeholder="Aptitude, Technical, HR" className="mt-1 rounded-xl" />
             </div>
@@ -596,6 +626,13 @@ const Drives = () => {
               <div className="flex justify-center py-16 shrink-0"><div className="animate-spin w-7 h-7 border-3 border-emerald-600 border-t-transparent rounded-full" /></div>
             ) : detailData && (
               <div className="p-5 space-y-6 overflow-y-auto">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4"><p className="text-[10px] uppercase font-bold text-emerald-700">Eligible students</p><p className="text-2xl font-black text-emerald-900">{eligibility?.eligible?.length || 0}</p><Button size="sm" disabled={addingEligible || !eligibility?.eligible?.length} onClick={addEligibleStudents} className="mt-2 h-8 bg-emerald-600 text-xs">{addingEligible ? 'Adding…' : 'Auto-add eligible'}</Button></div>
+                  <div className="rounded-xl border border-amber-100 bg-amber-50 p-4"><p className="text-[10px] uppercase font-bold text-amber-700">Not eligible</p><p className="text-2xl font-black text-amber-900">{eligibility?.ineligible?.length || 0}</p><p className="text-[10px] text-amber-700 mt-2 line-clamp-2">{eligibility?.ineligible?.slice(0, 2).map(s => `${s.user?.name}: ${s.eligibilityResult.reasons.join(', ')}`).join(' · ') || 'All students meet the rules'}</p></div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                  {STAGE_OPTIONS.map(stage => <button key={stage.value} onClick={() => setStageValue(stage.value)} className={`rounded-xl border p-2 text-left ${STAGE_BADGE_COLORS[stage.value]}`}><p className="text-[9px] uppercase font-bold">{stage.label}</p><p className="text-xl font-black">{detailData.statusCounts?.[stage.value] || 0}</p></button>)}
+                </div>
                 {/* Students + stage update */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
