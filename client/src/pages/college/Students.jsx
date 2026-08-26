@@ -197,6 +197,16 @@ const Students = () => {
 
   const closeDetail = () => { setDetailId(null); setDetail(null); };
 
+  const deleteInterviewScorecard = async card => {
+    if (!window.confirm('Delete this interview scorecard permanently?')) return;
+    try {
+      await axios.delete(`${API}/college/operations/employers/${card.employer._id}/scorecards/${card._id}`, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Scorecard deleted');
+      await openDetail(detail.student._id);
+      fetchStudents();
+    } catch (err) { toast.error(err.response?.data?.msg || 'Could not delete scorecard'); }
+  };
+
   const saveAccreditation = async event => {
     event.preventDefault();
     setSavingAccreditation(true);
@@ -563,7 +573,7 @@ const Students = () => {
                       title="Select all on this page"
                     />
                   </th>
-                  {['Student', 'Department', 'Batch', 'Roll No.', 'Status', 'Verified', 'Source', 'Registered'].map(h => (
+                  {['Student', 'Department', 'Batch', 'Roll No.', 'Status', 'Interview', 'Verified', 'Source', 'Registered'].map(h => (
                     <th key={h} className="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">{h}</th>
                   ))}
                   <th className="text-right py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
@@ -594,6 +604,12 @@ const Students = () => {
                     <td className="py-3 px-4 text-xs font-medium text-slate-600">{s.rollNumber || '—'}</td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusColors[s.placementStatus] || 'bg-slate-50 text-slate-600'}`}>{s.placementStatus}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      {s.interviewSummary?.latest ? <div title={s.interviewSummary.latest.comments || 'No comments'}>
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${['strong_hire','hire'].includes(s.interviewSummary.latest.recommendation) ? 'bg-emerald-50 text-emerald-700' : s.interviewSummary.latest.recommendation === 'no_hire' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>{s.interviewSummary.latest.recommendation.replaceAll('_',' ')}</span>
+                        <p className="text-[9px] text-slate-400 mt-1">{s.interviewSummary.latest.employer?.name} · {s.interviewSummary.count} review{s.interviewSummary.count === 1 ? '' : 's'}</p>
+                      </div> : <span className="text-[10px] text-slate-400">No scorecard</span>}
                     </td>
                     <td className="py-3 px-4">
                       {s.idVerification?.status === 'approved' ? <ShieldCheck size={16} className="text-emerald-500" /> : <span className="text-[10px] text-slate-400">—</span>}
@@ -682,6 +698,20 @@ const Students = () => {
                     </select>
                     {savingStatus && <span className="text-slate-400">Saving...</span>}
                   </div>
+                </div>
+
+                {/* Interview feedback linked from Employer CRM */}
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 space-y-3">
+                  <div><p className="text-emerald-900 font-black uppercase text-[10px]">Interview Scorecards</p><p className="text-[10px] text-emerald-700 mt-1">Feedback recorded for this student from Employer CRM.</p></div>
+                  {(detail.interviewScorecards || []).length === 0 ? <p className="rounded-xl bg-white p-3 text-slate-400">No interview scorecards have been recorded for this student.</p> : detail.interviewScorecards.map(card => {
+                    const average = ((Number(card.technical || 0) + Number(card.communication || 0) + Number(card.problemSolving || 0)) / 3).toFixed(1);
+                    return <div key={card._id} className="rounded-xl border border-emerald-100 bg-white p-4 space-y-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-black text-slate-900">{card.employer?.name}</p><p className="text-[10px] text-slate-500">{card.drive?.title || 'Drive'} · Interviewer: {card.interviewer || 'Not specified'} · {new Date(card.createdAt).toLocaleDateString('en-IN')}</p></div><span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${['strong_hire','hire'].includes(card.recommendation) ? 'bg-emerald-100 text-emerald-800' : card.recommendation === 'no_hire' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{card.recommendation.replaceAll('_',' ')}</span></div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{[['Technical',card.technical],['Communication',card.communication],['Problem solving',card.problemSolving],['Average',average]].map(([label,value]) => <div key={label} className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] uppercase font-bold text-slate-400">{label}</p><p className="font-black text-slate-800">{value}/5</p></div>)}</div>
+                      <div className="rounded-lg bg-slate-50 p-2"><p className="text-[9px] uppercase font-bold text-slate-400">Reason / comments</p><p className="text-xs text-slate-700 mt-1">{card.comments || 'No reason was provided.'}</p></div>
+                      <button onClick={() => deleteInterviewScorecard(card)} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-bold text-red-600 hover:bg-red-50"><Trash2 size={13}/> Delete scorecard</button>
+                    </div>;
+                  })}
                 </div>
 
                 {/* Accreditation capture — source of truth for compliance exports */}

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck
+  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, CalendarDays
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findPermissionKeyForPath } from '../../config/teamPermissions';
@@ -57,6 +57,7 @@ const coreMenus = {
     { icon: Activity,        label: 'Campus Drives',     path: '/college/drives' },
     { icon: ShieldCheck,     label: 'ID Verification',   path: '/college/verification' },
     { icon: Users,           label: 'Placement Tools',    path: '/college/placement-tools' },
+    { icon: CalendarDays,    label: 'College Operations', path: '/college/operations' },
     { icon: FileText,        label: 'Reports & Passkey', path: '/college/reports' },
     { icon: CreditCard,      label: 'Subscription',      path: '/college/subscription' },
     { icon: History,         label: 'Payment History',   path: '/college/payment-history' },

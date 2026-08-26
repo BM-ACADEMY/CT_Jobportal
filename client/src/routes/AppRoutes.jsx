@@ -105,6 +105,8 @@ const CollegeSettings = page('college/Settings');
 const CollegeReports = page('college/Reports');
 const CollegeVerification = page('college/Verification');
 const CollegePlacementTools = page('college/PlacementTools');
+const CollegeOperations = page('college/CollegeOperations');
+const EventCheckIn = page('jobseeker/EventCheckIn');
 const PrincipalExecutiveSummary = page('public/PrincipalExecutiveSummary');
 const CompanyDriveView = page('public/CompanyDriveView');
 const AcceptInchargeInvite = page('public/AcceptInchargeInvite');
@@ -376,6 +378,8 @@ const AppRoutes = () => {
         <Route path="/college/payment-history" element={<PrivateRoute roles={['college']}><PaymentHistory /></PrivateRoute>} />
         <Route path="/college/settings" element={<PrivateRoute roles={['college']}><CollegeSettings /></PrivateRoute>} />
         <Route path="/college/placement-tools" element={<PrivateRoute roles={['college']}><CollegePlacementTools /></PrivateRoute>} />
+        <Route path="/college/operations" element={<PrivateRoute roles={['college']}><CollegeOperations /></PrivateRoute>} />
+        <Route path="/college-event-checkin/:token" element={<PrivateRoute roles={['jobseeker']}><EventCheckIn /></PrivateRoute>} />
 
         {/* Admin */}
         <Route

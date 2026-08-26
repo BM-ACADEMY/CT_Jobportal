@@ -6,7 +6,7 @@ import RecommendedJobCard from '../../components/jobseeker/RecommendedJobCard';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles, TrendingUp, CircleCheck, Loader2, CheckCircle2 } from 'lucide-react';
+import { QrCode, Smartphone, ExternalLink, Sparkles, CircleCheck, Loader2, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
 import { useAuth } from '../../context/AuthContext';
@@ -191,6 +191,26 @@ const JobSeekerDashboard = () => {
             </div>
           )}
 
+        {campusStudent?.interviewScorecards?.length > 0 && (
+          <section className="relative z-10 rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8 shadow-sm space-y-6 xl:w-[calc(100%+372px)]">
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Campus placement feedback</p><h3 className="text-lg font-black text-slate-900 mt-1">My Interview Scorecards</h3><p className="text-xs text-slate-500 mt-1">Feedback recorded by your placement team for your campus interviews.</p></div>
+              <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-50">{campusStudent.interviewScorecards.length} review{campusStudent.interviewScorecards.length === 1 ? '' : 's'}</Badge>
+            </div>
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {campusStudent.interviewScorecards.map(card => {
+                const average = ((Number(card.technical || 0) + Number(card.communication || 0) + Number(card.problemSolving || 0)) / 3).toFixed(1);
+                const positive = ['strong_hire', 'hire'].includes(card.recommendation);
+                return <article key={card._id} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 space-y-4 min-w-0">
+                  <div className="flex items-start justify-between gap-2"><div><h4 className="font-black text-slate-900">{card.employer?.name}</h4><p className="text-[10px] text-slate-500">{card.drive?.title || 'Campus drive'} · {new Date(card.createdAt).toLocaleDateString('en-IN')}</p></div><span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${positive ? 'bg-emerald-100 text-emerald-800' : card.recommendation === 'no_hire' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{card.recommendation.replaceAll('_', ' ')}</span></div>
+                  <div className="grid grid-cols-2 gap-2">{[['Technical',card.technical],['Communication',card.communication],['Problem solving',card.problemSolving],['Average',average]].map(([label,value]) => <div key={label} className="rounded-xl bg-white border border-slate-100 p-3"><p className="text-[9px] uppercase font-bold text-slate-400 leading-tight">{label}</p><p className="text-lg font-black text-slate-800 mt-1">{value}<span className="text-xs text-slate-400">/5</span></p></div>)}</div>
+                  <div className="rounded-xl bg-white border border-slate-100 p-3"><p className="text-[9px] uppercase font-bold text-slate-400">Reason / feedback</p><p className="text-xs text-slate-700 mt-1">{card.comments || 'No additional feedback was provided.'}</p>{card.interviewer && <p className="text-[9px] text-slate-400 mt-2">Interviewer: {card.interviewer}</p>}</div>
+                </article>;
+              })}
+            </div>
+          </section>
+        )}
+
         {user?.pendingCompanyInvite && (
           <div className="bg-white border-2 border-emerald-500 rounded-3xl p-6 shadow-lg shadow-emerald-500/10 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-4 fade-in">
             <div className="flex items-center gap-4">
@@ -245,7 +265,7 @@ const JobSeekerDashboard = () => {
         )}
         
         {/* Recommended Jobs */}
-        <section className="space-y-6">
+        <section className="relative z-10 space-y-6 xl:w-[calc(100%+372px)]">
           <div className="flex items-center justify-between px-2">
             <div className="space-y-0.5">
               <h2 className="text-xl font-bold text-[#0f172a] tracking-tight">Personalized Recommendations</h2>
@@ -266,9 +286,9 @@ const JobSeekerDashboard = () => {
                <p className="text-[10px] text-slate-400">Complete your profile to get matched!</p>
              </div>
           ) : (
-            <div className="flex gap-6 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2 snap-x">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {recommendedJobs.map(job => (
-                <div key={job.id} className="snap-start shrink-0">
+                <div key={job.id} className="min-w-0">
                   <RecommendedJobCard job={job} />
                 </div>
               ))}
@@ -278,7 +298,7 @@ const JobSeekerDashboard = () => {
 
 
         {/* Job Listings Header */}
-        <div className="space-y-6">
+        <div className="relative z-10 space-y-6 xl:w-[calc(100%+372px)]">
           <div className="flex items-center justify-between px-2">
              <div className="space-y-0.5">
                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Recent Opportunities</h2>
@@ -289,7 +309,7 @@ const JobSeekerDashboard = () => {
              </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {loading ? (
               [1, 2].map(i => <div key={i} className="h-32 bg-slate-50 rounded-2xl animate-pulse border border-slate-100" />)
             ) : detailedJobs.length === 0 ? (
@@ -300,12 +320,13 @@ const JobSeekerDashboard = () => {
               detailedJobs.map(job => {
                 const application = myApplications.find(app => app.job?._id === job.id);
                 return (
-                  <DetailedJobCard 
-                    key={job.id} 
-                    job={job} 
-                    application={application}
-                    onRevoke={fetchMyApplications}
-                  />
+                  <div key={job.id} className="min-w-0 h-full">
+                    <DetailedJobCard 
+                      job={job} 
+                      application={application}
+                      onRevoke={fetchMyApplications}
+                    />
+                  </div>
                 );
               })
             )}
@@ -333,17 +354,6 @@ const JobSeekerDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-[32px] bg-gradient-to-br from-slate-900 to-slate-800 text-white border-none overflow-hidden h-72 flex flex-col justify-end group cursor-pointer hover:shadow-2xl hover:shadow-slate-900/20 transition-all duration-500">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 group-hover:rotate-[15deg] transition-all duration-1000 ease-out">
-               <TrendingUp size={120} />
-            </div>
-            <div className="absolute inset-0  from-slate-900 via-slate-900/60 to-transparent opacity-80" />
-            <div className="p-8 relative z-10 space-y-4">
-               <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-xl backdrop-blur-md">Market Report</Badge>
-               <h4 className="text-xl font-black leading-tight tracking-tight">The Future of AI in Career Planning</h4>
-               <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2 group-hover:text-emerald-400 transition-colors uppercase tracking-[0.2em]">Read Insights <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /></p>
-            </div>
-        </Card>
       </div>
     </div>
   );

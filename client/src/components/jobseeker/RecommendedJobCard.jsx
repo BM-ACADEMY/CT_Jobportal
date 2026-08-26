@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const RecommendedJobCard = ({ job }) => {
   return (
     <Card 
-      className="min-w-[280px] w-[280px] rounded-[24px] border-border hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer group bg-card overflow-hidden"
+      className="w-full min-w-0 h-full rounded-[24px] border-border hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer group bg-card overflow-hidden"
     >
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-5">

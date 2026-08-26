@@ -9,6 +9,7 @@ const Assessment = require('../models/Assessment');
 const Application = require('../models/Application');
 const CollegePlacementReport = require('../models/CollegePlacementReport');
 const CollegeActivityLog = require('../models/CollegeActivityLog');
+const CollegeEmployer = require('../models/CollegeEmployer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const QRCode = require('qrcode');
@@ -846,13 +847,17 @@ const inviteIncharge = async (req, res) => {
 
     const { name, email, phone, assignedCompanies } = req.body;
     if (!name || !email || !phone) return res.status(400).json({ msg: 'Name, email, and phone are required' });
+    const normalizedEmail = email.toLowerCase().trim();
+    if (drive.inCharges.some(inCharge => inCharge.email?.toLowerCase().trim() === normalizedEmail)) {
+      return res.status(409).json({ msg: 'This person is already assigned or invited as an in-charge for this drive. Use Resend instead.' });
+    }
 
     const inviteToken = crypto.randomBytes(24).toString('hex');
     const inviteTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     drive.inCharges.push({
       name,
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone: phone.trim(),
       status: 'invited',
       inviteToken,
@@ -1165,9 +1170,20 @@ const getStudents = async (req, res) => {
       ]);
     }
 
+    const pageStudentIds = students.map(s => s._id);
+    const scorecardEmployers = await CollegeEmployer.find({ college: college._id, 'scorecards.student': { $in: pageStudentIds } })
+      .select('name scorecards').populate('scorecards.drive', 'title');
+    const scorecardMap = new Map();
+    scorecardEmployers.forEach(employer => employer.scorecards.forEach(card => {
+      const key = card.student?.toString();
+      if (!key || !pageStudentIds.some(id => id.toString() === key)) return;
+      const item = { ...card.toObject(), employer: { _id: employer._id, name: employer.name } };
+      const list = scorecardMap.get(key) || []; list.push(item); scorecardMap.set(key, list);
+    }));
     const studentsWithCompletion = students.map(student => {
       const raw = student.toObject ? student.toObject() : student;
-      return { ...raw, profileCompletion: completionForStudent(raw) };
+      const scorecards = (scorecardMap.get(raw._id.toString()) || []).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+      return { ...raw, profileCompletion: completionForStudent(raw), interviewSummary: { count: scorecards.length, latest: scorecards[0] || null } };
     });
     res.json({ students: studentsWithCompletion, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
   } catch (err) {
@@ -1224,7 +1240,14 @@ const getStudentDetail = async (req, res) => {
       sessions
     };
 
-    res.json({ student, applications, loginActivity });
+    const employers = await CollegeEmployer.find({ college: college._id, 'scorecards.student': student._id })
+      .select('name industry scorecards').populate('scorecards.drive', 'title driveCode');
+    const interviewScorecards = employers.flatMap(employer => employer.scorecards
+      .filter(card => card.student?.toString() === student._id.toString())
+      .map(card => ({ ...card.toObject(), employer: { _id: employer._id, name: employer.name, industry: employer.industry } })))
+      .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ student, applications, loginActivity, interviewScorecards });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error' });
   }
@@ -2600,7 +2623,14 @@ const getMyCollegeStudent = async (req, res) => {
     const student = await CollegeStudent.findOne({ user: req.user.id })
       .populate('college', 'name code logo verificationStatus')
       .sort({ createdAt: -1 });
-    res.json(student || null);
+    if (!student) return res.json(null);
+    const employers = await CollegeEmployer.find({ college: student.college._id, 'scorecards.student': student._id })
+      .select('name industry scorecards').populate('scorecards.drive', 'title driveCode');
+    const interviewScorecards = employers.flatMap(employer => employer.scorecards
+      .filter(card => card.student?.toString() === student._id.toString())
+      .map(card => ({ ...card.toObject(), employer: { _id: employer._id, name: employer.name, industry: employer.industry } })))
+      .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json({ ...student.toObject(), interviewScorecards });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error', error: err.message });
   }

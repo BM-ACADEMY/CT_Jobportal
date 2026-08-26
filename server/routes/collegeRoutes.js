@@ -6,6 +6,7 @@ const upload = require('../middleware/upload');
 const CampusDrive = require('../models/CampusDrive');
 const College = require('../models/College');
 const { getOverview, updateAccreditationRecord, exportAccreditation, searchEmployers, getImportTemplate, importPlacementCsv, importProgressionCsv } = require('../controllers/accreditationController');
+const operations = require('../controllers/collegeOperationsController');
 const {
   getDashboard,
   getDashboardStats,
@@ -152,6 +153,15 @@ router.put('/profile', verifyToken, authorizeRoles('college'), updateProfile);
 router.post('/proof-upload', verifyToken, authorizeRoles('college'), upload.single('proof'), uploadProofDocument);
 router.post('/principal-passkey', verifyToken, authorizeRoles('college'), generatePrincipalPasskey);
 router.put('/me/subscription/auto-renew', verifyToken, authorizeRoles('college'), toggleAutoRenew);
+router.get('/operations/events', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.getEvents);
+router.post('/operations/events', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.createEvent);
+router.post('/operations/events/:eventId/remind', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.sendEventReminder);
+router.get('/operations/analytics', verifyToken, authorizeRoles('college'), requireCollegePermission('reports'), operations.getAdvancedAnalytics);
+router.get('/operations/employers', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.getEmployers);
+router.post('/operations/employers', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.saveEmployer);
+router.put('/operations/employers/:employerId', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.saveEmployer);
+router.post('/operations/employers/:employerId/scorecards', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.addScorecard);
+router.delete('/operations/employers/:employerId/scorecards/:scorecardId', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.deleteScorecard);
 
 // MoU + Placement Reports
 router.get('/mou', verifyToken, authorizeRoles('college'), generateMou);
@@ -228,6 +238,7 @@ router.post('/me/join', verifyToken, authorizeRoles('jobseeker'), joinCollege);
 router.post('/me/activate', verifyToken, authorizeRoles('jobseeker'), activateProfile);
 router.get('/me/drives', verifyToken, authorizeRoles('jobseeker'), getMyDrives);
 router.post('/me/drives/:driveId/register', verifyToken, authorizeRoles('jobseeker'), registerForDrive);
+router.post('/me/event-checkin/:token', verifyToken, authorizeRoles('jobseeker'), operations.checkInEvent);
 
 // ── "Manage Drive" capability (any role) ─────────────────────────────────────
 router.get('/me/incharge-drives', verifyToken, getMyInchargeDrives);
