@@ -55,7 +55,6 @@ const PublicHeader = () => {
       ? 'bg-transparent border-b border-white/10'
       : 'bg-white border-b border-slate-100';
 
-  const logoTextColor = (scrolled || mobileOpen || !isDarkHero) ? 'text-slate-900' : 'text-white';
   const navColor = (scrolled || !isDarkHero) ? 'text-slate-600 hover:text-emerald-600' : 'text-white/80 hover:text-white';
   const navActiveColor = (scrolled || !isDarkHero) ? 'text-emerald-600 font-bold' : 'text-white font-bold';
 
@@ -65,13 +64,8 @@ const PublicHeader = () => {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/25 group-hover:scale-105 transition-transform">
-              <span className="text-slate-900 font-black text-base">V</span>
-            </div>
-            <span className={`text-xl font-bold tracking-tight transition-colors duration-300 ${logoTextColor}`}>
-              Velaivaaipu
-            </span>
+          <Link to="/" className="group shrink-0" aria-label="Velaivaaipu home">
+            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-12 w-[118px] object-contain transition-transform group-hover:scale-[1.03]" />
           </Link>
 
           {/* Desktop Nav */}

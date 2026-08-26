@@ -15,9 +15,14 @@ const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const Coupon = require('../models/Coupon');
 const { reconcileTeamSeats } = require('../utils/teamMembership');
-const { notifyRoles } = require('../utils/inAppNotifications');
+const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 
 const RECURRING_ROLES = ['college', 'company'];
+const paymentHistoryLink = role => role === 'college'
+  ? '/college/payment-history'
+  : ['company', 'recruiter', 'org_employee'].includes(role)
+    ? '/company/payment-history'
+    : '/candidate/payment-history';
 const STUDENT_LIMIT_UNLIMITED = 100000;
 const COLLEGE_TIER_MAP = {
   'Campus Free': 'campus_free',
@@ -695,6 +700,15 @@ const requestRefund = async (req, res) => {
     }
     payment.status = 'refund_pending';
     await payment.save();
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'New refund request',
+      message: `A refund was requested for payment ${payment._id}.`,
+      type: 'refund_requested',
+      link: '/admin/subscriptions/refunds',
+      metadata: { paymentId: payment._id, userId: req.user.id }
+    }).catch(err => console.error('Refund request notification failed:', err.message));
     res.json({ success: true, msg: 'Refund request submitted successfully' });
   } catch (err) {
     console.error('Request Refund Error:', err.message);
@@ -750,6 +764,16 @@ const approveRefund = async (req, res) => {
       }
     }
 
+    notifyUser({
+      io: req.io,
+      recipientId: payment.user._id,
+      title: 'Refund approved',
+      message: 'Your refund request was approved and your subscription was updated.',
+      type: 'refund_status',
+      link: paymentHistoryLink(user?.role?.name),
+      metadata: { paymentId: payment._id, status: 'refunded' }
+    }).catch(err => console.error('Refund approval notification failed:', err.message));
+
     res.json({ success: true, msg: 'Refund approved. Subscription revoked.' });
   } catch (err) {
     console.error('Approve Refund Error:', err.message);
@@ -760,7 +784,7 @@ const approveRefund = async (req, res) => {
 const rejectRefund = async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const payment = await Payment.findById(paymentId);
+    const payment = await Payment.findById(paymentId).populate({ path: 'user', populate: { path: 'role', select: 'name' } });
     if (!payment) {
       return res.status(404).json({ msg: 'Payment record not found' });
     }
@@ -770,6 +794,16 @@ const rejectRefund = async (req, res) => {
 
     payment.status = 'completed';
     await payment.save();
+
+    notifyUser({
+      io: req.io,
+      recipientId: payment.user,
+      title: 'Refund request rejected',
+      message: 'Your refund request was reviewed and rejected. The payment remains active.',
+      type: 'refund_status',
+      link: paymentHistoryLink(payment.user?.role?.name),
+      metadata: { paymentId: payment._id, status: 'rejected' }
+    }).catch(err => console.error('Refund rejection notification failed:', err.message));
 
     res.json({ success: true, msg: 'Refund request rejected' });
   } catch (err) {

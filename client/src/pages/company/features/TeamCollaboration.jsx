@@ -695,13 +695,12 @@ const TeamCollaboration = () => {
     }
   };
 
-  const handleGroupAction = async (action) => {
+  const handleGroupAction = async (action, messageId) => {
     if (action === 'delete' || action === 'clear') {
       setGroupConfirmAction(action);
     } else if (action === 'settings') {
       toast.info('Group settings coming soon');
     } else if (action === 'delete_message') {
-      const messageId = arguments[1];
       try {
         await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/collaboration/messages/${messageId}`, { headers });
         setMessages(prev => prev.filter(m => m._id !== messageId));

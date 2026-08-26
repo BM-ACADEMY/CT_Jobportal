@@ -6,6 +6,7 @@ const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
 const { logTeamActivity } = require('../utils/teamActivityLog');
+const { notifyUser } = require('../utils/inAppNotifications');
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const formatWhen = (date) => new Date(date).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short' });
@@ -100,6 +101,16 @@ const scheduleInterview = async (req, res) => {
       .populate('candidate', 'name email avatar profile.headline profile.phone')
       .populate({ path: 'job', select: 'title company', populate: { path: 'company', select: 'name' } });
 
+    notifyUser({
+      io: req.io,
+      recipientId: populated.candidate?._id,
+      title: 'Interview scheduled',
+      message: `Your interview for ${populated.job?.title || 'a role'} is scheduled for ${formatWhen(populated.scheduledAt)}.`,
+      type: 'interview_scheduled',
+      link: '/candidate/applications',
+      metadata: { interviewId: populated._id, applicationId, scheduledAt: populated.scheduledAt }
+    }).catch(err => console.error('Interview notification failed:', err.message));
+
     if (populated.candidate?.email) {
       sendEmail({
         email: populated.candidate.email,
@@ -193,6 +204,16 @@ const cancelInterview = async (req, res) => {
     const scheduledAt = interview.scheduledAt;
     interview.status = 'cancelled';
     await interview.save();
+
+    notifyUser({
+      io: req.io,
+      recipientId: interview.candidate?._id || interview.candidate,
+      title: 'Interview cancelled',
+      message: `Your interview for ${interview.job?.title || 'a role'} scheduled for ${formatWhen(scheduledAt)} was cancelled.`,
+      type: 'interview_cancelled',
+      link: '/candidate/applications',
+      metadata: { interviewId: interview._id }
+    }).catch(err => console.error('Interview cancellation notification failed:', err.message));
 
     if (interview.candidate?.email) {
       sendEmail({

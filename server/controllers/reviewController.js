@@ -1,4 +1,5 @@
 const Review = require('../models/Review');
+const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 
 // @desc  Submit or update user review
 // @route POST /api/reviews
@@ -21,6 +22,16 @@ const submitReview = async (req, res) => {
         comment
       });
     }
+
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'Review awaiting moderation',
+      message: `A ${rating}-star review was submitted for moderation.`,
+      type: 'review_submitted',
+      link: '/admin/reviews',
+      metadata: { reviewId: review._id }
+    }).catch(err => console.error('Review notification failed:', err.message));
     
     res.status(201).json(review);
   } catch (err) {
@@ -87,6 +98,18 @@ const updateReviewStatus = async (req, res) => {
     ).populate('user', 'name avatar role');
     
     if (!review) return res.status(404).json({ msg: 'Review not found' });
+
+    notifyUser({
+      io: req.io,
+      recipientId: review.user._id,
+      title: `Review ${status}`,
+      message: status === 'approved'
+        ? 'Your review has been approved and is now visible.'
+        : 'Your review was not approved. You can edit it and submit it again.',
+      type: 'review_status',
+      link: '/write-review',
+      metadata: { reviewId: review._id, status }
+    }).catch(err => console.error('Review status notification failed:', err.message));
     
     res.json(review);
   } catch (err) {

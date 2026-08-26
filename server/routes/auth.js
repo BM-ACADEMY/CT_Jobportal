@@ -49,14 +49,6 @@ router.get('/github', (req, res, next) => {
 });
 router.get('/github/callback', passport.authenticate('github', { failureRedirect: '/login' }), socialAuthCallback);
 
-// LinkedIn
-router.get('/linkedin', (req, res, next) => {
-  const role = req.query.role || 'jobseeker';
-  passport.authenticate('linkedin', { 
-    state: JSON.stringify({ role })
-  })(req, res, next);
-});
-router.get('/linkedin/callback', passport.authenticate('linkedin', { failureRedirect: '/login' }), socialAuthCallback);
 
 router.get('/me', verifyToken, getUserProfile);
 

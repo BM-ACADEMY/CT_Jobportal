@@ -6,12 +6,9 @@ const Footer = () => (
     <div className="max-w-6xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
         <div className="md:col-span-2">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
-              <span className="text-slate-900 font-black text-lg">V</span>
-            </div>
-            <span className="text-white font-bold text-2xl tracking-tight">Velaivaaipu</span>
-          </div>
+          <Link to="/" className="inline-block mb-5" aria-label="Velaivaaipu home">
+            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="lazy" decoding="async" className="h-24 w-[165px] object-contain" />
+          </Link>
           <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-xs">
             India's most trusted job portal connecting visionary companies with exceptional talent across the nation.
           </p>

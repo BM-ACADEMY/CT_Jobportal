@@ -148,7 +148,7 @@ const registerUser = async (req, res) => {
     // Send OTP Email
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-        <h2 style="color: #1d4ed8;">Welcome to Naukri Clone!</h2>
+        <h2 style="color: #1d4ed8;">Welcome to Velaivaaipu!</h2>
         <p style="font-size: 16px;">Hi ${name},</p>
         <p style="font-size: 16px;">Thank you for registering. Please use the following OTP to verify your email address. It is valid for 10 minutes.</p>
         <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
@@ -160,7 +160,7 @@ const registerUser = async (req, res) => {
 
     const emailSent = await sendEmail({
       email,
-      subject: 'Verify Your Email - Naukri Clone',
+      subject: 'Verify Your Email - Velaivaaipu',
       html: htmlContent
     });
 
@@ -299,7 +299,7 @@ const loginUser = async (req, res) => {
           </div>
         </div>
       `;
-      const emailSent = await sendEmail({ email, subject: 'Verify Your Email - Naukri Clone', html: htmlContent });
+      const emailSent = await sendEmail({ email, subject: 'Verify Your Email - Velaivaaipu', html: htmlContent });
       
       const msg = emailSent 
         ? 'Account not verified. New OTP sent.' 
@@ -416,7 +416,7 @@ const forgotPassword = async (req, res) => {
       </div>
     `;
 
-    const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Naukri Clone', html: htmlContent });
+    const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Velaivaaipu', html: htmlContent });
 
     if (!emailSent) {
       return res.json({ 
@@ -592,7 +592,7 @@ const resendOtp = async (req, res) => {
 
     const emailSent = await sendEmail({
       email: normalizedEmail,
-      subject: 'New Verification Code - Naukri Clone',
+      subject: 'New Verification Code - Velaivaaipu',
       html: htmlContent
     });
 

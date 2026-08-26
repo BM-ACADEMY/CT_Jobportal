@@ -165,6 +165,9 @@ const HomeJobseeker = () => {
                 className="row-span-2 rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50 relative"
               >
                 <img
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                   src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800"
                   alt="Job seeker celebrating an offer"
                   className="w-full h-full object-cover"

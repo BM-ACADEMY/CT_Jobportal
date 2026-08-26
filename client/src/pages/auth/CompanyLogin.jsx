@@ -61,11 +61,9 @@ const CompanyLogin = () => {
         </div>
 
         <div className="relative z-10 flex flex-col h-full">
-          <Link to="/" className="flex items-center gap-3 no-underline mb-16 group">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-xl group-hover:scale-110 transition-transform">
-              <span className="text-emerald-700 font-black text-lg">V</span>
-            </div>
-            <span className="text-white font-black text-2xl tracking-tighter">velaivaaipu <span className="text-emerald-400">Business</span></span>
+          <Link to="/" className="inline-flex flex-col items-start no-underline mb-16 group" aria-label="Velaivaaipu Business home">
+            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-24 w-[180px] object-contain transition-transform group-hover:scale-[1.03]" />
+            <span className="-mt-3 ml-1 text-emerald-300 text-xs font-black uppercase tracking-[0.2em]">Business</span>
           </Link>
 
           <div>

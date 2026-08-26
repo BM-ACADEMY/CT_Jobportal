@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,108 +11,103 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import { GuestRoute, PrivateRoute } from './ProtectedRoutes';
 import FeatureGate from '../components/subscription/FeatureGate';
 
-// Pages
-import HomePage from '../pages/Home';
-import FreeAssessment from '../pages/public/FreeAssessment';
-import CampusRegistration from '../pages/public/CampusRegistration';
-import Jobs from '../pages/Jobs';
-import JobDetails from '../pages/JobDetails';
-import Companies from '../pages/Companies';
-import CompanyProfilePage from '../pages/CompanyProfilePage';
-import Contact from '../pages/Contact';
-import HowItWorks from '../pages/HowItWorks';
-import TermsAndConditions from '../pages/TermsAndConditions';
-import Blog from '../pages/Blog';
-import BlogDetails from '../pages/BlogDetails';
-import LoginPage from '../pages/auth/Login';
-import RegisterPage from '../pages/auth/Register';
-import VerifyOtpPage from '../pages/auth/VerifyOtp';
-import ForgotPasswordPage from '../pages/auth/ForgotPassword';
-import SocialAuthSuccess from '../pages/auth/SocialAuthSuccess';
-import CompleteSocialProfile from '../pages/auth/CompleteSocialProfile';
-import CompanyLogin from '../pages/auth/CompanyLogin';
-import JobSeekerDashboard from '../pages/jobseeker/Dashboard';
-import AdminDashboard from '../pages/admin/Dashboard';
-import AdminLogin from '../pages/admin/AdminLogin';
-import ManageUsers from '../pages/admin/ManageUsers';
-import UserProfile from '../pages/admin/UserProfile';
-import ManageJobs from '../pages/admin/ManageJobs';
-import ManageSubscriptions from '../pages/admin/ManageSubscriptions';
-import ManageRenewals from '../pages/admin/ManageRenewals';
-import ManageRefunds from '../pages/admin/ManageRefunds';
-import ManageBuyers from '../pages/admin/ManageBuyers';
-import BuyerDetails from '../pages/admin/BuyerDetails';
-import ManagePayPer from '../pages/admin/ManagePayPer';
-import ManageCoupons from '../pages/admin/ManageCoupons';
-import AdminSettings from '../pages/admin/AdminSettings';
-import CompanyDashboard from '../pages/company/Dashboard';
-import RecruiterSettings from '../pages/company/Settings';
-import PostJob from '../pages/company/PostJob';
-import SubAdminDashboard from '../pages/subadmin/Dashboard';
-import JobSeekerSettings from '../pages/jobseeker/Settings';
-import SavedJobs from '../pages/jobseeker/SavedJobs';
-import Applicants from '../pages/company/Applicants';
-import PublicProfile from '../pages/jobseeker/PublicProfile';
-import JobSeekerSubscription from '../pages/jobseeker/Subscription';
-import CompanySubscription from '../pages/company/Subscription';
-import PaymentHistory from '../pages/shared/PaymentHistory';
-import AdminPaymentHistory from '../pages/admin/PaymentHistory';
-import ManageRequests from '../pages/admin/ManageRequests';
-import AssignedRequests from '../pages/company/AssignedRequests';
-import CompanyProfileManagement from '../pages/company/features/CompanyProfileManagement';
-import PayPerFeatures from '../pages/shared/PayPerFeatures';
-import MeetingRoom from '../pages/shared/MeetingRoom';
+// Route-level code splitting keeps unrelated pages and heavy feature libraries out
+// of the initial bundle. Keep layouts/guards eager so navigation stays responsive.
+const HomePage = lazy(() => import('../pages/Home'));
+const FreeAssessment = lazy(() => import('../pages/public/FreeAssessment'));
+const CampusRegistration = lazy(() => import('../pages/public/CampusRegistration'));
+const Jobs = lazy(() => import('../pages/Jobs'));
+const JobDetails = lazy(() => import('../pages/JobDetails'));
+const Companies = lazy(() => import('../pages/Companies'));
+const CompanyProfilePage = lazy(() => import('../pages/CompanyProfilePage'));
+const Contact = lazy(() => import('../pages/Contact'));
+const HowItWorks = lazy(() => import('../pages/HowItWorks'));
+const TermsAndConditions = lazy(() => import('../pages/TermsAndConditions'));
+const Blog = lazy(() => import('../pages/Blog'));
+const BlogDetails = lazy(() => import('../pages/BlogDetails'));
+const LoginPage = lazy(() => import('../pages/auth/Login'));
+const RegisterPage = lazy(() => import('../pages/auth/Register'));
+const VerifyOtpPage = lazy(() => import('../pages/auth/VerifyOtp'));
+const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPassword'));
+const SocialAuthSuccess = lazy(() => import('../pages/auth/SocialAuthSuccess'));
+const CompleteSocialProfile = lazy(() => import('../pages/auth/CompleteSocialProfile'));
+const CompanyLogin = lazy(() => import('../pages/auth/CompanyLogin'));
 
-// Jobseeker feature pages
-import ResumeBuilder from '../pages/jobseeker/features/ResumeBuilder';
-import JobAlerts from '../pages/jobseeker/features/JobAlerts';
-import ProfileInsights from '../pages/jobseeker/features/ProfileInsights';
-import Messages from '../pages/Messages';
-import CareerCounselling from '../pages/jobseeker/features/CareerCounselling';
-import MockInterviews from '../pages/jobseeker/features/MockInterviews';
-import SkillTests from '../pages/jobseeker/features/SkillTests';
-import AiResumeReview from '../pages/jobseeker/features/AiResumeReview';
-import MyApplications from '../pages/jobseeker/MyApplications';
-import CampusDrives from '../pages/jobseeker/CampusDrives';
-import CampusDriveDetails from '../pages/jobseeker/CampusDriveDetails';
-
-// Company/Recruiter feature pages
-import AtsPipeline from '../pages/company/features/AtsPipeline';
-import Analytics from '../pages/company/features/Analytics';
-import BulkMessaging from '../pages/company/features/BulkMessaging';
-import MyTeam from '../pages/company/MyTeam';
-import TeamRoster from '../pages/company/TeamRoster';
-import VideoInterview from '../pages/company/features/VideoInterview';
-import TeamCollaboration from '../pages/company/features/TeamCollaboration';
-import InterviewScheduling from '../pages/company/features/InterviewScheduling';
-import AICandidateMatching from '../pages/company/features/AICandidateMatching';
-import BulkApplicantManagement from '../pages/company/features/BulkApplicantManagement';
-import MyJobs from '../pages/company/MyJobs';
-import CandidateSearch from '../pages/company/CandidateSearch';
-import DriveRequests from '../pages/company/DriveRequests';
-import RaiseTicket from '../pages/tickets/RaiseTicket';
-import MyTickets from '../pages/tickets/MyTickets';
-import AdminTickets from '../pages/admin/AdminTickets';
-
-// Org Employee pages
-import EmployeeDashboard from '../pages/employee/Dashboard';
-
-import WriteReview from '../pages/shared/WriteReview';
-import ManageReviews from '../pages/admin/ManageReviews';
-import AdminCollegeVerification from '../pages/admin/CollegeVerification';
-import CollegeKycDetails from '../pages/admin/CollegeKycDetails';
-
-// College pages
-import CollegeDashboard from '../pages/college/Dashboard';
-import CollegeStudents from '../pages/college/Students';
-import CollegeDrives from '../pages/college/Drives';
-import CollegeSettings from '../pages/college/Settings';
-import CollegeReports from '../pages/college/Reports';
-import CollegeVerification from '../pages/college/Verification';
-import PrincipalExecutiveSummary from '../pages/public/PrincipalExecutiveSummary';
-import CompanyDriveView from '../pages/public/CompanyDriveView';
-import AcceptInchargeInvite from '../pages/public/AcceptInchargeInvite';
-import ManageDrive from '../pages/shared/ManageDrive';
+const pageModules = import.meta.glob('../pages/**/*.jsx');
+const page = (path) => lazy(pageModules[`../pages/${path}.jsx`]);
+const JobSeekerDashboard = page('jobseeker/Dashboard');
+const AdminDashboard = page('admin/Dashboard');
+const AdminLogin = page('admin/AdminLogin');
+const ManageUsers = page('admin/ManageUsers');
+const UserProfile = page('admin/UserProfile');
+const ManageJobs = page('admin/ManageJobs');
+const ManageSubscriptions = page('admin/ManageSubscriptions');
+const ManageRenewals = page('admin/ManageRenewals');
+const ManageRefunds = page('admin/ManageRefunds');
+const ManageBuyers = page('admin/ManageBuyers');
+const BuyerDetails = page('admin/BuyerDetails');
+const ManagePayPer = page('admin/ManagePayPer');
+const ManageCoupons = page('admin/ManageCoupons');
+const AdminSettings = page('admin/AdminSettings');
+const CompanyDashboard = page('company/Dashboard');
+const RecruiterSettings = page('company/Settings');
+const PostJob = page('company/PostJob');
+const SubAdminDashboard = page('subadmin/Dashboard');
+const JobSeekerSettings = page('jobseeker/Settings');
+const SavedJobs = page('jobseeker/SavedJobs');
+const Applicants = page('company/Applicants');
+const PublicProfile = page('jobseeker/PublicProfile');
+const JobSeekerSubscription = page('jobseeker/Subscription');
+const CompanySubscription = page('company/Subscription');
+const PaymentHistory = page('shared/PaymentHistory');
+const AdminPaymentHistory = page('admin/PaymentHistory');
+const ManageRequests = page('admin/ManageRequests');
+const AssignedRequests = page('company/AssignedRequests');
+const CompanyProfileManagement = page('company/features/CompanyProfileManagement');
+const PayPerFeatures = page('shared/PayPerFeatures');
+const MeetingRoom = page('shared/MeetingRoom');
+const ResumeBuilder = page('jobseeker/features/ResumeBuilder');
+const JobAlerts = page('jobseeker/features/JobAlerts');
+const ProfileInsights = page('jobseeker/features/ProfileInsights');
+const Messages = page('Messages');
+const CareerCounselling = page('jobseeker/features/CareerCounselling');
+const MockInterviews = page('jobseeker/features/MockInterviews');
+const SkillTests = page('jobseeker/features/SkillTests');
+const AiResumeReview = page('jobseeker/features/AiResumeReview');
+const MyApplications = page('jobseeker/MyApplications');
+const CampusDrives = page('jobseeker/CampusDrives');
+const CampusDriveDetails = page('jobseeker/CampusDriveDetails');
+const AtsPipeline = page('company/features/AtsPipeline');
+const Analytics = page('company/features/Analytics');
+const BulkMessaging = page('company/features/BulkMessaging');
+const MyTeam = page('company/MyTeam');
+const TeamRoster = page('company/TeamRoster');
+const VideoInterview = page('company/features/VideoInterview');
+const TeamCollaboration = page('company/features/TeamCollaboration');
+const InterviewScheduling = page('company/features/InterviewScheduling');
+const AICandidateMatching = page('company/features/AICandidateMatching');
+const BulkApplicantManagement = page('company/features/BulkApplicantManagement');
+const MyJobs = page('company/MyJobs');
+const CandidateSearch = page('company/CandidateSearch');
+const DriveRequests = page('company/DriveRequests');
+const RaiseTicket = page('tickets/RaiseTicket');
+const MyTickets = page('tickets/MyTickets');
+const AdminTickets = page('admin/AdminTickets');
+const EmployeeDashboard = page('employee/Dashboard');
+const WriteReview = page('shared/WriteReview');
+const ManageReviews = page('admin/ManageReviews');
+const AdminCollegeVerification = page('admin/CollegeVerification');
+const CollegeKycDetails = page('admin/CollegeKycDetails');
+const CollegeDashboard = page('college/Dashboard');
+const CollegeStudents = page('college/Students');
+const CollegeDrives = page('college/Drives');
+const CollegeSettings = page('college/Settings');
+const CollegeReports = page('college/Reports');
+const CollegeVerification = page('college/Verification');
+const PrincipalExecutiveSummary = page('public/PrincipalExecutiveSummary');
+const CompanyDriveView = page('public/CompanyDriveView');
+const AcceptInchargeInvite = page('public/AcceptInchargeInvite');
+const ManageDrive = page('shared/ManageDrive');
 
 
 // Role-based redirect after login
@@ -134,6 +129,7 @@ const RoleRedirect = () => {
 
 const AppRoutes = () => {
   return (
+    <Suspense fallback={<div className="route-loading" role="status" aria-live="polite"><span className="route-loading__spinner" /><span>Loading page…</span></div>}>
     <Routes>
 
       {/* ── Public Landing Page ───────────────────── */}
@@ -585,6 +581,7 @@ const AppRoutes = () => {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 };
 

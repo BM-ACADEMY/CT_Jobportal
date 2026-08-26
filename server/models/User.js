@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: function() { return !this.googleId && !this.githubId && !this.linkedinId; },
+    required: function() { return !this.googleId && !this.githubId; },
   },
   isSocialIncomplete: {
     type: Boolean,
@@ -59,11 +59,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
   },
-  linkedinId: {
-    type: String,
-    unique: true,
-    sparse: true,
-  },
+
   profile: {
     headline: { type: String, default: '' },
     phone: { type: String, default: '' },

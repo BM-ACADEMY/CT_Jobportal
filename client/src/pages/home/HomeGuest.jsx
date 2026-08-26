@@ -223,6 +223,9 @@ const HomeGuest = () => {
                 className="row-span-2 rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50 relative"
               >
                 <img
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                   src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800"
                   alt="Professional"
                   className="w-full h-full object-cover"
