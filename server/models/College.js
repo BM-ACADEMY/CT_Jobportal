@@ -59,6 +59,14 @@ const collegeSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  teamMembers: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    role: { type: String, enum: ['placement_head', 'department_coordinator', 'faculty_coordinator', 'data_entry'], default: 'faculty_coordinator' },
+    departments: [{ type: String, trim: true }],
+    permissions: [{ type: String, enum: ['dashboard', 'students', 'verification', 'drives', 'reports', 'settings', 'team'] }],
+    isActive: { type: Boolean, default: true },
+    addedAt: { type: Date, default: Date.now }
+  }],
   departments: [{
     name: { type: String, required: true, trim: true },
     code: { type: String, required: true, uppercase: true, trim: true }

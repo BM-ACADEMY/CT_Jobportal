@@ -70,7 +70,11 @@ const campusDriveSchema = new mongoose.Schema({
   eligibility: {
     minCGPA: { type: Number, default: 0 },
     maxArrears: { type: Number, default: 10 },
-    allowedDepartments: [{ type: String, trim: true }]
+    allowedDepartments: [{ type: String, trim: true }],
+    batchYears: [{ type: Number }],
+    requiredSkills: [{ type: String, trim: true }],
+    requireVerifiedProfile: { type: Boolean, default: false },
+    requireResume: { type: Boolean, default: false }
   },
   rounds: [{
     name: { type: String, required: true },

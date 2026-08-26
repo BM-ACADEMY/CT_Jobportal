@@ -8,6 +8,7 @@ const Subscription = require('../models/Subscription');
 const Assessment = require('../models/Assessment');
 const Application = require('../models/Application');
 const CollegePlacementReport = require('../models/CollegePlacementReport');
+const CollegeActivityLog = require('../models/CollegeActivityLog');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const QRCode = require('qrcode');
@@ -34,10 +35,13 @@ const isPaidPlan = (tier) => tier === 'campus_lite' || tier === 'campus_pro' || 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
 const getCollegeForTPO = async (userId) => {
-  let college = await College.findOne({ tpoUser: userId });
+  let college = await College.findOne({
+    $or: [{ tpoUser: userId }, { teamMembers: { $elemMatch: { user: userId, isActive: true } } }]
+  });
   if (!college) {
     const user = await User.findById(userId);
     if (!user) throw new Error('NO_COLLEGE');
+    if (user.collegeProfile?.college) throw new Error('NO_COLLEGE_ACCESS');
 
     const generateDisplayId = require('../utils/generateDisplayId');
     const year = new Date().getFullYear();
@@ -405,6 +409,7 @@ const createDrive = async (req, res) => {
     });
 
     await drive.save();
+    await logCollegeActivity(req, college, 'drive_created', `Created campus drive ${drive.title}`, 'drive', drive._id);
     res.status(201).json(drive);
   } catch (err) {
     console.error('Create Drive Error:', err.message);
@@ -1160,7 +1165,11 @@ const getStudents = async (req, res) => {
       ]);
     }
 
-    res.json({ students, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
+    const studentsWithCompletion = students.map(student => {
+      const raw = student.toObject ? student.toObject() : student;
+      return { ...raw, profileCompletion: completionForStudent(raw) };
+    });
+    res.json({ students: studentsWithCompletion, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
   } catch (err) {
     if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
     res.status(500).json({ msg: 'Server Error' });
@@ -1236,6 +1245,7 @@ const updateStudentStatus = async (req, res) => {
       { new: true }
     );
     if (!student) return res.status(404).json({ msg: 'Student not found' });
+    await logCollegeActivity(req, college, 'student_status_updated', `Updated a student’s placement status to ${status}`, 'student', student._id, { status });
     res.json(student);
   } catch (err) {
     res.status(500).json({ msg: 'Server Error' });
@@ -1258,6 +1268,7 @@ const updateStudentDetails = async (req, res) => {
       { new: true }
     ).populate('user', 'name email avatar profile.skills profile.phone profile.resumeUrl isVerified');
     if (!student) return res.status(404).json({ msg: 'Student not found' });
+    await logCollegeActivity(req, college, 'student_updated', 'Updated student academic/profile details', 'student', student._id, { fields: Object.keys(update) });
     res.json(student);
   } catch (err) {
     if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
@@ -1497,6 +1508,27 @@ const getCsvTemplate = async (req, res) => {
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename=student_import_template.csv');
   res.send('rollNumber,name,phone,email,department,batchYear,cgpa,activeArrears,skills,gender,programme,outcome,employerName,employerCity,designation,packageLPA,offerDate,offerSource,driveReference,evidenceRef,progressionType,institutionJoined,programmeJoined,progressionEvidenceRef\nCS001,John Doe,9876543210,john@college.edu,CSE,2026,8.4,0,"Java;SQL;Communication",Male,B.E. Computer Science and Engineering,Placed,TCS,Chennai,Software Engineer,5.50,2026-04-15,Campus drive,DRV-2026-001,OFFER-CS001.pdf,,,,\nIT002,Jane Smith,9876543211,jane@college.edu,IT,2026,7.9,0,"Python;Excel",Female,B.Tech Information Technology,Higher Studies,,,,,,,,Higher Studies,IIT Madras,M.Tech Information Technology,ADM-IT002.pdf\n');
+};
+
+const completionForStudent = (student) => {
+  const profile = student.user?.profile || {};
+  const checks = [
+    ['name', Boolean(student.user?.name)], ['email', Boolean(student.user?.email)],
+    ['phone', Boolean(student.phone || profile.phone)], ['department', Boolean(student.department)],
+    ['batchYear', Boolean(student.batchYear)], ['rollNumber', Boolean(student.rollNumber)],
+    ['cgpa', Number(student.cgpa) > 0], ['resume', Boolean(profile.resumeUrl)],
+    ['skills', Array.isArray(profile.skills) && profile.skills.length > 0],
+    ['qualification', Array.isArray(profile.qualification) && profile.qualification.length > 0],
+    ['preferences', Boolean(profile.jobPreferences?.jobTitles?.length || profile.preferredRole)],
+    ['idVerification', student.idVerification?.status === 'approved']
+  ];
+  const missingFields = checks.filter(([, ok]) => !ok).map(([field]) => field);
+  return { score: Math.round(((checks.length - missingFields.length) / checks.length) * 100), missingFields };
+};
+
+const logCollegeActivity = async (req, college, action, description, entityType = 'college', entity = null, metadata = {}) => {
+  const actor = await User.findById(req.user.id).select('name');
+  return CollegeActivityLog.create({ college: college._id, actor: req.user.id, actorName: actor?.name || 'College user', action, description, entityType, entity, metadata });
 };
 
 // @route   GET /api/college/students/credentials-export
@@ -2263,6 +2295,7 @@ const updateDriveRoundStatus = async (req, res) => {
       }
     }
 
+    await logCollegeActivity(req, { _id: drive.college }, 'pipeline_updated', `Moved ${studentIds.length} student(s) to ${ROUND_STATUS_LABELS[status] || status}`, 'drive', drive._id, { studentIds, status, roundName });
     res.json({ msg: `Updated ${studentIds.length} students to ${status}` });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error', error: err.message });
@@ -2717,6 +2750,123 @@ const registerForDrive = async (req, res) => {
   }
 };
 
+// Placement-readiness dashboard with exact missing fields for every student.
+const getProfileCompletionDashboard = async (req, res) => {
+  try {
+    const college = await getCollegeForTPO(req.user.id);
+    const students = await CollegeStudent.find({ college: college._id })
+      .populate('user', 'name email profile')
+      .sort({ department: 1, batchYear: -1 });
+    const rows = students.map(s => {
+      const raw = s.toObject();
+      return { _id: raw._id, user: { name: raw.user?.name, email: raw.user?.email }, department: raw.department, batchYear: raw.batchYear, rollNumber: raw.rollNumber, ...completionForStudent(raw) };
+    });
+    const distribution = { ready: 0, nearlyReady: 0, incomplete: 0 };
+    rows.forEach(r => { if (r.score >= 85) distribution.ready++; else if (r.score >= 60) distribution.nearlyReady++; else distribution.incomplete++; });
+    const average = rows.length ? Math.round(rows.reduce((sum, r) => sum + r.score, 0) / rows.length) : 0;
+    res.json({ average, total: rows.length, distribution, students: rows });
+  } catch (err) { res.status(500).json({ msg: 'Server Error', error: err.message }); }
+};
+
+const evaluateEligibility = (student, drive) => {
+  const rule = drive.eligibility || {};
+  const reasons = [];
+  if (Number(student.cgpa || 0) < Number(rule.minCGPA || 0)) reasons.push(`CGPA below ${rule.minCGPA}`);
+  if (Number(student.activeArrears || 0) > Number(rule.maxArrears ?? 10)) reasons.push(`More than ${rule.maxArrears} active arrears`);
+  const departments = rule.allowedDepartments?.length ? rule.allowedDepartments : drive.departments;
+  if (departments?.length && !departments.includes(student.department)) reasons.push('Department not allowed');
+  if (rule.batchYears?.length && !rule.batchYears.includes(student.batchYear)) reasons.push('Batch year not allowed');
+  const skills = (student.user?.profile?.skills || []).map(s => s.toLowerCase());
+  const missingSkills = (rule.requiredSkills || []).filter(s => !skills.includes(s.toLowerCase()));
+  if (missingSkills.length) reasons.push(`Missing skills: ${missingSkills.join(', ')}`);
+  if (rule.requireResume && !student.user?.profile?.resumeUrl) reasons.push('Resume missing');
+  if (rule.requireVerifiedProfile && student.idVerification?.status !== 'approved') reasons.push('ID not verified');
+  return { eligible: reasons.length === 0, reasons };
+};
+
+const getDriveEligibility = async (req, res) => {
+  try {
+    const college = await getCollegeForTPO(req.user.id);
+    const drive = await CampusDrive.findOne({ _id: req.params.driveId, college: college._id });
+    if (!drive) return res.status(404).json({ msg: 'Drive not found' });
+    const students = await CollegeStudent.find({ college: college._id }).populate('user', 'name email profile.skills profile.resumeUrl');
+    const results = students.map(s => ({ ...s.toObject(), eligibilityResult: evaluateEligibility(s, drive) }));
+    res.json({ eligible: results.filter(r => r.eligibilityResult.eligible), ineligible: results.filter(r => !r.eligibilityResult.eligible) });
+  } catch (err) { res.status(500).json({ msg: 'Server Error', error: err.message }); }
+};
+
+const addEligibleStudentsToDrive = async (req, res) => {
+  try {
+    const college = await getCollegeForTPO(req.user.id);
+    const drive = await CampusDrive.findOne({ _id: req.params.driveId, college: college._id });
+    if (!drive) return res.status(404).json({ msg: 'Drive not found' });
+    const students = await CollegeStudent.find({ college: college._id }).populate('user', 'profile.skills profile.resumeUrl');
+    let added = 0;
+    for (const student of students) {
+      if (!evaluateEligibility(student, drive).eligible || student.driveApplications.some(a => a.drive.toString() === drive._id.toString())) continue;
+      student.driveApplications.push({ drive: drive._id, status: 'registered', updatedBy: req.user.id });
+      if (!student.campusDrive) student.campusDrive = drive._id;
+      await student.save(); added++;
+    }
+    await logCollegeActivity(req, college, 'eligible_students_added', `Automatically added ${added} eligible student(s) to ${drive.title}`, 'drive', drive._id);
+    res.json({ msg: `${added} eligible student(s) added`, added });
+  } catch (err) { res.status(500).json({ msg: 'Server Error', error: err.message }); }
+};
+
+const getCollegeTeam = async (req, res) => {
+  try {
+    const college = await getCollegeForTPO(req.user.id);
+    await college.populate('teamMembers.user', 'name email lastLoginAt');
+    res.json({ owner: college.tpoUser, members: college.teamMembers });
+  } catch (err) { res.status(500).json({ msg: 'Server Error', error: err.message }); }
+};
+
+const addCollegeTeamMember = async (req, res) => {
+  try {
+    const college = await College.findOne({ tpoUser: req.user.id });
+    if (!college) return res.status(403).json({ msg: 'Only the placement head can manage the team' });
+    const { name, email, role, departments = [], permissions = [] } = req.body;
+    if (!name || !email) return res.status(400).json({ msg: 'Name and email are required' });
+    let user = await User.findOne({ email: email.toLowerCase() });
+    let temporaryPassword;
+    const collegeRole = await Role.findOne({ name: 'college' });
+    if (!collegeRole) return res.status(500).json({ msg: 'College role is not configured' });
+    if (!user) {
+      temporaryPassword = crypto.randomBytes(6).toString('base64url');
+      user = await User.create({ name, email: email.toLowerCase(), password: await bcrypt.hash(temporaryPassword, 10), role: collegeRole._id, isVerified: true, collegeProfile: { college: college._id, designation: role || 'faculty_coordinator' } });
+    } else {
+      if (user.role.toString() !== collegeRole._id.toString()) return res.status(400).json({ msg: 'This email belongs to a different account type. Use a dedicated college staff email.' });
+      user.collegeProfile = { college: college._id, designation: role || 'faculty_coordinator' };
+      await user.save();
+    }
+    if (college.teamMembers.some(m => m.user.toString() === user._id.toString())) return res.status(400).json({ msg: 'This user is already on the team' });
+    college.teamMembers.push({ user: user._id, role, departments, permissions, isActive: true });
+    await college.save();
+    await logCollegeActivity(req, college, 'team_member_added', `Added ${name} as ${role}`, 'team', user._id, { departments, permissions });
+    res.status(201).json({ msg: 'Team member added', temporaryPassword });
+  } catch (err) { res.status(500).json({ msg: 'Server Error', error: err.message }); }
+};
+
+const updateCollegeTeamMember = async (req, res) => {
+  try {
+    const college = await College.findOne({ tpoUser: req.user.id });
+    if (!college) return res.status(403).json({ msg: 'Only the placement head can manage the team' });
+    const member = college.teamMembers.id(req.params.memberId);
+    if (!member) return res.status(404).json({ msg: 'Team member not found' });
+    ['role', 'departments', 'permissions', 'isActive'].forEach(k => { if (req.body[k] !== undefined) member[k] = req.body[k]; });
+    await college.save();
+    await logCollegeActivity(req, college, 'team_member_updated', 'Updated a team member’s access', 'team', member.user, req.body);
+    res.json(member);
+  } catch (err) { res.status(500).json({ msg: 'Server Error', error: err.message }); }
+};
+
+const getCollegeAuditLog = async (req, res) => {
+  try {
+    const college = await getCollegeForTPO(req.user.id);
+    res.json(await CollegeActivityLog.find({ college: college._id }).sort({ createdAt: -1 }).limit(100));
+  } catch (err) { res.status(500).json({ msg: 'Server Error', error: err.message }); }
+};
+
 module.exports = {
   getDashboard,
   getDashboardStats,
@@ -2779,4 +2929,11 @@ module.exports = {
   activateProfile,
   getMyDrives,
   registerForDrive
+  ,getProfileCompletionDashboard
+  ,getDriveEligibility
+  ,addEligibleStudentsToDrive
+  ,getCollegeTeam
+  ,addCollegeTeamMember
+  ,updateCollegeTeamMember
+  ,getCollegeAuditLog
 };
