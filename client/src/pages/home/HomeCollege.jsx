@@ -95,7 +95,7 @@ const HomeCollege = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="lg:col-span-5 hidden lg:grid gap-4"
+            className="lg:col-span-5 grid gap-4 mt-10 lg:mt-0"
           >
             {features.map((f, i) => (
               <motion.div

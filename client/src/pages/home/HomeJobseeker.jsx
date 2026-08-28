@@ -158,7 +158,7 @@ const HomeJobseeker = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
-              className="lg:col-span-5 hidden lg:grid grid-cols-2 grid-rows-[1fr_1fr_auto] gap-4 h-[480px]"
+              className="lg:col-span-5 grid grid-cols-2 grid-rows-[1fr_1fr_auto] gap-4 h-[400px] md:h-[480px] mt-10 lg:mt-0"
             >
               <motion.div
                 style={{ rotateX: tiltX, rotateY: tiltY, transformPerspective: 1200 }}

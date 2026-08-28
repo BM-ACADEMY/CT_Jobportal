@@ -27,7 +27,7 @@ const PublicHeader = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const isDarkHero = ['/', '/companies', '/contact'].includes(location.pathname);
+  const isDarkHero = false; // Always white header like Apna
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -49,74 +49,76 @@ const PublicHeader = () => {
     return location.pathname.startsWith(path);
   };
 
-  const headerBase = scrolled || mobileOpen
-    ? 'bg-white border-b border-slate-100 shadow-sm'
-    : isDarkHero
-      ? 'bg-transparent border-b border-white/10'
-      : 'bg-white border-b border-slate-100';
-
-  const navColor = (scrolled || !isDarkHero) ? 'text-slate-600 hover:text-emerald-600' : 'text-white/80 hover:text-white';
-  const navActiveColor = (scrolled || !isDarkHero) ? 'text-emerald-600 font-bold' : 'text-white font-bold';
+  const headerBase = 'bg-white border-b border-slate-200 shadow-sm';
+  const navColor = 'text-slate-800 hover:text-[#138060]';
+  const navActiveColor = 'text-[#138060] font-bold';
 
   return (
     <>
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${headerBase}`}>
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link to="/" className="group shrink-0" aria-label="Velaivaaipu home">
-            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-12 w-[118px] object-contain transition-transform group-hover:scale-[1.03]" />
+          <Link to="/" className="group shrink-0 flex flex-col items-start gap-1" aria-label="Velaivaaipu home">
+            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-14 w-auto object-contain" />
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.filter(link => !(link.label === 'Find Jobs' && (user?.role === 'recruiter' || user?.role === 'company'))).map(link => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors duration-200 ${
-                  isActive(link.to) ? navActiveColor : navColor
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <nav className="hidden md:flex items-center gap-6">
+            {NAV_LINKS.filter(link => !(link.label === 'Find Jobs' && (user?.role === 'recruiter' || user?.role === 'company'))).map((link, index) => {
+              // Add orange 'New' badge to some nav items to match Apna theme
+              const hasBadge = link.label === 'Companies' || link.label === 'Blog';
+              const hasChevron = link.label === 'Find Jobs';
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`flex items-center gap-1.5 py-2 text-sm font-semibold transition-colors duration-200 ${
+                    isActive(link.to) ? navActiveColor : navColor
+                  }`}
+                >
+                  {link.label}
+                  {hasChevron && <ChevronDown size={14} className="text-slate-500" />}
+                  {hasBadge && (
+                    <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded ml-1 uppercase tracking-wider scale-90">
+                      New
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             {user ? (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-9 w-9 rounded-xl ${(scrolled || !isDarkHero) ? 'text-slate-500 hover:bg-slate-100' : 'text-white/60 hover:bg-white/10 hover:text-white'}`}
+                  className="h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100"
                 >
                   <Bell size={18} />
                 </Button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className={`flex items-center gap-2 cursor-pointer rounded-xl px-2.5 py-1.5 border transition-all group ${
-                      (scrolled || !isDarkHero)
-                        ? 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                        : 'bg-white/10 border-white/20 hover:bg-white/20'
-                    }`}>
+                    <div className="flex items-center gap-2 cursor-pointer rounded-xl px-2.5 py-1.5 border transition-all group bg-slate-50 border-slate-200 hover:bg-slate-100">
                       <Avatar className="h-7 w-7 rounded-lg">
-                        <AvatarFallback className="bg-emerald-500 text-slate-900 font-bold text-xs rounded-lg">
+                        <AvatarFallback className="bg-[#138060] text-white font-bold text-xs rounded-lg">
                           {user.name?.[0]?.toUpperCase() || <User size={12} />}
                         </AvatarFallback>
                       </Avatar>
                       <div className="hidden sm:flex flex-col items-start leading-none">
-                        <span className={`text-xs font-bold truncate max-w-[80px] ${(scrolled || !isDarkHero) ? 'text-slate-900' : 'text-white'}`}>{user.name}</span>
-                        <span className={`text-[9px] font-semibold uppercase tracking-wider mt-0.5 ${(scrolled || !isDarkHero) ? 'text-slate-400' : 'text-white/50'}`}>{user.role}</span>
+                        <span className="text-xs font-bold truncate max-w-[80px] text-slate-900">{user.name}</span>
+                        <span className="text-[9px] font-semibold uppercase tracking-wider mt-0.5 text-slate-400">{user.role}</span>
                       </div>
-                      <ChevronDown size={12} className={`transition-transform group-data-[state=open]:rotate-180 ${(scrolled || !isDarkHero) ? 'text-slate-400' : 'text-white/50'}`} />
+                      <ChevronDown size={12} className="transition-transform group-data-[state=open]:rotate-180 text-slate-400" />
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 rounded-2xl border border-slate-100 shadow-xl p-1.5">
                     <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={handleDashboardRedirect} className="rounded-xl px-3 py-2.5 text-sm font-semibold cursor-pointer hover:bg-emerald-50 hover:text-emerald-700">
+                    <DropdownMenuItem onClick={handleDashboardRedirect} className="rounded-xl px-3 py-2.5 text-sm font-semibold cursor-pointer hover:bg-emerald-50 hover:text-[#138060]">
                       <User size={15} className="mr-2.5" /> Dashboard
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -139,23 +141,18 @@ const PublicHeader = () => {
                 </DropdownMenu>
               </>
             ) : (
-              <div className="hidden md:flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/login')}
-                  className={`h-9 px-5 rounded-xl text-sm font-bold transition-colors ${
-                    (scrolled || !isDarkHero)
-                      ? 'text-slate-600 hover:text-emerald-600 hover:bg-emerald-50'
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
+              <div className="hidden md:flex items-center gap-5">
+                <Link
+                  to="/login"
+                  className="text-[#138060] hover:text-[#0f664d] text-sm font-medium transition-colors"
                 >
-                  Login
-                </Button>
+                  Employer Login
+                </Link>
                 <Button
                   onClick={() => navigate('/register')}
-                  className="h-9 px-6 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-900 shadow-md shadow-emerald-500/20 transition-all hover:scale-105"
+                  className="h-10 px-6 rounded-[3px] text-sm font-bold bg-[#138060] hover:bg-[#0f664d] text-white shadow-sm transition-all cursor-pointer"
                 >
-                  Join Free
+                  Candidate Login
                 </Button>
               </div>
             )}
@@ -163,11 +160,7 @@ const PublicHeader = () => {
             {/* Mobile Hamburger */}
             <button
               onClick={() => setMobileOpen(v => !v)}
-              className={`md:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                (scrolled || mobileOpen || !isDarkHero)
-                  ? 'text-slate-700 hover:bg-slate-100'
-                  : 'text-white hover:bg-white/10'
-              }`}
+              className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-colors text-slate-700 hover:bg-slate-100"
             >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -187,25 +180,25 @@ const PublicHeader = () => {
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                <link.icon size={18} className={isActive(link.to) ? 'text-emerald-600' : 'text-slate-400'} />
+                <link.icon size={18} className={isActive(link.to) ? 'text-[#138060]' : 'text-slate-400'} />
                 {link.label}
               </Link>
             ))}
 
             {!user && (
-              <div className="flex gap-3 pt-4 border-t border-slate-100 mt-4">
+              <div className="flex flex-col gap-3 pt-4 border-t border-slate-100 mt-4">
                 <Button
                   variant="outline"
                   onClick={() => navigate('/login')}
-                  className="flex-1 h-11 rounded-xl border-slate-200 text-slate-700 font-bold"
+                  className="w-full h-11 rounded-[8px] border-slate-200 text-slate-750 font-bold"
                 >
-                  Login
+                  Employer Login
                 </Button>
                 <Button
                   onClick={() => navigate('/register')}
-                  className="flex-1 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold"
+                  className="w-full h-11 rounded-[8px] bg-[#138060] hover:bg-[#0f664d] text-white font-bold"
                 >
-                  Join Free
+                  Candidate Login
                 </Button>
               </div>
             )}
@@ -224,8 +217,8 @@ const PublicHeader = () => {
         )}
       </header>
 
-      {/* Spacer for non-hero pages */}
-      {!isDarkHero && <div className="h-16" />}
+      {/* Spacer for pages */}
+      <div className="h-20" />
     </>
   );
 };

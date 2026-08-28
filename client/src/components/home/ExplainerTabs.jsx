@@ -11,7 +11,6 @@ const FLOWS = [
   {
     key: 'jobseeker',
     label: 'Job Seeker',
-    color: 'emerald',
     steps: [
       { icon: Users, title: 'Create Your Profile', desc: 'Add your skills, resume and preferences.' },
       { icon: Search, title: 'Get Matched', desc: 'AI surfaces roles that fit your skills.' },
@@ -22,7 +21,6 @@ const FLOWS = [
   {
     key: 'recruiter',
     label: 'Recruiter / Company',
-    color: 'emerald',
     steps: [
       { icon: Building2, title: 'Set Up Company Profile', desc: 'Showcase your brand to candidates.' },
       { icon: Briefcase, title: 'Post Jobs', desc: 'Publish roles in minutes, reach millions.' },
@@ -33,7 +31,6 @@ const FLOWS = [
   {
     key: 'college',
     label: 'College / TPO',
-    color: 'emerald',
     steps: [
       { icon: GraduationCap, title: 'Register Your College', desc: 'Get verified and onboarded.' },
       { icon: UserPlus, title: 'Add Your Students', desc: 'Bulk-import student profiles.' },
@@ -42,12 +39,6 @@ const FLOWS = [
     ],
   },
 ];
-
-const COLOR_MAP = {
-  emerald: { bg: 'bg-emerald-500', text: 'text-emerald-400', ring: 'border-emerald-500' },
-  blue: { bg: 'bg-blue-500', text: 'text-blue-400', ring: 'border-blue-500' },
-  violet: { bg: 'bg-violet-500', text: 'text-violet-400', ring: 'border-violet-500' },
-};
 
 const ExplainerTabs = () => {
   const [active, setActive] = useState(0);
@@ -60,36 +51,33 @@ const ExplainerTabs = () => {
   }, [paused]);
 
   const flow = FLOWS[active];
-  const colors = COLOR_MAP[flow.color];
 
   return (
     <section
-      className="py-24 bg-slate-950 relative overflow-hidden"
+      className="py-24 bg-slate-50 relative overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div
-        className="absolute inset-0 opacity-[0.08] pointer-events-none"
-        style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.6) 1px, transparent 1px)', backgroundSize: '28px 28px' }}
-      />
+      {/* Soft blurry green glow on the left background */}
+      <div className="absolute top-[20%] left-[-15%] w-[400px] h-[400px] bg-[#00D492]/10 rounded-full blur-[90px] pointer-events-none" />
       <div className="max-w-6xl mx-auto px-6 relative z-10">
         <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-[0.25em] mb-4">
-            <span className="w-8 h-px bg-emerald-500/40" /> How It Works <span className="w-8 h-px bg-emerald-500/40" />
+          <span className="inline-flex items-center gap-2 text-[#00D492] text-xs font-bold uppercase tracking-[0.25em] mb-4">
+            <span className="w-8 h-px bg-[#00D492]/40" /> How It Works <span className="w-8 h-px bg-[#00D492]/40" />
           </span>
-          <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter">One Platform, Three Journeys</h2>
-          <p className="text-slate-400 mt-3 font-medium">See how job seekers, recruiters, and colleges each move through the platform.</p>
+          <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">One Platform, Three Journeys</h2>
+          <p className="text-zinc-500 mt-3 font-medium text-sm md:text-base">See how job seekers, recruiters, and colleges each move through the platform.</p>
         </div>
 
-        <div className="flex justify-center gap-2 mb-14 flex-wrap">
+        <div className="flex justify-center gap-3 mb-14 flex-wrap">
           {FLOWS.map((f, i) => (
             <button
               key={f.key}
               onClick={() => setActive(i)}
-              className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all border-2 ${
+              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all border ${
                 i === active
-                  ? `${COLOR_MAP[f.color].bg} text-slate-900 border-transparent`
-                  : 'bg-transparent text-slate-400 border-white/10 hover:border-white/30 hover:text-white'
+                  ? 'bg-[#00D492] text-white border-transparent shadow-md'
+                  : 'bg-white text-zinc-650 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900 cursor-pointer shadow-sm'
               }`}
             >
               {f.label}
@@ -104,7 +92,7 @@ const ExplainerTabs = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5"
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {flow.steps.map((step, i) => (
               <motion.div
@@ -112,16 +100,32 @@ const ExplainerTabs = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1, duration: 0.4 }}
-                className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
+                className="relative bg-white border border-zinc-200 rounded-2xl p-6 shadow-md shadow-zinc-100/50 overflow-hidden z-10 group cursor-pointer"
               >
-                <div className={`w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center text-slate-900 mb-5`}>
-                  <step.icon size={22} />
+                {/* Background color hover fill: Slides down from top */}
+                <div className="absolute inset-0 bg-[#00D492] -z-10 translate-y-[-100%] group-hover:translate-y-0 transition-transform duration-500 ease-out origin-top" />
+
+                {/* Card Elements (Relative z-index so they sit on top of the slide-in background) */}
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-xl bg-[#00D492] text-white group-hover:bg-white group-hover:text-[#00D492] flex items-center justify-center mb-5 transition-colors duration-300">
+                    <step.icon size={22} />
+                  </div>
+
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#00D492] group-hover:text-[#e0fff5] transition-colors duration-300">
+                    Step {i + 1}
+                  </span>
+
+                  <h3 className="text-zinc-800 font-bold mt-2 mb-2 group-hover:text-white transition-colors duration-300 text-lg">
+                    {step.title}
+                  </h3>
+
+                  <p className="text-zinc-500 text-xs leading-relaxed group-hover:text-[#f2fffb] transition-colors duration-300">
+                    {step.desc}
+                  </p>
                 </div>
-                <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${colors.text}`}>Step {i + 1}</span>
-                <h3 className="text-white font-bold mt-2 mb-2">{step.title}</h3>
-                <p className="text-slate-400 text-xs leading-relaxed">{step.desc}</p>
+
                 {i < flow.steps.length - 1 && (
-                  <ArrowRight size={16} className="hidden lg:block absolute top-1/2 -translate-y-1/2 -right-2.5 translate-x-1/2 text-slate-600 z-10" />
+                  <ArrowRight size={16} className="hidden lg:block absolute top-1/2 -translate-y-1/2 -right-3 translate-x-1/2 text-zinc-400 group-hover:text-white z-10 transition-colors duration-300" />
                 )}
               </motion.div>
             ))}
@@ -134,7 +138,7 @@ const ExplainerTabs = () => {
               key={f.key}
               onClick={() => setActive(i)}
               aria-label={`Show ${f.label} flow`}
-              className={`h-1.5 rounded-full transition-all ${i === active ? `w-8 ${COLOR_MAP[f.color].bg}` : 'w-1.5 bg-white/20'}`}
+              className={`h-1.5 rounded-full transition-all ${i === active ? 'w-8 bg-[#00D492]' : 'w-1.5 bg-zinc-200'}`}
             />
           ))}
         </div>
