@@ -153,7 +153,7 @@ const HomeGuest = () => {
 
             {/* Headline */}
             <h1 className="text-4xl md:text-5xl lg:text-[4.2rem] font-bold text-zinc-900 tracking-tight leading-[1.12]">
-              Your <span className="text-[#00D492]">Dream</span> Job Is<br />
+              Your <span className="text-[#34b678]">Dream</span> Job Is<br />
               Waiting For You
             </h1>
 
@@ -186,7 +186,7 @@ const HomeGuest = () => {
                 />
               </div>
 
-              <Button type="submit" className="h-12 rounded-xl px-8 text-sm font-bold bg-[#00D492] hover:bg-[#00b87d] text-white shadow-sm transition-all shrink-0 cursor-pointer">
+              <Button type="submit" className="h-12 rounded-xl px-8 text-sm font-bold bg-[#34b678] hover:bg-[#00b87d] text-white shadow-sm transition-all shrink-0 cursor-pointer">
                 Find Job
               </Button>
             </form>
