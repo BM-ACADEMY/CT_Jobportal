@@ -31,6 +31,9 @@ const STAGE_BADGE_COLORS = {
   rejected: 'bg-rose-50 text-rose-700 border-rose-100',
 };
 
+const antInputClass = "w-full h-9 px-3 text-xs bg-white border border-[#d9d9d9] rounded-none outline-none hover:border-[#39c884] focus:border-[#39c884] focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed mt-1";
+const antSelectClass = "w-full h-9 px-3 text-xs bg-white border border-[#d9d9d9] rounded-none outline-none hover:border-[#39c884] focus:border-[#39c884] focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
+
 const emptyCompanyRow = { name: '', packageLPA: '', tierPolicy: 'regular', contactName: '', contactEmail: '' };
 const emptyForm = { title: '', batchYear: new Date().getFullYear(), departments: '', description: '', companies: [{ ...emptyCompanyRow }], minCGPA: '', maxArrears: '', requiredSkills: '', requireResume: false, requireVerifiedProfile: false, rounds: '' };
 
@@ -434,41 +437,41 @@ const Drives = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <QrCode size={20} className="text-emerald-600" /> Campus Drives
+          <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <QrCode size={18} className="text-[#39c884]" /> Campus Drives
           </h1>
           <p className="text-xs text-slate-500 mt-1 font-medium">{drives.length} drives</p>
         </div>
-        <Button onClick={() => (showCreate ? setShowCreate(false) : openCreate())} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1">
+        <Button onClick={() => (showCreate ? setShowCreate(false) : openCreate())} className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white text-xs font-medium gap-1 border-none cursor-pointer">
           <Plus size={14} /> New Drive
         </Button>
       </div>
 
       {/* Create / Edit form */}
       {showCreate && (
-        <form onSubmit={saveDrive} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 animate-in fade-in duration-300">
-          <h3 className="text-sm font-bold text-slate-900">{editingDrive ? `Edit "${editingDrive.title}"` : 'Create New Campus Drive'}</h3>
+        <form onSubmit={saveDrive} className="bg-white rounded-none border border-[#e8e8e8] p-6 space-y-4 shadow-sm animate-in fade-in duration-300">
+          <h3 className="text-sm font-semibold text-slate-900">{editingDrive ? `Edit "${editingDrive.title}"` : 'Create New Campus Drive'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Drive Title *</label>
-              <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. 2025 Placement Drive" className="mt-1 rounded-xl" />
+              <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. 2025 Placement Drive" className={antInputClass} />
             </div>
 
             {/* Companies — multiple companies can participate under one drive */}
             <div className="md:col-span-2 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Companies</label>
-                <button type="button" onClick={addCompanyRow} className="text-[10px] font-bold text-emerald-600 hover:underline flex items-center gap-1">
+                <button type="button" onClick={addCompanyRow} className="text-[10px] font-medium text-[#39c884] hover:text-[#2ea86e] hover:underline flex items-center gap-1 cursor-pointer border-none bg-transparent">
                   <Plus size={12} /> Add Company
                 </button>
               </div>
               <div className="space-y-2">
                 {form.companies.map((c, idx) => (
-                  <div key={idx} className="space-y-1.5 bg-slate-50 rounded-xl p-2">
+                  <div key={idx} className="space-y-1.5 bg-slate-50 border border-[#e8e8e8] rounded-none p-2.5">
                     <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
-                      <Input value={c.name} onChange={e => updateCompanyRow(idx, 'name', e.target.value)} placeholder="e.g. TCS" className="rounded-lg bg-white" />
-                      <Input type="number" step="0.1" value={c.packageLPA} onChange={e => updateCompanyRow(idx, 'packageLPA', e.target.value)} placeholder="Package (LPA)" className="rounded-lg bg-white" />
-                      <select value={c.tierPolicy} onChange={e => updateCompanyRow(idx, 'tierPolicy', e.target.value)} className="h-10 rounded-lg border border-slate-200 px-2 text-sm font-medium bg-white">
+                      <input value={c.name} onChange={e => updateCompanyRow(idx, 'name', e.target.value)} placeholder="e.g. TCS" className={antInputClass.replace('mt-1', '')} />
+                      <input type="number" step="0.1" value={c.packageLPA} onChange={e => updateCompanyRow(idx, 'packageLPA', e.target.value)} placeholder="Package (LPA)" className={antInputClass.replace('mt-1', '')} />
+                      <select value={c.tierPolicy} onChange={e => updateCompanyRow(idx, 'tierPolicy', e.target.value)} className={antSelectClass}>
                         <option value="regular">Regular</option>
                         <option value="dream">Dream</option>
                         <option value="super_dream">Super Dream</option>
@@ -477,57 +480,58 @@ const Drives = () => {
                         type="button"
                         onClick={() => removeCompanyRow(idx)}
                         disabled={form.companies.length === 1}
-                        className="h-10 w-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent"
+                        className="h-9 w-9 flex items-center justify-center rounded-none border border-slate-200 bg-white text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
                         title="Remove company"
                       >
                         <X size={14} />
                       </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-0.5">
-                      <Input value={c.contactName} onChange={e => updateCompanyRow(idx, 'contactName', e.target.value)} placeholder="Contact person (optional)" className="rounded-lg bg-white h-8 text-xs" />
-                      <Input type="email" value={c.contactEmail} onChange={e => updateCompanyRow(idx, 'contactEmail', e.target.value)} placeholder="Contact email — sends them a candidate list link" className="rounded-lg bg-white h-8 text-xs" />
+                      <input value={c.contactName} onChange={e => updateCompanyRow(idx, 'contactName', e.target.value)} placeholder="Contact person (optional)" className={antInputClass.replace('mt-1', '')} />
+                      <input type="email" value={c.contactEmail} onChange={e => updateCompanyRow(idx, 'contactEmail', e.target.value)} placeholder="Contact email — sends them a candidate list link" className={antInputClass.replace('mt-1', '')} />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Form details */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Batch Year *</label>
-              <Input type="number" value={form.batchYear} onChange={e => setForm(p => ({ ...p, batchYear: e.target.value }))} className="mt-1 rounded-xl" />
+              <input type="number" value={form.batchYear} onChange={e => setForm(p => ({ ...p, batchYear: e.target.value }))} className={antInputClass} />
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Departments (comma-separated)</label>
-              <Input value={form.departments} onChange={e => setForm(p => ({ ...p, departments: e.target.value }))} placeholder="CS, IT, ECE, Mech" className="mt-1 rounded-xl" />
+              <input value={form.departments} onChange={e => setForm(p => ({ ...p, departments: e.target.value }))} placeholder="CS, IT, ECE, Mech" className={antInputClass} />
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Min CGPA</label>
-              <Input type="number" step="0.1" value={form.minCGPA} onChange={e => setForm(p => ({ ...p, minCGPA: e.target.value }))} placeholder="e.g. 6.5" className="mt-1 rounded-xl" />
+              <input type="number" step="0.1" value={form.minCGPA} onChange={e => setForm(p => ({ ...p, minCGPA: e.target.value }))} placeholder="e.g. 6.5" className={antInputClass} />
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Max Arrears</label>
-              <Input type="number" value={form.maxArrears} onChange={e => setForm(p => ({ ...p, maxArrears: e.target.value }))} placeholder="e.g. 0" className="mt-1 rounded-xl" />
+              <input type="number" value={form.maxArrears} onChange={e => setForm(p => ({ ...p, maxArrears: e.target.value }))} placeholder="e.g. 0" className={antInputClass} />
             </div>
             <div className="md:col-span-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Required skills (comma-separated)</label>
-              <Input value={form.requiredSkills} onChange={e => setForm(p => ({ ...p, requiredSkills: e.target.value }))} placeholder="Java, SQL, Communication" className="mt-1 rounded-xl" />
+              <input value={form.requiredSkills} onChange={e => setForm(p => ({ ...p, requiredSkills: e.target.value }))} placeholder="Java, SQL, Communication" className={antInputClass} />
               <div className="flex flex-wrap gap-4 mt-2 text-xs font-semibold text-slate-600">
-                <label><input type="checkbox" checked={form.requireResume} onChange={e => setForm(p => ({ ...p, requireResume: e.target.checked }))} className="mr-1" /> Resume required</label>
-                <label><input type="checkbox" checked={form.requireVerifiedProfile} onChange={e => setForm(p => ({ ...p, requireVerifiedProfile: e.target.checked }))} className="mr-1" /> Verified ID required</label>
+                <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={form.requireResume} onChange={e => setForm(p => ({ ...p, requireResume: e.target.checked }))} className="rounded-none text-[#39c884] focus:ring-[#39c884]" /> Resume required</label>
+                <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={form.requireVerifiedProfile} onChange={e => setForm(p => ({ ...p, requireVerifiedProfile: e.target.checked }))} className="rounded-none text-[#39c884] focus:ring-[#39c884]" /> Verified ID required</label>
               </div>
             </div>
             <div className="md:col-span-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Interview Rounds (comma-separated)</label>
-              <Input value={form.rounds} onChange={e => setForm(p => ({ ...p, rounds: e.target.value }))} placeholder="Aptitude, Technical, HR" className="mt-1 rounded-xl" />
+              <input value={form.rounds} onChange={e => setForm(p => ({ ...p, rounds: e.target.value }))} placeholder="Aptitude, Technical, HR" className={antInputClass} />
             </div>
             <div className="md:col-span-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Job Description / Notes</label>
-              <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Role, JD, qualifications, etc." className="mt-1 rounded-xl" />
+              <input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Role, JD, qualifications, etc." className={antInputClass} />
             </div>
           </div>
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setEditingDrive(null); }} className="rounded-xl text-xs font-bold">Cancel</Button>
-            <Button type="submit" disabled={creating} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setEditingDrive(null); }} className="rounded text-xs font-medium border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] cursor-pointer">Cancel</Button>
+            <Button type="submit" disabled={creating} className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white text-xs font-medium border-none cursor-pointer">
               {creating ? (editingDrive ? 'Saving...' : 'Creating...') : (editingDrive ? 'Save Changes' : 'Create Drive')}
             </Button>
           </div>
@@ -536,21 +540,21 @@ const Drives = () => {
 
       {/* Drives list */}
       {loading ? (
-        <div className="flex justify-center py-16"><div className="animate-spin w-7 h-7 border-3 border-emerald-600 border-t-transparent rounded-full" /></div>
+        <div className="flex justify-center py-16"><div className="animate-spin w-7 h-7 border-3 border-[#39c884] border-t-transparent rounded-full" /></div>
       ) : drives.length === 0 ? (
-        <div className="text-center py-16">
-          <QrCode size={40} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-500">No campus drives yet</p>
+        <div className="text-center py-16 bg-white border border-[#e8e8e8]">
+          <QrCode size={36} className="text-slate-300 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-slate-500">No campus drives yet</p>
           <p className="text-xs text-slate-400 mt-1">Create your first drive to generate a QR code</p>
         </div>
       ) : (
         <div className="grid gap-4">
           {drives.map(drive => (
-            <div key={drive._id} className={`bg-white rounded-2xl border ${drive.isActive ? 'border-slate-100' : 'border-slate-200 opacity-70'} p-6 shadow-sm hover:shadow-md transition-all`}>
+            <div key={drive._id} className={`bg-white rounded-none border ${drive.isActive ? 'border-[#e8e8e8]' : 'border-slate-200 opacity-70'} p-6 shadow-sm hover:shadow-md transition-all`}>
               <div className="flex flex-col md:flex-row md:items-start gap-5">
                 {/* QR Code */}
                 {drive.qrCodeUrl && (
-                  <div className="shrink-0 w-28 h-28 rounded-xl border border-slate-100 overflow-hidden bg-white p-1">
+                  <div className="shrink-0 w-28 h-28 rounded-none border border-slate-100 overflow-hidden bg-white p-1">
                     <img src={drive.qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" />
                   </div>
                 )}
@@ -558,43 +562,43 @@ const Drives = () => {
                 {/* Info */}
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openDetail(drive)}>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-black text-slate-900 truncate">{drive.title}</h3>
-                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${drive.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                    <h3 className="text-sm font-semibold text-slate-900 truncate">{drive.title}</h3>
+                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-none border ${drive.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                       {drive.isActive ? 'Active' : 'Closed'}
                     </span>
                   </div>
                   {(drive.companies?.length > 0 ? drive.companies : drive.companyName ? [{ name: drive.companyName, packageLPA: drive.packageLPA }] : []).length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {(drive.companies?.length > 0 ? drive.companies : [{ name: drive.companyName, packageLPA: drive.packageLPA }]).map((c, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full">
-                          <Building2 size={10} /> {c.name}{c.packageLPA ? ` · ${c.packageLPA} LPA` : ''}
+                        <span key={i} className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-none">
+                          <Building2 size={10} className="text-slate-400" /> {c.name}{c.packageLPA ? ` · ${c.packageLPA} LPA` : ''}
                         </span>
                       ))}
                     </div>
                   )}
-                  <div className="flex flex-wrap gap-3 text-xs text-slate-500 font-medium mt-1">
-                    <span className="flex items-center gap-1"><Calendar size={12} /> Batch {drive.batchYear}</span>
-                    <span className="flex items-center gap-1"><Users size={12} /> {drive.studentCount || 0} students</span>
+                  <div className="flex flex-wrap gap-3 text-xs text-slate-500 font-normal mt-1.5">
+                    <span className="flex items-center gap-1"><Calendar size={12} className="text-slate-400" /> Batch {drive.batchYear}</span>
+                    <span className="flex items-center gap-1"><Users size={12} className="text-slate-400" /> {drive.studentCount || 0} students</span>
                     {drive.departments?.length > 0 && <span>Depts: {drive.departments.join(', ')}</span>}
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => copyLink(drive.registrationUrl)} className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg">
+                  <div className="mt-4 flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => copyLink(drive.registrationUrl)} className="flex items-center gap-1 text-[10px] font-medium text-[#39c884] hover:text-[#2ea86e] bg-emerald-50/50 border border-emerald-100 px-3 py-1.5 rounded cursor-pointer">
                       <Copy size={12} /> Copy Link
                     </button>
-                    <button onClick={() => window.open(drive.registrationUrl, '_blank')} className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg">
+                    <button onClick={() => window.open(drive.registrationUrl, '_blank')} className="flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-700 bg-blue-50/50 border border-blue-100 px-3 py-1.5 rounded cursor-pointer">
                       <ExternalLink size={12} /> Open
                     </button>
-                    <button onClick={() => toggleDrive(drive)} className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg">
+                    <button onClick={() => toggleDrive(drive)} className="flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded cursor-pointer">
                       {drive.isActive ? <><ToggleRight size={12} /> Close Drive</> : <><ToggleLeft size={12} /> Reopen</>}
                     </button>
-                    <button onClick={() => openDetail(drive)} className="flex items-center gap-1 text-[10px] font-bold text-slate-700 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <button onClick={() => openDetail(drive)} className="flex items-center gap-1 text-[10px] font-medium text-slate-700 hover:text-slate-900 border border-[#d9d9d9] bg-white px-3 py-1.5 rounded cursor-pointer hover:border-[#39c884] hover:text-[#39c884] transition-colors">
                       Manage Drive
                     </button>
-                    <button onClick={() => openEditDrive(drive)} className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg">
+                    <button onClick={() => openEditDrive(drive)} className="flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 border border-[#d9d9d9] bg-white px-3 py-1.5 rounded cursor-pointer hover:border-[#39c884] hover:text-[#39c884] transition-colors">
                       <Edit2 size={12} /> Edit
                     </button>
                     {!drive.isActive && (
-                      <button onClick={() => removeDrive(drive)} className="flex items-center gap-1 text-[10px] font-bold text-red-600 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-lg">
+                      <button onClick={() => removeDrive(drive)} className="flex items-center gap-1 text-[10px] font-medium text-red-600 hover:text-red-700 bg-rose-50/50 border border-rose-100 px-3 py-1.5 rounded cursor-pointer">
                         <Trash2 size={12} /> Delete
                       </button>
                     )}
@@ -689,7 +693,7 @@ const Drives = () => {
                           (s.phone || '').toLowerCase().includes(q)
                         );
                       });
-                      
+
                       if (filtered.length === 0) {
                         return <p className="text-xs text-slate-400 p-4">No students match your search.</p>;
                       }
@@ -897,18 +901,18 @@ const Drives = () => {
                     <Input value={inchargeForm.name} onChange={e => setInchargeForm(p => ({ ...p, name: e.target.value }))} placeholder="Name" className="rounded-lg h-9 text-xs" />
                     <Input value={inchargeForm.email} onChange={e => setInchargeForm(p => ({ ...p, email: e.target.value }))} placeholder="Email" className="rounded-lg h-9 text-xs" />
                     <PhoneNumberInput value={inchargeForm.phone} onChange={phone => setInchargeForm(p => ({ ...p, phone }))} size="sm" />
-                    
+
                     {detailData.drive?.companies?.length > 0 && (
                       <div className="md:col-span-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
                         <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Assign to specific companies (optional)</p>
                         <div className="flex flex-wrap gap-2">
                           {detailData.drive.companies.map(c => (
                             <label key={c._id} className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer bg-white px-2 py-1 rounded border border-slate-200 hover:bg-slate-50 transition-colors">
-                              <input 
-                                type="checkbox" 
+                              <input
+                                type="checkbox"
                                 checked={inchargeForm.assignedCompanies.includes(c._id)}
                                 onChange={() => toggleAssignedCompany(c._id)}
-                                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" 
+                                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                               />
                               <span className="font-medium">{c.name}</span>
                             </label>

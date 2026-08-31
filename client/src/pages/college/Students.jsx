@@ -365,8 +365,8 @@ const Students = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Users size={20} className="text-emerald-600" /> Student Management
+          <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+            <Users size={18} className="text-[#39c884]" /> Student Management
           </h1>
           <p className="text-xs text-slate-500 mt-1 font-medium">
             {listUnlocked ? `${total} students total` : 'Select a course and year, or search to view all students'}
@@ -374,14 +374,14 @@ const Students = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           {listUnlocked && (
-            <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="rounded-xl text-xs font-bold gap-1">
+            <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="rounded text-xs font-medium gap-1 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white transition-all cursor-pointer">
               <Filter size={14} /> Filters <ChevronDown size={12} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => setShowImport(!showImport)} className="rounded-xl text-xs font-bold gap-1">
+          <Button variant="outline" size="sm" onClick={() => setShowImport(!showImport)} className="rounded text-xs font-medium gap-1 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white transition-all cursor-pointer">
             <Upload size={14} /> Bulk CSV Import
           </Button>
-          <Button variant="outline" size="sm" onClick={downloadCredentials} className="rounded-xl text-xs font-bold gap-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+          <Button variant="outline" size="sm" onClick={downloadCredentials} className="rounded text-xs font-medium gap-1 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white transition-all cursor-pointer text-slate-700">
             <Download size={14} /> Export Credentials
           </Button>
         </div>
@@ -389,39 +389,39 @@ const Students = () => {
 
       {/* CSV Import */}
       {showImport && (
-        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-3 animate-in fade-in duration-300">
+        <div className="p-5 bg-white rounded-none border border-[#e8e8e8] shadow-sm space-y-3 animate-in fade-in duration-300">
           <div>
-            <p className="text-sm font-bold text-slate-900">Bulk Student & Accreditation Import</p>
+            <p className="text-sm font-semibold text-slate-900">Bulk Student & Accreditation Import</p>
             <p className="text-xs text-slate-500 mt-1">Use the updated combined template to create/update students and include their placement or progression record in the same CSV.</p>
           </div>
           <div className="flex gap-2 items-center">
             <input type="file" accept=".csv" onChange={e => setImportFile(e.target.files[0])} className="text-xs flex-1" />
-            <Button size="sm" onClick={handleImport} disabled={importing} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
+            <Button size="sm" onClick={handleImport} disabled={importing} className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white text-xs font-medium px-4 border-none">
               {importing ? 'Importing...' : 'Import combined CSV'}
             </Button>
           </div>
-          <button onClick={downloadTemplate} className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1">
+          <button onClick={downloadTemplate} className="text-xs font-medium text-[#39c884] hover:text-[#2ea86e] hover:underline flex items-center gap-1 cursor-pointer border-none bg-transparent">
             <Download size={12} /> Download Students Upload Template
           </button>
 
           <div className="border-t border-slate-100 pt-4 mt-4 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div><p className="text-xs font-black text-slate-900">Update accreditation records for existing students</p><p className="text-[10px] text-slate-500 mt-0.5">Students are matched by register number. Import the Placement Register first, then Progression.</p></div>
-              <div className="flex gap-3"><button onClick={() => downloadAccreditationTemplate('placement')} className="text-[10px] font-bold text-indigo-600 hover:underline">Placement template</button><button onClick={() => downloadAccreditationTemplate('progression')} className="text-[10px] font-bold text-indigo-600 hover:underline">Progression template</button></div>
+              <div><p className="text-xs font-semibold text-slate-900">Update accreditation records for existing students</p><p className="text-[10px] text-slate-500 mt-0.5">Students are matched by register number. Import the Placement Register first, then Progression.</p></div>
+              <div className="flex gap-3"><button onClick={() => downloadAccreditationTemplate('placement')} className="text-[10px] font-medium text-[#39c884] hover:underline border-none bg-transparent cursor-pointer">Placement template</button><button onClick={() => downloadAccreditationTemplate('progression')} className="text-[10px] font-medium text-[#39c884] hover:underline border-none bg-transparent cursor-pointer">Progression template</button></div>
             </div>
             <div className="grid md:grid-cols-2 gap-3">
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-2">
-                <p className="text-[11px] font-black text-indigo-950">Placement Register CSV</p>
+              <div className="rounded-none border border-emerald-100 bg-emerald-50/10 p-4 space-y-2">
+                <p className="text-[11px] font-semibold text-emerald-950">Placement Register CSV</p>
                 <input type="file" accept=".csv,text/csv" onChange={event => setPlacementAccreditationFile(event.target.files?.[0] || null)} className="block w-full text-[10px]" />
-                <Button size="sm" onClick={() => importAccreditationCsv('placement')} disabled={!placementAccreditationFile || !!importingAccreditationCsv} className="h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold">{importingAccreditationCsv === 'placement' ? 'Importing…' : 'Bulk import placements'}</Button>
+                <Button size="sm" onClick={() => importAccreditationCsv('placement')} disabled={!placementAccreditationFile || !!importingAccreditationCsv} className="h-8 rounded bg-[#39c884] hover:bg-[#2ea86e] text-white text-[10px] font-medium border-none">{importingAccreditationCsv === 'placement' ? 'Importing…' : 'Bulk import placements'}</Button>
               </div>
-              <div className="rounded-xl border border-purple-100 bg-purple-50/50 p-4 space-y-2">
-                <p className="text-[11px] font-black text-purple-950">Progression CSV</p>
+              <div className="rounded-none border border-indigo-100 bg-indigo-50/20 p-4 space-y-2">
+                <p className="text-[11px] font-semibold text-indigo-950">Progression CSV</p>
                 <input type="file" accept=".csv,text/csv" onChange={event => setProgressionAccreditationFile(event.target.files?.[0] || null)} className="block w-full text-[10px]" />
-                <Button size="sm" onClick={() => importAccreditationCsv('progression')} disabled={!progressionAccreditationFile || !!importingAccreditationCsv} className="h-8 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold">{importingAccreditationCsv === 'progression' ? 'Importing…' : 'Bulk import progression'}</Button>
+                <Button size="sm" onClick={() => importAccreditationCsv('progression')} disabled={!progressionAccreditationFile || !!importingAccreditationCsv} className="h-8 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-medium border-none">{importingAccreditationCsv === 'progression' ? 'Importing…' : 'Bulk import progression'}</Button>
               </div>
             </div>
-            {accreditationImportResult && <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            {accreditationImportResult && <div className="rounded-none border border-slate-200 bg-slate-50 p-3">
               <div className="flex flex-wrap gap-3 text-[10px] font-bold"><span>{accreditationImportResult.totalRows} rows</span><span className="text-emerald-600">{accreditationImportResult.imported} imported</span><span className="text-amber-600">{accreditationImportResult.warnings} warnings</span><span className="text-red-600">{accreditationImportResult.failed} failed</span><span className="text-orange-600">{accreditationImportResult.unmatched} unmatched</span></div>
               {accreditationImportResult.issues?.length > 0 && <div className="max-h-32 overflow-y-auto mt-2 space-y-1">{accreditationImportResult.issues.map((issue,index) => <p key={`${issue.row}-${index}`} className="text-[9px] text-slate-600"><b>Row {issue.row}{issue.registerNumber ? ` · ${issue.registerNumber}` : ''}:</b> {issue.issue}</p>)}</div>}
             </div>}
@@ -431,24 +431,24 @@ const Students = () => {
 
       {/* Course & Year gate */}
       {!listUnlocked ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-10 flex flex-col items-center text-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <GraduationCap size={22} />
+        <div className="bg-white rounded-none border border-[#e8e8e8] shadow-sm p-10 flex flex-col items-center text-center gap-4">
+          <div className="w-10 h-10 rounded-none bg-[#39c884]/10 flex items-center justify-center text-[#39c884] border border-[#39c884]/30">
+            <GraduationCap size={20} />
           </div>
           <div>
-            <p className="text-sm font-black text-slate-900">Select Course &amp; Year</p>
-            <p className="text-xs text-slate-500 mt-1">Choose a department and batch year to view the student list.</p>
+            <p className="text-base font-semibold text-slate-800">Select Course &amp; Year</p>
+            <p className="text-xs text-slate-400 mt-1">Choose a department and batch year to view the student list.</p>
           </div>
           <div className="flex flex-wrap gap-3 justify-center">
-            <select value={pendingDept} onChange={e => setPendingDept(e.target.value)} disabled={departmentsLoading} className="text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-700 min-w-[160px] disabled:opacity-50">
+            <select value={pendingDept} onChange={e => setPendingDept(e.target.value)} disabled={departmentsLoading} className="text-xs font-normal bg-white border border-[#d9d9d9] rounded-none px-3 py-2 text-slate-700 min-w-[160px] disabled:opacity-50 hover:border-[#39c884] focus:border-[#39c884] focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all outline-none cursor-pointer">
               <option value="">{departmentsLoading ? 'Loading courses...' : 'Select Course'}</option>
               {departments.map(d => <option key={d.code} value={d.code}>{d.name}</option>)}
             </select>
-            <select value={pendingYear} onChange={e => setPendingYear(e.target.value)} disabled={yearsLoading} className="text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-700 min-w-[160px] disabled:opacity-50">
+            <select value={pendingYear} onChange={e => setPendingYear(e.target.value)} disabled={yearsLoading} className="text-xs font-normal bg-white border border-[#d9d9d9] rounded-none px-3 py-2 text-slate-700 min-w-[160px] disabled:opacity-50 hover:border-[#39c884] focus:border-[#39c884] focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all outline-none cursor-pointer">
               <option value="">{yearsLoading ? 'Loading years...' : 'Select Year'}</option>
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
-            <Button onClick={viewStudents} className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-6">View Students</Button>
+            <Button onClick={viewStudents} className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white font-medium px-6 h-9 transition-colors border-none cursor-pointer">View Students</Button>
           </div>
           {!departmentsLoading && departments.length === 0 && (
             <p className="text-[11px] text-amber-600 font-medium">No courses configured yet. Add departments for your college to enable this filter.</p>
@@ -457,16 +457,16 @@ const Students = () => {
             <p className="text-[11px] text-amber-600 font-medium">No academic years yet. Create a campus drive or add a student to enable this filter.</p>
           )}
 
-          <div className="w-full max-w-sm flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-slate-300 pt-2">
-            <div className="flex-1 h-px bg-slate-100" /> Or <div className="flex-1 h-px bg-slate-100" />
+          <div className="w-full max-w-sm flex items-center gap-3 text-[10px] font-semibold uppercase tracking-widest text-slate-300 pt-2">
+            <div className="flex-1 h-px bg-slate-200" /> Or <div className="flex-1 h-px bg-slate-200" />
           </div>
 
           <form onSubmit={searchAllStudents} className="w-full max-w-md flex gap-2">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search all students by name, email, or roll number..." className="pl-10 h-10 rounded-xl" />
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search all students by name, email, or roll number..." className="pl-9 h-9 rounded-none border-[#d9d9d9] hover:border-[#39c884] focus:border-[#39c884] focus:ring-0 focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all placeholder:text-slate-400" />
             </div>
-            <Button type="submit" variant="outline" className="rounded-xl text-xs font-bold px-5">Search All</Button>
+            <Button type="submit" variant="outline" className="rounded text-xs font-medium px-5 h-9 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white transition-all cursor-pointer">Search All</Button>
           </form>
           <p className="text-[11px] text-slate-400">Shows every student, A–Z within each batch year.</p>
         </div>
@@ -475,42 +475,42 @@ const Students = () => {
       {/* Selected course/year, or browse-all indicator */}
       <div className="flex items-center gap-2">
         {courseYearSelected ? (
-          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
+          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-none bg-emerald-50 text-emerald-700 border border-emerald-100">
             {departments.find(d => d.code === filters.department)?.name || filters.department} · Batch {filters.batchYear}
           </span>
         ) : (
-          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-none bg-slate-100 text-slate-600 border border-slate-200">
             All Students · A–Z by Year
           </span>
         )}
-        <button onClick={changeCourseYear} className="text-xs font-bold text-slate-400 hover:text-slate-700 underline">Change</button>
+        <button onClick={changeCourseYear} className="text-xs font-medium text-[#39c884] hover:text-[#2ea86e] underline cursor-pointer bg-transparent border-none">Change</button>
       </div>
 
       {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, email, or roll number..." className="pl-10 h-10 rounded-xl" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, email, or roll number..." className="pl-9 h-9 rounded-none border-[#d9d9d9] hover:border-[#39c884] focus:border-[#39c884] focus:ring-0 focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all placeholder:text-slate-400" />
         </div>
-        <Button type="submit" size="sm" className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-6">Search</Button>
+        <Button type="submit" size="sm" className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white font-medium px-6 h-9 border-none cursor-pointer">Search</Button>
       </form>
 
       {/* Filters */}
       {showFilters && (
-        <div className="flex flex-wrap gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100 animate-in fade-in duration-300">
+        <div className="flex flex-wrap gap-3 p-4 bg-white rounded-none border border-[#e8e8e8] shadow-sm animate-in fade-in duration-300">
           {browseAll && (
             <>
-              <select value={filters.department} onChange={e => { setFilters(p => ({ ...p, department: e.target.value })); setPage(1); }} className="text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700">
+              <select value={filters.department} onChange={e => { setFilters(p => ({ ...p, department: e.target.value })); setPage(1); }} className="text-xs font-normal bg-white border border-[#d9d9d9] rounded-none px-3 py-2 text-slate-700 min-w-[140px] hover:border-[#39c884] focus:border-[#39c884] outline-none cursor-pointer">
                 <option value="">All Departments</option>
                 {departments.map(d => <option key={d.code} value={d.code}>{d.name}</option>)}
               </select>
-              <select value={filters.batchYear} onChange={e => { setFilters(p => ({ ...p, batchYear: e.target.value })); setPage(1); }} className="text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700">
+              <select value={filters.batchYear} onChange={e => { setFilters(p => ({ ...p, batchYear: e.target.value })); setPage(1); }} className="text-xs font-normal bg-white border border-[#d9d9d9] rounded-none px-3 py-2 text-slate-700 min-w-[140px] hover:border-[#39c884] focus:border-[#39c884] outline-none cursor-pointer">
                 <option value="">All Batches</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </>
           )}
-          <select value={filters.status} onChange={e => { setFilters(p => ({ ...p, status: e.target.value })); setPage(1); }} className="text-xs font-bold bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700">
+          <select value={filters.status} onChange={e => { setFilters(p => ({ ...p, status: e.target.value })); setPage(1); }} className="text-xs font-normal bg-white border border-[#d9d9d9] rounded-none px-3 py-2 text-slate-700 min-w-[140px] hover:border-[#39c884] focus:border-[#39c884] outline-none cursor-pointer">
             <option value="">All Statuses</option>
             {Object.keys(statusColors).map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -519,7 +519,7 @@ const Students = () => {
               setFilters(p => ({ ...p, status: '', ...(browseAll ? { department: '', batchYear: '' } : {}) }));
               setPage(1);
             }}
-            className="text-xs font-bold text-slate-500 hover:text-slate-700"
+            className="text-xs font-medium text-[#39c884] hover:text-[#2ea86e] cursor-pointer bg-transparent border-none"
           >
             Clear
           </button>
@@ -528,11 +528,11 @@ const Students = () => {
 
       {/* Selection toolbar */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
-          <p className="text-xs font-bold text-emerald-800">{selectedIds.length} student{selectedIds.length === 1 ? '' : 's'} selected</p>
+        <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50/20 border border-blue-100 rounded-none">
+          <p className="text-xs font-medium text-slate-700">{selectedIds.length} student{selectedIds.length === 1 ? '' : 's'} selected</p>
           <div className="flex items-center gap-3">
-            <button onClick={() => setSelectedIds([])} className="text-xs font-bold text-slate-500 hover:text-slate-700">Clear</button>
-            <Button size="sm" variant="destructive" onClick={() => setBulkDeleteOpen(true)} className="rounded-lg text-xs font-bold gap-1.5 h-8">
+            <button onClick={() => setSelectedIds([])} className="text-xs font-medium text-[#39c884] hover:underline cursor-pointer bg-transparent border-none">Clear</button>
+            <Button size="sm" variant="destructive" onClick={() => setBulkDeleteOpen(true)} className="rounded-none text-xs font-medium gap-1.5 h-8">
               <Trash2 size={13} /> Delete Selected
             </Button>
           </div>
@@ -541,74 +541,74 @@ const Students = () => {
 
       {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-16"><div className="animate-spin w-7 h-7 border-3 border-emerald-600 border-t-transparent rounded-full" /></div>
+        <div className="flex justify-center py-16"><div className="animate-spin w-7 h-7 border-3 border-[#39c884] border-t-transparent rounded-full" /></div>
       ) : students.length === 0 ? (
-        <div className="text-center py-16">
-          <Users size={40} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-500">No students found</p>
+        <div className="text-center py-16 bg-white border border-[#e8e8e8]">
+          <Users size={36} className="text-slate-300 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-slate-500">No students found</p>
           <p className="text-xs text-slate-400 mt-1">Share your campus drive QR to start registrations</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-none border border-[#e8e8e8] shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr>
+              <thead className="bg-[#fafafa]">
+                <tr className="border-b border-[#e8e8e8]">
                   <th className="w-10 py-3 pl-4 pr-1">
                     <input
                       type="checkbox"
                       checked={students.length > 0 && selectedIds.length === students.length}
                       onChange={toggleSelectAll}
-                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      className="rounded-none border-slate-300 text-[#39c884] focus:ring-[#39c884]"
                       title="Select all on this page"
                     />
                   </th>
                   {['Student', 'Department', 'Batch', 'Roll No.', 'Status', 'Verified', 'Source', 'Registered'].map(h => (
-                    <th key={h} className="text-left py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">{h}</th>
+                    <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-slate-800">{h}</th>
                   ))}
-                  <th className="text-right py-3 px-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</th>
+                  <th className="text-right py-3 px-4 text-xs font-semibold text-slate-800">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {students.map(s => (
-                  <tr key={s._id} className={`border-t border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer ${selectedIds.includes(s._id) ? 'bg-emerald-50/40' : ''}`} onClick={() => openDetail(s._id)}>
+                  <tr key={s._id} className={`border-b border-[#f0f0f0] hover:bg-[#fafafa] transition-colors cursor-pointer ${selectedIds.includes(s._id) ? 'bg-[#39c884]/5' : ''}`} onClick={() => openDetail(s._id)}>
                     <td className="py-3 pl-4 pr-1" onClick={e => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(s._id)}
                         onChange={() => toggleSelect(s._id)}
-                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        className="rounded-none border-slate-300 text-[#39c884] focus:ring-[#39c884]"
                       />
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold text-xs shrink-0">{s.user?.name?.[0]?.toUpperCase() || '?'}</div>
+                        <div className="w-8 h-8 rounded-none bg-emerald-50 flex items-center justify-center text-[#39c884] font-bold text-xs shrink-0">{s.user?.name?.[0]?.toUpperCase() || '?'}</div>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900 text-xs truncate">{s.user?.name}</p>
+                          <p className="font-semibold text-slate-900 text-xs truncate">{s.user?.name}</p>
                           <p className="text-[10px] text-slate-400 truncate">{s.user?.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-xs font-medium text-slate-600">{s.department || '—'}</td>
-                    <td className="py-3 px-4 text-xs font-medium text-slate-600">{s.batchYear || '—'}</td>
-                    <td className="py-3 px-4 text-xs font-medium text-slate-600">{s.rollNumber || '—'}</td>
+                    <td className="py-3 px-4 text-xs font-normal text-slate-600">{s.department || '—'}</td>
+                    <td className="py-3 px-4 text-xs font-normal text-slate-600">{s.batchYear || '—'}</td>
+                    <td className="py-3 px-4 text-xs font-normal text-slate-600">{s.rollNumber || '—'}</td>
                     <td className="py-3 px-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusColors[s.placementStatus] || 'bg-slate-50 text-slate-600'}`}>{s.placementStatus}</span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-none text-[10px] font-semibold uppercase tracking-wider ${statusColors[s.placementStatus] || 'bg-slate-50 text-slate-600'}`}>{s.placementStatus}</span>
                     </td>
                     <td className="py-3 px-4">
-                      {s.idVerification?.status === 'approved' ? <ShieldCheck size={16} className="text-emerald-500" /> : <span className="text-[10px] text-slate-400">—</span>}
+                      {s.idVerification?.status === 'approved' ? <ShieldCheck size={16} className="text-[#39c884]" /> : <span className="text-[10px] text-slate-400">—</span>}
                     </td>
-                    <td className="py-3 px-4 text-[10px] font-bold uppercase text-slate-400">{s.registrationSource}</td>
+                    <td className="py-3 px-4 text-[10px] font-semibold uppercase text-slate-400">{s.registrationSource}</td>
                     <td className="py-3 px-4 text-xs text-slate-400">{new Date(s.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => openDetail(s._id)} title="View" className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+                        <button onClick={() => openDetail(s._id)} title="View" className="p-1.5 rounded-none text-slate-400 hover:text-[#39c884] hover:bg-emerald-50 transition-colors bg-transparent border-none cursor-pointer">
                           <Eye size={15} />
                         </button>
-                        <button onClick={() => openEdit(s)} title="Edit" className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                        <button onClick={() => openEdit(s)} title="Edit" className="p-1.5 rounded-none text-slate-400 hover:text-[#39c884] hover:bg-emerald-50 transition-colors bg-transparent border-none cursor-pointer">
                           <Edit2 size={15} />
                         </button>
-                        <button onClick={() => setDeleteTarget(s)} title="Delete" className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                        <button onClick={() => setDeleteTarget(s)} title="Delete" className="p-1.5 rounded-none text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors bg-transparent border-none cursor-pointer">
                           <Trash2 size={15} />
                         </button>
                       </div>
@@ -621,11 +621,11 @@ const Students = () => {
 
           {/* Pagination */}
           {pages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-[#e8e8e8] bg-[#fafafa]">
               <p className="text-xs text-slate-500 font-medium">Page {page} of {pages} ({total} total)</p>
               <div className="flex gap-1">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-lg text-xs h-8">Prev</Button>
-                <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => setPage(p => p + 1)} className="rounded-lg text-xs h-8">Next</Button>
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-none text-xs h-8 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white cursor-pointer transition-all">Prev</Button>
+                <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => setPage(p => p + 1)} className="rounded-none text-xs h-8 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white cursor-pointer transition-all">Next</Button>
               </div>
             </div>
           )}

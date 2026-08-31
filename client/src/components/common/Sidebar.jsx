@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Briefcase, Building2, FileText, Star, LogOut,
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
-  Activity, CreditCard, ChevronRight,
+  Activity, CreditCard, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeftOpen,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
   BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck
 } from 'lucide-react';
@@ -143,28 +143,30 @@ const premiumMenus = {
   ],
 };
 
-const NavItem = ({ item, active }) => {
+const NavItem = ({ item, active, isCollapsed }) => {
   const Icon = item.icon;
   return (
     <Link
       to={item.path}
-      className={`group flex items-center gap-4 px-5 py-3.5 transition-all rounded-xl relative
+      title={isCollapsed ? item.label : undefined}
+      className={`group flex items-center transition-all rounded-none relative outline-none focus:outline-none
+        ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
         ${active
-          ? 'bg-emerald-50 text-emerald-700 font-bold'
-          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+          ? 'bg-[#34b678]/25 text-white font-medium'
+          : 'text-slate-300 hover:text-[#34b678] hover:bg-white/10'
         }`}
     >
-      <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all
-        ${active ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 group-hover:text-slate-900'}`}>
-        <Icon size={16} strokeWidth={active ? 2.5 : 1.5} />
+      {active && <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#34b678]" />}
+      <div className={`flex items-center justify-center w-5 h-5 transition-all
+        ${active ? 'text-white' : 'text-slate-400 group-hover:text-[#34b678]'}`}>
+        <Icon size={18} strokeWidth={active ? 2 : 1.5} />
       </div>
-      <span className="text-[11px] uppercase font-bold tracking-widest flex-1">{item.label}</span>
-      {active && <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />}
+      {!isCollapsed && <span className="text-xs font-medium flex-1 tracking-wide">{item.label}</span>}
     </Link>
   );
 };
 
-const CollapsibleNavItem = ({ item, location }) => {
+const CollapsibleNavItem = ({ item, location, isCollapsed }) => {
   const [isOpen, setIsOpen] = React.useState(() => {
     return (item.children || []).some(child => location.pathname === child.path || location.pathname.startsWith(child.path + '/'));
   });
@@ -172,43 +174,65 @@ const CollapsibleNavItem = ({ item, location }) => {
   const Icon = item.icon;
   const isAnyChildActive = (item.children || []).some(child => location.pathname === child.path || location.pathname.startsWith(child.path + '/'));
 
+  if (isCollapsed) {
+    return (
+      <Link
+        to={item.path || (item.children && item.children[0]?.path)}
+        title={item.label}
+        className={`group flex items-center justify-center p-3 transition-all relative rounded-none outline-none focus:outline-none
+          ${isAnyChildActive
+            ? 'bg-[#34b678]/25 text-white font-medium'
+            : 'text-slate-300 hover:text-[#34b678] hover:bg-white/10'
+          }`}
+      >
+        {isAnyChildActive && <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#34b678]" />}
+        <div className={`flex items-center justify-center w-5 h-5 transition-all
+          ${isAnyChildActive ? 'text-white' : 'text-slate-400 group-hover:text-[#34b678]'}`}>
+          <Icon size={18} strokeWidth={isAnyChildActive ? 2 : 1.5} />
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <div className="space-y-1">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full group flex items-center gap-4 px-5 py-3.5 transition-all rounded-xl relative text-left
+        className={`w-full group flex items-center gap-4 px-4 py-3 transition-all relative text-left rounded-none outline-none focus:outline-none
           ${isAnyChildActive
-            ? 'bg-slate-50/50 text-slate-800 font-bold'
-            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+            ? 'bg-[#34b678]/25 text-white font-medium'
+            : 'text-slate-300 hover:text-[#34b678] hover:bg-white/10'
           }`}
       >
-        <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all
-          ${isAnyChildActive ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 group-hover:text-slate-900'}`}>
-          <Icon size={16} strokeWidth={isAnyChildActive ? 2.5 : 1.5} />
+        {isAnyChildActive && <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#34b678]" />}
+        <div className={`flex items-center justify-center w-5 h-5 transition-all
+          ${isAnyChildActive ? 'text-white' : 'text-slate-400 group-hover:text-[#34b678]'}`}>
+          <Icon size={18} strokeWidth={isAnyChildActive ? 2 : 1.5} />
         </div>
-        <span className="text-[11px] uppercase font-bold tracking-widest flex-1">{item.label}</span>
+        <span className="text-xs font-medium flex-1 tracking-wide">{item.label}</span>
         <ChevronRight
           size={14}
-          className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90 text-emerald-600' : ''}`}
+          className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90 text-white' : ''}`}
         />
       </button>
 
       {isOpen && (
-        <div className="pl-6 pr-2 py-1 space-y-1 border-l-2 border-slate-100 ml-9">
+        <div className="pl-10 pr-2 py-1 space-y-1">
           {(item.children || []).map(child => {
             const childActive = location.pathname === child.path || location.pathname.startsWith(child.path + '/');
             return (
               <Link
                 key={child.path}
                 to={child.path}
-                className={`group flex items-center gap-2.5 px-3 py-2 transition-all rounded-lg text-xs font-semibold
+                className={`group flex items-center gap-2 py-1.5 transition-all text-xs font-medium relative rounded-none px-3 outline-none focus:outline-none
                   ${childActive
-                    ? 'text-emerald-700 font-bold bg-emerald-50/50'
-                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                    ? 'bg-[#34b678]/20 text-white font-medium'
+                    : 'text-slate-400 hover:text-[#34b678] hover:bg-white/10'
                   }`}
               >
-                <span className="flex-1 text-[10px] uppercase tracking-wider">{child.label}</span>
-                {childActive && <div className="w-1 h-1 bg-emerald-600 rounded-full" />}
+                {childActive && <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#34b678]" />}
+                <span className="absolute left-1 text-slate-500">-</span>
+                <span className="flex-1 text-xs tracking-wide">{child.label}</span>
               </Link>
             );
           })}
@@ -218,38 +242,45 @@ const CollapsibleNavItem = ({ item, location }) => {
   );
 };
 
-const PremiumNavItem = ({ item, active, unlocked }) => {
+const PremiumNavItem = ({ item, active, unlocked, isCollapsed }) => {
   const Icon = item.icon;
   return (
     <Link
       to={item.path}
-      className={`group flex items-center gap-4 px-5 py-3 transition-all rounded-xl relative
+      title={isCollapsed ? item.label : undefined}
+      className={`group flex items-center transition-all relative rounded-none outline-none focus:outline-none
+        ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
         ${active
-          ? 'bg-emerald-50 text-emerald-700 font-bold'
+          ? 'bg-[#34b678]/25 text-white font-medium'
           : unlocked
-            ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-            : 'text-slate-400 hover:bg-slate-50/60'
+            ? 'text-slate-300 hover:text-[#34b678] hover:bg-white/10'
+            : 'text-slate-500 hover:bg-white/5'
         }`}
     >
-      <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all
-        ${active ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 group-hover:text-slate-700'}`}>
-        <Icon size={15} strokeWidth={active ? 2.5 : 1.5} />
+      {active && <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#34b678]" />}
+      <div className={`flex items-center justify-center w-5 h-5 transition-all
+        ${active ? 'text-white' : 'text-slate-555 group-hover:text-[#34b678]'}`}>
+        <Icon size={17} strokeWidth={active ? 2 : 1.5} />
       </div>
-      <span className={`text-[10px] uppercase font-bold tracking-widest flex-1 ${unlocked ? '' : 'opacity-60'}`}>
-        {item.label}
-      </span>
-      {active ? (
-        <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
-      ) : unlocked ? (
-        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-60" />
-      ) : (
-        <Lock size={10} className="text-slate-300 shrink-0" />
+      {!isCollapsed && (
+        <>
+          <span className={`text-xs font-medium flex-1 tracking-wide ${unlocked ? '' : 'opacity-50'}`}>
+            {item.label}
+          </span>
+          {active ? (
+            <div className="w-1.5 h-1.5 bg-[#34b678] rounded-full" />
+          ) : unlocked ? (
+            <div className="w-1.5 h-1.5 bg-[#34b678] rounded-full opacity-60" />
+          ) : (
+            <Lock size={10} className="text-slate-500 shrink-0" />
+          )}
+        </>
       )}
     </Link>
   );
 };
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -268,6 +299,11 @@ const Sidebar = () => {
     if (!coreItems.find(i => i.path === '/incharge')) {
       coreItems.push({ icon: QrCode, label: 'Manage Drive', path: '/incharge' });
     }
+  }
+
+  // Add Blog to core menus for everyone
+  if (!coreItems.find(i => i.path === '/blog')) {
+    coreItems.push({ icon: BookOpen, label: 'Blog', path: '/blog' });
   }
 
   // A team-managed recruiter (delegated by an org admin, not the owner or a solo recruiter)
@@ -302,174 +338,206 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-full h-full bg-white border border-slate-200 rounded-[24px] flex flex-col font-sans select-none shadow-sm overflow-y-auto">
+    <aside className="w-full h-full bg-[#1b496d] flex flex-col font-sans select-none transition-all duration-300">
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
 
       {/* Brand */}
-      <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-600/20">
-            <Activity size={16} strokeWidth={2.5} />
-          </div>
-          <span className="font-bold text-sm tracking-tight text-slate-900">
-            Velaivaai<span className="text-emerald-600">pu</span>
-          </span>
-        </div>
-        <Badge variant="outline" className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border-slate-100 text-slate-400 bg-slate-50/50">
-          v2.4
-        </Badge>
+      <div className={`h-20 px-6 border-b border-white/10 flex items-center shrink-0 bg-white/5 ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
+        {!isCollapsed && (
+          <Link to="/" className="flex items-center">
+            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" className="h-16 w-auto object-contain brightness-110 filter" />
+          </Link>
+        )}
+        <button 
+          onClick={toggleSidebar} 
+          className="text-slate-300 hover:text-white transition-colors cursor-pointer p-1.5 focus:outline-none"
+        >
+          {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
       </div>
 
-      {/* User card */}
-      <div className="px-6 pt-8 pb-4">
-        <div onClick={() => {
-            const routes = { 
-                jobseeker: '/candidate/settings', 
-                recruiter: '/company/settings',
-                company: '/company/settings',
-                college: '/college/settings',
-                admin: '/admin/settings',
-                subadmin: '/subadmin/settings',
-                org_employee: '/employee/settings'
-            };
-            navigate(routes[role] || '/candidate/settings');
-        }} className="p-4 rounded-2xl border border-slate-100 flex items-center gap-4 bg-slate-50/30 group hover:bg-white hover:border-emerald-100 hover:shadow-md hover:shadow-emerald-600/5 transition-all duration-300 cursor-pointer">
-          <div className="relative">
-            <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm bg-white">
-              {user?.avatar && (
-                  <AvatarImage 
-                      src={user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`} 
-                      className="object-cover" 
-                  />
-              )}
-              <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold text-xs">
-                {user?.name?.[0]?.toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-slate-900 truncate tracking-tight flex items-center gap-1">
-              {user?.name || 'Authorized User'}
-              {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={14} className="text-blue-500 shrink-0" />}
-            </p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate mt-0.5">{role} Access</p>
-          </div>
-          <ChevronRight size={14} className="text-slate-300 group-hover:text-emerald-500 transition-colors" />
-        </div>
-      </div>
-
-      {/* Profile Completion for Jobseekers */}
-      {role === 'jobseeker' && (
-        <div className="px-6 pb-6">
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 rounded-2xl p-4 border border-emerald-100/50 shadow-sm relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-200/20 rounded-full blur-xl pointer-events-none" />
-            <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-teal-200/20 rounded-full blur-xl pointer-events-none" />
-            
-            <div className="flex items-center justify-between mb-2.5 relative z-10">
-              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
-                <Activity size={12} className="text-emerald-600" />
-                Profile Score
-              </span>
-              <span className="text-xs font-black text-emerald-700">{profileCompletion}%</span>
+      {/* Scrollable Content */}
+      <div
+        className="flex-1 overflow-y-auto no-scrollbar flex flex-col"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}
+      >
+        {/* User card */}
+        <div className={`pt-8 pb-4 shrink-0 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+          <div 
+            onClick={() => {
+                const routes = {
+                    jobseeker: '/candidate/settings',
+                    recruiter: '/company/settings',
+                    company: '/company/settings',
+                    college: '/college/settings',
+                    admin: '/admin/settings',
+                    subadmin: '/subadmin/settings',
+                    org_employee: '/employee/settings'
+                };
+                navigate(routes[role] || '/candidate/settings');
+            }} 
+            className={`rounded-none border border-white/10 flex items-center bg-white/5 group hover:border-[#34b678]/40 hover:bg-white/10 transition-all duration-300 cursor-pointer ${isCollapsed ? 'justify-center p-2' : 'p-3 gap-3'}`}
+          >
+            <div className="relative shrink-0">
+              <Avatar className="w-8 h-8 rounded-none border border-white/10 shadow-sm bg-white/10">
+                {user?.avatar && (
+                    <AvatarImage
+                        src={user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`}
+                        className="object-cover"
+                    />
+                )}
+                <AvatarFallback className="bg-white/10 text-white font-bold text-xs rounded-none">
+                  {user?.name?.[0]?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              {!isCollapsed && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#1b496d] rounded-full shadow-sm" />}
             </div>
-            
-            <div className="h-1.5 w-full bg-emerald-100/60 rounded-full overflow-hidden relative z-10 mb-2.5">
-              <div 
-                className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${profileCompletion}%` }}
-              />
-            </div>
-            
-            <p className="text-[10px] font-medium text-emerald-700/80 leading-relaxed relative z-10">
-              {profileCompletion === 100 
-                ? "Excellent! Your profile is fully optimized for top recruiters."
-                : "Reach 100% to boost your visibility to recruiters by up to 3x."}
-            </p>
-            {profileCompletion < 100 && (
-              <button onClick={() => navigate('/candidate/settings')} className="mt-2.5 w-full py-1.5 rounded-lg bg-white/60 hover:bg-white text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200/50 relative z-10">
-                Complete Profile
-              </button>
+            {!isCollapsed && (
+              <>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white truncate tracking-tight flex items-center gap-1">
+                    {user?.name || 'Authorized User'}
+                    {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={13} className="text-blue-400 shrink-0" />}
+                  </p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mt-0.5">{role} Access</p>
+                </div>
+                <ChevronRight size={14} className="text-slate-500 group-hover:text-[#34b678] transition-colors shrink-0" />
+              </>
             )}
           </div>
         </div>
-      )}
 
-      {/* Core nav */}
-      <div className="flex-1 px-4">
-        <div className="space-y-1">
-          <div className="px-5 mb-4 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 flex items-center gap-2">
-            <div className="w-1 h-1 bg-emerald-600 rounded-full" />
-            Control Desk
-          </div>
-          {coreItems.map(item => {
-            if (item.children) {
-              return (
-                <CollapsibleNavItem key={item.path} item={item} location={location} />
-              );
-            }
-            return (
-              <NavItem key={item.path} item={item} active={isActive(item.path)} />
-            );
-          })}
-        </div>
+        {/* Profile Completion for Jobseekers */}
+        {role === 'jobseeker' && !isCollapsed && (
+          <div className="px-6 pb-6">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 rounded-none p-4 border border-emerald-100/50 shadow-sm relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-200/20 rounded-full blur-xl pointer-events-none" />
+              <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-teal-200/20 rounded-full blur-xl pointer-events-none" />
 
-        {/* Premium Features section */}
-        {premiumItems.length > 0 && (
-          <div className="mt-6 space-y-1">
-            <div className="px-5 mb-3 flex items-center gap-2">
-              <div className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">Premium Features</div>
-              {(!user?.subscription || user?.subscription?.price === 0) && (
-                <Badge className="text-[8px] font-bold bg-amber-50 text-amber-600 border-amber-100 px-1.5 py-0">
-                  Upgrade
-                </Badge>
+              <div className="flex items-center justify-between mb-2.5 relative z-10">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Activity size={12} className="text-emerald-600" />
+                  Profile Score
+                </span>
+                <span className="text-xs font-black text-emerald-700">{profileCompletion}%</span>
+              </div>
+
+              <div className="h-1.5 w-full bg-emerald-100/60 rounded-none overflow-hidden relative z-10 mb-2.5">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-none transition-all duration-1000 ease-out"
+                  style={{ width: `${profileCompletion}%` }}
+                />
+              </div>
+
+              <p className="text-[10px] font-medium text-emerald-700/80 leading-relaxed relative z-10">
+                {profileCompletion === 100
+                  ? "Excellent! Your profile is fully optimized for top recruiters."
+                  : "Reach 100% to boost your visibility to recruiters by up to 3x."}
+              </p>
+              {profileCompletion < 100 && (
+                <button onClick={() => navigate('/candidate/settings')} className="mt-2.5 w-full py-1.5 rounded-none bg-white/60 hover:bg-white text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200/50 relative z-10">
+                  Complete Profile
+                </button>
               )}
             </div>
-            {premiumItems.map(item => {
-              const unlocked = !item.featureKey || hasFeature(user, item.featureKey);
+          </div>
+        )}
+
+        {/* Core nav */}
+        <div className={`flex-1 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+          <div className="space-y-1">
+            {!isCollapsed ? (
+              <div className="px-5 mb-4 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 flex items-center gap-3">
+                <span>Control Desk</span>
+                <div className="h-[1px] flex-1 bg-white/10" />
+              </div>
+            ) : (
+              <div className="h-[1px] bg-white/10 my-4 mx-2" />
+            )}
+            {coreItems.map(item => {
+              if (item.children) {
+                return (
+                  <CollapsibleNavItem key={item.path} item={item} location={location} isCollapsed={isCollapsed} />
+                );
+              }
               return (
-                <PremiumNavItem
-                  key={item.path}
-                  item={item}
-                  active={isActive(item.path)}
-                  unlocked={unlocked}
-                />
+                <NavItem key={item.path} item={item} active={isActive(item.path)} isCollapsed={isCollapsed} />
               );
             })}
           </div>
+
+          {/* Premium Features section */}
+          {premiumItems.length > 0 && (
+            <div className="mt-6 space-y-1">
+              {!isCollapsed ? (
+                <div className="px-5 mb-3 flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">
+                  <span>Premium Features</span>
+                  <div className="h-[1px] flex-1 bg-white/10" />
+                  {(!user?.subscription || user?.subscription?.price === 0) && (
+                    <Badge className="text-[8px] font-bold bg-amber-50 text-amber-600 border-amber-100 px-1.5 py-0 shrink-0 rounded-none">
+                      Upgrade
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <div className="h-[1px] bg-white/10 my-6 mx-2" />
+              )}
+              {premiumItems.map(item => {
+                const unlocked = !item.featureKey || hasFeature(user, item.featureKey);
+                return (
+                  <PremiumNavItem
+                    key={item.path}
+                    item={item}
+                    active={isActive(item.path)}
+                    unlocked={unlocked}
+                    isCollapsed={isCollapsed}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {role === 'drive_incharge' && !isCollapsed && (
+          <div className="px-6 mt-6">
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 rounded-none p-4 border border-emerald-100/50 shadow-sm relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-200/20 rounded-full blur-xl pointer-events-none" />
+              <h3 className="text-[11px] font-black text-emerald-800 uppercase tracking-wider mb-2 relative z-10">
+                Unlock Features
+              </h3>
+              <p className="text-[10px] font-medium text-emerald-700/80 leading-relaxed relative z-10 mb-3">
+                Register fully to post jobs, apply for jobs, and access the complete platform.
+              </p>
+              <button
+                onClick={() => navigate('/complete-social-profile')}
+                className="w-full py-2 rounded-none bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all shadow-sm shadow-emerald-600/20 relative z-10"
+              >
+                Complete Registration
+              </button>
+            </div>
+          </div>
         )}
+
       </div>
 
-      {role === 'drive_incharge' && (
-        <div className="px-6 mt-6">
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 rounded-2xl p-4 border border-emerald-100/50 shadow-sm relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-200/20 rounded-full blur-xl pointer-events-none" />
-            <h3 className="text-[11px] font-black text-emerald-800 uppercase tracking-wider mb-2 relative z-10">
-              Unlock Features
-            </h3>
-            <p className="text-[10px] font-medium text-emerald-700/80 leading-relaxed relative z-10 mb-3">
-              Register fully to post jobs, apply for jobs, and access the complete platform.
-            </p>
-            <button
-              onClick={() => navigate('/complete-social-profile')}
-              className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all shadow-sm shadow-emerald-600/20 relative z-10"
-            >
-              Complete Registration
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Logout */}
-      <div className="px-6 py-8 mt-6 border-t border-slate-50 bg-slate-50/20">
+      <div className={`py-4 border-t border-white/10 bg-white/5 shrink-0 ${isCollapsed ? 'px-2' : 'px-6'}`}>
         <button
           onClick={() => { logout(); navigate('/'); }}
-          className="flex items-center justify-between px-5 py-4 w-full rounded-2xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 border border-transparent transition-all duration-300 group"
+          title={isCollapsed ? 'Logout' : undefined}
+          className={`flex items-center justify-between w-full rounded-none text-slate-300 hover:text-[#34b678] hover:bg-white/5 hover:border-white/10 border border-transparent transition-all duration-300 group ${isCollapsed ? 'p-3 justify-center' : 'px-5 py-2.5'}`}
         >
-          <div className="flex items-center gap-4">
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
             <LogOut size={16} strokeWidth={2} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Terminate Session</span>
+            {!isCollapsed && <span className="text-[10px] font-bold uppercase tracking-widest">Logout</span>}
           </div>
-          <div className="w-2 h-2 rounded-full bg-slate-200 group-hover:bg-rose-500 transition-colors" />
         </button>
       </div>
     </aside>

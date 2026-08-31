@@ -4,9 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { Building2, ShieldCheck, Upload, FileText, CheckCircle2, AlertCircle, Clock, Save, GraduationCap, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 const API = import.meta.env.VITE_API_BASE_URL;
+
+const antInputClass = "w-full h-9 px-3 text-xs bg-white border border-[#d9d9d9] rounded-none outline-none hover:border-[#39c884] focus:border-[#39c884] focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed mt-1";
 
 const CollegeSettings = () => {
   const auth = useAuth();
@@ -132,7 +133,7 @@ const CollegeSettings = () => {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-3 border-[#39c884] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -140,8 +141,8 @@ const CollegeSettings = () => {
   return (
     <div className="space-y-8 max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-          <Building2 size={24} className="text-emerald-600" /> College Profile & Verification Settings
+        <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+          <Building2 size={18} className="text-[#39c884]" /> College Profile & Verification Settings
         </h1>
         <p className="text-xs text-slate-500 font-medium mt-1">
           Manage your institution details, upload verification proofs, and principal information.
@@ -149,26 +150,26 @@ const CollegeSettings = () => {
       </div>
 
       {/* Verification Banner */}
-      <div className={`p-5 rounded-2xl border flex items-start justify-between gap-4 shadow-sm ${
-        profile?.verificationStatus === 'verified' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' :
-        profile?.verificationStatus === 'rejected' ? 'bg-red-50 border-red-200 text-red-900' :
-        'bg-amber-50 border-amber-200 text-amber-900'
+      <div className={`p-5 rounded-none border flex items-start justify-between gap-4 shadow-sm ${
+        profile?.verificationStatus === 'verified' ? 'bg-emerald-50/50 border-emerald-100 text-emerald-900' :
+        profile?.verificationStatus === 'rejected' ? 'bg-rose-50/50 border-rose-100 text-rose-900' :
+        'bg-amber-50/50 border-amber-100 text-amber-900'
       }`}>
         <div className="flex items-start gap-3">
           {profile?.verificationStatus === 'verified' ? (
-            <CheckCircle2 size={24} className="text-emerald-600 shrink-0 mt-0.5" />
+            <CheckCircle2 size={22} className="text-emerald-600 shrink-0 mt-0.5" />
           ) : profile?.verificationStatus === 'rejected' ? (
-            <AlertCircle size={24} className="text-red-600 shrink-0 mt-0.5" />
+            <AlertCircle size={22} className="text-rose-600 shrink-0 mt-0.5" />
           ) : (
-            <Clock size={24} className="text-amber-600 shrink-0 mt-0.5" />
+            <Clock size={22} className="text-amber-600 shrink-0 mt-0.5" />
           )}
           <div>
-            <h3 className="text-sm font-black uppercase tracking-wider">
+            <h3 className="text-sm font-semibold uppercase tracking-wider">
               Status: {profile?.verificationStatus === 'verified' ? 'Verified Institution' :
                        profile?.verificationStatus === 'rejected' ? 'Verification Rejected' :
                        'Pending Verification'}
             </h3>
-            <p className="text-xs mt-1 font-medium opacity-90">
+            <p className="text-xs mt-1 font-normal opacity-90 leading-relaxed">
               {profile?.verificationStatus === 'verified'
                 ? 'Your college is officially verified. You have full access to campus drives and student management.'
                 : profile?.verificationStatus === 'rejected'
@@ -180,25 +181,25 @@ const CollegeSettings = () => {
       </div>
 
       {/* Proof Document Upload Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+      <div className="bg-white rounded-none border border-[#e8e8e8] p-6 shadow-sm space-y-4">
         <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <ShieldCheck size={18} className="text-emerald-600" />
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Verification Document Proof</h3>
+          <ShieldCheck size={18} className="text-[#39c884]" />
+          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Verification Document Proof</h3>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 leading-relaxed">
           To prove authenticity, please upload an official document such as AICTE approval, college registration certificate, or Principal authorization letter.
         </p>
 
         {profile?.proofDocumentUrl && (
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs font-medium text-slate-700">
+          <div className="p-3 bg-slate-50 rounded-none border border-[#e8e8e8] flex items-center justify-between text-xs font-medium text-slate-700">
             <span className="flex items-center gap-2">
-              <FileText size={16} className="text-emerald-600" /> Document uploaded (`{profile.proofDocumentUrl.split('/').pop()}`)
+              <FileText size={16} className="text-[#39c884]" /> Document uploaded (`{profile.proofDocumentUrl.split('/').pop()}`)
             </span>
             <a
               href={profile.proofDocumentUrl.startsWith('http') ? profile.proofDocumentUrl : `${import.meta.env.VITE_API_DOMAIN}${profile.proofDocumentUrl}`}
               target="_blank"
               rel="noreferrer"
-              className="text-emerald-600 hover:underline font-bold"
+              className="text-[#39c884] hover:text-[#2ea86e] hover:underline font-bold"
             >
               View Document →
             </a>
@@ -210,12 +211,12 @@ const CollegeSettings = () => {
             type="file"
             accept=".pdf,.jpg,.png,.jpeg"
             onChange={e => setProofFile(e.target.files[0])}
-            className="text-xs flex-1 w-full p-2 border rounded-xl bg-slate-50 font-medium text-slate-600"
+            className="text-xs flex-1 w-full p-2 border border-[#d9d9d9] rounded-none bg-slate-50 font-normal text-slate-600 outline-none"
           />
           <Button
             onClick={handleUploadProof}
             disabled={uploadingProof || !proofFile}
-            className="w-full sm:w-auto rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1 px-5 h-10"
+            className="w-full sm:w-auto rounded bg-[#39c884] hover:bg-[#2ea86e] text-white text-xs font-medium gap-1 px-5 h-9 border-none cursor-pointer"
           >
             <Upload size={14} /> {uploadingProof ? 'Uploading...' : 'Upload Proof'}
           </Button>
@@ -223,12 +224,12 @@ const CollegeSettings = () => {
       </div>
 
       {/* Departments Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+      <div className="bg-white rounded-none border border-[#e8e8e8] p-6 shadow-sm space-y-4">
         <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-          <GraduationCap size={18} className="text-emerald-600" />
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Departments / Courses</h3>
+          <GraduationCap size={18} className="text-[#39c884]" />
+          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Departments / Courses</h3>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 leading-relaxed">
           These departments appear as course options when students register, campus drives are created, and when filtering the student list.
         </p>
 
@@ -237,12 +238,12 @@ const CollegeSettings = () => {
         ) : (
           <div className="flex flex-wrap gap-2">
             {departments.map(d => (
-              <span key={d.code} className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700">
-                {d.name} <span className="text-slate-400 font-medium">({d.code})</span>
+              <span key={d.code} className="inline-flex items-center gap-2 pl-3 pr-2 py-1 bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 rounded-none">
+                {d.name} <span className="text-slate-400">({d.code})</span>
                 <button
                   type="button"
                   onClick={() => removeDepartment(d.code)}
-                  className="text-slate-400 hover:text-red-600 transition-colors"
+                  className="text-slate-400 hover:text-red-600 transition-colors border-none bg-transparent cursor-pointer"
                   title="Remove department"
                 >
                   <X size={12} />
@@ -253,19 +254,19 @@ const CollegeSettings = () => {
         )}
 
         <div className="flex flex-col sm:flex-row gap-2 pt-2">
-          <Input
+          <input
             value={newDept.name}
             onChange={e => setNewDept(p => ({ ...p, name: e.target.value }))}
             placeholder="Department name (e.g. Computer Science)"
-            className="rounded-xl font-medium flex-1"
+            className={antInputClass.replace('mt-1', '')}
           />
-          <Input
+          <input
             value={newDept.code}
             onChange={e => setNewDept(p => ({ ...p, code: e.target.value.toUpperCase() }))}
             placeholder="Code (e.g. CS)"
-            className="rounded-xl font-medium uppercase sm:w-32"
+            className={antInputClass.replace('mt-1', '') + " uppercase sm:w-32"}
           />
-          <Button type="button" variant="outline" onClick={addDepartment} className="rounded-xl text-xs font-bold gap-1 shrink-0">
+          <Button type="button" variant="outline" onClick={addDepartment} className="rounded border border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white text-xs font-medium gap-1 shrink-0 h-9 px-4 cursor-pointer">
             <Plus size={14} /> Add
           </Button>
         </div>
@@ -275,7 +276,7 @@ const CollegeSettings = () => {
             type="button"
             onClick={saveDepartments}
             disabled={savingDepts}
-            className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold gap-2 px-6 h-10"
+            className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white text-xs font-medium gap-2 px-6 h-9 border-none cursor-pointer"
           >
             <Save size={14} /> {savingDepts ? 'Saving...' : 'Save Departments'}
           </Button>
@@ -283,93 +284,93 @@ const CollegeSettings = () => {
       </div>
 
       {/* Profile Form */}
-      <form onSubmit={handleUpdateProfile} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+      <form onSubmit={handleUpdateProfile} className="bg-white rounded-none border border-[#e8e8e8] p-6 shadow-sm space-y-5">
         <div className="border-b border-slate-100 pb-3">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Institution & Principal Details</h3>
+          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Institution & Principal Details</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">College Name *</label>
-            <Input
+            <input
               value={form.name}
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
               required
-              className="mt-1 rounded-xl font-medium"
+              className={antInputClass}
             />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">College Code (e.g. SKCT) *</label>
-            <Input
+            <input
               value={form.code}
               onChange={e => setForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
               required
-              className="mt-1 rounded-xl font-medium uppercase"
+              className={antInputClass + " uppercase"}
             />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Affiliated University</label>
-            <Input
+            <input
               value={form.university}
               onChange={e => setForm(p => ({ ...p, university: e.target.value }))}
               placeholder="e.g. Anna University"
-              className="mt-1 rounded-xl font-medium"
+              className={antInputClass}
             />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Location (City / State)</label>
-            <Input
+            <input
               value={form.location}
               onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
               placeholder="e.g. Coimbatore, Tamil Nadu"
-              className="mt-1 rounded-xl font-medium"
+              className={antInputClass}
             />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Principal Name</label>
-            <Input
+            <input
               value={form.principalName}
               onChange={e => setForm(p => ({ ...p, principalName: e.target.value }))}
               placeholder="Dr. K. Sundar"
-              className="mt-1 rounded-xl font-medium"
+              className={antInputClass}
             />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Principal Email (for Reports)</label>
-            <Input
+            <input
               type="email"
               value={form.principalEmail}
               onChange={e => setForm(p => ({ ...p, principalEmail: e.target.value }))}
               placeholder="principal@skct.campus"
-              className="mt-1 rounded-xl font-medium"
+              className={antInputClass}
             />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">College Email</label>
-            <Input
+            <input
               type="email"
               value={form.collegeEmail}
               onChange={e => setForm(p => ({ ...p, collegeEmail: e.target.value }))}
               placeholder="office@skct.campus"
-              className="mt-1 rounded-xl font-medium"
+              className={antInputClass}
             />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">College Phone</label>
-            <Input
+            <input
               value={form.collegePhone}
               onChange={e => setForm(p => ({ ...p, collegePhone: e.target.value }))}
               placeholder="e.g. 044-12345678"
-              className="mt-1 rounded-xl font-medium"
+              className={antInputClass}
             />
           </div>
           <div className="md:col-span-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Additional Report Recipients (comma-separated emails)</label>
-            <Input
+            <input
               value={form.additionalReportRecipients}
               onChange={e => setForm(p => ({ ...p, additionalReportRecipients: e.target.value }))}
               placeholder="placement.head@skct.campus, management@skct.campus"
-              className="mt-1 rounded-xl font-medium"
+              className={antInputClass}
             />
             <p className="text-[10px] text-slate-400 mt-1">Placement reports are emailed to the Principal Email and everyone listed here.</p>
           </div>
@@ -379,7 +380,7 @@ const CollegeSettings = () => {
           <Button
             type="submit"
             disabled={saving}
-            className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold gap-2 px-6 h-10"
+            className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white text-xs font-medium gap-2 px-6 h-9 border-none cursor-pointer"
           >
             <Save size={14} /> {saving ? 'Saving...' : 'Save Profile Details'}
           </Button>
