@@ -291,24 +291,24 @@ const CollegeReports = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Graduated', value: accreditation.metrics.total.graduated, icon: GraduationCap, bgGradient: 'from-[#1b496d] to-[#2a73ab]' },
-                { label: 'Placed', value: accreditation.metrics.total.placed, icon: CheckCircle2, bgGradient: 'from-[#0d7c7f] to-[#12adac]' },
-                { label: 'Placement rate', value: `${(accreditation.metrics.total.placementPct * 100).toFixed(1)}%`, icon: TrendingUp, bgGradient: 'from-[#b45309] to-[#d97706]' },
-                { label: 'Total progression', value: accreditation.metrics.total.progression, icon: Award, bgGradient: 'from-indigo-600 to-purple-500' }
+                { label: 'Graduated', value: accreditation.metrics.total.graduated, icon: GraduationCap, bgStyle: 'bg-slate-50 border-[#e8e8e8]', textColor: 'text-slate-700', iconColor: 'text-slate-400', numColor: 'text-slate-300' },
+                { label: 'Placed', value: accreditation.metrics.total.placed, icon: CheckCircle2, bgStyle: 'bg-emerald-50/40 border-emerald-100', textColor: 'text-[#39c884]', iconColor: 'text-[#39c884]', numColor: 'text-emerald-200' },
+                { label: 'Placement rate', value: `${(accreditation.metrics.total.placementPct * 100).toFixed(1)}%`, icon: TrendingUp, bgStyle: 'bg-amber-50/40 border-amber-100', textColor: 'text-amber-600', iconColor: 'text-amber-500', numColor: 'text-amber-200' },
+                { label: 'Total progression', value: accreditation.metrics.total.progression, icon: Award, bgStyle: 'bg-purple-50/40 border-purple-100', textColor: 'text-purple-600', iconColor: 'text-purple-500', numColor: 'text-purple-200' }
               ].map((metric, i) => {
                 const Icon = metric.icon;
                 return (
-                  <div key={metric.label} className={`relative overflow-hidden p-5 text-white shadow-sm hover:shadow-md transition-all duration-300 rounded-none bg-gradient-to-br ${metric.bgGradient}`}>
-                    <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
-                    <div className="absolute -right-2 -bottom-2 w-16 h-16 rounded-full bg-white/10 pointer-events-none" />
+                  <div key={metric.label} className={`relative overflow-hidden p-5 border shadow-sm hover:shadow-md transition-all duration-300 rounded-none ${metric.bgStyle}`}>
+                    <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-slate-900/[0.02] pointer-events-none" />
+                    <div className="absolute -right-2 -bottom-2 w-16 h-16 rounded-full bg-slate-900/[0.02] pointer-events-none" />
                     <div className="flex flex-col h-full justify-between relative z-10">
                       <div className="mb-4 flex items-center justify-between">
-                        <Icon size={18} className="text-white opacity-90" strokeWidth={2.5} />
-                        <span className="text-[10px] text-white/30 font-black">0{i+1}</span>
+                        <Icon size={18} className={metric.iconColor} strokeWidth={2.5} />
+                        <span className={`text-[10px] font-black ${metric.numColor}`}>0{i+1}</span>
                       </div>
                       <div>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-white/90">{metric.label}</p>
-                        <p className="text-2xl font-black text-white tracking-tight mt-1">{metric.value}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{metric.label}</p>
+                        <p className={`text-2xl font-semibold tracking-tight mt-1 ${metric.textColor}`}>{metric.value}</p>
                       </div>
                     </div>
                   </div>
@@ -445,24 +445,24 @@ const CollegeReports = () => {
       {data && (
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Students', value: data.totalStudents, icon: Users, bgGradient: 'from-[#1b496d] to-[#2a73ab]' },
-            { label: 'Total Placed', value: data.stats.placed, icon: CheckCircle2, bgGradient: 'from-[#0d7c7f] to-[#12adac]' },
-            { label: 'In Interview Pipeline', value: data.stats.interviewing, icon: TrendingUp, bgGradient: 'from-[#b45309] to-[#d97706]' },
-            { label: 'Success Rate', value: `${data.successRate}%`, icon: Award, bgGradient: 'from-indigo-600 to-purple-500' }
+            { label: 'Total Students', value: data.totalStudents, icon: Users, bgStyle: 'bg-slate-50 border-[#e8e8e8]', textColor: 'text-slate-700', iconColor: 'text-slate-400', numColor: 'text-slate-300' },
+            { label: 'Total Placed', value: data.stats.placed, icon: CheckCircle2, bgStyle: 'bg-emerald-50/40 border-emerald-100', textColor: 'text-[#39c884]', iconColor: 'text-[#39c884]', numColor: 'text-emerald-200' },
+            { label: 'In Interview Pipeline', value: data.stats.interviewing, icon: TrendingUp, bgStyle: 'bg-amber-50/40 border-amber-100', textColor: 'text-amber-600', iconColor: 'text-amber-500', numColor: 'text-amber-200' },
+            { label: 'Success Rate', value: `${data.successRate}%`, icon: Award, bgStyle: 'bg-purple-50/40 border-purple-100', textColor: 'text-purple-600', iconColor: 'text-purple-500', numColor: 'text-purple-200' }
           ].map((metric, i) => {
             const Icon = metric.icon;
             return (
-              <div key={metric.label} className={`relative overflow-hidden p-5 text-white shadow-sm hover:shadow-md transition-all duration-300 rounded-none bg-gradient-to-br ${metric.bgGradient}`}>
-                <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
-                <div className="absolute -right-2 -bottom-2 w-16 h-16 rounded-full bg-white/10 pointer-events-none" />
+              <div key={metric.label} className={`relative overflow-hidden p-5 border shadow-sm hover:shadow-md transition-all duration-300 rounded-none ${metric.bgStyle}`}>
+                <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-slate-900/[0.02] pointer-events-none" />
+                <div className="absolute -right-2 -bottom-2 w-16 h-16 rounded-full bg-slate-900/[0.02] pointer-events-none" />
                 <div className="flex flex-col h-full justify-between relative z-10">
                   <div className="mb-4 flex items-center justify-between">
-                    <Icon size={18} className="text-white opacity-90" strokeWidth={2.5} />
-                    <span className="text-[10px] text-white/30 font-black">0{i+1}</span>
+                    <Icon size={18} className={metric.iconColor} strokeWidth={2.5} />
+                    <span className={`text-[10px] font-black ${metric.numColor}`}>0{i+1}</span>
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-white/90">{metric.label}</p>
-                    <p className="text-2xl font-black text-white tracking-tight mt-1">{metric.value}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{metric.label}</p>
+                    <p className={`text-2xl font-semibold tracking-tight mt-1 ${metric.textColor}`}>{metric.value}</p>
                   </div>
                 </div>
               </div>

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const STATUS_CONFIG = {
-  completed:  { label: 'Active',       badge: 'bg-emerald-50 text-emerald-600', icon: CheckCircle2 },
+  completed:  { label: 'Active',       badge: 'bg-blue-50 text-blue-600', icon: CheckCircle2 },
   superseded: { label: 'Deactivated',  badge: 'bg-slate-50 text-slate-400',     icon: Clock },
   failed:     { label: 'Failed',       badge: 'bg-rose-50 text-rose-600',       icon: XCircle },
   pending:    { label: 'Pending',      badge: 'bg-amber-50 text-amber-600',     icon: Clock },
@@ -63,7 +63,7 @@ const generateInvoiceHTML = (payment, user) => {
     /* Header */
     .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 28px; border-bottom: 2px solid #e2e8f0; }
     .brand { display: flex; flex-direction: column; gap: 4px; }
-    .brand-name { font-size: 22px; font-weight: 800; color: #10b981; letter-spacing: -0.5px; }
+    .brand-name { font-size: 22px; font-weight: 800; color: #3b82f6; letter-spacing: -0.5px; }
     .brand-sub  { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; }
     .invoice-label { text-align: right; }
     .invoice-label h1 { font-size: 32px; font-weight: 800; color: #f1f5f9; letter-spacing: -1px; text-transform: uppercase; }
@@ -76,7 +76,7 @@ const generateInvoiceHTML = (payment, user) => {
     .meta-block p strong { font-weight: 700; color: #1e293b; }
 
     /* Table */
-    .table-wrap { margin-bottom: 32px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .table-wrap { margin-bottom: 32px; border-radius: 0; overflow: hidden; border: 1px solid #e2e8f0; }
     table { width: 100%; border-collapse: collapse; }
     thead tr { background: #f8fafc; }
     th { padding: 12px 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; text-align: left; }
@@ -87,14 +87,14 @@ const generateInvoiceHTML = (payment, user) => {
 
     /* Totals */
     .totals { display: flex; justify-content: flex-end; margin-bottom: 32px; }
-    .totals-box { width: 280px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+    .totals-box { width: 280px; border: 1px solid #e2e8f0; border-radius: 0; overflow: hidden; }
     .totals-row { display: flex; justify-content: space-between; padding: 10px 20px; font-size: 13px; border-top: 1px solid #f1f5f9; }
     .totals-row:first-child { border-top: none; }
-    .totals-row.total { background: #f0fdf4; font-weight: 800; font-size: 14px; color: #10b981; }
+    .totals-row.total { background: #eff6ff; font-weight: 800; font-size: 14px; color: #3b82f6; }
 
     /* Status badge */
-    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-    .status-completed  { background: #d1fae5; color: #059669; }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 0; font-size: 11px; font-weight: 700; }
+    .status-completed  { background: #dbeafe; color: #2563eb; }
     .status-superseded { background: #f1f5f9; color: #94a3b8; }
     .status-failed     { background: #fee2e2; color: #dc2626; }
     .status-pending    { background: #fef9c3; color: #ca8a04; }
@@ -103,7 +103,7 @@ const generateInvoiceHTML = (payment, user) => {
     /* Footer */
     .footer { border-top: 1px solid #e2e8f0; padding-top: 20px; display: flex; justify-content: space-between; align-items: center; }
     .footer p { font-size: 11px; color: #94a3b8; }
-    .footer .thanks { font-size: 13px; font-weight: 700; color: #10b981; }
+    .footer .thanks { font-size: 13px; font-weight: 700; color: #3b82f6; }
 
     @media print {
       body { padding: 20px; }
@@ -186,7 +186,6 @@ const downloadInvoice = (payment, user) => {
   const url    = URL.createObjectURL(blob);
   const win    = window.open(url, '_blank');
   if (!win) toast.error('Allow popups to download the invoice');
-  // cleanup the object URL after the window loads it
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 };
 
@@ -229,7 +228,6 @@ const PaymentHistory = () => {
 
   const activeFilterLabel = FILTER_OPTIONS.find(f => f.key === statusFilter)?.label || 'All Transactions';
 
-  // Reset to page 1 on filter change
   useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
 
   const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
@@ -238,8 +236,8 @@ const PaymentHistory = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-4" />
-        <p className="text-slate-400 font-medium">Retrieving transaction history...</p>
+        <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4" />
+        <p className="text-slate-400 font-medium text-xs">Retrieving transaction history...</p>
       </div>
     );
   }
@@ -249,34 +247,34 @@ const PaymentHistory = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Payment History</h1>
-          <p className="text-sm text-slate-500 mt-1">View and download invoices for your subscription transactions.</p>
+          <h1 className="text-lg font-semibold text-slate-900 tracking-tight">Payment History</h1>
+          <p className="text-xs text-slate-500 mt-1">View and download invoices for your subscription transactions.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative group flex-1 md:w-64">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={14} />
             <input
               type="text"
               placeholder="Search by plan or ID..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-white border border-[#d9d9d9] hover:border-blue-500 focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)] transition-all outline-none rounded-none text-xs"
             />
           </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="rounded-xl h-10 border-slate-200 text-slate-600 hover:bg-slate-50 gap-2 shrink-0">
-                <Filter size={15} />
+              <Button variant="outline" className="rounded border-[#d9d9d9] text-slate-700 hover:text-blue-500 hover:border-blue-500 hover:bg-white text-xs font-medium gap-2 px-4 h-9 cursor-pointer shrink-0">
+                <Filter size={14} />
                 {activeFilterLabel}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 rounded-xl p-1 border-slate-200 shadow-xl">
+            <DropdownMenuContent align="end" className="w-44 rounded p-1 border-slate-200 shadow-xl bg-white">
               {FILTER_OPTIONS.map(f => (
                 <DropdownMenuItem
                   key={f.key}
                   onClick={() => setStatusFilter(f.key)}
-                  className={`rounded-lg font-bold text-xs py-2.5 cursor-pointer ${statusFilter === f.key ? 'bg-emerald-50 text-emerald-700' : ''}`}
+                  className={`rounded font-medium text-xs py-2 cursor-pointer hover:bg-slate-50 ${statusFilter === f.key ? 'bg-blue-50 text-blue-700 hover:bg-blue-50' : ''}`}
                 >
                   {f.label}
                 </DropdownMenuItem>
@@ -287,20 +285,20 @@ const PaymentHistory = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-slate-100 rounded-[24px] overflow-hidden shadow-sm shadow-slate-200/50">
+      <div className="bg-white border border-[#e8e8e8] rounded-none overflow-hidden shadow-none">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Plan</th>
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Transaction ID</th>
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Invoice</th>
+              <tr className="border-b border-[#e8e8e8] bg-slate-50/50">
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Plan</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Transaction ID</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Invoice</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-[#e8e8e8]">
               {paginatedPayments.length > 0 ? (
                 paginatedPayments.map(payment => {
                   const cfg = STATUS_CONFIG[payment.status] || STATUS_CONFIG.pending;
@@ -309,11 +307,11 @@ const PaymentHistory = () => {
                     <tr key={payment._id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                            <Receipt size={17} />
+                          <div className="w-8 h-8 rounded-none bg-blue-50/60 flex items-center justify-center text-blue-600 shrink-0">
+                            <CreditCard size={14} />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-slate-900 leading-tight">
+                            <p className="text-xs font-semibold text-slate-800 leading-tight">
                               {payment.paymentType === 'pay-per-feature' ? (payment.payPerFeature?.name || 'A-la-carte Feature') : (payment.plan?.name || 'N/A')}
                             </p>
                             <p className="text-[10px] text-slate-400 font-medium mt-0.5 capitalize">
@@ -325,31 +323,31 @@ const PaymentHistory = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md block w-fit max-w-[160px] truncate">
+                        <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded-none block w-fit max-w-[160px] truncate border border-slate-200">
                           {payment.razorpay_payment_id || 'FREE_PLAN'}
                         </span>
-                        <span className="text-[10px] text-slate-400 mt-1 block truncate max-w-[160px]">
+                        <span className="text-[9px] text-slate-400 mt-1 block truncate max-w-[160px]">
                           {payment.razorpay_order_id || '—'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-xs font-bold text-slate-900">
+                        <span className="text-xs font-medium text-slate-800">
                           {new Date(payment.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-slate-900">
+                        <span className="text-xs font-semibold text-slate-800">
                           {payment.amount > 0 ? `₹${Number(payment.amount).toLocaleString('en-IN')}` : 'FREE'}
                         </span>
                         {payment.gstPercentage > 0 && payment.amount > 0 && (
-                          <span className="block text-[10px] text-slate-400 font-medium mt-0.5">
+                          <span className="block text-[9px] text-slate-400 font-medium mt-0.5">
                             incl. {payment.gstPercentage}% GST
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <Badge className={`${cfg.badge} border-none px-2.5 py-0.5 rounded-lg flex items-center gap-1 w-fit shadow-none text-[11px] font-bold`}>
-                          <StatusIcon size={10} /> {cfg.label}
+                        <Badge className={`${cfg.badge} border-none px-2.5 py-0.5 rounded-none flex items-center gap-1 w-fit shadow-none text-[10px] font-semibold`}>
+                          <StatusIcon size={9} /> {cfg.label}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -357,7 +355,7 @@ const PaymentHistory = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => downloadInvoice(payment, user)}
-                          className="rounded-lg h-8 px-3 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 text-xs font-bold gap-1.5"
+                          className="rounded text-blue-600 hover:bg-blue-50 text-xs font-medium gap-1.5 h-8 px-3 cursor-pointer"
                         >
                           <Download size={13} /> Invoice
                         </Button>
@@ -369,10 +367,10 @@ const PaymentHistory = () => {
                 <tr>
                   <td colSpan="6" className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                        <CreditCard size={28} className="text-slate-200" />
+                      <div className="w-16 h-16 bg-slate-50 rounded-none flex items-center justify-center mb-4 border border-slate-200">
+                        <CreditCard size={28} className="text-slate-300" />
                       </div>
-                      <p className="text-slate-400 font-semibold">No payment records found</p>
+                      <p className="text-slate-400 font-medium text-xs">No payment records found</p>
                       <p className="text-[10px] text-slate-300 uppercase tracking-widest mt-1">
                         {searchTerm || statusFilter !== 'all' ? 'Try adjusting your search or filter' : 'No transactions yet'}
                       </p>
@@ -395,17 +393,17 @@ const PaymentHistory = () => {
             size="sm"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="h-8 px-3 text-[11px] font-bold rounded-lg border-slate-200"
+            className="h-8 px-3 text-[11px] font-semibold rounded border-[#d9d9d9] text-slate-700 hover:text-blue-500 hover:border-blue-500 hover:bg-white cursor-pointer"
           >
             Previous
           </Button>
-          <span className="text-xs font-bold text-slate-600 px-2">{currentPage} / {Math.max(1, totalPages)}</span>
+          <span className="text-xs font-semibold text-slate-600 px-2">{currentPage} / {Math.max(1, totalPages)}</span>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage >= totalPages || totalPages === 0}
-            className="h-8 px-3 text-[11px] font-bold rounded-lg border-slate-200"
+            className="h-8 px-3 text-[11px] font-semibold rounded border-[#d9d9d9] text-slate-700 hover:text-blue-500 hover:border-blue-500 hover:bg-white cursor-pointer"
           >
             Next
           </Button>

@@ -7,7 +7,7 @@ import SEOHead from '../components/seo/SEOHead';
 
 const DashboardLayout = () => {
   const { pathname } = useLocation();
-  const showBlogRecommendations = !pathname.startsWith('/admin');
+  const showBlogRecommendations = !pathname.startsWith('/admin') && !pathname.includes('/messages');
 
   const [isCollapsed, setIsCollapsed] = React.useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true';
@@ -68,7 +68,11 @@ const DashboardLayout = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <Header toggleMobileSidebar={() => setIsMobileOpen(true)} />
         
-        <div className="flex-1 w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-8 px-4 sm:px-6 py-8">
+        <div className={`flex-1 w-full mx-auto flex flex-col lg:flex-row ${
+          pathname.includes('/messages')
+            ? 'max-w-none gap-0 px-0 py-0'
+            : 'max-w-[1440px] gap-8 px-4 sm:px-6 py-8'
+        }`}>
           <main className="flex-1 min-w-0">
             <Outlet />
             {showBlogRecommendations && (
