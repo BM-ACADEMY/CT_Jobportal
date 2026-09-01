@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const razorpay = require('../config/razorpay');
+const getRazorpay = require('../config/razorpay');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Payment = require('../models/Payment');
@@ -131,7 +131,7 @@ const createOrder = async (req, res) => {
       receipt: `receipt_${Date.now()}`,
     };
 
-    const order = await razorpay.orders.create(options);
+    const order = await getRazorpay().orders.create(options);
 
     res.json({
       orderId: order.id,
@@ -390,7 +390,7 @@ const createSubscriptionOrder = async (req, res) => {
       };
       const { period, interval } = periodMap[plan.duration] || { period: 'yearly', interval: 1 };
 
-      const razorpayPlan = await razorpay.plans.create({
+      const razorpayPlan = await getRazorpay().plans.create({
         period,
         interval,
         item: {
@@ -411,7 +411,7 @@ const createSubscriptionOrder = async (req, res) => {
     const totalCountMap = { Monthly: 240, Quarterly: 80, Yearly: 20 };
     const totalCount = totalCountMap[plan.duration] || 20;
 
-    const subscription = await razorpay.subscriptions.create({
+    const subscription = await getRazorpay().subscriptions.create({
       plan_id: razorpayPlanId,
       customer_notify: 1,
       total_count: totalCount,
