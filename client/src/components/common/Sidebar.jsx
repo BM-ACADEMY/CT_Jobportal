@@ -386,14 +386,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
             className={`rounded-none border border-white/10 flex items-center bg-white/5 group hover:border-[#34b678]/40 hover:bg-white/10 transition-all duration-300 cursor-pointer ${isCollapsed ? 'justify-center p-2' : 'p-3 gap-3'}`}
           >
             <div className="relative shrink-0">
-              <Avatar className="w-8 h-8 rounded-none border border-white/10 shadow-sm bg-white/10">
-                {user?.avatar && (
-                    <AvatarImage
-                        src={user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`}
-                        className="object-cover"
-                    />
-                )}
-                <AvatarFallback className="bg-white/10 text-white font-bold text-xs rounded-none">
+              <Avatar className="w-8 h-8 rounded-full border border-white/10 shadow-sm bg-white/10">
+                <AvatarImage
+                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`) : '/usericon.png'}
+                    className="object-cover"
+                />
+                <AvatarFallback className="bg-white/10 text-white font-bold text-xs rounded-full">
                   {user?.name?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>

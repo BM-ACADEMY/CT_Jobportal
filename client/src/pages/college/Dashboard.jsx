@@ -70,11 +70,7 @@ const CollegeDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        {/* Custom Premium Logo Pulsing/Spinning Loader matching user outline icon */}
-        <div className="relative w-16 h-16 flex items-center justify-center">
-          <div className="absolute inset-0 border-2 border-[#34b678] opacity-20 animate-ping duration-1000 rounded-none" />
-          <div className="w-10 h-10 border-2 border-t-2 border-t-[#34b678] border-[#34b678]/10 rounded-none animate-spin" />
-        </div>
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-[#34b678] rounded-full animate-spin"></div>
       </div>
     );
   }
