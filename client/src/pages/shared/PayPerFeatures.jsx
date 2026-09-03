@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { Sparkles, Loader2, Zap, CheckCircle2, Clock, ShoppingBag, Download, XCircle, ArrowUpCircle, X } from 'lucide-react';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Sparkles, Loader2, Zap, CheckCircle2, Clock, ShoppingBag, Download, XCircle, ArrowUpCircle } from 'lucide-react';
+import { Card, Typography, Tag, Button, Modal } from 'antd';
 import PayPerCheckoutModal from '../../components/subscription/PayPerCheckoutModal';
+
+const { Title, Text, Paragraph } = Typography;
 
 const STATUS_CONFIG = {
   completed:  { label: 'Active',       badge: 'bg-emerald-50 text-emerald-600', icon: CheckCircle2 },
@@ -186,6 +186,7 @@ const PayPerFeatures = () => {
         setPayments(paymentsRes.data);
         setGstPercentage(settingsRes.data.gstPercentage || 0);
       } catch (err) {
+        console.error('Error loading features:', err);
         toast.error('Failed to load pay-per features');
       } finally {
         setLoading(false);
@@ -208,7 +209,6 @@ const PayPerFeatures = () => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Step 1: Create Razorpay order
       const orderRes = await axios.post(`${API_BASE_URL}/pay-per/purchase/create-order`, {
         featureId: feature._id,
         quantity
@@ -216,7 +216,6 @@ const PayPerFeatures = () => {
 
       const { orderId, amount, currency, featureName } = orderRes.data;
 
-      // Step 2: Open Razorpay Checkout
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount,
@@ -225,7 +224,6 @@ const PayPerFeatures = () => {
         description: `Pay-per: ${featureName} ${quantity > 1 ? `x${quantity}` : ''}`,
         order_id: orderId,
         handler: async (response) => {
-          // Step 3: Verify payment on backend
           try {
             const verifyRes = await axios.post(`${API_BASE_URL}/pay-per/purchase/verify`, {
               razorpay_order_id: response.razorpay_order_id,
@@ -238,7 +236,7 @@ const PayPerFeatures = () => {
             if (verifyRes.data.success) {
                toast.success(verifyRes.data.msg || 'Feature purchased successfully!');
                setCheckoutFeature(null);
-               refreshUser(); // refresh user data so purchasedFeatures updates
+               refreshUser();
             }
           } catch (err) {
             toast.error(err.response?.data?.msg || 'Payment verification failed');
@@ -268,16 +266,6 @@ const PayPerFeatures = () => {
     }
   };
 
-  // Check if user already has an active (non-expired) purchase for this feature
-  const isPurchased = (featureId) => {
-    if (!user?.purchasedFeatures) return false;
-    return user.purchasedFeatures.some(pf => {
-      if (pf.featureId !== featureId || !pf.isActive) return false;
-      if (pf.expiresAt && new Date(pf.expiresAt) < new Date()) return false;
-      return true;
-    });
-  };
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -288,7 +276,7 @@ const PayPerFeatures = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 pb-20 pt-4">
+    <div className="max-w-5xl mx-auto space-y-10 pb-20 pt-4 px-4">
       {checkoutFeature && (
         <PayPerCheckoutModal
           feature={checkoutFeature}
@@ -297,40 +285,35 @@ const PayPerFeatures = () => {
           onProceed={handlePurchase}
         />
       )}
-      {descriptionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-bold text-slate-900 text-lg">{descriptionModal.name}</h3>
-              <button 
-                onClick={() => setDescriptionModal(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-6 max-h-[60vh] overflow-y-auto text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-              {descriptionModal.description}
-            </div>
-          </div>
+      
+      <Modal
+        title={<span className="font-bold text-slate-900 text-lg">{descriptionModal?.name}</span>}
+        open={!!descriptionModal}
+        onCancel={() => setDescriptionModal(null)}
+        footer={null}
+        centered
+      >
+        <div className="pt-2 text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+          {descriptionModal?.description}
         </div>
-      )}
+      </Modal>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ShoppingBag size={20} className="text-emerald-600" />
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Pay-Per Features</h1>
+          <div className="flex items-center gap-3 mb-1">
+            <ShoppingBag size={24} className="text-emerald-600" />
+            <Title level={2} className="m-0 font-black text-slate-900 tracking-tight">Pay-Per Features</Title>
           </div>
-          <p className="text-sm text-slate-500">Buy individual features without a full subscription. Pay only for what you need.</p>
+          <Text className="text-slate-500 font-medium">Buy individual features without a full subscription. Pay only for what you need.</Text>
         </div>
       </div>
 
       {features.length === 0 ? (
-        <div className="text-center py-20 rounded-2xl border border-dashed border-slate-200 bg-slate-50">
-          <Zap size={32} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-semibold">No features available for your role right now.</p>
-        </div>
+        <Card bordered={false} className="text-center py-20 rounded-none border border-dashed border-slate-200 shadow-none bg-slate-50">
+          <Zap size={32} className="text-slate-300 mx-auto mb-4" />
+          <Title level={4} className="m-0 text-slate-500">No features available for your role right now.</Title>
+        </Card>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f) => {
@@ -338,10 +321,8 @@ const PayPerFeatures = () => {
               pf => pf.featureId?.toString() === f._id?.toString() && (!pf.expiresAt || new Date(pf.expiresAt) > new Date())
             ) || [];
 
-            // Find if there is any purchase that still has credits remaining
             let userPurchase = activePurchases.find(pf => pf.usageLeft > 0 || f.usageCount === 0);
 
-            // If none has credits remaining, fall back to the newest expired-by-use purchase
             if (!userPurchase && activePurchases.length > 0) {
               userPurchase = activePurchases[activePurchases.length - 1];
             }
@@ -351,76 +332,84 @@ const PayPerFeatures = () => {
             const isProcessing = processingId === f._id;
 
             return (
-              <Card key={f._id} className="relative overflow-hidden border-slate-200 shadow-sm hover:shadow-lg transition-all group">
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 to-teal-500" />
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="w-11 h-11 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm">
+              <Card 
+                key={f._id} 
+                bordered={false}
+                bodyStyle={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}
+                className="relative overflow-hidden rounded-none border border-slate-200 shadow-sm hover:shadow-md transition-all group bg-white h-full flex flex-col"
+              >
+                
+                <div className="pb-4 flex-1">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-full flex items-center justify-center text-emerald-600 shadow-sm">
                       <Sparkles size={20} />
                     </div>
                     {purchased ? (
-                      <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-col items-end gap-1.5">
                         {hasCreditsRemaining ? (
-                          <Badge className="bg-emerald-100 text-emerald-700 border-none text-[10px] font-bold px-2.5 py-1">
-                            <CheckCircle2 size={10} className="mr-1" /> Active
-                          </Badge>
+                          <Tag bordered={false} className="m-0 bg-emerald-100 text-emerald-700 text-[10px] font-medium px-2 py-0.5 flex items-center gap-1 rounded">
+                            <CheckCircle2 size={10} /> Active
+                          </Tag>
                         ) : (
-                          <Badge className="bg-amber-100 text-amber-700 border-none text-[10px] font-bold px-2.5 py-1">
-                            <ArrowUpCircle size={10} className="mr-1" /> 0 Left
-                          </Badge>
+                          <Tag bordered={false} className="m-0 bg-amber-100 text-amber-700 text-[10px] font-medium px-2 py-0.5 flex items-center gap-1 rounded">
+                            <ArrowUpCircle size={10} /> 0 Left
+                          </Tag>
                         )}
-                        <span className="text-[9px] font-bold text-slate-400">{f.days} Days Validity</span>
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">{f.days} Days Validity</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1 text-slate-400">
                         <Clock size={12} />
-                        <span className="text-[10px] font-bold">{f.days} Days</span>
+                        <span className="text-[10px] font-medium uppercase tracking-widest">{f.days} Days</span>
                       </div>
                     )}
                   </div>
-                  <CardTitle className="text-lg font-bold text-slate-900 leading-snug">{f.name}</CardTitle>
+                  
+                  <h3 className="text-xl font-medium text-slate-800 leading-tight mb-2 mt-0 tracking-tight">{f.name}</h3>
+                  
                   <div>
-                    <CardDescription className="text-slate-500 font-medium text-xs mt-1.5 line-clamp-2 min-h-[32px]">
+                    <p className="text-slate-500 font-medium text-xs mt-0 mb-1 line-clamp-2 min-h-[32px] leading-relaxed">
                       {f.description || 'Enhance your experience with this premium feature.'}
-                    </CardDescription>
+                    </p>
                     {f.description && f.description.length > 80 && (
                       <button 
                         onClick={() => setDescriptionModal(f)} 
-                        className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold mt-0.5"
+                        className="text-[11px] text-emerald-600 hover:text-emerald-700 font-bold bg-transparent border-none p-0 cursor-pointer"
                       >
                         Read more
                       </button>
                     )}
                   </div>
-                </CardHeader>
-                <CardContent className="pt-0">
+                </div>
+
+                <div className="pt-2 mt-auto">
                   {/* Price + Usage */}
-                  <div className="flex items-end justify-between mb-5 pb-4 border-b border-slate-100">
+                  <div className="flex items-center justify-between mb-4">
                     <div>
-                      <span className="text-3xl font-black text-slate-900">₹{f.cost}</span>
-                      <span className="text-xs text-slate-400 font-medium ml-1.5">+ GST</span>
+                      <span className="text-3xl font-semibold text-slate-800 tracking-tight">₹{f.cost}</span>
+                      <span className="text-[11px] text-slate-400 font-medium ml-1 uppercase tracking-widest">+ GST</span>
                     </div>
                     {purchased && userPurchase ? (
                       f.usageCount > 0 ? (
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${userPurchase.usageLeft > 0 ? 'text-slate-500 bg-slate-50' : 'text-red-600 bg-red-50'}`}>
+                        <Tag bordered={false} className={`m-0 text-[10px] font-medium uppercase tracking-widest px-2.5 py-1 rounded ${userPurchase.usageLeft > 0 ? 'text-slate-600 bg-slate-100' : 'text-rose-600 bg-rose-50'}`}>
                           {userPurchase.usageLeft} Use{userPurchase.usageLeft !== 1 ? 's' : ''} Left
-                        </span>
+                        </Tag>
                       ) : (
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
-                          Unlimited Uses
-                        </span>
+                        <Tag bordered={false} className="m-0 text-[10px] font-medium uppercase tracking-widest text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
+                          Unlimited
+                        </Tag>
                       )
                     ) : (
                       <>
                         {f.usageCount > 0 && (
-                          <span className="text-xs font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg">
+                          <Tag bordered={false} className="m-0 text-[10px] font-medium uppercase tracking-widest text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
                             {f.usageCount} Use{f.usageCount > 1 ? 's' : ''}
-                          </span>
+                          </Tag>
                         )}
                         {f.usageCount === 0 && (
-                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                          <Tag bordered={false} className="m-0 text-[10px] font-medium uppercase tracking-widest text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
                             Unlimited
-                          </span>
+                          </Tag>
                         )}
                       </>
                     )}
@@ -428,22 +417,22 @@ const PayPerFeatures = () => {
 
                   {/* Purchased Details */}
                   {purchased && userPurchase && (
-                    <div className="mb-5 bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-2 text-xs font-medium text-slate-600">
-                      <div className="flex justify-between items-center pb-1 border-b border-slate-100/55">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Days Left:</span>
-                        <span className="text-slate-900 font-extrabold bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-md text-[11px]">
+                    <div className="mb-6 bg-slate-50 border border-slate-100 rounded-sm p-4 space-y-3 text-xs font-medium text-slate-600">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-100/55">
+                        <span className="text-slate-400 font-medium text-[10px] uppercase tracking-widest">Days Left:</span>
+                        <span className="text-slate-800 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[11px]">
                           {Math.max(0, Math.ceil((new Date(userPurchase.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)))} Days Left
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Purchased On:</span>
-                        <span className="text-slate-700 font-semibold">
+                        <span className="text-slate-400 font-medium text-[10px] uppercase tracking-widest">Purchased On:</span>
+                        <span className="text-slate-600 font-medium">
                           {new Date(userPurchase.purchasedAt || (new Date(userPurchase.expiresAt).getTime() - f.days * 24 * 60 * 60 * 1000)).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
-                      <div className="flex justify-between pb-1.5 border-b border-slate-100/55">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Expires On:</span>
-                        <span className="text-slate-700 font-semibold">
+                      <div className="flex justify-between pb-2 border-b border-slate-100/55">
+                        <span className="text-slate-400 font-medium text-[10px] uppercase tracking-widest">Expires On:</span>
+                        <span className="text-slate-600 font-medium">
                           {new Date(userPurchase.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
@@ -451,11 +440,12 @@ const PayPerFeatures = () => {
                       {payments.find(p => p.status === 'completed' && p.paymentType === 'pay-per-feature' && p.payPerFeature?._id?.toString() === f._id?.toString()) && (
                         <Button
                           onClick={() => downloadInvoice(payments.find(p => p.status === 'completed' && p.paymentType === 'pay-per-feature' && p.payPerFeature?._id?.toString() === f._id?.toString()), user)}
-                          variant="ghost"
-                          size="sm"
-                          className="w-full h-8 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/50 text-xs font-bold gap-1.5 border border-emerald-100 mt-1"
+                          type="dashed"
+                          size="small"
+                          className="w-full mt-2 rounded border-emerald-200 text-emerald-600 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50/50 font-bold uppercase tracking-widest text-[10px]"
+                          icon={<Download size={12} />}
                         >
-                          <Download size={12} /> Download Invoice
+                          Download Invoice
                         </Button>
                       )}
                     </div>
@@ -463,14 +453,14 @@ const PayPerFeatures = () => {
 
                   {/* Preview Details */}
                   {!purchased && (
-                    <div className="mb-5 bg-slate-50 border border-slate-100 rounded-xl p-3.5 space-y-2 text-xs font-medium text-slate-500">
+                    <div className="mb-6 bg-slate-50/70 border border-slate-100 rounded p-3 space-y-2.5 text-xs">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Validity Duration:</span>
-                        <span className="text-slate-900 font-bold bg-slate-100/80 px-2 py-0.5 rounded text-[11px]">{f.days} Days</span>
+                        <span className="text-slate-400 font-medium text-[10px] uppercase tracking-widest">Validity Duration:</span>
+                        <span className="text-slate-700 font-semibold text-[11px]">{f.days} Days</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Usage Limit:</span>
-                        <span className="text-slate-900 font-bold bg-slate-100/80 px-2 py-0.5 rounded text-[11px]">
+                        <span className="text-slate-400 font-medium text-[10px] uppercase tracking-widest">Usage Limit:</span>
+                        <span className="text-slate-700 font-semibold text-[11px]">
                           {f.usageCount > 0 ? `${f.usageCount} Uses` : 'Unlimited'}
                         </span>
                       </div>
@@ -480,43 +470,24 @@ const PayPerFeatures = () => {
                   <Button
                     onClick={() => handleCheckout(f)}
                     disabled={isProcessing || hasCreditsRemaining}
-                    className={`w-full h-12 rounded-xl font-bold text-sm transition-all ${
+                    icon={isProcessing ? <Loader2 size={16} className="animate-spin" /> : hasCreditsRemaining ? <CheckCircle2 size={16} /> : purchased ? <ArrowUpCircle size={16} /> : <ShoppingBag size={16} />}
+                    className={`w-full h-11 flex items-center justify-center gap-2 rounded font-medium text-xs uppercase tracking-widest transition-all shadow-none ${
                       hasCreditsRemaining
-                        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50 cursor-default border border-emerald-200'
-                        : 'bg-slate-900 hover:bg-emerald-600 text-white shadow-md hover:shadow-lg'
+                        ? '!bg-emerald-50 !text-emerald-700 hover:!bg-emerald-50 hover:!text-emerald-700 cursor-default border border-emerald-200'
+                        : '!bg-emerald-600 hover:!bg-emerald-700 !text-white border-transparent'
                     }`}
                   >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin mr-2" />
-                        Processing...
-                      </>
-                    ) : hasCreditsRemaining ? (
-                      <>
-                        <CheckCircle2 size={16} className="mr-2" />
-                        Already Purchased
-                      </>
-                    ) : purchased ? (
-                      <>
-                        <ArrowUpCircle size={16} className="mr-2" />
-                        Upgrade / Buy Again
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag size={16} className="mr-2" />
-                        Buy Now
-                      </>
-                    )}
+                    {isProcessing ? 'Processing...' : hasCreditsRemaining ? 'Already Purchased' : purchased ? 'Upgrade / Buy Again' : 'Buy Now'}
                   </Button>
-                </CardContent>
+                </div>
               </Card>
             );
           })}
         </div>
       )}
 
-      <div className="text-center">
-        <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-[0.4em]">
+      <div className="text-center mt-12">
+        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.4em]">
           Secure Payments via Razorpay &bull; Instant Activation
         </p>
       </div>

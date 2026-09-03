@@ -3,7 +3,6 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { 
   Bookmark, 
-  Loader2, 
   Search, 
   MapPin, 
   Building2, 
@@ -12,13 +11,13 @@ import {
   Briefcase,
   Trash2
 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button, Card, Tag, Typography, Skeleton, Space } from 'antd';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PageSOPBanner from '../../components/common/PageSOPBanner';
+
+const { Title, Text, Paragraph } = Typography;
 
 const SavedJobs = () => {
   const [savedJobs, setSavedJobs] = useState([]);
@@ -63,43 +62,48 @@ const SavedJobs = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-slate-400 font-bold text-xs mt-4 uppercase tracking-widest">Loading Saved Jobs...</p>
+      <div className="max-w-5xl mx-auto space-y-6 py-6 px-4">
+        <Skeleton active paragraph={{ rows: 1 }} />
+        <Card bordered={false} className="rounded-none border border-slate-200">
+           <Skeleton active avatar={{ size: 64, shape: 'square' }} paragraph={{ rows: 2 }} />
+        </Card>
+        <Card bordered={false} className="rounded-none border border-slate-200">
+           <Skeleton active avatar={{ size: 64, shape: 'square' }} paragraph={{ rows: 2 }} />
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 py-6">
+    <div className="max-w-5xl mx-auto space-y-8 py-8 px-4">
       <PageSOPBanner pageKey="savedJobs" />
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight">Saved Opportunities</h1>
-          <p className="text-base text-slate-500 font-medium">Manage and track your bookmarked career positions.</p>
+      
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Title level={2} className="m-0 font-black tracking-tight text-slate-900">Saved Opportunities</Title>
+          <Text className="text-slate-500 font-medium">Manage and track your bookmarked career positions.</Text>
         </div>
-        <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold px-4 py-1.5 rounded-lg text-xs tracking-tight">
-          {(savedJobs || []).length} {((savedJobs || []).length === 1) ? 'Position' : 'Positions'} Saved
-        </Badge>
+        <Tag bordered={false} className="m-0 px-4 py-2 bg-emerald-50 text-emerald-600 font-bold uppercase tracking-widest text-[11px] rounded-sm border border-emerald-100 flex items-center shrink-0">
+          {(savedJobs || []).length} {((savedJobs || []).length === 1) ? 'POSITION' : 'POSITIONS'} SAVED
+        </Tag>
       </div>
 
       {(!savedJobs || savedJobs.length === 0) ? (
-        <Card className="border-dashed border-2 border-slate-200 bg-white rounded-[24px] p-16 text-center shadow-sm">
-          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-6 border border-slate-100">
-            <Bookmark size={28} />
-          </div>
-          <h3 className="text-lg font-bold text-slate-900 mb-2">Inventory Empty</h3>
-          <p className="text-sm font-medium text-slate-500 max-w-xs mx-auto mb-8">
+        <Card bordered={false} className="text-center py-20 rounded-3xl border border-dashed border-slate-200 bg-slate-50 shadow-none">
+          <Bookmark size={48} className="text-slate-300 mx-auto mb-4" />
+          <Title level={4} className="m-0 text-slate-700">Inventory Empty</Title>
+          <Paragraph className="text-slate-500 mt-2 mb-8">
             Start exploring and bookmarking opportunities that align with your career roadmap.
-          </p>
+          </Paragraph>
           <Link to="/jobs">
-            <Button className="rounded-xl px-8 h-12 bg-slate-900 hover:bg-emerald-600 text-white font-bold transition-all text-xs uppercase tracking-widest">
+            <Button type="primary" size="large" className="rounded-sm bg-slate-900 hover:bg-emerald-600 font-bold text-xs uppercase tracking-widest px-8 shadow-none h-11 border-none transition-colors">
               Browse Opportunities
             </Button>
           </Link>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-5">
           {Array.isArray(savedJobs) && savedJobs.map((job) => (
             <motion.div
               key={job._id}
@@ -107,63 +111,66 @@ const SavedJobs = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Link to={`/job/${job._id}`}>
-                <Card className="group border-slate-200 hover:border-emerald-200 hover:shadow-sm transition-all duration-300 rounded-[24px] overflow-hidden bg-white">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                      {/* Logo and Company */}
-                      <div className="flex items-center gap-5 flex-1">
-                        <div className="w-16 h-16 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 overflow-hidden shrink-0 group-hover:border-emerald-100 transition-colors shadow-sm">
-                          {job.company?.logo ? (
-                            <img src={`${API_DOMAIN}${job.company.logo}`} alt={job.company.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <Building2 size={24} className="text-slate-300" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors truncate">
-                            {job.title}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                            <div className="flex items-center gap-1.5">
-                              <Building2 size={12} className="text-slate-300" />
-                              <span className="text-slate-600">{job.company?.name}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <MapPin size={12} className="text-slate-300" />
-                              <span>{job.location || 'Remote'}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                              <Briefcase size={12} />
-                              <span className="tracking-widest">{job.jobType}</span>
-                            </div>
-                          </div>
-                        </div>
+              <Link to={`/job/${job._id}`} className="block group">
+                <Card 
+                  bordered={false} 
+                  bodyStyle={{ padding: '20px' }}
+                  className="rounded-none border border-slate-200 hover:border-emerald-300 hover:shadow-sm transition-all bg-white"
+                >
+                  <div className="flex flex-col md:flex-row gap-5">
+                    {/* Logo and Company */}
+                    <div className="flex items-start md:items-center gap-5 flex-1">
+                      <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center border border-slate-100 overflow-hidden shrink-0 group-hover:border-emerald-200 transition-colors shadow-sm p-1.5">
+                        {job.company?.logo ? (
+                          <img src={`${API_DOMAIN}${job.company.logo}`} alt={job.company.name} className="max-w-[80%] max-h-[80%] object-contain" />
+                        ) : (
+                          <Building2 size={20} className="text-slate-300" />
+                        )}
                       </div>
-
-                      {/* Actions */}
-                      <div className="flex md:flex-row items-center justify-between md:justify-end gap-6 border-t md:border-t-0 md:border-l border-slate-50 pt-4 md:pt-0 md:pl-6">
-                        <div className="text-right hidden md:block space-y-0.5">
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Saved Date</p>
-                          <p className="text-xs font-bold text-slate-900">{new Date(job.createdAt).toLocaleDateString()}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={(e) => handleUnsave(e, job._id)}
-                            className="h-10 w-10 rounded-lg text-slate-300 hover:text-red-600 hover:bg-red-50 transition-all"
-                            title="Unsave Opportunity"
-                          >
-                            <Trash2 size={18} />
-                          </Button>
-                          <div className="h-10 w-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all">
-                            <ChevronRight size={18} />
+                      
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <h3 className="text-base text-slate-800 group-hover:text-emerald-600 transition-colors truncate mb-2 m-0">
+                          {job.title}
+                        </h3>
+                        
+                        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[11px] font-medium text-slate-400 uppercase tracking-wide">
+                          <div className="flex items-center gap-1.5">
+                            <Building2 size={12} className="text-slate-400 shrink-0" />
+                            <span className="text-slate-500 truncate">{job.company?.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <MapPin size={12} className="text-slate-400 shrink-0" />
+                            <span className="truncate">{job.location || 'Remote'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-emerald-600">
+                            <Briefcase size={12} className="shrink-0" />
+                            <span>{job.jobType}</span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
+
+                    {/* Actions */}
+                    <div className="flex flex-row items-center justify-between md:justify-end gap-5 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5 shrink-0 h-14">
+                      <div className="text-right hidden md:flex flex-col justify-center h-full mr-2">
+                        <span className="text-[9px] font-medium text-slate-400 uppercase tracking-widest mb-0.5">Saved Date</span>
+                        <span className="text-[12px] font-semibold text-slate-700">{new Date(job.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <button 
+                          onClick={(e) => handleUnsave(e, job._id)}
+                          className="flex items-center justify-center text-slate-400 hover:text-rose-600 transition-colors p-1"
+                          title="Unsave Opportunity"
+                        >
+                          <Trash2 size={15} strokeWidth={2.5} />
+                        </button>
+                        <div className="h-9 w-9 rounded flex items-center justify-center bg-slate-50 text-slate-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors cursor-pointer">
+                          <ChevronRight size={16} strokeWidth={2} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </Card>
               </Link>
             </motion.div>

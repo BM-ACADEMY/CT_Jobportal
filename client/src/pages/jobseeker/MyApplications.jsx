@@ -3,23 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Briefcase, MapPin, Clock, CheckCircle2, XCircle, Eye, Loader2,
-  Search, Filter, Building2, AlertCircle, FileText, Undo2, BadgeCheck
+  Search, Building2, AlertCircle, FileText, Undo2, BadgeCheck, Filter, FileCheck, XSquare
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Button, Tag, Input, Select, Card, Typography, Pagination, Modal, Space, Skeleton, Row, Col } from 'antd';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+
+const { Title, Text, Paragraph } = Typography;
 
 const STATUS_CONFIG = {
-  pending:     { label: 'Pending',     color: 'bg-amber-50 text-amber-700 border-amber-100' },
-  reviewed:    { label: 'Reviewed',    color: 'bg-blue-50 text-blue-700 border-blue-100' },
-  shortlisted: { label: 'Shortlisted', color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-  rejected:    { label: 'Rejected',    color: 'bg-rose-50 text-rose-700 border-rose-100' },
-  accepted:    { label: 'Accepted',    color: 'bg-violet-50 text-violet-700 border-violet-100' },
-  withdrawn:   { label: 'Withdrawn',   color: 'bg-slate-100 text-slate-500 border-slate-200' },
+  pending:     { label: 'Pending',     color: 'warning',    bg: '#fffbeb', text: '#d97706', border: '#fef3c7' },
+  reviewed:    { label: 'Reviewed',    color: 'processing', bg: '#eff6ff', text: '#1d4ed8', border: '#dbeafe' },
+  shortlisted: { label: 'Shortlisted', color: 'success',    bg: '#ecfdf5', text: '#047857', border: '#d1fae5' },
+  rejected:    { label: 'Rejected',    color: 'error',      bg: '#fff1f2', text: '#be123c', border: '#ffe4e6' },
+  accepted:    { label: 'Accepted',    color: 'purple',     bg: '#f5f3ff', text: '#6d28d9', border: '#ede9fe' },
+  withdrawn:   { label: 'Withdrawn',   color: 'default',    bg: '#f8fafc', text: '#64748b', border: '#f1f5f9' },
 };
 
 const REVOCABLE = ['pending', 'reviewed'];
@@ -30,7 +27,7 @@ const MyApplications = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [revokeTarget, setRevokeTarget] = useState(null); // { id, title }
+  const [revokeTarget, setRevokeTarget] = useState(null);
   const [revoking, setRevoking] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -81,7 +78,6 @@ const MyApplications = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginatedApplications = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const stats = {
@@ -92,234 +88,260 @@ const MyApplications = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 py-6">
+    <div className="max-w-6xl mx-auto space-y-8 py-8 px-4">
       <PageSOPBanner pageKey="myApplications" />
-      {/* Revoke confirmation modal */}
-      {revokeTarget && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div className="w-11 h-11 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <AlertCircle size={20} className="text-rose-600" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900 text-center mb-1">Revoke Application?</h3>
-            <p className="text-xs text-slate-500 text-center mb-6 leading-relaxed">
-              Your application for <span className="font-bold text-slate-700">{revokeTarget.title}</span> will be withdrawn. This cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setRevokeTarget(null)}
-                disabled={revoking}
-                className="flex-1 h-10 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50"
-              >
-                Keep It
-              </button>
-              <button
-                onClick={handleRevoke}
-                disabled={revoking}
-                className="flex-1 h-10 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
-              >
-                {revoking ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />}
-                {revoking ? 'Revoking…' : 'Yes, Revoke'}
-              </button>
-            </div>
+      
+      {/* Revoke Confirmation Modal */}
+      <Modal
+        title={null}
+        open={!!revokeTarget}
+        onCancel={() => setRevokeTarget(null)}
+        footer={null}
+        centered
+        width={360}
+        styles={{ body: { padding: 0 } }}
+      >
+        <div className="p-8 text-center">
+          <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-rose-100">
+            <AlertCircle size={24} className="text-rose-600" />
+          </div>
+          <Title level={4} className="m-0 mb-2">Revoke Application?</Title>
+          <Paragraph className="text-slate-500 mb-6 text-sm">
+            Your application for <Text strong>{revokeTarget?.title}</Text> will be withdrawn. This cannot be undone.
+          </Paragraph>
+          <div className="flex gap-3">
+            <Button
+              size="large"
+              block
+              onClick={() => setRevokeTarget(null)}
+              disabled={revoking}
+              className="rounded-xl font-bold text-xs uppercase tracking-widest bg-slate-50 border-slate-200 text-slate-600"
+            >
+              Keep It
+            </Button>
+            <Button
+              size="large"
+              block
+              danger
+              type="primary"
+              onClick={handleRevoke}
+              loading={revoking}
+              icon={!revoking && <Undo2 size={14} />}
+              className="rounded-xl font-bold text-xs uppercase tracking-widest shadow-none"
+            >
+              Yes, Revoke
+            </Button>
           </div>
         </div>
-      )}
+      </Modal>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Applications</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Track all your job applications in one place.</p>
+          <Title level={2} className="m-0 font-black tracking-tight text-slate-900">My Applications</Title>
+          <Text className="text-slate-500">Track all your job applications in one place.</Text>
         </div>
         <Button
+          type="primary"
+          size="large"
           onClick={() => navigate('/jobs')}
-          className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest gap-2"
+          icon={<Briefcase size={16} />}
+          className="rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold text-xs uppercase tracking-widest shadow-none h-11 px-6"
         >
-          <Briefcase size={14} /> Browse Jobs
+          Browse Jobs
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <Row gutter={[16, 16]}>
         {[
-          { label: 'Total Applied', value: stats.total, color: 'text-slate-900', bg: 'bg-slate-50' },
-          { label: 'Pending', value: stats.pending, color: 'text-amber-700', bg: 'bg-amber-50' },
-          { label: 'Shortlisted', value: stats.shortlisted, color: 'text-emerald-700', bg: 'bg-emerald-50' },
-          { label: 'Rejected', value: stats.rejected, color: 'text-rose-700', bg: 'bg-rose-50' },
+          { label: 'TOTAL APPLIED', value: stats.total, icon: <Briefcase size={22} strokeWidth={1.5} />, bg: '#8b5cf6' }, // Violet
+          { label: 'PENDING', value: stats.pending, icon: <Clock size={22} strokeWidth={1.5} />, bg: '#f97316' }, // Orange
+          { label: 'SHORTLISTED', value: stats.shortlisted, icon: <FileCheck size={22} strokeWidth={1.5} />, bg: '#10b981' }, // Green
+          { label: 'REJECTED', value: stats.rejected, icon: <XSquare size={22} strokeWidth={1.5} />, bg: '#f43f5e' }, // Rose/Red
         ].map(s => (
-          <div key={s.label} className={`rounded-2xl border border-slate-100 ${s.bg} p-5 text-center`}>
-            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-[11px] text-slate-500 font-medium mt-0.5">{s.label}</p>
-          </div>
+          <Col xs={12} sm={6} key={s.label}>
+            <div 
+              className="relative overflow-hidden p-6 rounded-none text-white flex flex-col justify-between"
+              style={{ backgroundColor: s.bg, minHeight: '160px' }}
+            >
+              {/* Crisp translucent background decoration circles */}
+              <div className="absolute -bottom-10 -right-10 w-36 h-36 rounded-full bg-white/10"></div>
+              <div className="absolute -bottom-16 -right-16 w-36 h-36 rounded-full bg-white/10"></div>
+              
+              <div className="mb-6 opacity-90">
+                {s.icon}
+              </div>
+              <div className="relative z-10">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-white/90 mb-1.5">{s.label}</div>
+                <div className="text-4xl font-black">{s.value}</div>
+              </div>
+            </div>
+          </Col>
         ))}
-      </div>
+      </Row>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="Search by job title or company..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="rounded-xl border-slate-200 gap-2 font-bold text-xs uppercase tracking-widest h-10 px-4">
-              <Filter size={13} />
-              {statusFilter === 'all' ? 'All Status' : STATUS_CONFIG[statusFilter]?.label || statusFilter}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44 rounded-xl p-1 border-slate-200 shadow-xl">
-            {['all', 'pending', 'reviewed', 'shortlisted', 'rejected', 'accepted', 'withdrawn'].map(s => (
-              <DropdownMenuItem
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className="rounded-lg font-bold text-xs uppercase tracking-widest py-2.5 capitalize"
-              >
-                {s === 'all' ? 'All Applications' : STATUS_CONFIG[s]?.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Filters & Search */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+        <Input
+          prefix={<Search size={16} className="text-slate-400 mr-2" />}
+          placeholder="Search by job title or company..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="rounded-xl border-slate-200 hover:border-emerald-300 focus:border-emerald-500 text-sm w-full sm:w-[320px] h-10 shadow-none"
+        />
+        <Select
+          value={statusFilter}
+          onChange={setStatusFilter}
+          className="w-full sm:w-40 font-bold text-xs uppercase tracking-widest h-10"
+          options={[
+            { value: 'all', label: 'ALL STATUS' },
+            { value: 'pending', label: 'PENDING' },
+            { value: 'reviewed', label: 'REVIEWED' },
+            { value: 'shortlisted', label: 'SHORTLISTED' },
+            { value: 'rejected', label: 'REJECTED' },
+            { value: 'accepted', label: 'ACCEPTED' },
+            { value: 'withdrawn', label: 'WITHDRAWN' },
+          ]}
+        />
       </div>
 
       {/* Applications List */}
       {loading ? (
         <div className="flex flex-col gap-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-28 bg-slate-50 rounded-2xl animate-pulse border border-slate-100" />
+            <Card key={i} bordered={false} className="rounded-2xl border border-slate-100 shadow-sm h-32">
+               <Skeleton active avatar={{ size: 48, shape: 'square' }} paragraph={{ rows: 2 }} />
+            </Card>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 rounded-2xl border border-dashed border-slate-200 bg-white">
-          <FileText size={36} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-500">
+        <Card bordered={false} className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-center py-20 shadow-none">
+          <FileText size={48} className="text-slate-300 mx-auto mb-4" />
+          <Title level={4} className="m-0 mb-2 text-slate-700">
             {applications.length === 0 ? "You haven't applied to any jobs yet" : "No applications match your filters"}
-          </p>
-          <p className="text-xs text-slate-400 mt-1 mb-4">
+          </Title>
+          <Paragraph className="text-slate-500 mb-6">
             {applications.length === 0 ? "Start exploring jobs and apply to get started." : "Try adjusting your search or filter."}
-          </p>
+          </Paragraph>
           {applications.length === 0 && (
-            <Button onClick={() => navigate('/jobs')} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
+            <Button type="primary" size="large" onClick={() => navigate('/jobs')} className="rounded-xl bg-emerald-600 font-bold text-xs uppercase tracking-widest px-8 shadow-none">
               Browse Jobs
             </Button>
           )}
-        </div>
+        </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-6">
           {paginatedApplications.map(app => {
             const cfg = STATUS_CONFIG[app.status] || STATUS_CONFIG.pending;
             const job = app.job;
-            const salary = job?.salary?.isRangeHidden
-              ? 'Not disclosed'
-              : job?.salary?.min
-                ? `${job.salary.min}–${job.salary.max} ${job.salary.currency || 'INR'}`
-                : 'Not specified';
+
+            // Generate fallback avatar color
+            const avatarColors = ['#eab308', '#334155', '#22c55e', '#0284c7', '#ea580c', '#7c3aed'];
+            const colorIdx = job?.company?.name ? job.company.name.charCodeAt(0) % avatarColors.length : 0;
 
             return (
-              <div
+              <Card
                 key={app._id}
-                className="flex flex-col sm:flex-row sm:items-center gap-5 p-5 rounded-2xl border border-slate-100 bg-white hover:border-emerald-100 hover:shadow-sm transition-all group"
+                bordered={false}
+                bodyStyle={{ padding: '24px' }}
+                className="rounded-none border border-slate-200 hover:border-emerald-200 hover:shadow-md transition-all group overflow-hidden"
               >
-                {/* Company logo / initials */}
-                <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center shrink-0 overflow-hidden group-hover:border-emerald-100 transition-all">
-                  {job?.company?.logo ? (
-                    <img src={job.company.logo} alt={job.company.name} className="w-full h-full object-contain p-1" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                  {/* Company Logo Square */}
+                  {job?.company?.logo && job.company.logo !== '/default-company-logo.png' && !job.company.logo.includes('default') ? (
+                    <div className="w-16 h-16 bg-white border border-slate-100 flex items-center justify-center shrink-0">
+                      <img src={job.company.logo} alt={job.company.name} className="max-w-[80%] max-h-[80%] object-contain" />
+                    </div>
                   ) : (
-                    <Building2 size={20} className="text-slate-300" />
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                      {job?.title || 'Job Unavailable'}
-                    </p>
-                    {app.isPriority && (
-                      <BadgeCheck size={16} className="text-blue-500 fill-blue-50 shrink-0" title="Priority Application" />
-                    )}
-                    <Badge className={`text-[9px] font-bold border px-2 py-0 rounded-full ${cfg.color}`}>
-                      {cfg.label}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <Building2 size={11} /> {job?.company?.name || 'Unknown Company'}
-                    </span>
-                    {job?.location && (
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <MapPin size={11} /> {job.location}
-                      </span>
-                    )}
-                    {job?.jobType && (
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <Briefcase size={11} /> {job.jobType}
-                      </span>
-                    )}
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <Clock size={11} /> Applied {new Date(app.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Status icon + actions */}
-                <div className="flex items-center gap-2 shrink-0">
-                  {app.status === 'shortlisted' && <CheckCircle2 size={18} className="text-emerald-500" />}
-                  {app.status === 'rejected'    && <XCircle size={18} className="text-rose-400" />}
-                  {app.status === 'pending'     && <AlertCircle size={18} className="text-amber-400" />}
-                  {job?._id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/job/${job._id}`)}
-                      className="h-8 px-3 rounded-xl border-slate-200 text-xs font-bold gap-1"
+                    <div 
+                      className="w-16 h-16 flex items-center justify-center text-white shrink-0 font-black text-2xl"
+                      style={{ backgroundColor: avatarColors[colorIdx] }}
                     >
-                      <Eye size={12} /> View Job
-                    </Button>
+                      {job?.company?.name?.[0]?.toUpperCase() || <Building2 size={24} />}
+                    </div>
                   )}
-                  {REVOCABLE.includes(app.status) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setRevokeTarget({ id: app._id, title: job?.title || 'this job' })}
-                      className="h-8 px-3 rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold gap-1"
-                    >
-                      <Undo2 size={12} /> Revoke
-                    </Button>
-                  )}
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-3 mb-2">
+                      <Title level={5} className="m-0 text-lg font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
+                        {job?.title || 'Job Unavailable'}
+                      </Title>
+                      {app.isPriority && (
+                        <BadgeCheck size={18} className="text-blue-500 fill-blue-50 shrink-0" title="Priority Application" />
+                      )}
+                      <Tag 
+                        bordered={false}
+                        className="m-0 font-bold text-[10px] uppercase tracking-wider px-2 py-0.5"
+                        style={{ backgroundColor: cfg.bg, color: cfg.text, border: `1px solid ${cfg.border}` }}
+                      >
+                        {cfg.label}
+                      </Tag>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        <Building2 size={13} className="text-slate-400" /> {job?.company?.name || 'Unknown Company'}
+                      </span>
+                      {job?.location && (
+                        <span className="flex items-center gap-1.5">
+                          <MapPin size={13} className="text-slate-400" /> {job.location}
+                        </span>
+                      )}
+                      {job?.jobType && (
+                        <span className="flex items-center gap-1.5">
+                          <Briefcase size={13} className="text-slate-400" /> {job.jobType}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1.5 text-slate-400">
+                        <Clock size={13} /> Applied {new Date(app.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <Space className="shrink-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto justify-end">
+                    {job?._id && (
+                      <Button
+                        onClick={() => navigate(`/job/${job._id}`)}
+                        icon={<Eye size={14} />}
+                        className="h-9 px-4 rounded-md border-slate-200 font-bold text-xs uppercase tracking-wider text-slate-600 hover:text-emerald-600 hover:border-emerald-600 shadow-none"
+                      >
+                        View Job
+                      </Button>
+                    )}
+                    {REVOCABLE.includes(app.status) && (
+                      <Button
+                        danger
+                        onClick={() => setRevokeTarget({ id: app._id, title: job?.title || 'this job' })}
+                        icon={<Undo2 size={14} />}
+                        className="h-9 px-4 rounded-md font-bold text-xs uppercase tracking-wider shadow-none"
+                      >
+                        Revoke
+                      </Button>
+                    )}
+                  </Space>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6">
-          <Button
-            variant="outline"
-            disabled={currentPage === 1}
-            onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="h-9 px-4 rounded-xl border-slate-200 text-xs font-bold gap-2"
-          >
-            Previous
-          </Button>
-          <span className="text-xs font-bold text-slate-500">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            disabled={currentPage === totalPages}
-            onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="h-9 px-4 rounded-xl border-slate-200 text-xs font-bold gap-2"
-          >
-            Next
-          </Button>
+      {filtered.length > itemsPerPage && (
+        <div className="flex justify-center mt-8 pt-8 border-t border-slate-100">
+          <Pagination
+            current={currentPage}
+            total={filtered.length}
+            pageSize={itemsPerPage}
+            onChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            showSizeChanger={false}
+          />
         </div>
       )}
     </div>
