@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Users, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Users } from 'lucide-react';
+import { Table, Avatar, Tag, Card, Typography, Space, Spin } from 'antd';
+import { UserOutlined, SafetyCertificateOutlined, WarningOutlined } from '@ant-design/icons';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 
+const { Text } = Typography;
 const API = import.meta.env.VITE_API_BASE_URL;
 
 // Read-only "who's on my team" view for delegated team members (recruiters and org_employees).
@@ -28,13 +30,64 @@ const TeamRoster = () => {
     fetchRoster();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 size={32} className="text-emerald-500 animate-spin" />
-      </div>
-    );
-  }
+  const columns = [
+    {
+      title: 'Member',
+      key: 'member',
+      render: (_, record) => (
+        <Space size="middle">
+          <Avatar 
+            size={48} 
+            src={record.avatar?.startsWith('http') ? record.avatar : `${import.meta.env.VITE_API_DOMAIN}${record.avatar}`}
+            icon={!record.avatar && <UserOutlined />}
+            style={{ border: '1px solid #f0f0f0', backgroundColor: '#ecfdf5', color: '#059669', fontWeight: 'bold' }}
+          >
+            {!record.avatar && record.name?.[0]?.toUpperCase()}
+          </Avatar>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <Text strong style={{ fontSize: '14px', color: '#0f172a' }}>{record.name}</Text>
+            <Text type="secondary" style={{ fontSize: '12px' }}>{record.email}</Text>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: 'Role',
+      key: 'role',
+      render: (_, record) => {
+        let color = 'blue';
+        let text = 'Recruiter';
+        if (record.role?.name === 'company') {
+          color = 'orange';
+          text = 'Owner';
+        } else if (record.role?.name === 'org_employee') {
+          color = 'green';
+          text = 'Employee';
+        }
+        return <Tag color={color} style={{ fontWeight: 'bold', fontSize: '10px', padding: '2px 8px', letterSpacing: '0.05em' }}>{text.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: 'Seat Status',
+      key: 'status',
+      align: 'right',
+      render: (_, record) => {
+        if (record.role?.name === 'company') return null;
+        if (record.isActiveSeat) {
+          return (
+            <Tag icon={<SafetyCertificateOutlined />} color="success" style={{ fontWeight: 'bold', borderRadius: '12px', padding: '4px 12px', fontSize: '10px', letterSpacing: '0.05em' }}>
+              ACTIVE SEAT
+            </Tag>
+          );
+        }
+        return (
+          <Tag icon={<WarningOutlined />} color="default" style={{ fontWeight: 'bold', borderRadius: '12px', padding: '4px 12px', fontSize: '10px', letterSpacing: '0.05em' }}>
+            NO SEAT
+          </Tag>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto pb-12">
@@ -49,51 +102,22 @@ const TeamRoster = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
-        {members.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
-              <Users size={24} className="text-slate-300" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">No teammates yet</h3>
-            <p className="text-sm text-slate-500 max-w-sm mx-auto">You're the only one on this team so far.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {members.map(m => (
-              <div key={m._id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-12 h-12 rounded-xl border border-slate-100">
-                    <AvatarImage src={m.avatar?.startsWith('http') ? m.avatar : `${import.meta.env.VITE_API_DOMAIN}${m.avatar}`} />
-                    <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold">
-                      {m.name?.[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-sm">{m.name}</h4>
-                    <p className="text-xs text-slate-500 mb-1">{m.email}</p>
-                    <div className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                      m.role?.name === 'company' ? 'bg-amber-50 text-amber-700'
-                        : m.role?.name === 'org_employee' ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-blue-50 text-blue-700'
-                    }`}>
-                      {m.role?.name === 'company' ? 'Owner' : m.role?.name === 'org_employee' ? 'Employee' : 'Recruiter'}
-                    </div>
-                  </div>
-                </div>
-                {m.role?.name !== 'company' && (
-                  <div className="flex items-center gap-2 border border-slate-100 px-3 py-1.5 rounded-xl bg-slate-50/50">
-                    {m.isActiveSeat ? <ShieldCheck size={14} className="text-emerald-500" /> : <ShieldAlert size={14} className="text-slate-400" />}
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      {m.isActiveSeat ? 'Active Seat' : 'No Seat'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <Card 
+        bordered={false} 
+        style={{ borderRadius: '32px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', border: '1px solid #f1f5f9' }}
+        bodyStyle={{ padding: 0 }}
+      >
+        <Table
+          columns={columns}
+          dataSource={members}
+          rowKey="_id"
+          loading={{ indicator: <Spin size="large" />, spinning: loading }}
+          pagination={false}
+          showHeader={false}
+          style={{ width: '100%' }}
+          rowClassName={() => 'hover:bg-slate-50/50 transition-colors cursor-pointer'}
+        />
+      </Card>
     </div>
   );
 };

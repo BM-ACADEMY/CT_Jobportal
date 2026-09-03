@@ -1,26 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import PageSOPBanner from '@/components/common/PageSOPBanner';
 import {
-  Briefcase, Plus, Edit2, Trash2, Users, Eye, Search, Copy,
-  MapPin, Clock, Loader2, MoreVertical, ToggleLeft, ToggleRight, AlertTriangle, Sparkles
+  Card, Button, Input, Select, Dropdown, Menu, Tag,
+  Typography, Row, Col, Statistic, Space, Tooltip, Spin, Empty, Modal, message
+} from 'antd';
+import {
+  PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined,
+  CopyOutlined, MoreOutlined, ExclamationCircleOutlined, StarOutlined
+} from '@ant-design/icons';
+import {
+  Briefcase, MapPin, Clock, Search, ToggleLeft, ToggleRight, Users, CheckSquare, XSquare
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
-import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
+
+const { Title, Text } = Typography;
+const { confirm } = Modal;
 
 const STATUS_COLOR = {
-  active:   'bg-emerald-50 text-emerald-700 border-emerald-100',
-  closed:   'bg-rose-50 text-rose-700 border-rose-100',
-  draft:    'bg-slate-100 text-slate-600 border-slate-200',
-  inactive: 'bg-amber-50 text-amber-700 border-amber-100',
+  active: 'success',
+  closed: 'error',
+  draft: 'default',
+  inactive: 'warning',
 };
 
 const MyJobs = () => {
@@ -56,39 +57,39 @@ const MyJobs = () => {
       setJobs(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Error fetching jobs:', err);
-      toast.error('Failed to load your jobs');
+      message.error('Failed to load your jobs');
     } finally {
       setLoading(false);
     }
   };
 
-  const [deleteTarget, setDeleteTarget] = useState(null); // { jobId, title }
-  const [deleting, setDeleting] = useState(false);
-
-  const handleDelete = (jobId, title) => setDeleteTarget({ jobId, title });
-
-  const confirmDelete = async () => {
-    const { jobId } = deleteTarget;
-    setDeleting(true);
-    try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}`, { headers });
-      toast.success('Job deleted successfully');
-      setJobs(prev => prev.filter(j => j._id !== jobId));
-      setDeleteTarget(null);
-    } catch (err) {
-      toast.error(err.response?.data?.msg || 'Failed to delete job');
-    } finally {
-      setDeleting(false);
-    }
+  const showDeleteConfirm = (jobId, title) => {
+    confirm({
+      title: `Are you sure you want to delete "${title}"?`,
+      icon: <ExclamationCircleOutlined />,
+      content: 'This action cannot be undone.',
+      okText: 'Yes, Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}`, { headers });
+          message.success('Job deleted successfully');
+          setJobs(prev => prev.filter(j => j._id !== jobId));
+        } catch (err) {
+          message.error(err.response?.data?.msg || 'Failed to delete job');
+        }
+      },
+    });
   };
 
   const handleClone = async (jobId) => {
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}/clone`, {}, { headers });
-      toast.success('Job cloned successfully');
+      message.success('Job cloned successfully');
       fetchJobs();
     } catch (err) {
-      toast.error(err.response?.data?.msg || 'Failed to clone job');
+      message.error(err.response?.data?.msg || 'Failed to clone job');
     }
   };
 
@@ -96,10 +97,10 @@ const MyJobs = () => {
     const newStatus = job.status === 'active' ? 'closed' : 'active';
     try {
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/jobs/${job._id}`, { status: newStatus }, { headers });
-      toast.success(`Job marked as ${newStatus}`);
+      message.success(`Job marked as ${newStatus}`);
       setJobs(prev => prev.map(j => j._id === job._id ? { ...j, status: newStatus } : j));
     } catch (err) {
-      toast.error(err.response?.data?.msg || 'Failed to update job status');
+      message.error(err.response?.data?.msg || 'Failed to update job status');
     }
   };
 
@@ -117,226 +118,246 @@ const MyJobs = () => {
     shortlisted: jobs.reduce((sum, j) => sum + (j.shortlistedCount || 0), 0),
   };
 
+  const getDropdownMenu = (job) => (
+    <Menu>
+      <Menu.Item key="1" icon={<TeamOutlined />} onClick={() => navigate(`/company/applicants/${job._id}`)}>
+        View Applicants
+      </Menu.Item>
+      <Menu.Item key="2" icon={<EditOutlined />} onClick={() => navigate(`/company/jobs/new?edit=${job._id}`)}>
+        Edit Job
+      </Menu.Item>
+      <Menu.Item key="3" icon={<CopyOutlined />} onClick={() => handleClone(job._id)}>
+        Clone Job
+      </Menu.Item>
+      <Menu.Item
+        key="4"
+        icon={job.status === 'active' ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
+        onClick={() => handleToggleStatus(job)}
+        style={{ color: '#d97706' }}
+      >
+        {job.status === 'active' ? 'Close Job' : 'Reopen Job'}
+      </Menu.Item>
+      <Menu.Divider />
+      <Menu.Item key="5" danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm(job._id, job.title)}>
+        Delete Job
+      </Menu.Item>
+    </Menu>
+  );
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8 py-6">
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px' }}>
       <PageSOPBanner pageKey="myJobs" />
+      
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Job Listings</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Manage all your posted positions and applicants.</p>
+          <Title level={2} style={{ margin: 0 }}>My Job Listings</Title>
+          <Text type="secondary">Manage all your posted positions and applicants.</Text>
           {quota && !quota.unlimited && (
-            <div className={`mt-2 inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full ${
-              quota.used >= quota.limit ? 'bg-rose-50 text-rose-600' :
-              quota.used >= quota.limit * 0.8 ? 'bg-amber-50 text-amber-700' :
-              'bg-emerald-50 text-emerald-700'
-            }`}>
-              <Briefcase size={11} />
-              {quota.used}/{quota.limit} job postings used
-              {quota.used >= quota.limit && ' — Limit reached'}
+            <div style={{ marginTop: 8 }}>
+              <Tag color={quota.used >= quota.limit ? 'error' : quota.used >= quota.limit * 0.8 ? 'warning' : 'success'}>
+                <Briefcase size={12} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+                {quota.used}/{quota.limit} job postings used
+                {quota.used >= quota.limit && ' — Limit reached'}
+              </Tag>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <Space>
           {quota && !quota.unlimited && quota.used >= quota.limit && (
             <Link to="/company/subscription">
-              <Button variant="outline" className="h-10 px-4 rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs gap-1.5">
-                <Sparkles size={13} /> Upgrade
+              <Button type="default" danger icon={<StarOutlined />}>
+                Upgrade
               </Button>
             </Link>
           )}
           <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={() => navigate('/company/jobs/new')}
             disabled={quota && !quota.unlimited && quota.used >= quota.limit}
-            className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest gap-2 disabled:opacity-50"
           >
-            <Plus size={14} /> Post New Job
+            Post New Job
           </Button>
-        </div>
+        </Space>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         {[
-          { label: 'Total Jobs', value: stats.total, color: 'text-slate-900' },
-          { label: 'Active', value: stats.active, color: 'text-emerald-700' },
-          { label: 'Total Applicants', value: stats.applicants, color: 'text-blue-700' },
-          { label: 'Shortlisted', value: stats.shortlisted, color: 'text-violet-700' },
-        ].map(s => (
-          <div key={s.label} className="rounded-2xl border border-slate-100 bg-white p-5 text-center">
-            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-[11px] text-slate-500 font-medium mt-0.5">{s.label}</p>
+          { label: 'TOTAL JOBS', value: stats.total, color: 'linear-gradient(135deg, #a855f7, #8b5cf6)', icon: <Briefcase size={20} color="#fff" /> },
+          { label: 'ACTIVE', value: stats.active, color: 'linear-gradient(135deg, #f97316, #ea580c)', icon: <ToggleRight size={20} color="#fff" /> },
+          { label: 'TOTAL APPLICANTS', value: stats.applicants, color: 'linear-gradient(135deg, #10b981, #059669)', icon: <Users size={20} color="#fff" /> },
+          { label: 'SHORTLISTED', value: stats.shortlisted, color: 'linear-gradient(135deg, #f43f5e, #e11d48)', icon: <CheckSquare size={20} color="#fff" /> },
+        ].map((s, index) => (
+          <div key={index} style={{
+            background: s.color,
+            borderRadius: '12px',
+            padding: '24px',
+            position: 'relative',
+            overflow: 'hidden',
+            color: 'white',
+            minHeight: '140px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          }}>
+            {/* Background decorative circles */}
+            <div style={{
+              position: 'absolute',
+              bottom: '-30px',
+              right: '-30px',
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+            }} />
+            <div style={{
+              position: 'absolute',
+              bottom: '-10px',
+              right: '-10px',
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+            }} />
+            
+            <div style={{ opacity: 0.9 }}>
+              {s.icon}
+            </div>
+            
+            <div style={{ marginTop: '20px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', marginBottom: '4px', opacity: 0.9 }}>
+                {s.label}
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: 800, lineHeight: 1 }}>
+                {s.value}
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="Search by title or location..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="rounded-xl border-slate-200 gap-2 font-bold text-xs uppercase tracking-widest h-10 px-4">
-              {statusFilter === 'all' ? 'All Status' : statusFilter}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40 rounded-xl p-1 border-slate-200 shadow-xl">
-            {['all', 'active', 'draft', 'closed', 'inactive'].map(s => (
-              <DropdownMenuItem
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className="rounded-lg font-bold text-xs uppercase tracking-widest py-2.5 capitalize"
-              >
-                {s === 'all' ? 'All Jobs' : s}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <Space style={{ marginBottom: 24, width: '100%' }} wrap>
+        <Input
+          placeholder="Search by title or location..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          prefix={<Search size={16} className="text-slate-400" />}
+          style={{ width: 300 }}
+          allowClear
+        />
+        <Select
+          value={statusFilter}
+          onChange={setStatusFilter}
+          style={{ width: 150 }}
+          options={[
+            { value: 'all', label: 'All Status' },
+            { value: 'active', label: 'Active' },
+            { value: 'draft', label: 'Draft' },
+            { value: 'closed', label: 'Closed' },
+            { value: 'inactive', label: 'Inactive' },
+          ]}
+        />
+      </Space>
 
       {/* Job List */}
-      {loading ? (
-        <div className="flex flex-col gap-4">
-          {[1, 2, 3].map(i => <div key={i} className="h-28 bg-slate-50 rounded-2xl animate-pulse border border-slate-100" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 rounded-2xl border border-dashed border-slate-200 bg-white">
-          <Briefcase size={36} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-500">
-            {jobs.length === 0 ? "No jobs posted yet" : "No jobs match your filters"}
-          </p>
-          <p className="text-xs text-slate-400 mt-1 mb-4">
-            {jobs.length === 0 ? "Post your first job to start attracting candidates." : "Try adjusting your search or filter."}
-          </p>
-          {jobs.length === 0 && (
-            <Button onClick={() => navigate('/company/jobs/new')} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
-              Post a Job
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filtered.map(job => (
-            <div
-              key={job._id}
-              className="flex flex-col sm:flex-row sm:items-center gap-5 p-5 rounded-2xl border border-slate-100 bg-white hover:border-emerald-100 hover:shadow-sm transition-all group"
-            >
-              {/* Icon */}
-              <div className="w-12 h-12 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-emerald-600 transition-all">
-                <Briefcase size={18} className="text-emerald-600 group-hover:text-white transition-colors" />
-              </div>
+      <Spin spinning={loading}>
+        {filtered.length === 0 && !loading ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span>
+                {jobs.length === 0 ? "No jobs posted yet" : "No jobs match your filters"}
+              </span>
+            }
+          >
+            {jobs.length === 0 && (
+              <Button type="primary" onClick={() => navigate('/company/jobs/new')}>
+                Post a Job
+              </Button>
+            )}
+          </Empty>
+        ) : (
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            {filtered.map(job => (
+              <Card
+                key={job._id}
+                hoverable
+                styles={{ body: { padding: '20px 24px' } }}
+                className="shadow-sm"
+              >
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+                  
+                  {/* Icon */}
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 8, backgroundColor: '#ecfdf5',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                  }}>
+                    <Briefcase size={24} color="#10b981" />
+                  </div>
 
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                    {job.title}
-                    {job.isCloned && <span className="ml-2 text-blue-500 font-semibold text-[11px]">(Cloned)</span>}
-                  </p>
-                  <Badge className={`text-[9px] font-bold border px-2 py-0 rounded-full ${STATUS_COLOR[job.status] || STATUS_COLOR.draft}`}>
-                    {job.status}
-                  </Badge>
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 250 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                      <Text strong style={{ fontSize: 16 }}>{job.title}</Text>
+                      {job.isCloned && <Tag color="blue">Cloned</Tag>}
+                      <Tag color={STATUS_COLOR[job.status] || 'default'} style={{ textTransform: 'uppercase', fontSize: 10, fontWeight: 700 }}>
+                        {job.status}
+                      </Tag>
+                    </div>
+                    <Space size="middle" wrap style={{ color: '#64748b', fontSize: 13 }}>
+                      {job.location && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <MapPin size={14} /> {job.location}
+                        </span>
+                      )}
+                      {job.jobType && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Briefcase size={14} /> {job.jobType}
+                        </span>
+                      )}
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Clock size={14} /> Posted {new Date(job.createdAt).toLocaleDateString()}
+                      </span>
+                    </Space>
+                  </div>
+
+                  {/* Applicant counts */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                    <Tooltip title="View Applicants">
+                      <Button
+                        type="dashed"
+                        onClick={() => navigate(`/company/applicants/${job._id}`)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, height: 'auto', padding: '6px 12px' }}
+                      >
+                        <TeamOutlined style={{ color: '#64748b' }} />
+                        <span style={{ fontWeight: 600 }}>{job.applicantsCount || 0}</span>
+                        <span style={{ fontSize: 12, color: '#64748b' }}>applicants</span>
+                      </Button>
+                    </Tooltip>
+                    
+                    {(job.shortlistedCount || 0) > 0 && (
+                      <Tag color="success" style={{ margin: 0, padding: '4px 8px', borderRadius: 4 }}>
+                        {job.shortlistedCount} shortlisted
+                      </Tag>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ flexShrink: 0 }}>
+                    <Dropdown overlay={getDropdownMenu(job)} trigger={['click']} placement="bottomRight">
+                      <Button type="text" icon={<MoreOutlined />} />
+                    </Dropdown>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  {job.location && (
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <MapPin size={11} /> {job.location}
-                    </span>
-                  )}
-                  {job.jobType && (
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <Briefcase size={11} /> {job.jobType}
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-400 flex items-center gap-1">
-                    <Clock size={11} /> Posted {new Date(job.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Applicant counts */}
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  onClick={() => navigate(`/company/applicants/${job._id}`)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 hover:bg-emerald-50 hover:border-emerald-100 transition-all"
-                >
-                  <Users size={13} className="text-slate-500" />
-                  <span className="text-xs font-bold text-slate-700">{job.applicantsCount || 0}</span>
-                  <span className="text-[10px] text-slate-400">applicants</span>
-                </button>
-                {(job.shortlistedCount || 0) > 0 && (
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
-                    {job.shortlistedCount} shortlisted
-                  </span>
-                )}
-              </div>
-
-              {/* Actions */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl text-slate-300 hover:bg-slate-50 hover:text-slate-900 shrink-0">
-                    <MoreVertical size={16} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 rounded-xl p-1 border-slate-200 shadow-xl">
-                  <DropdownMenuItem
-                    onClick={() => navigate(`/company/applicants/${job._id}`)}
-                    className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
-                  >
-                    <Users size={13} /> View Applicants
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigate(`/company/jobs/new?edit=${job._id}`)}
-                    className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
-                  >
-                    <Edit2 size={13} /> Edit Job
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleClone(job._id)}
-                    className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5"
-                  >
-                    <Copy size={13} /> Clone Job
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleToggleStatus(job)}
-                    className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5 text-amber-600"
-                  >
-                    {job.status === 'active'
-                      ? <><ToggleLeft size={13} /> Close Job</>
-                      : <><ToggleRight size={13} /> Reopen Job</>
-                    }
-                  </DropdownMenuItem>
-                  <div className="h-px bg-slate-100 my-1" />
-                  <DropdownMenuItem
-                    onClick={() => handleDelete(job._id, job.title)}
-                    className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5 text-rose-600 focus:text-rose-600 focus:bg-rose-50"
-                  >
-                    <Trash2 size={13} /> Delete Job
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={`Delete "${deleteTarget?.title}"?`}
-        description="This cannot be undone."
-        confirmLabel="Delete"
-        destructive
-        loading={deleting}
-        onConfirm={confirmDelete}
-      />
+              </Card>
+            ))}
+          </Space>
+        )}
+      </Spin>
     </div>
   );
 };

@@ -332,8 +332,8 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const premiumItems = (premiumMenus[role] || []).filter(i => !isPermissionBlocked(i.path));
 
   const isActive = (path) => {
-    const rootRoutes = ['/candidate', '/company/dashboard', '/admin/dashboard', '/subadmin', '/employee', '/college/dashboard', '/incharge'];
-    if (rootRoutes.includes(path)) return location.pathname === path;
+    const exactRoutes = ['/candidate', '/company/dashboard', '/admin/dashboard', '/subadmin', '/employee', '/college/dashboard', '/incharge', '/company/jobs'];
+    if (exactRoutes.includes(path)) return location.pathname === path;
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 

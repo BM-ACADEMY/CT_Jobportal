@@ -8,8 +8,7 @@ import {
   X, Check, Eye, Clock, Award, AlertCircle, RefreshCw, Mail, MapPin,
   SlidersHorizontal, CheckSquare, Square, Trash2, UserCheck, UploadCloud
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, Select, Input, Button, Modal, Drawer, Spin, Tag, Avatar, Tooltip, Progress, Space } from 'antd';
 import { toast } from 'sonner';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
@@ -368,40 +367,48 @@ const AtsPipeline = () => {
           <div className="flex items-center gap-2.5 flex-wrap">
             <Button
               onClick={handleExportCSV}
-              variant="outline"
               disabled={!selectedJob || totalCount === 0 || !hasExportFeature}
               title={!hasExportFeature ? "Candidate DB Export feature required" : ""}
-              className="h-9 px-4 rounded-xl text-xs font-bold gap-1.5 border-slate-200 hover:bg-slate-50"
+              icon={<Download size={14} />}
+              style={{ fontWeight: 'bold' }}
             >
-              <Download size={14} /> Export CSV
+              Export CSV
             </Button>
             <Button
+              type="primary"
               onClick={handleBulkAiMatch}
-              disabled={!selectedJob || bulkAiLoading || totalCount === 0}
-              className="h-9 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-md shadow-blue-500/20"
+              loading={bulkAiLoading}
+              disabled={!selectedJob || totalCount === 0}
+              style={{ backgroundColor: '#2563EB', fontWeight: 'bold' }}
+              icon={<Sparkles size={15} />}
             >
-              {bulkAiLoading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
               AI Matches
             </Button>
             <Button
+              type="primary"
               onClick={() => setShowImportModal(true)}
-              className="h-9 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs gap-1.5 shadow-md shadow-violet-500/20"
+              style={{ backgroundColor: '#7C3AED', fontWeight: 'bold' }}
+              icon={<Plus size={15} />}
             >
-              <Plus size={15} /> Add Job Pipeline
+              Add Job Pipeline
             </Button>
           </div>
         </div>
 
         {loading ? (
           <div className="h-64 flex items-center justify-center">
-            <Loader2 size={28} className="animate-spin text-violet-600" />
+            <Spin size="large" />
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-20 rounded-2xl border border-dashed border-slate-200 bg-white">
             <Briefcase size={40} className="text-slate-300 mx-auto mb-3" />
             <p className="text-base font-bold text-slate-700">No active job pipelines found</p>
             <p className="text-xs text-slate-400 mt-1 mb-5">Post a job to start receiving candidates and tracking them in the ATS Pipeline.</p>
-            <Button onClick={() => navigate('/company/jobs/new')} className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs">
+            <Button 
+              type="primary" 
+              onClick={() => navigate('/company/jobs/new')} 
+              style={{ backgroundColor: '#7C3AED', fontWeight: 'bold', borderRadius: '8px' }}
+            >
               Post a Job
             </Button>
           </div>
@@ -410,50 +417,76 @@ const AtsPipeline = () => {
             {/* Job Selector Dropdown */}
             <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">Select Pipeline</label>
-              <select
-                value={selectedJob?._id || ''}
-                onChange={(e) => {
-                  const job = jobs.find(j => j._id === e.target.value);
+              <Select
+                value={selectedJob?._id || undefined}
+                onChange={(value) => {
+                  const job = jobs.find(j => j._id === value);
                   if (job) setSelectedJob(job);
                 }}
-                className="h-10 px-4 rounded-xl border border-violet-200 bg-violet-50 text-sm font-bold text-violet-900 focus:outline-none focus:ring-2 focus:ring-violet-400 min-w-[280px] cursor-pointer"
-              >
-                {jobs.map(job => (
-                  <option key={job._id} value={job._id}>
-                    {job.title} ({job.applicantsCount || 0} candidates)
-                  </option>
-                ))}
-              </select>
+                style={{ width: 320 }}
+                size="large"
+                options={jobs.map(job => ({
+                  value: job._id,
+                  label: `${job.title} (${job.applicantsCount || 0} candidates)`
+                }))}
+              />
             </div>
 
             {/* Pipeline Conversion KPI Banner */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-slate-900">{totalCount}</p>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Total Applications</p>
-              </div>
-              <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-blue-600">
-                  {totalCount > 0 ? `${Math.round((screeningCount / totalCount) * 100)}%` : '0%'}
-                </p>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Screening Rate ({screeningCount})</p>
-              </div>
-              <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-violet-600">
-                  {totalCount > 0 ? `${Math.round((interviewCount / totalCount) * 100)}%` : '0%'}
-                </p>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Interview Rate ({interviewCount})</p>
-              </div>
-              <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-emerald-600">
-                  {totalCount > 0 ? `${Math.round((offerCount / totalCount) * 100)}%` : '0%'}
-                </p>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Offer Rate ({offerCount})</p>
-              </div>
-              <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <p className="text-2xl font-black text-amber-500">{priorityCount}</p>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Priority Candidates ★</p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <Card
+                bordered={false}
+                style={{ backgroundColor: '#9061F9', color: 'white', borderRadius: 0, overflow: 'hidden' }}
+                styles={{ body: { padding: '24px', position: 'relative' } }}
+              >
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
+                <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-white/10" />
+                
+                <Briefcase size={22} className="text-white mb-6" strokeWidth={1.5} />
+                <p className="text-[12px] font-black text-white/90 uppercase tracking-widest mb-1">Total Applied</p>
+                <p className="text-[40px] font-black text-white leading-none mt-2">{totalCount}</p>
+              </Card>
+
+              <Card
+                bordered={false}
+                style={{ backgroundColor: '#F97316', color: 'white', borderRadius: 0, overflow: 'hidden' }}
+                styles={{ body: { padding: '24px', position: 'relative' } }}
+              >
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
+                <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-white/10" />
+
+                <Clock size={22} className="text-white mb-6" strokeWidth={1.5} />
+                <p className="text-[12px] font-black text-white/90 uppercase tracking-widest mb-1">Pending</p>
+                <p className="text-[40px] font-black text-white leading-none mt-2">{applications.filter(a => a.status === 'pending').length}</p>
+              </Card>
+
+              <Card
+                bordered={false}
+                style={{ backgroundColor: '#10B981', color: 'white', borderRadius: 0, overflow: 'hidden' }}
+                styles={{ body: { padding: '24px', position: 'relative' } }}
+              >
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
+                <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-white/10" />
+
+                <CheckSquare size={22} className="text-white mb-6" strokeWidth={1.5} />
+                <p className="text-[12px] font-black text-white/90 uppercase tracking-widest mb-1">Shortlisted</p>
+                <p className="text-[40px] font-black text-white leading-none mt-2">{applications.filter(a => a.status === 'shortlisted').length}</p>
+              </Card>
+
+              <Card
+                bordered={false}
+                style={{ backgroundColor: '#F43F5E', color: 'white', borderRadius: 0, overflow: 'hidden' }}
+                styles={{ body: { padding: '24px', position: 'relative' } }}
+              >
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
+                <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-white/10" />
+
+                <div className="w-[22px] h-[22px] border-2 border-white rounded-[4px] flex items-center justify-center mb-6">
+                  <X size={14} className="text-white" strokeWidth={2.5} />
+                </div>
+                <p className="text-[12px] font-black text-white/90 uppercase tracking-widest mb-1">Rejected</p>
+                <p className="text-[40px] font-black text-white leading-none mt-2">{applications.filter(a => a.status === 'rejected').length}</p>
+              </Card>
             </div>
 
             {/* Search, Filters & Bulk Action Bar */}
@@ -462,61 +495,55 @@ const AtsPipeline = () => {
                 
                 {/* Search Input */}
                 <div className="relative flex-1">
-                  <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
+                  <Input.Search
+                    placeholder="Search candidates by name, email, skills..."
+                    allowClear
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Search candidates by name, email, skills, or display ID..."
-                    className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 bg-slate-50/50 text-xs font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:bg-white transition-all"
+                    size="large"
+                    style={{ maxWidth: 400 }}
                   />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
                 </div>
 
                 {/* Filters & Sorting */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Minimum AI Match Score */}
-                  <select
+                  <Select
                     value={minMatchScore}
-                    onChange={e => setMinMatchScore(Number(e.target.value))}
-                    className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400 cursor-pointer"
-                  >
-                    <option value={0}>All AI Scores</option>
-                    <option value={80}>⚡ 80%+ Top Match</option>
-                    <option value={65}>⚡ 65%+ Good Match</option>
-                    <option value={50}>⚡ 50%+ Moderate</option>
-                  </select>
+                    onChange={value => setMinMatchScore(value)}
+                    size="large"
+                    style={{ width: 180 }}
+                    options={[
+                      { value: 0, label: 'All AI Scores' },
+                      { value: 80, label: '⚡ 80%+ Top Match' },
+                      { value: 65, label: '⚡ 65%+ Good Match' },
+                      { value: 50, label: '⚡ 50%+ Moderate' },
+                    ]}
+                  />
 
                   {/* Priority Toggle Button */}
-                  <button
+                  <Button
+                    size="large"
+                    type={priorityOnly ? 'primary' : 'default'}
                     onClick={() => setPriorityOnly(v => !v)}
-                    className={`h-10 px-3.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                      priorityOnly
-                        ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400'
-                    }`}
+                    icon={<Star size={14} className={priorityOnly ? 'fill-white' : 'text-amber-500'} />}
+                    style={priorityOnly ? { backgroundColor: '#F59E0B', borderColor: '#F59E0B' } : {}}
                   >
-                    <Star size={13} className={priorityOnly ? 'fill-white' : 'text-amber-500'} />
-                    <span>Starred Only</span>
-                  </button>
+                    Starred Only
+                  </Button>
 
                   {/* Sort By Dropdown */}
-                  <select
+                  <Select
                     value={sortBy}
-                    onChange={e => setSortBy(e.target.value)}
-                    className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400 cursor-pointer"
-                  >
-                    <option value="newest">Sort: Newest First</option>
-                    <option value="oldest">Sort: Oldest First</option>
-                    <option value="highestMatch">Sort: Highest AI Match</option>
-                  </select>
+                    onChange={value => setSortBy(value)}
+                    size="large"
+                    style={{ width: 190 }}
+                    options={[
+                      { value: 'newest', label: 'Sort: Newest First' },
+                      { value: 'oldest', label: 'Sort: Oldest First' },
+                      { value: 'highestMatch', label: 'Sort: Highest AI Match' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -524,59 +551,53 @@ const AtsPipeline = () => {
               {selectedIds.length > 0 && (
                 <div className="flex items-center justify-between p-3 rounded-xl bg-violet-50 border border-violet-200">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-violet-600 text-white text-xs font-bold px-2.5 py-0.5">
+                    <Tag color="purple" style={{ fontWeight: 'bold' }}>
                       {selectedIds.length} Selected
-                    </Badge>
+                    </Tag>
                     <span className="text-xs font-semibold text-violet-900">
                       Perform bulk action across pipeline:
                     </span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Button
-                      size="sm"
+                      size="small"
                       disabled={bulkProcessing}
                       onClick={() => handleBulkMove('reviewed')}
-                      className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold"
                     >
                       Move to Screening
                     </Button>
                     <Button
-                      size="sm"
+                      size="small"
                       disabled={bulkProcessing}
                       onClick={() => handleBulkMove('shortlisted')}
-                      className="h-8 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold"
                     >
                       Move to Interview
                     </Button>
                     <Button
-                      size="sm"
+                      size="small"
                       disabled={bulkProcessing}
                       onClick={() => handleBulkMove('accepted')}
-                      className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
                     >
                       Mark Hired / Offer
                     </Button>
                     <Button
-                      size="sm"
+                      size="small"
+                      danger
                       disabled={bulkProcessing}
                       onClick={() => handleBulkMove('rejected')}
-                      className="h-8 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold"
                     >
                       Reject
                     </Button>
-                    <button
-                      onClick={() => setSelectedIds([])}
-                      className="text-xs font-bold text-slate-500 hover:text-slate-700 px-2"
-                    >
+                    <Button type="text" size="small" onClick={() => setSelectedIds([])}>
                       Clear
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Kanban Board Layout */}
-            <div className="overflow-x-auto pb-4">
+            <div className="overflow-x-auto pb-4 no-scrollbar">
               <div className="flex gap-4 min-w-max">
                 {STAGES.map(stage => {
                   const stageCandidates = filteredApplications.filter(a => a.status === stage.key);
@@ -593,13 +614,13 @@ const AtsPipeline = () => {
                             {stage.label}
                           </span>
                         </div>
-                        <Badge className={`text-[11px] font-extrabold px-2 py-0.5 border ${stage.color}`}>
+                        <Tag style={{ borderRadius: '12px', margin: 0 }}>
                           {stageCandidates.length}
-                        </Badge>
+                        </Tag>
                       </div>
 
                       {/* Stage Cards Container */}
-                      <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1">
+                      <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1 no-scrollbar">
                         {stageCandidates.length === 0 ? (
                           <div className="py-8 text-center border border-dashed border-slate-200 rounded-xl">
                             <p className="text-[11px] font-bold text-slate-400">No candidates in {stage.label}</p>
@@ -613,14 +634,19 @@ const AtsPipeline = () => {
                             const isSelected = selectedIds.includes(app._id);
 
                             return (
-                              <div
+                              <Card
                                 key={app._id}
+                                size="small"
                                 onClick={() => setInspectApp(app)}
-                                className={`bg-white rounded-xl border p-3.5 transition-all cursor-pointer relative group ${
-                                  isSelected
-                                    ? 'border-violet-500 ring-2 ring-violet-500/20 shadow-sm'
-                                    : 'border-slate-200 hover:border-violet-300 hover:shadow-md'
-                                }`}
+                                hoverable
+                                className={`transition-all cursor-pointer relative group ${isSelected ? 'shadow-md' : ''}`}
+                                style={{
+                                  borderRadius: '12px',
+                                  borderColor: isSelected ? '#8B5CF6' : '#E2E8F0',
+                                  borderWidth: isSelected ? 2 : 1,
+                                  marginBottom: '10px'
+                                }}
+                                styles={{ body: { padding: '14px', position: 'relative' } }}
                               >
                                 {/* Top Row: Select checkbox, Display ID & Priority Star */}
                                 <div className="flex items-center justify-between gap-1 mb-2">
@@ -637,9 +663,9 @@ const AtsPipeline = () => {
                                       )}
                                     </button>
                                     {app.display_id && (
-                                      <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                                      <Tag color="default" style={{ fontSize: '10px', margin: 0, padding: '0 4px', lineHeight: '18px' }}>
                                         {app.display_id}
-                                      </span>
+                                      </Tag>
                                     )}
                                   </div>
                                   <button
@@ -657,14 +683,18 @@ const AtsPipeline = () => {
 
                                 {/* Avatar & Candidate Details */}
                                 <div className="flex items-start gap-2.5">
-                                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-black text-xs shrink-0 shadow-sm">
+                                  <Avatar 
+                                    size={36} 
+                                    style={{ backgroundColor: '#8B5CF6', color: 'white', fontSize: '14px' }}
+                                    shape="square"
+                                  >
                                     {name[0]?.toUpperCase()}
-                                  </div>
+                                  </Avatar>
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between gap-1">
-                                      <p className="text-xs font-bold text-slate-900 truncate">{name}</p>
+                                      <p className="text-xs font-medium text-slate-900 truncate">{name}</p>
                                       {updating === app._id && (
-                                        <Loader2 size={12} className="animate-spin text-violet-600 shrink-0" />
+                                        <Spin size="small" />
                                       )}
                                     </div>
                                     <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
@@ -680,16 +710,10 @@ const AtsPipeline = () => {
                                       <Sparkles size={11} /> Not enough data
                                     </span>
                                   ) : matchScore !== undefined && matchScore !== null ? (
-                                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                                      matchScore >= 80
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                        : matchScore >= 60
-                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                                    }`}>
-                                      <Sparkles size={11} />
+                                    <Tag color={matchScore >= 80 ? 'green' : matchScore >= 60 ? 'blue' : 'orange'} style={{ fontSize: '10px', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <Sparkles size={10} />
                                       <span>{matchScore}% AI Match</span>
-                                    </div>
+                                    </Tag>
                                   ) : (
                                     <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
                                       <Sparkles size={11} /> Unscored
@@ -706,22 +730,23 @@ const AtsPipeline = () => {
                                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Move:</span>
                                   <div className="flex items-center gap-1">
                                     {STAGES.filter(s => s.key !== stage.key).slice(0, 3).map(s => (
-                                      <button
+                                      <Button
                                         key={s.key}
-                                        type="button"
+                                        type="text"
+                                        size="small"
                                         onClick={e => {
                                           e.stopPropagation();
                                           moveCandidate(app._id, s.key);
                                         }}
-                                        className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 hover:bg-violet-100 hover:text-violet-700 text-slate-600 transition-colors"
+                                        style={{ fontSize: '9px', padding: '0 4px', height: '20px', color: '#64748B' }}
                                         title={`Move to ${s.label}`}
                                       >
                                         → {s.label.split(' ')[0]}
-                                      </button>
+                                      </Button>
                                     ))}
                                   </div>
                                 </div>
-                              </div>
+                              </Card>
                             );
                           })
                         )}
@@ -736,329 +761,300 @@ const AtsPipeline = () => {
       </div>
 
       {/* Import Pipeline CSV Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600">
-                  <UploadCloud size={16} />
-                </div>
-                <h3 className="text-base font-bold text-slate-900">Import CSV Pipeline</h3>
-              </div>
-              <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X size={18} />
-              </button>
+      <Modal
+        title={
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600">
+              <UploadCloud size={16} />
             </div>
-            <form onSubmit={handleImportPipeline} className="p-6 space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Pipeline</label>
-                <select
-                  value={importOption}
-                  onChange={(e) => setImportOption(e.target.value)}
-                  className="w-full h-11 px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-violet-400 focus:outline-none"
-                >
-                  <option value="new">+ Create New Pipeline</option>
-                  <optgroup label="Existing Pipelines">
-                    {jobs.map(job => (
-                      <option key={job._id} value={job._id}>{job.title}</option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-              
-              {importOption === 'new' && (
-                <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">New Role Name</label>
-                  <input
-                    required={importOption === 'new'}
-                    type="text"
-                    placeholder="e.g. Senior Frontend Developer"
-                    value={importRole}
-                    onChange={(e) => setImportRole(e.target.value)}
-                    className="w-full h-11 px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-violet-400 focus:outline-none"
-                  />
-                </div>
-              )}
-              
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">CSV File</label>
-                <div className="relative">
-                  <input
-                    required
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => setImportFile(e.target.files[0])}
-                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 border border-slate-200 rounded-xl p-1 cursor-pointer"
-                  />
-                </div>
-                <div className="flex items-center justify-between pt-1">
-                  <p className="text-[10px] text-slate-400">
-                    Columns: Name, Email, Headline, Status
-                  </p>
-                  <a href="/sample_pipeline.csv" download className="text-[10px] font-bold text-violet-600 hover:text-violet-700 underline underline-offset-2 decoration-violet-300">
-                    Download Sample CSV
-                  </a>
-                </div>
-              </div>
-              <Button
-                type="submit"
-                disabled={importing}
-                className="w-full h-11 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold"
-              >
-                {importing ? <Loader2 size={16} className="animate-spin mr-2" /> : <UploadCloud size={16} className="mr-2" />}
-                Import Candidates
-              </Button>
-            </form>
+            <h3 className="text-base font-bold text-slate-900 m-0">Import CSV Pipeline</h3>
           </div>
-        </div>
-      )}
+        }
+        open={showImportModal}
+        onCancel={() => setShowImportModal(false)}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleImportPipeline} className="space-y-5 pt-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Pipeline</label>
+            <Select
+              value={importOption}
+              onChange={(value) => setImportOption(value)}
+              size="large"
+              style={{ width: '100%' }}
+              options={[
+                { value: 'new', label: '+ Create New Pipeline' },
+                {
+                  label: 'Existing Pipelines',
+                  options: jobs.map(job => ({ value: job._id, label: job.title }))
+                }
+              ]}
+            />
+          </div>
+          
+          {importOption === 'new' && (
+            <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">New Role Name</label>
+              <Input
+                required={importOption === 'new'}
+                placeholder="e.g. Senior Frontend Developer"
+                value={importRole}
+                onChange={(e) => setImportRole(e.target.value)}
+                size="large"
+              />
+            </div>
+          )}
+          
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">CSV File</label>
+            <div className="relative">
+              <input
+                required
+                type="file"
+                accept=".csv"
+                onChange={(e) => setImportFile(e.target.files[0])}
+                className="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 border border-slate-200 rounded-xl p-1 cursor-pointer"
+              />
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-[10px] text-slate-400">
+                Columns: Name, Email, Headline, Status
+              </p>
+              <a href="/sample_pipeline.csv" download className="text-[10px] font-bold text-violet-600 hover:text-violet-700 underline underline-offset-2 decoration-violet-300">
+                Download Sample CSV
+              </a>
+            </div>
+          </div>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={importing}
+            style={{ width: '100%', height: '44px', fontWeight: 'bold', backgroundColor: '#7C3AED' }}
+            icon={<UploadCloud size={16} />}
+          >
+            Import Candidates
+          </Button>
+        </form>
+      </Modal>
 
       {/* Full Application Inspector Drawer Modal */}
-      {inspectApp && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-all">
-          <div className="bg-white w-full max-w-xl h-full shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+      <Drawer
+        title={
+          inspectApp && (
+            <div className="flex items-center gap-3">
+              <Avatar size={40} style={{ backgroundColor: '#7C3AED', color: 'white', fontWeight: 'bold', fontSize: '16px' }} shape="square">
+                {inspectApp.applicant?.name?.[0]?.toUpperCase() || 'C'}
+              </Avatar>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-base font-bold text-slate-900 m-0 leading-none">
+                    {inspectApp.applicant?.name || 'Applicant Detail'}
+                  </h3>
+                  {inspectApp.display_id && (
+                    <Tag color="default" style={{ margin: 0, fontWeight: 'bold' }}>
+                      {inspectApp.display_id}
+                    </Tag>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 m-0 leading-none">
+                  {inspectApp.applicant?.profile?.headline || inspectApp.applicant?.email}
+                </p>
+              </div>
+            </div>
+          )
+        }
+        placement="right"
+        width={560}
+        onClose={() => setInspectApp(null)}
+        open={!!inspectApp}
+        styles={{ body: { padding: '24px', backgroundColor: '#f8fafc' } }}
+        footer={
+          inspectApp && (
+            <div className="flex items-center justify-between gap-3 w-full py-2">
+              <Button onClick={() => setInspectApp(null)} style={{ fontWeight: 'bold' }}>
+                Close
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => {
+                  if (inspectApp.applicant?._id) {
+                    navigate(`/candidate/profile/${inspectApp.applicant._id}`);
+                  }
+                }}
+                style={{ backgroundColor: '#7C3AED', fontWeight: 'bold' }}
+                icon={<Eye size={14} />}
+              >
+                Full Profile
+              </Button>
+            </div>
+          )
+        }
+      >
+        {inspectApp && (
+          <div className="space-y-6">
             
-            {/* Drawer Header */}
-            <div className="p-5 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-white font-black text-sm">
-                  {inspectApp.applicant?.name?.[0]?.toUpperCase() || 'C'}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-slate-900">
-                      {inspectApp.applicant?.name || 'Applicant Detail'}
-                    </h3>
-                    {inspectApp.display_id && (
-                      <span className="text-xs font-bold text-slate-500 bg-slate-200/70 px-2 py-0.5 rounded">
-                        {inspectApp.display_id}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    {inspectApp.applicant?.profile?.headline || inspectApp.applicant?.email}
-                  </p>
-                </div>
+            {/* Stage Selection & Priority Toolbar */}
+            <div className="p-4 rounded-2xl border border-slate-200 bg-white flex flex-wrap items-center justify-between gap-3 shadow-sm">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Current Stage</p>
+                <Select
+                  value={inspectApp.status}
+                  onChange={value => moveCandidate(inspectApp._id, value)}
+                  style={{ width: 160 }}
+                  options={STAGES.map(s => ({ value: s.key, label: s.label }))}
+                />
               </div>
 
-              <button
-                onClick={() => setInspectApp(null)}
-                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type={inspectApp.isPriority ? 'primary' : 'default'}
+                  onClick={e => togglePriority(e, inspectApp)}
+                  icon={<Star size={14} className={inspectApp.isPriority ? 'fill-white' : 'text-amber-500'} />}
+                  style={inspectApp.isPriority ? { backgroundColor: '#F59E0B', borderColor: '#F59E0B', fontWeight: 'bold' } : { fontWeight: 'bold' }}
+                >
+                  {inspectApp.isPriority ? 'Starred Priority' : 'Mark Priority'}
+                </Button>
+              </div>
             </div>
 
-            {/* Drawer Body Content */}
-            <div className="p-6 space-y-6 overflow-y-auto flex-1">
-              
-              {/* Stage Selection & Priority Toolbar */}
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Stage</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <select
-                      value={inspectApp.status}
-                      onChange={e => moveCandidate(inspectApp._id, e.target.value)}
-                      className="h-9 px-3 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 cursor-pointer"
-                    >
-                      {STAGES.map(s => (
-                        <option key={s.key} value={s.key}>{s.label}</option>
-                      ))}
-                    </select>
+            {/* AI Match Compatibility Box */}
+            <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/60 via-white to-indigo-50/40 p-5 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center">
+                    <Sparkles size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 m-0">AI Compatibility Analysis</p>
+                    <p className="text-[11px] text-slate-500 font-medium m-0">Powered by Gemini AI Engine</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={e => togglePriority(e, inspectApp)}
-                    className={`h-9 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                      inspectApp.isPriority
-                        ? 'bg-amber-500 text-white border-amber-500'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400'
-                    }`}
-                  >
-                    <Star size={14} className={inspectApp.isPriority ? 'fill-white' : 'text-amber-500'} />
-                    <span>{inspectApp.isPriority ? 'Starred Priority' : 'Mark Priority'}</span>
-                  </button>
-                </div>
+                <Button
+                  type="primary"
+                  size="small"
+                  loading={calculatingAI}
+                  onClick={() => computeAIMatch(inspectApp)}
+                  style={{ backgroundColor: '#7C3AED', fontWeight: 'bold' }}
+                  icon={!calculatingAI && <RefreshCw size={13} />}
+                >
+                  {inspectApp.matchAnalysis?.matchPercentage != null ? 'Re-Analyze' : 'Compute Match'}
+                </Button>
               </div>
 
-              {/* AI Match Compatibility Box */}
-              <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/60 via-white to-indigo-50/40 p-5 space-y-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-violet-600 text-white flex items-center justify-center">
-                      <Sparkles size={16} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">AI Compatibility Analysis</p>
-                      <p className="text-[11px] text-slate-500 font-medium">Powered by Gemini AI Engine</p>
-                    </div>
-                  </div>
-
-                  <Button
-                    size="sm"
-                    disabled={calculatingAI}
-                    onClick={() => computeAIMatch(inspectApp)}
-                    className="h-8 px-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold gap-1.5"
-                  >
-                    {calculatingAI ? (
-                      <><Loader2 size={13} className="animate-spin" /> Analyzing...</>
-                    ) : (
-                      <><RefreshCw size={13} /> {inspectApp.matchAnalysis?.matchPercentage != null ? 'Re-Analyze' : 'Compute Match'}</>
-                    )}
-                  </Button>
+              {calculatingAI ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-6 text-slate-400">
+                  <Spin />
+                  <p className="text-xs font-semibold mt-2 m-0">Running fresh AI analysis…</p>
                 </div>
-
-                {calculatingAI ? (
-                  <div className="flex flex-col items-center justify-center gap-2 py-6 text-slate-400">
-                    <Loader2 size={20} className="animate-spin text-violet-500" />
-                    <p className="text-xs font-semibold">Running fresh AI analysis…</p>
-                  </div>
-                ) : inspectApp.matchAnalysis?.insufficientData ? (
-                  <div className="flex flex-col items-center gap-2 py-4 text-center">
-                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full uppercase tracking-widest">
-                      Not enough data
-                    </span>
-                    <p className="text-xs text-slate-500 leading-relaxed max-w-sm">
-                      {inspectApp.matchAnalysis.verdict}
-                    </p>
-                  </div>
-                ) : inspectApp.matchAnalysis?.matchPercentage != null ? (
-                  <div className="space-y-4 pt-2">
-                    {/* Score Bar */}
-                    <div className="flex items-center justify-between">
+              ) : inspectApp.matchAnalysis?.insufficientData ? (
+                <div className="flex flex-col items-center gap-2 py-4 text-center">
+                  <Tag color="warning" style={{ fontWeight: 'bold', padding: '2px 10px', borderRadius: '12px', margin: 0 }}>
+                    NOT ENOUGH DATA
+                  </Tag>
+                  <p className="text-xs text-slate-500 leading-relaxed max-w-sm m-0 mt-2">
+                    {inspectApp.matchAnalysis.verdict}
+                  </p>
+                </div>
+              ) : inspectApp.matchAnalysis?.matchPercentage != null ? (
+                <div className="space-y-4 pt-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-slate-700">Overall Job Match</span>
                       <span className="text-lg font-black text-violet-700">
                         {inspectApp.matchAnalysis.matchPercentage}%
                       </span>
                     </div>
-                    <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 transition-all duration-500"
-                        style={{ width: `${inspectApp.matchAnalysis.matchPercentage}%` }}
-                      />
-                    </div>
-
-                    {/* Verdict */}
-                    {inspectApp.matchAnalysis.verdict && (
-                      <p className="text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-violet-100 leading-relaxed">
-                        {inspectApp.matchAnalysis.verdict}
-                      </p>
-                    )}
-
-                    {/* Matched vs Missing Skills */}
-                    <div className="grid grid-cols-2 gap-3 pt-1">
-                      <div>
-                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1.5">
-                          Matched Skills
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {(inspectApp.matchAnalysis.matchedSkills || []).map((sk, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-200">
-                              ✓ {sk}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1.5">
-                          Missing Skills
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {(inspectApp.matchAnalysis.missingSkills || []).map((sk, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 text-[11px] font-semibold border border-rose-200">
-                              ✕ {sk}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    <Progress 
+                      percent={inspectApp.matchAnalysis.matchPercentage} 
+                      showInfo={false} 
+                      strokeColor={{ '0%': '#8B5CF6', '100%': '#4F46E5' }} 
+                    />
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-400 py-3 text-center">
-                    Click "Compute Match" to run AI resume vs job description screening analysis.
-                  </p>
-                )}
-              </div>
 
-              {/* Applicant Profile Info */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Candidate Information</h4>
-                <div className="rounded-2xl border border-slate-100 bg-white p-4 space-y-2.5">
-                  <div className="flex items-center gap-2 text-xs text-slate-700">
-                    <Mail size={14} className="text-slate-400 shrink-0" />
-                    <span className="font-semibold">{inspectApp.applicant?.email || 'N/A'}</span>
-                  </div>
-                  {inspectApp.applicant?.profile?.location && (
-                    <div className="flex items-center gap-2 text-xs text-slate-700">
-                      <MapPin size={14} className="text-slate-400 shrink-0" />
-                      <span>{inspectApp.applicant.profile.location}</span>
-                    </div>
+                  {inspectApp.matchAnalysis.verdict && (
+                    <p className="text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-violet-100 leading-relaxed m-0">
+                      {inspectApp.matchAnalysis.verdict}
+                    </p>
                   )}
-                  {inspectApp.applicant?.profile?.skills?.length > 0 && (
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 mb-1.5">Skills Overview</p>
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1.5">
+                        Matched Skills
+                      </p>
                       <div className="flex flex-wrap gap-1.5">
-                        {inspectApp.applicant.profile.skills.map((sk, i) => (
-                          <Badge key={i} variant="secondary" className="text-[11px] font-semibold bg-slate-100 text-slate-700">
-                            {sk}
-                          </Badge>
+                        {(inspectApp.matchAnalysis.matchedSkills || []).map((sk, i) => (
+                          <Tag key={i} color="green" style={{ borderRadius: '6px', margin: 0 }}>✓ {sk}</Tag>
                         ))}
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Custom Screening Questions & Answers */}
-              {inspectApp.answers?.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Screening Questionnaire</h4>
-                  <div className="space-y-2.5">
-                    {inspectApp.answers.map((item, index) => (
-                      <div key={index} className="rounded-xl border border-slate-100 bg-white p-3.5 space-y-1">
-                        <p className="text-xs font-bold text-slate-800">Q: {item.questionText}</p>
-                        <p className="text-xs text-violet-700 font-semibold bg-violet-50/50 p-2 rounded-lg">
-                          {String(item.answer)}
-                        </p>
+                    <div>
+                      <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1.5">
+                        Missing Skills
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(inspectApp.matchAnalysis.missingSkills || []).map((sk, i) => (
+                          <Tag key={i} color="red" style={{ borderRadius: '6px', margin: 0 }}>✕ {sk}</Tag>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
+              ) : (
+                <p className="text-xs text-slate-400 py-3 text-center m-0">
+                  Click "Compute Match" to run AI resume vs job description screening analysis.
+                </p>
               )}
-
             </div>
 
-            {/* Drawer Footer Actions */}
-            <div className="p-5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3 shrink-0">
-              <Button
-                variant="outline"
-                onClick={() => setInspectApp(null)}
-                className="h-10 px-5 rounded-xl text-xs font-bold border-slate-200"
-              >
-                Close
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => {
-                    if (inspectApp.applicant?._id) {
-                      navigate(`/candidate/profile/${inspectApp.applicant._id}`);
-                    }
-                  }}
-                  className="h-10 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold gap-1.5 shadow-md shadow-violet-500/20"
-                >
-                  <Eye size={14} /> Full Profile
-                </Button>
+            {/* Applicant Profile Info */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest m-0">Candidate Information</h4>
+              <div className="rounded-2xl border border-slate-100 bg-white p-4 space-y-2.5 shadow-sm">
+                <div className="flex items-center gap-2 text-xs text-slate-700">
+                  <Mail size={14} className="text-slate-400 shrink-0" />
+                  <span className="font-semibold">{inspectApp.applicant?.email || 'N/A'}</span>
+                </div>
+                {inspectApp.applicant?.profile?.location && (
+                  <div className="flex items-center gap-2 text-xs text-slate-700">
+                    <MapPin size={14} className="text-slate-400 shrink-0" />
+                    <span>{inspectApp.applicant.profile.location}</span>
+                  </div>
+                )}
+                {inspectApp.applicant?.profile?.skills?.length > 0 && (
+                  <div className="pt-1">
+                    <p className="text-[10px] font-bold text-slate-400 mb-1.5">Skills Overview</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {inspectApp.applicant.profile.skills.map((sk, i) => (
+                        <Tag key={i} color="default" style={{ borderRadius: '6px', margin: 0 }}>{sk}</Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
+            {/* Custom Screening Questions & Answers */}
+            {inspectApp.answers?.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest m-0">Screening Questionnaire</h4>
+                <div className="space-y-2.5">
+                  {inspectApp.answers.map((item, index) => (
+                    <div key={index} className="rounded-xl border border-slate-100 bg-white p-3.5 space-y-2 shadow-sm">
+                      <p className="text-xs font-bold text-slate-800 m-0">Q: {item.questionText}</p>
+                      <p className="text-xs text-violet-700 font-semibold bg-violet-50/50 p-2 rounded-lg m-0">
+                        {String(item.answer)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </Drawer>
     </FeatureGate>
   );
 };
