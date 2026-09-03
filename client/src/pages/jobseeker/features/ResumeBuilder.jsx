@@ -8,7 +8,7 @@ import {
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Card, Typography, Button, Dropdown } from 'antd';
+import { Card, Typography, Button, Dropdown, Alert } from 'antd';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import AIGenerateModal from './AIGenerateModal';
@@ -881,7 +881,7 @@ const downloadPDF = async (pageFormat, fileName) => {
 };
 
 // ─── Resume Card ──────────────────────────────────────────────────────────────
-const fmtDate = (ts) => new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const fmtDate = (ts) => new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
 
 const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate }) => {
   const menuItems = [
@@ -893,49 +893,52 @@ const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate }) => {
 
   return (
     <Card 
-      bordered={false} 
+      bordered={true} 
       bodyStyle={{ padding: 0 }}
-      className="group relative rounded-none border border-slate-200 bg-white overflow-hidden hover:shadow-md hover:border-emerald-200 transition-all flex flex-col h-full"
+      className="group relative rounded-xl border border-slate-200 bg-white overflow-hidden hover:shadow-md transition-all flex flex-col h-full"
     >
       {/* Thumbnail */}
-      <div className="h-36 bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex flex-col gap-1.5 cursor-pointer relative overflow-hidden" onClick={() => onEdit(resume.id)}>
-        <div className="h-3 rounded-none w-1/2" style={{ backgroundColor: resume.style?.accent || '#0f172a' }} />
-        <div className="h-2 bg-slate-200 rounded-none w-3/4" />
-        <div className="h-px bg-slate-200 my-1 w-full" />
-        {[80, 60, 70, 50, 65].map((w, i) => <div key={i} className="h-1.5 bg-slate-200 rounded-none" style={{ width: `${w}%` }} />)}
-        <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/8 transition-colors flex items-center justify-center">
-          <span className="text-emerald-700 text-xs font-medium bg-white/90 px-3 py-1.5 rounded-none opacity-0 group-hover:opacity-100 transition-opacity shadow-sm uppercase tracking-widest">Open Editor</span>
+      <div className="h-44 bg-slate-50 p-6 flex flex-col gap-4 cursor-pointer relative overflow-hidden border-b border-slate-100" onClick={() => onEdit(resume.id)}>
+        <div className="h-3 rounded-sm w-1/3" style={{ backgroundColor: '#10b981' }} />
+        <div className="space-y-2">
+           <div className="h-1.5 bg-slate-200 rounded-sm w-3/4" />
+           <div className="h-1.5 bg-slate-200 rounded-sm w-5/6" />
+        </div>
+        <div className="h-px bg-slate-200 w-full my-1" />
+        <div className="space-y-2">
+           <div className="h-1.5 bg-slate-200 rounded-sm w-full" />
+           <div className="h-1.5 bg-slate-200 rounded-sm w-2/3" />
         </div>
       </div>
       {/* Info */}
-      <div className="p-4 flex-1 flex flex-col">
+      <div className="p-4 flex-1 flex flex-col bg-white">
         <div className="flex items-start justify-between gap-2 mb-4">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800 truncate m-0">{resume.name}</h3>
-            <p className="text-[10px] font-medium text-slate-400 flex items-center gap-1 mt-1 uppercase tracking-widest">
-              <Clock size={10} /> {fmtDate(resume.updatedAt)}
+            <h3 className="text-base font-medium text-slate-800 truncate m-0 mb-1">{resume.name}</h3>
+            <p className="text-[11px] text-slate-400 flex items-center gap-1.5 uppercase tracking-wider font-medium">
+              <Clock size={12} /> {fmtDate(resume.updatedAt)}
             </p>
           </div>
           <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" className="w-8 h-8 p-0 flex items-center justify-center text-slate-400 hover:text-emerald-600 rounded-none" icon={<MoreHorizontal size={16} />} />
+            <Button type="text" className="w-8 h-8 p-0 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md" icon={<MoreHorizontal size={18} />} />
           </Dropdown>
         </div>
         {/* Action buttons */}
-        <div className="flex gap-2 mt-auto">
+        <div className="flex gap-3 mt-auto">
           <Button 
             type="primary" 
-            className="flex-1 rounded-none shadow-none bg-emerald-600 hover:bg-emerald-700 h-8 text-xs uppercase tracking-widest font-medium" 
-            icon={<Edit3 size={13} />} 
+            className="flex-1 rounded-md shadow-sm bg-[#1677ff] hover:bg-blue-600 h-10 font-medium tracking-wide flex items-center justify-center gap-2 uppercase text-xs" 
             onClick={() => onEdit(resume.id)}
           >
-            Edit
+            <Edit3 size={15} /> Edit
           </Button>
           <Button 
             danger 
-            className="rounded-none shadow-none h-8 w-8 p-0 flex items-center justify-center border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300"
-            icon={<Trash2 size={14} />} 
+            className="rounded-md shadow-sm h-10 w-11 p-0 flex items-center justify-center border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300"
             onClick={() => onDelete(resume.id)} 
-          />
+          >
+            <Trash2 size={16} />
+          </Button>
         </div>
       </div>
     </Card>
@@ -968,65 +971,65 @@ const ResumeList = ({ onNew, onEdit, limit, setLimitError, onAIGenerate }) => {
   const visibleResumes = resumes.slice(0, limit);
 
   return (
-    <div className="space-y-10 pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-8 h-8 bg-blue-50 flex items-center justify-center rounded-none">
-              <FileText size={18} className="text-blue-600" />
-            </div>
-            <Title level={2} className="m-0 font-semibold tracking-tight text-slate-800">Resume Builder</Title>
+    <div className="space-y-8 pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-[#e6f4ff] flex items-center justify-center rounded-md">
+            <FileText size={20} className="text-[#1677ff]" />
           </div>
-          <Text className="text-slate-500 font-medium">Build and manage your professional resumes.</Text>
+          <div>
+            <h1 className="text-2xl m-0 font-semibold tracking-tight text-slate-800">Resume Builder</h1>
+            <p className="text-slate-600 font-medium m-0 text-sm mt-0.5">Build and manage your professional resumes.</p>
+          </div>
         </div>
         <Button 
           type="primary" 
           onClick={onNew}
           icon={<Plus size={16} />}
-          className="bg-emerald-600 hover:bg-emerald-700 h-10 px-5 rounded-none font-medium text-sm shadow-none uppercase tracking-widest"
+          className="bg-[#1677ff] hover:bg-blue-600 h-10 px-5 rounded-md font-medium text-sm shadow-sm tracking-wide uppercase"
         >
           New Resume
         </Button>
       </div>
 
       {visibleResumes.length === 0 ? (
-        <Card bordered={false} className="text-center py-20 rounded-none border border-dashed border-slate-200 shadow-none bg-slate-50">
-          <div className="w-14 h-14 bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4 rounded-none">
-            <Sparkles size={24} className="text-emerald-500" />
+        <Card bordered={false} className="text-center py-20 rounded-xl border border-dashed border-slate-200 shadow-none bg-slate-50 mt-6">
+          <div className="w-14 h-14 bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4 rounded-xl">
+            <Sparkles size={24} className="text-[#1677ff]" />
           </div>
           <Title level={4} className="m-0 text-slate-700 font-medium tracking-tight mb-2">No resumes yet</Title>
           <Text className="text-slate-500 block mb-8">Create your first professional resume with live preview and instant PDF download.</Text>
           <div className="flex items-center justify-center gap-3">
-            <Button size="large" onClick={onNew} icon={<FileText size={16} />} className="rounded-none shadow-none font-medium uppercase tracking-widest text-xs">
+            <Button size="large" onClick={onNew} icon={<FileText size={16} />} className="rounded-md shadow-sm font-medium uppercase tracking-widest text-xs">
               Build Manually
             </Button>
-            <Button size="large" type="primary" onClick={() => setShowAIModal(true)} icon={<Sparkles size={16} />} className="rounded-none shadow-none bg-emerald-600 hover:bg-emerald-700 font-medium uppercase tracking-widest text-xs">
+            <Button size="large" type="primary" onClick={() => setShowAIModal(true)} icon={<Sparkles size={16} />} className="rounded-md shadow-sm bg-[#1677ff] hover:bg-blue-600 font-medium uppercase tracking-widest text-xs">
               Generate with AI
             </Button>
           </div>
         </Card>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
           {visibleResumes.map(r => (
             <ResumeCard key={r.id} resume={r} onEdit={onEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} />
           ))}
           <Card 
             bordered={false}
             onClick={() => setShowAIModal(true)} 
-            className="rounded-none border-2 border-dashed border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300 transition-all flex flex-col items-center justify-center min-h-[240px] gap-3 text-emerald-600 cursor-pointer shadow-none"
-            bodyStyle={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '24px' }}
+            className="rounded-xl border-2 border-dashed border-[#a7f3d0] bg-white hover:bg-emerald-50 hover:border-[#34d399] transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer shadow-none"
+            bodyStyle={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '24px', gap: '16px' }}
           >
-            <Sparkles size={28} />
-            <span className="text-xs font-semibold uppercase tracking-widest">Generate with AI</span>
+            <Sparkles size={32} className="text-slate-700" strokeWidth={1.5} />
+            <span className="text-sm font-semibold uppercase tracking-widest text-slate-700">Generate with AI</span>
           </Card>
           <Card 
             bordered={false}
             onClick={onNew} 
-            className="rounded-none border-2 border-dashed border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex flex-col items-center justify-center min-h-[240px] gap-3 text-slate-400 hover:text-slate-600 cursor-pointer shadow-none"
-            bodyStyle={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '24px' }}
+            className="rounded-xl border-2 border-dashed border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50 transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer shadow-none"
+            bodyStyle={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '24px', gap: '16px' }}
           >
-            <Plus size={28} />
-            <span className="text-xs font-semibold uppercase tracking-widest">New Resume</span>
+            <Plus size={32} className="text-slate-700" strokeWidth={1.5} />
+            <span className="text-sm font-semibold uppercase tracking-widest text-slate-700">New Resume</span>
           </Card>
         </div>
       )}

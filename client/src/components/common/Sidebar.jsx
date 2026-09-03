@@ -415,32 +415,34 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         {/* Profile Completion for Jobseekers */}
         {role === 'jobseeker' && !isCollapsed && (
           <div className="px-6 pb-6">
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 rounded-none p-4 border border-emerald-100/50 shadow-sm relative overflow-hidden">
-              <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-200/20 rounded-full blur-xl pointer-events-none" />
-              <div className="absolute -left-4 -bottom-4 w-16 h-16 bg-teal-200/20 rounded-full blur-xl pointer-events-none" />
+            <div className="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 shadow-xl relative overflow-hidden group hover:bg-white/10 transition-all duration-300">
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-400/30 transition-colors duration-500" />
+              <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-teal-400/20 rounded-full blur-2xl pointer-events-none group-hover:bg-teal-400/30 transition-colors duration-500" />
 
-              <div className="flex items-center justify-between mb-2.5 relative z-10">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity size={12} className="text-emerald-600" />
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <span className="text-[10px] font-bold text-slate-200 uppercase tracking-widest flex items-center gap-1.5 drop-shadow-sm">
+                  <Activity size={14} className="text-emerald-400" />
                   Profile Score
                 </span>
-                <span className="text-xs font-black text-emerald-700">{profileCompletion}%</span>
+                <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 drop-shadow-sm">{profileCompletion}%</span>
               </div>
 
-              <div className="h-1.5 w-full bg-emerald-100/60 rounded-none overflow-hidden relative z-10 mb-2.5">
+              <div className="h-2 w-full bg-black/20 rounded-full overflow-hidden relative z-10 mb-3 shadow-inner">
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-none transition-all duration-1000 ease-out"
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000 ease-out relative"
                   style={{ width: `${profileCompletion}%` }}
-                />
+                >
+                  <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/40 animate-pulse" />
+                </div>
               </div>
 
-              <p className="text-[10px] font-medium text-emerald-700/80 leading-relaxed relative z-10">
+              <p className="text-[10px] font-medium text-slate-300/90 leading-relaxed relative z-10">
                 {profileCompletion === 100
                   ? "Excellent! Your profile is fully optimized for top recruiters."
                   : "Reach 100% to boost your visibility to recruiters by up to 3x."}
               </p>
               {profileCompletion < 100 && (
-                <button onClick={() => navigate('/candidate/settings')} className="mt-2.5 w-full py-1.5 rounded-none bg-white/60 hover:bg-white text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200/50 relative z-10">
+                <button onClick={() => navigate('/candidate/settings')} className="mt-3 w-full py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-emerald-200 text-[10px] font-bold transition-all border border-emerald-500/30 hover:border-emerald-500/50 relative z-10 shadow-sm backdrop-blur-sm">
                   Complete Profile
                 </button>
               )}

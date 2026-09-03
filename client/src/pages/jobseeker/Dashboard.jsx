@@ -240,9 +240,9 @@ const JobSeekerDashboard = () => {
           </div>
 
           {loading ? (
-            <div className="flex flex-wrap gap-6 py-4">
-              {[1, 2, 3].map(i => (
-                <Skeleton.Button key={i} active style={{ width: 280, height: 160, borderRadius: 16 }} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-4">
+              {[1, 2].map(i => (
+                <Skeleton.Button key={i} active style={{ width: '100%', height: 160, borderRadius: 16 }} />
               ))}
             </div>
           ) : recommendedJobs.length === 0 ? (
@@ -252,9 +252,9 @@ const JobSeekerDashboard = () => {
                <Text type="secondary" style={{ fontSize: 12 }}>Complete your profile to get matched!</Text>
              </Card>
           ) : (
-            <div className="flex flex-wrap gap-6 py-4 items-stretch">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-4 items-stretch">
               {recommendedJobs.map(job => (
-                <div key={job.id} className="shrink-0 h-full">
+                <div key={job.id} className="h-full">
                   <RecommendedJobCard job={job} />
                 </div>
               ))}
@@ -299,29 +299,6 @@ const JobSeekerDashboard = () => {
         </div>
       </div>
 
-      {/* Right Column Widgets */}
-      <div className="hidden xl:flex flex-col gap-8 w-[340px]">
-        {/* Resume Builder Widget (StatCard Design) */}
-        <div 
-          onClick={() => navigate('/candidate/resume-builder')}
-          className="relative overflow-hidden p-6 text-white shadow-sm hover:shadow-md transition-all duration-300 group rounded-none bg-gradient-to-br from-[#b45309] to-[#d97706] cursor-pointer hover:-translate-y-0.5 h-48"
-        >
-          <div className="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
-          <div className="absolute -right-2 -bottom-2 w-20 h-20 rounded-full bg-white/10 pointer-events-none" />
-          
-          <div className="flex flex-col h-full justify-between relative z-10">
-            <div className="mb-6">
-              <Sparkles size={24} className="text-white opacity-90" strokeWidth={2.5} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/80">RESUME BUILDER</p>
-              <p className="text-2xl font-black text-white tracking-tight mt-0.5">Craft Resume</p>
-              <p className="text-[10px] text-white/70 font-semibold mt-2">AI-Powered Pro Templates →</p>
-            </div>
-          </div>
-        </div>
-
-      </div>
     </div>
   );
 };

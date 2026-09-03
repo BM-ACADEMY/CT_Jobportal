@@ -14,7 +14,7 @@ const RecommendedJobCard = ({ job }) => {
     <Card
       bordered={false}
       bodyStyle={{ padding: '24px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
-      className="min-w-[280px] w-[280px] hover:shadow-lg transition-all cursor-pointer group bg-white overflow-hidden shadow-sm border border-slate-100 rounded-none h-full"
+      className="w-full hover:shadow-lg transition-all cursor-pointer group bg-white overflow-hidden shadow-sm border border-slate-100 rounded-none h-full"
     >
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-4 min-w-0">

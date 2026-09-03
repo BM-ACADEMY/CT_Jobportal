@@ -1,38 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, Trash2, MapPin, Briefcase, DollarSign, CheckCircle2, Clock, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Bell, Plus, MapPin, Briefcase, DollarSign, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { Button, Tag, Typography, Card, Spin } from 'antd';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 
+const { Title, Text } = Typography;
+
 const FREQ_LABELS = { instant: 'Instant', daily: 'Daily Digest', weekly: 'Weekly Digest', monthly: 'Monthly Digest', none: 'Off' };
 
 const AlertRow = ({ job }) => (
-  <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-white hover:border-emerald-100 hover:shadow-sm transition-all">
-    <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-      <Bell size={15} className="text-blue-600" />
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="text-sm font-bold text-slate-900 truncate">{job.title}</p>
-      <div className="flex items-center gap-3 mt-0.5">
-        <span className="text-[11px] text-slate-500 flex items-center gap-1"><MapPin size={9} /> {job.location || 'Remote'}</span>
-        <span className="text-[11px] text-slate-500 flex items-center gap-1"><Briefcase size={9} /> {job.jobType}</span>
-        <span className="text-[11px] text-slate-500 flex items-center gap-1">
-          <DollarSign size={9} /> 
-          {job.salary?.isRangeHidden ? 'Not disclosed' : `${job.salary?.min || 0} - ${job.salary?.max || 0} ${job.salary?.currency || 'INR'}`}
-        </span>
+  <Card 
+    bordered 
+    className="mb-3 hover:border-emerald-200 hover:shadow-sm transition-all rounded-xl"
+    bodyStyle={{ padding: '16px' }}
+  >
+    <div className="flex items-center gap-4">
+      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0 border border-blue-100">
+        <Bell size={18} className="text-[#1677ff]" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-semibold text-slate-800 truncate m-0">{job.title}</h3>
+        <div className="flex items-center gap-4 mt-1">
+          <span className="text-[12px] text-slate-500 flex items-center gap-1.5 font-medium"><MapPin size={12} /> {job.location || 'Remote'}</span>
+          <span className="text-[12px] text-slate-500 flex items-center gap-1.5 font-medium"><Briefcase size={12} /> {job.jobType}</span>
+          <span className="text-[12px] text-slate-500 flex items-center gap-1.5 font-medium">
+            <DollarSign size={12} /> 
+            {job.salary?.isRangeHidden ? 'Not disclosed' : `${job.salary?.min || 0} - ${job.salary?.max || 0} ${job.salary?.currency || 'INR'}`}
+          </span>
+        </div>
+      </div>
+      <Tag color="success" className="border-none font-medium px-2.5 py-0.5 tracking-wide rounded-md">
+        Matching
+      </Tag>
+      <div className="text-xs text-slate-400 font-medium whitespace-nowrap ml-2">
+        {new Date(job.createdAt).toLocaleDateString()}
       </div>
     </div>
-    <Badge className="text-[10px] font-bold px-2 py-0 border-none bg-emerald-50 text-emerald-700">
-      Matching
-    </Badge>
-    <div className="text-[10px] text-slate-400 font-medium">
-      {new Date(job.createdAt).toLocaleDateString()}
-    </div>
-  </div>
+  </Card>
 );
 
 const JobAlerts = () => {
@@ -40,6 +47,7 @@ const JobAlerts = () => {
   const { user } = useAuth();
   const [matchingJobs, setMatchingJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const getAlertInfo = () => {
     if (Array.isArray(user?.purchasedFeatures)) {
       const ppFeature = user.purchasedFeatures.find(f => 
@@ -107,38 +115,41 @@ const JobAlerts = () => {
     >
       <div className="space-y-8 pb-12">
         <PageSOPBanner pageKey="jobAlerts" />
+        
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-                <Bell size={16} className="text-amber-600" />
-              </div>
-              <h1 className="text-xl font-bold text-slate-900">Job Alerts</h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-orange-50 flex items-center justify-center rounded-md border border-orange-100">
+              <Bell size={20} className="text-orange-500" />
             </div>
-            <p className="text-sm text-slate-500">Dynamic alerts based on your profile requirements.</p>
+            <div>
+              <h1 className="text-2xl m-0 font-semibold tracking-tight text-slate-800">Job Alerts</h1>
+              <p className="text-slate-600 font-medium m-0 text-sm mt-0.5">Dynamic alerts based on your profile requirements.</p>
+            </div>
           </div>
           <Button 
+            type="primary" 
             onClick={() => navigate('/candidate/settings?tab=preferences')}
-            className="h-10 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm gap-2 shrink-0"
+            icon={<Plus size={16} />}
+            className="h-10 px-5 rounded-md shadow-sm font-medium tracking-wide border-none bg-emerald-500 hover:bg-emerald-600"
           >
-            <Plus size={15} /> Update Preferences
+            Update Preferences
           </Button>
         </div>
 
         {/* Frequency Banner */}
-        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 flex items-center gap-4">
-          <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
-            <Clock size={16} className="text-amber-600" />
+        <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-5 flex items-center gap-5">
+          <div className="w-10 h-10 bg-orange-100/70 rounded-full flex items-center justify-center shrink-0">
+            <Clock size={18} className="text-orange-500" />
           </div>
           <div className="flex-1">
-            <p className="text-xs font-bold text-amber-900">Delivery Frequency</p>
-            <p className="text-[11px] text-amber-700 mt-0.5">
+            <p className="text-sm font-semibold text-orange-800 m-0">Delivery Frequency</p>
+            <p className="text-xs text-orange-700/80 mt-1 mb-0 font-medium">
               {alertInfo.source === 'pay_per' ? (
-                <>Your add-on gives you <strong>Daily Digest</strong> alerts {alertInfo.expiresAt ? `until ${new Date(alertInfo.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''} — showing jobs posted today.</>
+                <>Your plan includes <span className="font-semibold text-orange-800">Daily Digest</span> alerts {alertInfo.expiresAt ? `until ${new Date(alertInfo.expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''} — showing jobs posted today.</>
               ) : (
                 <>
-                  Your plan includes <strong>{FREQ_LABELS[freq]}</strong> alerts
+                  Your plan includes <span className="font-semibold text-orange-800">{FREQ_LABELS[freq]}</span> alerts
                   {freq === 'daily' && ' — showing jobs posted today.'}
                   {freq === 'weekly' && ' — showing jobs from the last 7 days.'}
                   {freq === 'monthly' && ' — showing jobs posted this month.'}
@@ -146,14 +157,16 @@ const JobAlerts = () => {
               )}
             </p>
           </div>
-          <Badge className="bg-amber-100 text-amber-700 border-none text-[10px] font-bold">{FREQ_LABELS[freq]}</Badge>
+          <Tag color="orange" className="border-none font-semibold px-3 py-1 text-xs rounded-md m-0 bg-orange-100 text-orange-700">
+            {FREQ_LABELS[freq]}
+          </Tag>
         </div>
 
         {/* Alerts List */}
         <div>
           <div className="flex items-center justify-between mb-4">
-             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Matched Jobs ({matchingJobs.length})</p>
-             {loading && <Loader2 size={14} className="text-emerald-500 animate-spin" />}
+             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest m-0">MATCHED JOBS ({matchingJobs.length})</p>
+             {loading && <Spin indicator={<Loader2 size={16} className="text-emerald-500 animate-spin" />} />}
           </div>
           
           {loading ? (
@@ -163,13 +176,13 @@ const JobAlerts = () => {
               ))}
             </div>
           ) : matchingJobs.length === 0 ? (
-            <div className="text-center py-12 rounded-2xl border border-dashed border-slate-200">
-              <Bell size={28} className="text-slate-200 mx-auto mb-3" />
-              <p className="text-sm font-bold text-slate-500">No matches found</p>
-              <p className="text-xs text-slate-400 mt-1">Try updating your profile skills or preferences</p>
-            </div>
+            <Card bordered={false} className="text-center py-16 rounded-xl border border-dashed border-slate-200 shadow-none bg-slate-50/50">
+              <Bell size={28} className="text-slate-300 mx-auto mb-3" />
+              <Title level={5} className="m-0 text-slate-600 font-semibold">No matches found</Title>
+              <Text className="text-slate-400 mt-1 block">Try updating your profile skills or preferences</Text>
+            </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 mt-4">
               {Array.isArray(matchingJobs) && matchingJobs.map(job => (
                 <AlertRow key={job._id} job={job} />
               ))}
@@ -178,11 +191,11 @@ const JobAlerts = () => {
         </div>
 
         {/* Tips */}
-        <div className="grid sm:grid-cols-3 gap-3">
+        <div className="grid sm:grid-cols-3 gap-4">
           {['Matches are based on your skills and location', 'Job titles in your preferences improve accuracy', 'Ensure your profile is 100% complete'].map(t => (
-            <div key={t} className="flex items-start gap-2 p-3 rounded-xl bg-slate-50 border border-slate-100">
-              <CheckCircle2 size={13} className="text-emerald-500 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-slate-600 font-medium">{t}</p>
+            <div key={t} className="flex items-start gap-2.5 p-4 rounded-xl bg-white border border-slate-100">
+              <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+              <p className="text-[12px] text-slate-600 font-medium m-0 leading-tight">{t}</p>
             </div>
           ))}
         </div>
