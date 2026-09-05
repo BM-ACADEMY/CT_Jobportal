@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Mail, Send, Users, Loader2, Briefcase, CheckSquare, Square, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Card, Select, Input, Button, Row, Col, Checkbox, Spin, Badge } from 'antd';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
-import { Badge } from '@/components/ui/badge';
+const { TextArea } = Input;
 import FeatureGate from '@/components/subscription/FeatureGate';
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -98,10 +98,10 @@ const BulkMessaging = () => {
   };
 
   const statusColors = {
-    pending: 'bg-slate-100 text-slate-700',
-    reviewed: 'bg-blue-50 text-blue-700',
-    shortlisted: 'bg-violet-50 text-violet-700',
-    accepted: 'bg-emerald-50 text-emerald-700'
+    pending: { bg: '#f1f5f9', text: '#334155' },
+    reviewed: { bg: '#eff6ff', text: '#1d4ed8' },
+    shortlisted: { bg: '#f5f3ff', text: '#6d28d9' },
+    accepted: { bg: '#ecfdf5', text: '#047857' }
   };
 
   return (
@@ -126,61 +126,46 @@ const BulkMessaging = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        <Row gutter={[24, 24]}>
           {/* Left: Job + Candidate selection */}
-          <div className="space-y-4">
+          <Col xs={24} lg={12}>
             {/* Job Picker */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-5">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">1. Select Job</p>
+            <Card title={<span className="font-semibold text-slate-500 uppercase tracking-widest text-xs">1. Select Job</span>} bordered={false} className="shadow-sm rounded-xl mb-6">
               {loadingJobs ? (
-                <div className="flex items-center gap-2 text-slate-400 text-sm"><Loader2 size={14} className="animate-spin" /> Loading jobs...</div>
+                <div className="flex items-center gap-2 text-slate-400 text-sm"><Spin size="small" /> Loading jobs...</div>
               ) : jobs.length === 0 ? (
                 <p className="text-sm text-slate-400">No active jobs found.</p>
               ) : (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowJobPicker(p => !p)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 bg-slate-50 hover:border-sky-300 transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Briefcase size={14} className="text-sky-500" />
-                      {selectedJob ? selectedJob.title : 'Choose a job...'}
-                    </span>
-                    <ChevronDown size={14} className={`transition-transform ${showJobPicker ? 'rotate-180' : ''}`} />
-                  </button>
-                  {showJobPicker && (
-                    <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-                      {jobs.map(job => (
-                        <button
-                          key={job._id}
-                          onClick={() => { setSelectedJob(job); setShowJobPicker(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-sky-50 transition-colors ${selectedJob?._id === job._id ? 'bg-sky-50 text-sky-700 font-bold' : 'text-slate-700'}`}
-                        >
-                          {job.title}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <Select
+                  style={{ width: '100%' }}
+                  size="large"
+                  placeholder={<span className="flex items-center gap-2"><Briefcase size={14} className="text-sky-500" /> Choose a job...</span>}
+                  value={selectedJob?._id}
+                  onChange={(val) => {
+                    const job = jobs.find(j => j._id === val);
+                    setSelectedJob(job);
+                  }}
+                  options={jobs.map(j => ({ value: j._id, label: j.title }))}
+                />
               )}
-            </div>
+            </Card>
 
             {/* Candidate List */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">2. Select Candidates</p>
+            <Card title={
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-500 uppercase tracking-widest text-xs">2. Select Candidates</span>
                 {applicants.length > 0 && (
-                  <button onClick={toggleAll} className="text-[11px] font-bold text-sky-600 hover:text-sky-700">
+                  <Button type="link" size="small" onClick={toggleAll} style={{ padding: 0 }}>
                     {selectedIds.size === applicants.length ? 'Deselect All' : 'Select All'}
-                  </button>
+                  </Button>
                 )}
               </div>
-
+            } bordered={false} className="shadow-sm rounded-xl">
               {!selectedJob ? (
                 <p className="text-sm text-slate-400 text-center py-6">Select a job to see applicants</p>
               ) : loadingApplicants ? (
                 <div className="flex items-center justify-center py-8 gap-2 text-slate-400">
-                  <Loader2 size={16} className="animate-spin" /> Loading applicants...
+                  <Spin size="small" /> Loading applicants...
                 </div>
               ) : applicants.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-6">No active applicants for this job</p>
@@ -191,18 +176,14 @@ const BulkMessaging = () => {
                     if (!c) return null;
                     const isSelected = selectedIds.has(c._id);
                     return (
-                      <button
+                      <div
                         key={app._id}
                         onClick={() => toggleSelect(c._id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                           isSelected ? 'border-sky-300 bg-sky-50' : 'border-slate-100 hover:border-slate-200 bg-white'
                         }`}
                       >
-                        {isSelected ? (
-                          <CheckSquare size={16} className="text-sky-500 shrink-0" />
-                        ) : (
-                          <Square size={16} className="text-slate-300 shrink-0" />
-                        )}
+                        <Checkbox checked={isSelected} className="shrink-0" />
                         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                           {c.name?.[0]?.toUpperCase()}
                         </div>
@@ -210,65 +191,70 @@ const BulkMessaging = () => {
                           <p className="text-xs font-bold text-slate-900 truncate">{c.name}</p>
                           <p className="text-[10px] text-slate-500 truncate">{c.profile?.headline || c.email}</p>
                         </div>
-                        <Badge className={`text-[9px] font-bold border-none shrink-0 ${statusColors[app.status] || 'bg-slate-100 text-slate-700'}`}>
-                          {app.status}
-                        </Badge>
-                      </button>
+                        <Badge 
+                          count={app.status} 
+                          style={{ backgroundColor: statusColors[app.status]?.bg || '#f1f5f9', color: statusColors[app.status]?.text || '#475569', fontSize: '10px', boxShadow: 'none' }} 
+                        />
+                      </div>
                     );
                   })}
                 </div>
               )}
 
               {selectedIds.size > 0 && (
-                <div className="mt-3 pt-3 border-t border-slate-100">
+                <div className="mt-4 pt-4 border-t border-slate-100">
                   <p className="text-xs font-bold text-sky-600 flex items-center gap-1.5">
                     <Users size={12} /> {selectedIds.size} candidate{selectedIds.size > 1 ? 's' : ''} selected
                   </p>
                 </div>
               )}
-            </div>
-          </div>
+            </Card>
+          </Col>
 
           {/* Right: Compose */}
-          <div className="rounded-2xl border border-slate-100 bg-white p-5">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">3. Compose Message</p>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1.5">Subject <span className="text-slate-400 font-normal">(optional)</span></label>
-                <input
-                  value={subject}
-                  onChange={e => setSubject(e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-sky-400 transition-colors"
-                  placeholder="e.g., Next steps for your application"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-600 block mb-1.5">Message</label>
-                <textarea
-                  value={body}
-                  onChange={e => setBody(e.target.value)}
-                  rows={8}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-sky-400 resize-none transition-colors"
-                  placeholder="Hi, we're pleased to inform you that..."
-                />
-              </div>
+          <Col xs={24} lg={12}>
+            <Card title={<span className="font-semibold text-slate-500 uppercase tracking-widest text-xs">3. Compose Message</span>} bordered={false} className="shadow-sm rounded-xl h-full">
+              <div className="space-y-5">
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-2">Subject <span className="text-slate-400 font-normal">(optional)</span></label>
+                  <Input
+                    size="large"
+                    value={subject}
+                    onChange={e => setSubject(e.target.value)}
+                    placeholder="e.g., Next steps for your application"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-2">Message</label>
+                  <TextArea
+                    value={body}
+                    onChange={e => setBody(e.target.value)}
+                    rows={8}
+                    placeholder="Hi, we're pleased to inform you that..."
+                  />
+                </div>
 
-              <div className="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-500 space-y-1">
-                <p className="font-bold text-slate-600">Message Preview</p>
-                <p>To: <span className="font-semibold text-slate-700">{selectedIds.size} candidate{selectedIds.size !== 1 ? 's' : ''}</span> from <span className="font-semibold text-slate-700">{selectedJob?.title || '–'}</span></p>
-              </div>
+                <div className="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-500 space-y-1 border border-slate-100">
+                  <p className="font-bold text-slate-600">Message Preview</p>
+                  <p>To: <span className="font-semibold text-slate-700">{selectedIds.size} candidate{selectedIds.size !== 1 ? 's' : ''}</span> from <span className="font-semibold text-slate-700">{selectedJob?.title || '–'}</span></p>
+                </div>
 
-              <Button
-                onClick={handleSend}
-                disabled={sending || selectedIds.size === 0 || !body.trim()}
-                className="w-full h-11 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm gap-2 disabled:opacity-50"
-              >
-                {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                {sending ? 'Sending...' : `Send to ${selectedIds.size || 0} Candidate${selectedIds.size !== 1 ? 's' : ''}`}
-              </Button>
-            </div>
-          </div>
-        </div>
+                <Button
+                  type="primary"
+                  size="large"
+                  block
+                  onClick={handleSend}
+                  disabled={sending || selectedIds.size === 0 || !body.trim()}
+                  loading={sending}
+                  icon={!sending && <Send size={15} />}
+                  style={{ backgroundColor: (sending || selectedIds.size === 0 || !body.trim()) ? undefined : '#0ea5e9' }}
+                >
+                  {sending ? 'Sending...' : `Send to ${selectedIds.size || 0} Candidate${selectedIds.size !== 1 ? 's' : ''}`}
+                </Button>
+              </div>
+            </Card>
+          </Col>
+        </Row>
       </div>
     </FeatureGate>
   );

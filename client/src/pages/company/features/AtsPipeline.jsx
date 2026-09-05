@@ -18,21 +18,21 @@ const STAGES = [
     key: 'pending',
     label: 'Applied',
     color: 'bg-slate-100 text-slate-700 border-slate-200',
-    headerBg: 'bg-slate-50 border-slate-200',
-    dot: 'bg-slate-500'
+    headerBg: 'bg-white border-slate-200',
+    dot: 'bg-slate-600'
   },
   {
     key: 'reviewed',
     label: 'Screening',
     color: 'bg-blue-50 text-blue-700 border-blue-200',
-    headerBg: 'bg-blue-50/60 border-blue-200',
+    headerBg: 'bg-white border-slate-200',
     dot: 'bg-blue-500'
   },
   {
     key: 'shortlisted',
     label: 'Interview',
     color: 'bg-violet-50 text-violet-700 border-violet-200',
-    headerBg: 'bg-violet-50/60 border-violet-200',
+    headerBg: 'bg-white border-slate-200',
     dot: 'bg-violet-500'
   },
   {
@@ -46,7 +46,7 @@ const STAGES = [
     key: 'rejected',
     label: 'Archived',
     color: 'bg-rose-50 text-rose-700 border-rose-200',
-    headerBg: 'bg-rose-50/60 border-rose-200',
+    headerBg: 'bg-white border-slate-200',
     dot: 'bg-rose-500'
   },
 ];
@@ -370,7 +370,6 @@ const AtsPipeline = () => {
               disabled={!selectedJob || totalCount === 0 || !hasExportFeature}
               title={!hasExportFeature ? "Candidate DB Export feature required" : ""}
               icon={<Download size={14} />}
-              style={{ fontWeight: 'bold' }}
             >
               Export CSV
             </Button>
@@ -379,7 +378,6 @@ const AtsPipeline = () => {
               onClick={handleBulkAiMatch}
               loading={bulkAiLoading}
               disabled={!selectedJob || totalCount === 0}
-              style={{ backgroundColor: '#2563EB', fontWeight: 'bold' }}
               icon={<Sparkles size={15} />}
             >
               AI Matches
@@ -387,7 +385,6 @@ const AtsPipeline = () => {
             <Button
               type="primary"
               onClick={() => setShowImportModal(true)}
-              style={{ backgroundColor: '#7C3AED', fontWeight: 'bold' }}
               icon={<Plus size={15} />}
             >
               Add Job Pipeline
@@ -407,7 +404,7 @@ const AtsPipeline = () => {
             <Button 
               type="primary" 
               onClick={() => navigate('/company/jobs/new')} 
-              style={{ backgroundColor: '#7C3AED', fontWeight: 'bold', borderRadius: '8px' }}
+              style={{ fontWeight: 'bold', borderRadius: '8px' }}
             >
               Post a Job
             </Button>
@@ -604,7 +601,7 @@ const AtsPipeline = () => {
                   return (
                     <div
                       key={stage.key}
-                      className="w-[280px] shrink-0 bg-slate-50/70 rounded-2xl border border-slate-200/80 flex flex-col max-h-[75vh]"
+                      className="w-[280px] shrink-0 bg-[#f8fafc] rounded-xl border border-slate-200/80 flex flex-col max-h-[75vh]"
                     >
                       {/* Stage Column Header */}
                       <div className={`p-3.5 rounded-t-2xl border-b flex items-center justify-between ${stage.headerBg}`}>
@@ -644,7 +641,8 @@ const AtsPipeline = () => {
                                   borderRadius: '12px',
                                   borderColor: isSelected ? '#8B5CF6' : '#E2E8F0',
                                   borderWidth: isSelected ? 2 : 1,
-                                  marginBottom: '10px'
+                                  marginBottom: '10px',
+                                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
                                 }}
                                 styles={{ body: { padding: '14px', position: 'relative' } }}
                               >
@@ -663,7 +661,7 @@ const AtsPipeline = () => {
                                       )}
                                     </button>
                                     {app.display_id && (
-                                      <Tag color="default" style={{ fontSize: '10px', margin: 0, padding: '0 4px', lineHeight: '18px' }}>
+                                      <Tag color="default" style={{ fontSize: '10px', margin: 0, padding: '0 4px', lineHeight: '18px', backgroundColor: '#f1f5f9', border: 'none' }}>
                                         {app.display_id}
                                       </Tag>
                                     )}
@@ -685,14 +683,14 @@ const AtsPipeline = () => {
                                 <div className="flex items-start gap-2.5">
                                   <Avatar 
                                     size={36} 
-                                    style={{ backgroundColor: '#8B5CF6', color: 'white', fontSize: '14px' }}
+                                    style={{ backgroundColor: '#8B5CF6', color: 'white', fontSize: '14px', borderRadius: '8px' }}
                                     shape="square"
                                   >
                                     {name[0]?.toUpperCase()}
                                   </Avatar>
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between gap-1">
-                                      <p className="text-xs font-medium text-slate-900 truncate">{name}</p>
+                                      <p className="text-xs font-bold text-slate-900 truncate">{name}</p>
                                       {updating === app._id && (
                                         <Spin size="small" />
                                       )}
@@ -710,10 +708,10 @@ const AtsPipeline = () => {
                                       <Sparkles size={11} /> Not enough data
                                     </span>
                                   ) : matchScore !== undefined && matchScore !== null ? (
-                                    <Tag color={matchScore >= 80 ? 'green' : matchScore >= 60 ? 'blue' : 'orange'} style={{ fontSize: '10px', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 ${matchScore >= 80 ? 'bg-emerald-50 text-emerald-600' : matchScore >= 60 ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-500'}`}>
                                       <Sparkles size={10} />
                                       <span>{matchScore}% AI Match</span>
-                                    </Tag>
+                                    </div>
                                   ) : (
                                     <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
                                       <Sparkles size={11} /> Unscored
@@ -721,7 +719,7 @@ const AtsPipeline = () => {
                                   )}
 
                                   <span className="text-[9px] font-semibold text-slate-400">
-                                    {new Date(app.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                    {new Date(app.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                                   </span>
                                 </div>
 

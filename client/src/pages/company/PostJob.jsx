@@ -13,7 +13,7 @@ import {
   PlusOutlined, InfoCircleOutlined, TagsOutlined, TeamOutlined, CloseOutlined
 } from '@ant-design/icons';
 import { toast } from 'sonner';
-import { DollarSign, Briefcase } from 'lucide-react';
+import { IndianRupee, Briefcase } from 'lucide-react';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -396,7 +396,7 @@ const PostJob = () => {
                         </Card>
 
                         <Card 
-                            title={<span className="font-semibold flex items-center gap-2"><DollarSign className="text-emerald-500" /> Compensation (LPA)</span>} 
+                            title={<span className="font-semibold flex items-center gap-2"><IndianRupee className="text-emerald-500" size={20} /> Compensation (LPA)</span>} 
                             bordered={false}
                             className="shadow-sm rounded-xl overflow-hidden"
                             style={{ marginTop: '24px' }}
