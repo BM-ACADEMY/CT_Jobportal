@@ -116,7 +116,6 @@ const HomeJobseeker = () => {
       <ScrollProgressBar />
 
       <HeroShell>
-        {({ tiltX, tiltY }) => (
           <div className="grid lg:grid-cols-12 gap-10 items-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -130,22 +129,22 @@ const HomeJobseeker = () => {
                   {completion < 100 ? `Your profile is ${completion}% complete` : 'Your profile is ready'}
                 </span>
               </div>
-              <h1 className="text-5xl lg:text-6xl xl:text-[4.6rem] font-black text-white leading-[0.98] mb-8 tracking-tighter">
+              <h1 className="text-5xl lg:text-6xl xl:text-[4.6rem] font-black text-zinc-900 leading-[0.98] mb-8 tracking-tighter">
                 Welcome back,{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">{firstName}</span>
               </h1>
-              <p className="text-slate-400 text-lg md:text-xl font-normal mb-10 max-w-xl leading-relaxed">
+              <p className="text-zinc-500 text-lg md:text-xl font-normal mb-10 max-w-xl leading-relaxed">
                 Your next opportunity is a search away. Explore roles matched to your skills.
               </p>
 
-              <form onSubmit={handleSearch} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex flex-col md:flex-row gap-2 shadow-2xl shadow-black/30">
-                <div className="flex items-center gap-3 flex-1 px-5 py-3 rounded-xl bg-white/5 border border-white/5">
+              <form onSubmit={handleSearch} className="bg-white/80 backdrop-blur-xl border border-white rounded-2xl p-2 shadow-2xl shadow-indigo-900/5 flex flex-col md:flex-row gap-2 shadow-2xl shadow-black/30">
+                <div className="flex items-center gap-3 flex-1 px-5 py-3 rounded-xl bg-slate-50 border border-slate-100">
                   <Search size={20} className="text-emerald-400 shrink-0" />
-                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Job title or keywords..." className="flex-1 bg-transparent outline-none text-white font-medium placeholder:text-slate-500 text-sm" />
+                  <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Job title or keywords..." className="flex-1 bg-transparent outline-none text-slate-900 font-medium placeholder:text-slate-500 text-sm" />
                 </div>
-                <div className="flex items-center gap-3 flex-1 px-5 py-3 rounded-xl bg-white/5 border border-white/5">
+                <div className="flex items-center gap-3 flex-1 px-5 py-3 rounded-xl bg-slate-50 border border-slate-100">
                   <MapPin size={20} className="text-slate-500 shrink-0" />
-                  <input value={locationQuery} onChange={e => setLocationQuery(e.target.value)} placeholder="City or Remote..." className="flex-1 bg-transparent outline-none text-white font-medium placeholder:text-slate-500 text-sm" />
+                  <input value={locationQuery} onChange={e => setLocationQuery(e.target.value)} placeholder="City or Remote..." className="flex-1 bg-transparent outline-none text-slate-900 font-medium placeholder:text-slate-500 text-sm" />
                 </div>
                 <Button type="submit" className="h-12 rounded-xl px-8 text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-900 shadow-lg shadow-emerald-500/25 transition-all shrink-0">
                   Search Jobs
@@ -161,8 +160,8 @@ const HomeJobseeker = () => {
               className="lg:col-span-5 grid grid-cols-2 grid-rows-[1fr_1fr_auto] gap-4 h-[400px] md:h-[480px] mt-10 lg:mt-0"
             >
               <motion.div
-                style={{ rotateX: tiltX, rotateY: tiltY, transformPerspective: 1200 }}
-                className="row-span-2 rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50 relative"
+                style={{ transformPerspective: 1200 }}
+                className="row-span-2 rounded-3xl overflow-hidden border border-white shadow-2xl shadow-indigo-900/10 relative"
               >
                 <img
                   loading="eager"
@@ -198,17 +197,16 @@ const HomeJobseeker = () => {
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide mt-1.5">{personalized ? 'Jobs Matched' : 'Powered Matching'}</p>
               </motion.div>
 
-              <div className="col-span-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-5 py-4 flex items-center gap-3">
+              <div className="col-span-2 bg-white/90 backdrop-blur-xl border border-white rounded-2xl px-5 py-4 shadow-xl shadow-indigo-900/5 flex items-center gap-3">
                 <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shrink-0" />
-                <p className="text-slate-300 text-sm font-semibold flex-1">
-                  <span className="text-white font-bold">New roles</span> matched to your skills every day
+                <p className="text-slate-600 text-sm font-semibold flex-1">
+                  <span className="text-slate-900 font-bold">New roles</span> matched to your skills every day
                 </p>
                 <Zap size={16} className="text-emerald-400 shrink-0" />
               </div>
             </motion.div>
           </div>
-        )}
-      </HeroShell>
+        </HeroShell>
 
       <StatBento cards={statCards} />
 
