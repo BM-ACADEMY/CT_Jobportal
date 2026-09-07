@@ -61,20 +61,19 @@ const HomeCollege = () => {
 
   return (
     <div className="w-full overflow-x-hidden bg-white">
-      <ScrollProgressBar />
 
       <HeroShell>
-        <div className="grid lg:grid-cols-12 gap-10 items-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="lg:col-span-7">
+        <div className="grid lg:grid-cols-12 gap-16 items-center">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="lg:col-span-6">
             <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-5 py-2 mb-8">
-              <ShieldCheck size={14} className="text-emerald-400" />
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-400">For Colleges & TPOs</span>
+              <ShieldCheck size={14} className="text-[#00D492]" />
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-[#00D492]">For Colleges & TPOs</span>
             </div>
-            <h1 className="text-5xl lg:text-6xl xl:text-[4.6rem] font-black text-white leading-[0.98] mb-8 tracking-tighter">
+            <h1 className="text-4xl md:text-5xl lg:text-[4.2rem] font-bold text-zinc-900 tracking-tight leading-[1.12] mb-8">
               Empower Your{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Campus Placements</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00D492] to-emerald-400">Campus Placements</span>
             </h1>
-            <p className="text-slate-400 text-lg md:text-xl font-normal mb-10 max-w-xl leading-relaxed">
+            <p className="text-zinc-500 text-sm md:text-base font-normal mb-10 max-w-md leading-relaxed">
               Run placement drives, manage students, and connect with hiring companies — all from one dashboard.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -84,7 +83,7 @@ const HomeCollege = () => {
                 </Button>
               </Link>
               <Link to="/college/dashboard">
-                <Button variant="outline" className="h-14 px-10 rounded-2xl bg-transparent border-white/30 text-white hover:bg-white/10 font-bold text-base">
+                <Button variant="outline" className="h-14 px-10 rounded-2xl bg-transparent border-zinc-300 text-zinc-700 hover:bg-zinc-50 font-bold text-base">
                   Go to Dashboard
                 </Button>
               </Link>
@@ -92,25 +91,45 @@ const HomeCollege = () => {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="lg:col-span-5 grid gap-4 mt-10 lg:mt-0"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+            className="lg:col-span-6 block relative mt-16 lg:mt-0"
           >
-            {features.map((f, i) => (
-              <motion.div
-                key={f.title}
-                animate={{ y: [0, i % 2 ? 8 : -8, 0] }}
-                transition={{ duration: 4 + i, repeat: Infinity, ease: 'easeInOut' }}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-5 flex items-center gap-4"
-              >
-                <div className="w-11 h-11 rounded-xl bg-emerald-500 text-slate-900 flex items-center justify-center shrink-0"><f.icon size={20} /></div>
-                <div>
-                  <p className="text-white font-bold text-sm">{f.title}</p>
-                  <p className="text-slate-400 text-xs mt-0.5">{f.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+            <div className="relative z-10 w-full max-w-[340px] md:max-w-[380px] mx-auto ml-auto lg:mr-8">
+              <img
+                loading="eager"
+                decoding="async"
+                src="images/homepage.png"
+                alt="Empower Campus Placements"
+                className="w-full h-auto object-cover"
+              />
+
+              {features.map((f, i) => {
+                let posClasses = '';
+                // Using exact arbitrary values so Tailwind respects them without relying on standard spacing
+                if (i === 0) posClasses = '-left-[20px] md:-left-[50px] lg:-left-[140px] top-[20px] md:top-[40px]';
+                else if (i === 1) posClasses = '-right-[20px] md:-right-[150px] lg:-right-[140px] top-1/2 -translate-y-1/2';
+                else if (i === 2) posClasses = '-right-[10px] md:-right-[100px] lg:-right-[60px] bottom-[20px] md:bottom-[40px]';
+
+                return (
+                  <motion.div
+                    key={f.title}
+                    animate={{ y: [0, i % 2 ? 8 : -8, 0] }}
+                    transition={{ duration: 4 + i, repeat: Infinity, ease: 'easeInOut' }}
+                    className={`absolute z-20 bg-white/95 backdrop-blur-xl border border-white shadow-xl shadow-indigo-900/10 rounded-2xl p-2.5 md:p-3 flex items-center gap-3 w-[210px] md:w-[250px] ${posClasses}`}
+                  >
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-emerald-500 text-slate-900 flex items-center justify-center shrink-0">
+                      <f.icon size={16} className="md:w-[18px] md:h-[18px]" />
+                    </div>
+                    <div>
+                      <p className="text-slate-900 font-bold text-[11px] md:text-xs leading-tight">{f.title}</p>
+                      <p className="text-slate-600 text-[9px] md:text-[10px] leading-tight mt-0.5 line-clamp-2">{f.desc}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </motion.div>
         </div>
       </HeroShell>
