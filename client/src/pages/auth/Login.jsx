@@ -58,11 +58,9 @@ const LoginPage = () => {
     <div className="min-h-screen flex bg-slate-50">
 
       {/* ─── Left Panel ─── */}
-      <div className="hidden lg:flex w-[44%] flex-shrink-0 relative overflow-hidden flex-col justify-between p-14 xl:p-16 bg-gradient-to-br from-[#053a2c] via-[#064e3b] to-[#0a5c46]">
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-white/[0.04] -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-black/10 translate-y-1/3 -translate-x-1/4" />
+      <div className="hidden lg:flex w-[44%] flex-shrink-0 relative overflow-hidden flex-col justify-between py-14 pl-20 pr-14 xl:py-16 xl:pl-28 xl:pr-16 bg-cover bg-center" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80")' }}>
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-slate-900/75" />
 
         <div className="flex flex-col justify-between h-full relative z-10">
           <div>

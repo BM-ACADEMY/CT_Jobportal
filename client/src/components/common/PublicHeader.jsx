@@ -146,13 +146,13 @@ const PublicHeader = () => {
                   to="/login"
                   className="text-[#138060] hover:text-[#0f664d] text-sm font-medium transition-colors"
                 >
-                  Employer Login
+                  Login
                 </Link>
                 <Button
                   onClick={() => navigate('/register')}
                   className="h-10 px-6 rounded-[3px] text-sm font-bold bg-[#138060] hover:bg-[#0f664d] text-white shadow-sm transition-all cursor-pointer"
                 >
-                  Candidate Login
+                  Join free
                 </Button>
               </div>
             )}
@@ -192,13 +192,13 @@ const PublicHeader = () => {
                   onClick={() => navigate('/login')}
                   className="w-full h-11 rounded-[8px] border-slate-200 text-slate-750 font-bold"
                 >
-                  Employer Login
+                  Login
                 </Button>
                 <Button
                   onClick={() => navigate('/register')}
                   className="w-full h-11 rounded-[8px] bg-[#138060] hover:bg-[#0f664d] text-white font-bold"
                 >
-                  Candidate Login
+                  Join free
                 </Button>
               </div>
             )}
