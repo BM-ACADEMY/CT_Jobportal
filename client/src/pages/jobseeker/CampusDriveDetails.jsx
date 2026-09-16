@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { ArrowLeft, MessageCircle, User as UserIcon, Calendar, Building2, CheckCircle2, Megaphone, Loader2, Info } from 'lucide-react';
@@ -69,10 +69,17 @@ const CampusDriveDetails = () => {
 
   if (!drive) return null;
 
-  const companies = drive.companies?.length > 0 ? drive.companies : drive.companyName ? [{ name: drive.companyName, packageLPA: drive.packageLPA }] : [];
+  const rawCompanies = drive.companies?.length > 0 ? drive.companies : drive.companyName ? [{ name: drive.companyName, packageLPA: drive.packageLPA }] : [];
+  const companies = [...new Map(rawCompanies.map(company => [company.name?.trim().toLowerCase(), company])).values()];
+  const inCharges = [...new Map((drive.inCharges || []).map(inCharge => {
+    const normalizedEmail = inCharge.email?.trim().toLowerCase();
+    const normalizedName = inCharge.name?.trim().toLowerCase();
+    const userId = inCharge.user?._id || inCharge.user;
+    return [normalizedEmail || userId || normalizedName, inCharge];
+  })).values()];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 py-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-6xl mx-auto space-y-6 py-6 px-1 sm:px-3 animate-in fade-in duration-500">
       <div className="flex items-center gap-4">
         <button 
           onClick={() => navigate('/candidate/campus-drives')}
@@ -88,8 +95,8 @@ const CampusDriveDetails = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-8 space-y-6 min-w-0">
           <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
             <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
               <Info size={18} className="text-emerald-500" /> Drive Details
@@ -143,7 +150,7 @@ const CampusDriveDetails = () => {
           )}
         </div>
 
-        <div className="space-y-6">
+        <aside className="lg:col-span-4 space-y-6 min-w-0 lg:sticky lg:top-24">
           <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Registration Status</h3>
             {drive.myApplication ? (
@@ -170,24 +177,25 @@ const CampusDriveDetails = () => {
 
           <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Placement In-charge</h3>
-            {drive.inCharges?.length > 0 ? (
+            {inCharges.length > 0 ? (
               <div className="space-y-3">
-                {drive.inCharges.map((ic, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                {inCharges.map(ic => (
+                  <div key={ic.user?._id || ic.user || ic.email} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
                         <UserIcon size={18} />
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{ic.name}</p>
-                        <p className="text-[10px] text-slate-500">{ic.email}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900 truncate">{ic.name}</p>
+                        <p className="text-[10px] text-slate-500 truncate" title={ic.email}>{ic.email}</p>
                       </div>
                     </div>
                     <Button 
                       onClick={() => handleChat(ic.user)}
                       variant="ghost" 
                       size="icon"
-                      className="w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-100"
+                      className="w-8 h-8 shrink-0 rounded-lg text-emerald-600 hover:bg-emerald-100 disabled:opacity-40"
+                      disabled={!ic.user}
                       title="Chat with In-charge"
                     >
                       <MessageCircle size={16} />
@@ -199,7 +207,7 @@ const CampusDriveDetails = () => {
               <p className="text-xs text-slate-400 italic">No in-charges assigned yet.</p>
             )}
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );

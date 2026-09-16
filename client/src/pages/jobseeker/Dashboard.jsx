@@ -183,6 +183,26 @@ const JobSeekerDashboard = () => {
           />
         ) */}
 
+        {campusStudent?.interviewScorecards?.length > 0 && (
+          <section className="relative z-10 rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8 shadow-sm space-y-6 xl:w-[calc(100%+372px)]">
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Campus placement feedback</p><h3 className="text-lg font-black text-slate-900 mt-1">My Interview Scorecards</h3><p className="text-xs text-slate-500 mt-1">Feedback recorded by your placement team for your campus interviews.</p></div>
+              <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-50">{campusStudent.interviewScorecards.length} review{campusStudent.interviewScorecards.length === 1 ? '' : 's'}</Badge>
+            </div>
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {campusStudent.interviewScorecards.map(card => {
+                const average = ((Number(card.technical || 0) + Number(card.communication || 0) + Number(card.problemSolving || 0)) / 3).toFixed(1);
+                const positive = ['strong_hire', 'hire'].includes(card.recommendation);
+                return <article key={card._id} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 space-y-4 min-w-0">
+                  <div className="flex items-start justify-between gap-2"><div><h4 className="font-black text-slate-900">{card.employer?.name}</h4><p className="text-[10px] text-slate-500">{card.drive?.title || 'Campus drive'} · {new Date(card.createdAt).toLocaleDateString('en-IN')}</p></div><span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${positive ? 'bg-emerald-100 text-emerald-800' : card.recommendation === 'no_hire' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{card.recommendation.replaceAll('_', ' ')}</span></div>
+                  <div className="grid grid-cols-2 gap-2">{[['Technical',card.technical],['Communication',card.communication],['Problem solving',card.problemSolving],['Average',average]].map(([label,value]) => <div key={label} className="rounded-xl bg-white border border-slate-100 p-3"><p className="text-[9px] uppercase font-bold text-slate-400 leading-tight">{label}</p><p className="text-lg font-black text-slate-800 mt-1">{value}<span className="text-xs text-slate-400">/5</span></p></div>)}</div>
+                  <div className="rounded-xl bg-white border border-slate-100 p-3"><p className="text-[9px] uppercase font-bold text-slate-400">Reason / feedback</p><p className="text-xs text-slate-700 mt-1">{card.comments || 'No additional feedback was provided.'}</p>{card.interviewer && <p className="text-[9px] text-slate-400 mt-2">Interviewer: {card.interviewer}</p>}</div>
+                </article>;
+              })}
+            </div>
+          </section>
+        )}
+
         {user?.pendingCompanyInvite && (
           <Alert
             type="info"
@@ -264,7 +284,7 @@ const JobSeekerDashboard = () => {
 
 
         {/* Job Listings Header */}
-        <div className="space-y-6">
+        <div className="relative z-10 space-y-6 xl:w-[calc(100%+372px)]">
           <div className="flex items-center justify-between px-2">
              <div className="space-y-0.5">
                <Title level={4} style={{ margin: 0 }}>Recent Opportunities</Title>
@@ -286,12 +306,13 @@ const JobSeekerDashboard = () => {
               detailedJobs.map(job => {
                 const application = myApplications.find(app => app.job?._id === job.id);
                 return (
-                  <DetailedJobCard 
-                    key={job.id} 
-                    job={job} 
-                    application={application}
-                    onRevoke={fetchMyApplications}
-                  />
+                  <div key={job.id} className="min-w-0 h-full">
+                    <DetailedJobCard 
+                      job={job} 
+                      application={application}
+                      onRevoke={fetchMyApplications}
+                    />
+                  </div>
                 );
               })
             )}
