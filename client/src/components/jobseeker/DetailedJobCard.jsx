@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
-import { Briefcase, MapPin, Building2, Clock, Globe, Bookmark, EyeOff, Star, CircleCheck } from 'lucide-react';
+import { Briefcase, MapPin, EyeOff, Star, CircleCheck, BookmarkPlus } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, Typography, Tag, Button, Space, Divider } from 'antd';
 
-// job.salary/experience are normally pre-formatted strings by the caller, but guard against
-// receiving the raw backend shape ({min, max, currency, isRangeHidden}) directly to avoid
-// "Objects are not valid as a React child" crashes.
+const { Text, Title, Paragraph } = Typography;
+
 const formatSalary = (salary) => {
   if (typeof salary === 'string') return salary;
   if (!salary || salary.isRangeHidden) return 'Not Disclosed';
@@ -30,6 +25,11 @@ const formatExperience = (experience) => {
 const DetailedJobCard = ({ job, application, onRevoke }) => {
   const navigate = useNavigate();
   const [isHidden, setIsHidden] = useState(false);
+
+  // Generate a background color for fallback avatar based on company name
+  const colors = ['#eab308', '#334155', '#22c55e', '#0284c7', '#ea580c', '#7c3aed'];
+  const colorIndex = job.company ? job.company.charCodeAt(0) % colors.length : 0;
+  const bgColor = colors[colorIndex];
 
   const handleHide = async (e) => {
     e.stopPropagation();
@@ -60,135 +60,150 @@ const DetailedJobCard = ({ job, application, onRevoke }) => {
 
   return (
     <Card 
+      bordered={false}
       onClick={() => navigate(`/job/${job.id}`)}
-      className="mb-5 rounded-[20px] border-border bg-card hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer group"
+      bodyStyle={{ padding: '28px' }}
+      className="mb-5 bg-white hover:shadow-lg transition-all cursor-pointer group shadow-sm border border-slate-200 rounded-none overflow-hidden"
     >
-      <CardContent className="p-6">
-        <div className="flex gap-5">
-          {/* Application Status Marker */}
-          {application && application.status !== 'withdrawn' && (
-            <div className="pt-1.5 flex flex-col justify-start">
-               <CircleCheck className="w-5 h-5 text-emerald-500" />
-            </div>
-          )}
+      <div className="flex gap-5">
+        {/* Job Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
+               {/* Logo Block */}
+               {job.logo && job.logo !== '/default-company-logo.png' && !job.logo.includes('default') ? (
+                 <div className="w-16 h-16 bg-white flex items-center justify-center shrink-0 border border-slate-100">
+                    <img src={job.logo} alt={job.company} className="max-w-[80%] max-h-[80%] object-contain" />
+                 </div>
+               ) : (
+                 <div 
+                   className="w-16 h-16 flex items-center justify-center text-white shrink-0 font-black text-2xl"
+                   style={{ backgroundColor: bgColor }}
+                 >
+                   {job.company?.[0]?.toUpperCase() || <Briefcase size={28} />}
+                 </div>
+               )}
 
-          {/* Job Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start mb-3">
-              <div className="flex-1 pr-4">
-                <h3 className="text-xl font-extrabold text-foreground group-hover:text-primary transition-colors leading-tight mb-1.5">
-                  {job.title}
-                </h3>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="text-sm font-bold text-foreground/80">{job.company}</span>
-                  <Badge variant="outline" className="flex items-center gap-1 text-xs font-black px-2 py-0.5 rounded-lg bg-green-50 text-green-700 border-green-100 hover:bg-green-50 group-hover:bg-green-100 transition-colors">
-                    {job.rating} <Star size={12} className="fill-green-700" />
-                  </Badge>
-                  <div className="h-4 w-px bg-border" />
-                  <span className="text-muted-foreground text-xs font-bold">
-                    {job.reviews} Reviews
-                  </span>
-                </div>
-              </div>
-              
-              {/* Company Logo in Card */}
-              <Avatar className="w-14 h-14 rounded-2xl border border-border flex items-center justify-center overflow-hidden bg-background shadow-sm flex-shrink-0 group-hover:border-primary/20 transition-colors p-2">
-                 {job.logo && <AvatarImage src={job.logo} alt={job.company} className="object-contain" />}
-                 <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold text-sm">
-                   {job.company?.[0]?.toUpperCase() || 'C'}
-                 </AvatarFallback>
-              </Avatar>
-            </div>
-
-            {/* Job Metadata */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-5 text-[13px] font-bold text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-                  <Briefcase size={14} />
-                </div>
-                <span className="text-foreground/70">{formatExperience(job.experience)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-                  <span className="font-black text-xs">₹</span>
-                </div>
-                <span className="text-foreground/70">{formatSalary(job.salary)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-                  <MapPin size={14} />
-                </div>
-                <span className="text-foreground/70">{job.location}</span>
-              </div>
-            </div>
-
-            {/* Summary / Description snippet */}
-            <p className="mt-4 text-sm text-muted-foreground line-clamp-2 leading-relaxed font-medium">
-              {job.summary}
-            </p>
-
-            {/* Tags */}
-            <div className="mt-5 flex flex-wrap gap-2">
-              {job.tags.map((tag, idx) => (
-                <Badge key={idx} variant="secondary" className="px-3 py-1 text-[11px] font-bold tracking-wide rounded-full">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="my-6 border-t border-border/50"></div>
-
-            {/* Footer of Card */}
-            <div className="flex justify-between items-center sm:flex-row flex-col gap-4">
-              <div className="flex items-center gap-4 self-start sm:self-center">
-                 <Badge variant="outline" className="text-xs text-muted-foreground font-bold bg-muted/30 px-2.5 py-1 rounded-full uppercase tracking-wider border-none">
-                   {job.postedAt}
-                 </Badge>
-              </div>
-              <div className="flex items-center gap-3 self-end sm:self-center">
-                <Button 
-                  onClick={handleHide}
-                  variant="ghost" 
-                  size="sm" 
-                  className="hidden sm:flex items-center gap-2 text-xs font-black text-muted-foreground hover:text-destructive hover:bg-destructive/10 uppercase tracking-wider h-10 px-4 rounded-xl"
-                >
-                  <EyeOff size={16} /> <span>Hide</span>
-                </Button>
-                {application && application.status !== 'withdrawn' ? (
-                  <Button 
-                    onClick={async (e) => {
-                       e.stopPropagation();
-                       try {
-                         const token = localStorage.getItem('token');
-                         await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/applications/${application._id}/revoke`, {}, { headers: { Authorization: `Bearer ${token}` }});
-                         toast.success('Application revoked');
-                         if (onRevoke) onRevoke();
-                       } catch (err) {
-                         toast.error(err.response?.data?.msg || 'Error revoking application');
-                       }
-                    }}
-                    variant="ghost" 
-                    size="sm" 
-                    className="flex items-center gap-2 text-xs font-black text-rose-500 hover:text-rose-600 hover:bg-rose-50 uppercase tracking-wider h-10 px-5 rounded-xl transition-colors border border-transparent hover:border-rose-200"
-                  >
-                    <span>Revoke</span>
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleSave}
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-2 text-xs font-black text-foreground/70 hover:text-primary hover:bg-primary/10 border-transparent hover:border-primary/20 uppercase tracking-wider h-10 px-5 rounded-xl transition-colors"
-                  >
-                    <Bookmark size={16} /> <span>Save</span>
-                  </Button>
-                )}
-              </div>
+               <div className="flex-1 pr-4">
+                 <div className="flex items-center gap-3 mb-2">
+                   <Title level={4} className="m-0 text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-tight">
+                     {job.title}
+                   </Title>
+                   {application && application.status !== 'withdrawn' && (
+                     <div className="flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                       <CircleCheck className="w-3.5 h-3.5 text-emerald-600" />
+                       <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Applied</span>
+                     </div>
+                   )}
+                 </div>
+                 <div className="flex flex-wrap items-center gap-3">
+                   <Text className="text-sm font-semibold text-slate-600">{job.company}</Text>
+                   {job.rating && (
+                     <>
+                       <div className="h-4 w-px bg-slate-200" />
+                       <div className="flex items-center gap-1 text-xs font-black text-green-600">
+                         {job.rating} <Star size={12} className="fill-green-600" />
+                       </div>
+                     </>
+                   )}
+                   {job.reviews && (
+                     <>
+                       <div className="h-4 w-px bg-slate-200" />
+                       <Text className="text-slate-400 text-xs font-semibold">
+                         {job.reviews} Reviews
+                       </Text>
+                     </>
+                   )}
+                 </div>
+               </div>
             </div>
           </div>
+
+          {/* Job Metadata */}
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3 mt-6 text-[13px] font-semibold text-slate-600">
+            <div className="flex items-center gap-2.5">
+              <div className="text-slate-400">
+                <Briefcase size={16} />
+              </div>
+              <span>{formatExperience(job.experience)}</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="text-slate-400 font-bold text-sm">
+                ₹
+              </div>
+              <span>{formatSalary(job.salary)}</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="text-slate-400">
+                <MapPin size={16} />
+              </div>
+              <span>{job.location}</span>
+            </div>
+          </div>
+
+          {/* Summary / Description snippet */}
+          <Paragraph className="mt-5 text-[14px] text-slate-500 line-clamp-2 leading-relaxed m-0">
+            {job.summary}
+          </Paragraph>
+
+          {/* Tags */}
+          <div className="mt-5 flex flex-wrap gap-2">
+            {job.tags?.map((tag, idx) => (
+              <Tag key={idx} bordered={false} className="px-3 py-1 text-[11px] font-bold tracking-wide bg-slate-100 text-slate-600 uppercase m-0 rounded-sm">
+                {tag}
+              </Tag>
+            ))}
+          </div>
+
+          <Divider className="my-6" />
+
+          {/* Footer of Card */}
+          <div className="flex justify-between items-center flex-col sm:flex-row gap-4">
+            <div className="flex items-center">
+               <Text className="text-[11px] font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-sm uppercase tracking-wider">
+                 {job.postedAt}
+               </Text>
+            </div>
+            <Space size="middle" className="self-end sm:self-center">
+              <Button 
+                onClick={handleHide}
+                type="text"
+                icon={<EyeOff size={16} />}
+                className="hidden sm:flex items-center text-xs font-bold text-slate-400 hover:text-slate-600 uppercase tracking-wider"
+              >
+                Hide
+              </Button>
+              {application && application.status !== 'withdrawn' ? (
+                <Button 
+                  onClick={async (e) => {
+                     e.stopPropagation();
+                     try {
+                       const token = localStorage.getItem('token');
+                       await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/applications/${application._id}/revoke`, {}, { headers: { Authorization: `Bearer ${token}` }});
+                       toast.success('Application revoked');
+                       if (onRevoke) onRevoke();
+                     } catch (err) {
+                       toast.error(err.response?.data?.msg || 'Error revoking application');
+                     }
+                  }}
+                  danger
+                  className="flex items-center text-xs font-bold uppercase tracking-wider rounded-sm px-6 h-9"
+                >
+                  Revoke
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleSave}
+                  icon={<BookmarkPlus size={16} />}
+                  className="flex items-center text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-600 uppercase tracking-wider rounded-sm px-6 h-9"
+                >
+                  Save
+                </Button>
+              )}
+            </Space>
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };

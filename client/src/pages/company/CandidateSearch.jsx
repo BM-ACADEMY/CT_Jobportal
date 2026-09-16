@@ -1,54 +1,55 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import {
-  Search, MapPin, Briefcase, User, Loader2, Sparkles,
+  Search, MapPin, Briefcase, Sparkles,
   AlertTriangle, ChevronRight, Filter, X, GraduationCap, BadgeCheck
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { 
+  Input, Button, Card, Typography, Avatar, Tag, Alert, Form, Row, Col, Space, Checkbox, Empty
+} from 'antd';
+import { UserOutlined, SearchOutlined } from '@ant-design/icons';
 
+const { Title, Text } = Typography;
 const API = import.meta.env.VITE_API_BASE_URL;
 
 const CandidateSearch = () => {
   const navigate = useNavigate();
-  const [q, setQ] = useState('');
+  const [form] = Form.useForm();
+  
   const [qReq, setQReq] = useState(false);
-  
-  const [skills, setSkills] = useState('');
   const [skillsReq, setSkillsReq] = useState(false);
-  
-  const [location, setLocation] = useState('');
   const [locationReq, setLocationReq] = useState(false);
-  
-  const [degree, setDegree] = useState('');
   const [degreeReq, setDegreeReq] = useState(false);
-  
-  const [experienceRole, setExperienceRole] = useState('');
   const [experienceRoleReq, setExperienceRoleReq] = useState(false);
   
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [quota, setQuota] = useState(null); // { limit, used, remaining }
+  const [quota, setQuota] = useState(null);
   const [limitReached, setLimitReached] = useState(false);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
 
-  const handleSearch = async (e) => {
-    if (e) e.preventDefault();
+  const handleSearch = async (values) => {
+    const q = values.q || '';
+    const skills = values.skills || '';
+    const location = values.location || '';
+    const degree = values.degree || '';
+    const experienceRole = values.experienceRole || '';
+
     if (!q.trim() && !skills.trim() && !location.trim()) {
       toast.error('Enter at least one search term');
       return;
     }
+    
     setLoading(true);
     setLimitReached(false);
+    
     try {
       const params = new URLSearchParams();
       if (q.trim()) { params.set('q', q.trim()); params.set('qReq', qReq); }
@@ -91,273 +92,290 @@ const CandidateSearch = () => {
     }
   };
 
+  const handleClear = () => {
+    form.resetFields();
+    setQReq(false);
+    setSkillsReq(false);
+    setLocationReq(false);
+    setDegreeReq(false);
+    setExperienceRoleReq(false);
+    setResults([]);
+    setSearched(false);
+    setLimitReached(false);
+  };
+
   const isUnlimited = quota?.limit === 0;
   const atLimit = !isUnlimited && quota && quota.remaining === 0;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 py-6">
+    <div className="max-w-5xl mx-auto space-y-6 py-6 px-4">
       <PageSOPBanner pageKey="candidateSearch" />
-      {/* Header */}
+      
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Candidate Search</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Search our talent pool and view candidate profiles.</p>
+        <Title level={3} style={{ margin: 0 }}>Candidate Search</Title>
+        <Text type="secondary">Search our talent pool and view candidate profiles.</Text>
       </div>
 
-      {/* Quota banner */}
       {quota && !isUnlimited && (
-        <div className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-xs font-medium ${
-          atLimit
-            ? 'bg-rose-50 border-rose-200 text-rose-700'
-            : quota.remaining <= 2
-            ? 'bg-amber-50 border-amber-200 text-amber-700'
-            : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-        }`}>
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={13} className="shrink-0" />
-            {atLimit
-              ? `Daily profile view limit reached (${quota.used}/${quota.limit}). Resets at midnight.`
-              : `${quota.remaining} of ${quota.limit} candidate profile views remaining today.`
-            }
-          </div>
-          {atLimit && (
-            <Link to="/company/subscription" className="flex items-center gap-1 shrink-0 font-bold hover:underline">
-              <Sparkles size={11} /> Upgrade
+        <Alert
+          message={atLimit
+            ? `Daily profile view limit reached (${quota.used}/${quota.limit}). Resets at midnight.`
+            : `${quota.remaining} of ${quota.limit} candidate profile views remaining today.`
+          }
+          type={atLimit ? "error" : (quota.remaining <= 2 ? "warning" : "success")}
+          showIcon
+          icon={<AlertTriangle size={16} />}
+          action={atLimit && (
+            <Link to="/company/subscription">
+              <Button size="small" type="link" icon={<Sparkles size={12} />}>Upgrade</Button>
             </Link>
           )}
-        </div>
+        />
       )}
 
-      {/* Search form */}
-      <form onSubmit={handleSearch} className="rounded-2xl border border-slate-100 bg-white p-6 space-y-4 shadow-sm">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Search Filters</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="relative sm:col-span-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={q}
-              onChange={e => setQ(e.target.value)}
-              placeholder="Name, headline, role..."
-              className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
-              <input type="checkbox" checked={qReq} onChange={e => setQReq(e.target.checked)} id="req-q" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
-              <label htmlFor="req-q" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
-            </div>
-          </div>
-          <div className="relative">
-            <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={skills}
-              onChange={e => setSkills(e.target.value)}
-              placeholder="Skills (comma-separated)"
-              className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
-              <input type="checkbox" checked={skillsReq} onChange={e => setSkillsReq(e.target.checked)} id="req-skills" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
-              <label htmlFor="req-skills" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
-            </div>
-          </div>
-          <div className="relative">
-            <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              placeholder="Location"
-              className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
-              <input type="checkbox" checked={locationReq} onChange={e => setLocationReq(e.target.checked)} id="req-loc" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
-              <label htmlFor="req-loc" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
-            </div>
-          </div>
-        </div>
+      <Card 
+        bordered={false} 
+        className="shadow-sm rounded-2xl" 
+        bodyStyle={{ padding: '24px' }}
+      >
+        <Text type="secondary" className="text-xs font-bold uppercase tracking-widest mb-4 block">
+          Search Filters
+        </Text>
+        <Form form={form} onFinish={handleSearch} layout="vertical">
+          <Row gutter={16}>
+            <Col xs={24} sm={8}>
+              <Form.Item name="q" style={{ marginBottom: 12 }}>
+                <Input 
+                  size="large"
+                  prefix={<Search size={16} className="text-slate-400 mr-2" />} 
+                  placeholder="Name, headline, role..."
+                  addonAfter={
+                    <Checkbox checked={qReq} onChange={e => setQReq(e.target.checked)}>
+                      <span className="text-[10px] font-bold text-slate-500">REQ</span>
+                    </Checkbox>
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item name="skills" style={{ marginBottom: 12 }}>
+                <Input 
+                  size="large"
+                  prefix={<Filter size={16} className="text-slate-400 mr-2" />} 
+                  placeholder="Skills (comma-separated)"
+                  addonAfter={
+                    <Checkbox checked={skillsReq} onChange={e => setSkillsReq(e.target.checked)}>
+                      <span className="text-[10px] font-bold text-slate-500">REQ</span>
+                    </Checkbox>
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Form.Item name="location" style={{ marginBottom: 12 }}>
+                <Input 
+                  size="large"
+                  prefix={<MapPin size={16} className="text-slate-400 mr-2" />} 
+                  placeholder="Location"
+                  addonAfter={
+                    <Checkbox checked={locationReq} onChange={e => setLocationReq(e.target.checked)}>
+                      <span className="text-[10px] font-bold text-slate-500">REQ</span>
+                    </Checkbox>
+                  }
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-        {showAdvanced && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 mt-2">
-            <div className="relative">
-              <GraduationCap size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={degree}
-                onChange={e => setDegree(e.target.value)}
-                placeholder="Degree / Qualification (e.g. B.Tech)"
-                className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
-                <input type="checkbox" checked={degreeReq} onChange={e => setDegreeReq(e.target.checked)} id="req-deg" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
-                <label htmlFor="req-deg" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
-              </div>
-            </div>
-            <div className="relative">
-              <Briefcase size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={experienceRole}
-                onChange={e => setExperienceRole(e.target.value)}
-                placeholder="Past Experience Role (e.g. Manager)"
-                className="pl-9 pr-16 rounded-xl border-slate-200 text-sm focus:border-emerald-300"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5" title="Make this filter compulsory (AND)">
-                <input type="checkbox" checked={experienceRoleReq} onChange={e => setExperienceRoleReq(e.target.checked)} id="req-exp" className="accent-emerald-600 cursor-pointer w-3.5 h-3.5" />
-                <label htmlFor="req-exp" className="text-[9px] font-bold text-slate-400 cursor-pointer select-none">REQ</label>
-              </div>
-            </div>
-          </div>
-        )}
+          {showAdvanced && (
+            <Row gutter={16} className="pt-2">
+              <Col xs={24} sm={12}>
+                <Form.Item name="degree" style={{ marginBottom: 12 }}>
+                  <Input 
+                    size="large"
+                    prefix={<GraduationCap size={16} className="text-slate-400 mr-2" />} 
+                    placeholder="Degree / Qualification (e.g. B.Tech)"
+                    addonAfter={
+                      <Checkbox checked={degreeReq} onChange={e => setDegreeReq(e.target.checked)}>
+                        <span className="text-[10px] font-bold text-slate-500">REQ</span>
+                      </Checkbox>
+                    }
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="experienceRole" style={{ marginBottom: 12 }}>
+                  <Input 
+                    size="large"
+                    prefix={<Briefcase size={16} className="text-slate-400 mr-2" />} 
+                    placeholder="Past Experience Role (e.g. Manager)"
+                    addonAfter={
+                      <Checkbox checked={experienceRoleReq} onChange={e => setExperienceRoleReq(e.target.checked)}>
+                        <span className="text-[10px] font-bold text-slate-500">REQ</span>
+                      </Checkbox>
+                    }
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              disabled={loading || atLimit}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-2 h-10 px-6 disabled:opacity-50"
+          <div className="flex flex-wrap items-center gap-3 mt-2">
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              size="large"
+              loading={loading}
+              disabled={atLimit}
+              icon={<SearchOutlined />}
+              style={{ backgroundColor: '#10b981' }}
             >
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
               Search Candidates
             </Button>
-            <Button
-              type="button"
-              variant="outline"
+            <Button 
+              size="large"
+              icon={<Filter size={16} />}
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="rounded-xl border-slate-200 text-slate-600 h-10 px-4 text-xs font-bold gap-1.5"
             >
-              <Filter size={13} /> {showAdvanced ? 'Hide Advanced' : 'Advanced Filters'}
+              {showAdvanced ? 'Hide Advanced' : 'Advanced Filters'}
             </Button>
-            {(q || skills || location || degree || experienceRole) && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => { 
-                  setQ(''); setQReq(false);
-                  setSkills(''); setSkillsReq(false);
-                  setLocation(''); setLocationReq(false);
-                  setDegree(''); setDegreeReq(false);
-                  setExperienceRole(''); setExperienceRoleReq(false);
-                  setResults([]); setSearched(false); setLimitReached(false); 
-                }}
-                className="rounded-xl border-slate-200 text-slate-500 hover:bg-slate-50 h-10 px-4 text-xs font-bold gap-1.5"
+            {(form.getFieldValue('q') || form.getFieldValue('skills') || form.getFieldValue('location') || form.getFieldValue('degree') || form.getFieldValue('experienceRole')) && (
+              <Button 
+                size="large"
+                type="text"
+                icon={<X size={16} />}
+                onClick={handleClear}
               >
-                <X size={13} /> Clear
+                Clear
               </Button>
             )}
           </div>
-        </div>
-      </form>
+        </Form>
+      </Card>
 
-      {/* Limit reached state */}
       {limitReached && (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-xl border border-rose-200 bg-rose-50">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center shrink-0">
-              <AlertTriangle size={16} className="text-rose-600" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-rose-800">Daily search limit reached</p>
-              <p className="text-xs text-rose-600 mt-0.5">
-                Your plan allows {quota?.limit} candidate profile view{quota?.limit > 1 ? 's' : ''} per day. Upgrade to get unlimited access.
-              </p>
-            </div>
-          </div>
-          <Link to="/company/subscription" className="shrink-0">
-            <Button size="sm" className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs gap-1.5 h-9 px-4">
-              <Sparkles size={12} /> Upgrade Plan
-            </Button>
-          </Link>
-        </div>
+        <Alert
+          message="Daily search limit reached"
+          description={`Your plan allows ${quota?.limit} candidate profile view${quota?.limit > 1 ? 's' : ''} per day. Upgrade to get unlimited access.`}
+          type="error"
+          showIcon
+          icon={<AlertTriangle size={24} />}
+          action={
+            <Link to="/company/subscription">
+              <Button type="primary" danger icon={<Sparkles size={14} />}>Upgrade Plan</Button>
+            </Link>
+          }
+          className="rounded-xl shadow-sm"
+        />
       )}
 
-      {/* Results */}
       {searched && !limitReached && (
-        <div className="space-y-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+        <div className="space-y-4" style={{ marginTop: '24px' }}>
+          <Text type="secondary" className="text-xs font-bold uppercase tracking-widest">
             {results.length === 0 ? 'No candidates found' : `${results.length} candidate${results.length > 1 ? 's' : ''} found`}
-          </p>
-          {results.map(candidate => (
-            <div
-              key={candidate._id}
-              className="flex flex-col sm:flex-row sm:items-center gap-5 p-5 rounded-2xl border border-slate-100 bg-white hover:border-emerald-100 hover:shadow-sm transition-all group"
-            >
-              <Avatar className="w-12 h-12 rounded-xl border border-slate-100 shrink-0">
-                {candidate.avatar
-                  ? <img src={candidate.avatar} alt={candidate.name} className="w-full h-full object-cover rounded-xl" />
-                  : <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-bold rounded-xl">
-                      {candidate.name?.[0]?.toUpperCase()}
-                    </AvatarFallback>
-                }
-              </Avatar>
-
-              <div className="flex-1 min-w-0 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                    {candidate.name}
-                  </p>
-                  {candidate.profileVerificationStatus === 'Verified' && (
-                    <BadgeCheck size={16} className="text-blue-500 shrink-0" title="Verified Profile" />
-                  )}
-                  {candidate.isPriority && (
-                    <BadgeCheck size={16} className="text-blue-500 fill-blue-50" title="Priority Candidate" />
-                  )}
-                </div>
-                {candidate.profile?.headline && (
-                  <p className="text-xs text-slate-500 font-medium">{candidate.profile.headline}</p>
-                )}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  {candidate.profile?.preferredRole && (
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <Briefcase size={11} /> {candidate.profile.preferredRole}
-                    </span>
-                  )}
-                  {candidate.profile?.location && (
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <MapPin size={11} /> {candidate.profile.location}
-                    </span>
-                  )}
-                </div>
-                {candidate.profile?.skills?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {candidate.profile.skills.slice(0, 5).map(skill => (
-                      <Badge key={skill} className="text-[9px] font-bold bg-slate-100 text-slate-600 border-none px-2 py-0.5 rounded-md">
-                        {skill}
-                      </Badge>
-                    ))}
-                    {candidate.profile.skills.length > 5 && (
-                      <Badge className="text-[9px] font-bold bg-emerald-50 text-emerald-600 border-none px-2 py-0.5 rounded-md">
-                        +{candidate.profile.skills.length - 5} more
-                      </Badge>
+          </Text>
+          
+          <div className="flex flex-col gap-4">
+            {results.map(candidate => (
+              <Card 
+                key={candidate._id}
+                bodyStyle={{ padding: '20px' }}
+                className="rounded-2xl hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer"
+                bordered
+              >
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <Avatar 
+                    size={64} 
+                    src={candidate.avatar} 
+                    icon={<UserOutlined />}
+                    shape="square"
+                    className="rounded-xl"
+                  />
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Text strong className="text-lg">{candidate.name}</Text>
+                      {candidate.profileVerificationStatus === 'Verified' && (
+                        <BadgeCheck size={18} className="text-blue-500" />
+                      )}
+                      {candidate.isPriority && (
+                        <BadgeCheck size={18} className="text-blue-500 fill-blue-50" />
+                      )}
+                    </div>
+                    
+                    {candidate.profile?.headline && (
+                      <Text type="secondary" className="block mb-2 text-sm">{candidate.profile.headline}</Text>
+                    )}
+                    
+                    <Space size="middle" className="mb-2 flex-wrap">
+                      {candidate.profile?.preferredRole && (
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <Briefcase size={14} className="text-slate-400" /> {candidate.profile.preferredRole}
+                        </span>
+                      )}
+                      {candidate.profile?.location && (
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <MapPin size={14} className="text-slate-400" /> {candidate.profile.location}
+                        </span>
+                      )}
+                    </Space>
+                    
+                    {candidate.profile?.skills?.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {candidate.profile.skills.slice(0, 5).map(skill => (
+                          <Tag key={skill} bordered={false} className="bg-slate-100 text-slate-600 rounded-md px-2 py-0.5">
+                            {skill}
+                          </Tag>
+                        ))}
+                        {candidate.profile.skills.length > 5 && (
+                          <Tag bordered={false} color="green" className="rounded-md px-2 py-0.5">
+                            +{candidate.profile.skills.length - 5} more
+                          </Tag>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-
-              <Button
-                onClick={() => handleViewProfile(candidate._id)}
-                disabled={atLimit}
-                variant="outline"
-                className="rounded-xl border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50 font-bold text-xs gap-1.5 h-9 px-4 shrink-0 disabled:opacity-40"
-                title={atLimit ? 'Daily limit reached — upgrade to view more profiles' : 'View full profile'}
-              >
-                View Profile <ChevronRight size={13} />
-              </Button>
-            </div>
-          ))}
+                  
+                  <Button
+                    onClick={() => handleViewProfile(candidate._id)}
+                    disabled={atLimit}
+                    size="large"
+                    icon={<ChevronRight size={16} />}
+                    iconPosition="end"
+                  >
+                    View Profile
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
 
           {results.length === 0 && (
-            <div className="py-16 text-center rounded-2xl border border-dashed border-slate-200 bg-white">
-              <User size={32} className="text-slate-200 mx-auto mb-3" />
-              <p className="text-sm font-bold text-slate-500">No candidates match your search</p>
-              <p className="text-xs text-slate-400 mt-1">Try different keywords, skills, or location.</p>
-            </div>
+            <Card className="rounded-2xl border-dashed">
+              <Empty 
+                description="No candidates match your search"
+                image={<Search size={48} className="text-slate-200 mx-auto" />}
+              >
+                <Text type="secondary" className="text-xs mt-2 block">
+                  Try different keywords, skills, or location.
+                </Text>
+              </Empty>
+            </Card>
           )}
         </div>
       )}
 
-      {/* Initial empty state */}
       {!searched && !loading && (
-        <div className="py-20 text-center rounded-2xl border border-dashed border-slate-200 bg-white">
-          <Search size={36} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-500">Search for candidates</p>
-          <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-            Enter a name, skill, or location to find matching candidates in our talent pool.
-          </p>
-        </div>
+        <Card className="rounded-2xl border-dashed" style={{ marginTop: '24px' }}>
+          <Empty 
+            description="Search for candidates"
+            image={<SearchOutlined style={{ fontSize: 48, color: '#e2e8f0' }} />}
+          >
+            <Text type="secondary" className="text-xs mt-2 block">
+              Enter a name, skill, or location to find matching candidates in our talent pool.
+            </Text>
+          </Empty>
+        </Card>
       )}
     </div>
   );

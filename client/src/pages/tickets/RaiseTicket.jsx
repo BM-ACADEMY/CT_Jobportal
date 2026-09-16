@@ -4,12 +4,28 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-  ChevronRight, ChevronLeft, Send, AlertCircle,
-  CheckCircle2, AlertTriangle, Info, Upload, X
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+  Steps,
+  Card,
+  Radio,
+  Input,
+  Select,
+  Button,
+  Checkbox,
+  Upload,
+  Typography,
+  Space,
+  Form
+} from 'antd';
+import {
+  SendOutlined,
+  LeftOutlined,
+  RightOutlined,
+  UploadOutlined
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+const { Dragger } = Upload;
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -29,17 +45,21 @@ const CATEGORIES = [
 ];
 
 const SEVERITIES = [
-  { value: 'critical', label: 'Critical (P1)', desc: 'Revenue stopping, payment failed, or site completely broken', color: 'red' },
-  { value: 'major', label: 'Major (P2)', desc: 'Core features like ATS or AI matching experiencing errors', color: 'amber' },
-  { value: 'minor', label: 'Minor (P3)', desc: 'Text typos, cosmetic UI issues, or missing branding assets', color: 'blue' },
+  { value: 'critical', label: 'Critical (P1)', desc: 'Revenue stopping, payment failed, or site completely broken' },
+  { value: 'major', label: 'Major (P2)', desc: 'Core features like ATS or AI matching experiencing errors' },
+  { value: 'minor', label: 'Minor (P3)', desc: 'Text typos, cosmetic UI issues, or missing branding assets' },
 ];
 
-const STEP_LABELS = ['Context', 'Diagnostics', 'Submit'];
+const stepsContent = [
+  { title: 'Context' },
+  { title: 'Diagnostics' },
+  { title: 'Submit' },
+];
 
 const RaiseTicket = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [step, setStep] = useState(0);
+  const [current, setCurrent] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [logFile, setLogFile] = useState(null);
 
@@ -56,7 +76,6 @@ const RaiseTicket = () => {
   const setDiag = (field, value) => setForm(f => ({ ...f, diagnostics: { ...f.diagnostics, [field]: value } }));
 
   const canProceedStep0 = form.userRole && form.accountIdentity && form.category;
-  const canProceedStep1 = true; // diagnostics are optional extras
   const canSubmit = form.severity && form.diagnosticsConsent;
 
   const handleSubmit = async () => {
@@ -85,352 +104,294 @@ const RaiseTicket = () => {
     }
   };
 
+  const uploadProps = {
+    onRemove: () => {
+      setLogFile(null);
+    },
+    beforeUpload: (file) => {
+      setLogFile(file);
+      return false;
+    },
+    fileList: logFile ? [logFile] : [],
+    accept: ".txt,.log,.json",
+    maxCount: 1
+  };
+
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Raise a Support Ticket</h1>
-        <p className="text-sm text-slate-500 mt-1">Our team will review your request and respond within 24 hours.</p>
+      <div style={{ marginBottom: 24 }}>
+        <Title level={3} style={{ margin: 0 }}>Raise a Support Ticket</Title>
+        <Text type="secondary">Our team will review your request and respond within 24 hours.</Text>
       </div>
 
       {/* Step Indicator */}
-      <div className="flex items-center gap-0">
-        {STEP_LABELS.map((label, i) => (
-          <React.Fragment key={i}>
-            <div className="flex flex-col items-center gap-1">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                i < step ? 'bg-emerald-600 text-white' :
-                i === step ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'
-              }`}>
-                {i < step ? <CheckCircle2 size={14} /> : i + 1}
-              </div>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${i === step ? 'text-slate-900' : 'text-slate-400'}`}>{label}</span>
-            </div>
-            {i < STEP_LABELS.length - 1 && (
-              <div className={`flex-1 h-0.5 mb-5 mx-2 ${i < step ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
+      <Steps current={current} items={stepsContent} style={{ marginBottom: 40 }} />
 
-      {/* Step 0 – Context */}
-      {step === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-6">
-          <h2 className="font-bold text-slate-800">Step 1: Establish Context</h2>
-
-          {/* Role Selection */}
-          <div className="space-y-2">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Your Role</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {['jobseeker', 'recruiter', 'company', 'college'].map(role => (
-                <button
-                  key={role}
-                  onClick={() => set('userRole', role)}
-                  className={`p-3 rounded-xl border-2 text-xs font-bold capitalize transition-all ${
-                    form.userRole === role
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                  }`}
+      {/* Content Cards */}
+      <Card bordered={false} className="shadow-sm" style={{ borderRadius: 16 }}>
+        {current === 0 && (
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Title level={5}>Step 1: Establish Context</Title>
+            
+            <Form layout="vertical">
+              <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Your Role</Text>}>
+                <Radio.Group 
+                  value={form.userRole} 
+                  onChange={e => set('userRole', e.target.value)}
+                  style={{ width: '100%' }}
                 >
-                  {role === 'jobseeker' ? 'Job Seeker' : role === 'company' ? 'Organization' : role === 'college' ? 'College / TPO' : 'Recruiter'}
-                </button>
-              ))}
-            </div>
-          </div>
+                  <Space direction="horizontal" wrap>
+                    <Radio.Button value="jobseeker">Job Seeker</Radio.Button>
+                    <Radio.Button value="recruiter">Recruiter</Radio.Button>
+                    <Radio.Button value="company">Organization</Radio.Button>
+                    <Radio.Button value="college">College / TPO</Radio.Button>
+                  </Space>
+                </Radio.Group>
+              </Form.Item>
 
-          {/* Account Identity */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">User ID / Registered Email</Label>
-            <Input
-              value={form.accountIdentity}
-              onChange={e => set('accountIdentity', e.target.value)}
-              placeholder="e.g. JS26-00123 or you@example.com"
-              className="rounded-xl"
-            />
-          </div>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Issue Category</Label>
-            <div className="space-y-2">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat.value}
-                  onClick={() => set('category', cat.value)}
-                  className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                    form.category === cat.value
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button
-              onClick={() => setStep(1)}
-              disabled={!canProceedStep0}
-              className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6"
-            >
-              Continue <ChevronRight size={15} className="ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 1 – Diagnostics */}
-      {step === 1 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-6">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest px-2 py-1 bg-slate-100 rounded-lg">
-              {CATEGORIES.find(c => c.value === form.category)?.label}
-            </span>
-          </div>
-          <h2 className="font-bold text-slate-800">Step 2: Provide Diagnostics</h2>
-
-          {/* Category A – Subscription */}
-          {form.category === 'subscription_gating' && (
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Impacted Plan</Label>
-                <select
-                  value={form.diagnostics.impactedPlan || ''}
-                  onChange={e => setDiag('impactedPlan', e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                >
-                  <option value="">Select plan…</option>
-                  {(ROLE_PLANS[form.userRole] || []).map(p => <option key={p}>{p}</option>)}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Gated Feature Encountered</Label>
-                <select
-                  value={form.diagnostics.gatedFeature || ''}
-                  onChange={e => setDiag('gatedFeature', e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                >
-                  <option value="">Select feature…</option>
-                  {['AI Resume Review', 'Candidate DB Export', 'Branded Careers Page', 'Video Interview Integration', 'Auto-Generated Reports'].map(f => <option key={f}>{f}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Error Type</Label>
-                <div className="flex gap-3">
-                  {['Plan Limit Reached Prematurely', 'Feature Blocked Incorrectly'].map(opt => (
-                    <button key={opt} onClick={() => setDiag('errorType', opt)}
-                      className={`flex-1 py-2.5 px-3 rounded-xl border-2 text-xs font-semibold transition-all ${form.diagnostics.errorType === opt ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'}`}>
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Category B – Payment */}
-          {form.category === 'payment_checkout' && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Payment Gateway</Label>
-                <button onClick={() => setDiag('paymentGateway', 'Razorpay')}
-                  className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${form.diagnostics.paymentGateway === 'Razorpay' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'}`}>
-                  Razorpay
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Payment Mode</Label>
-                <select
-                  value={form.diagnostics.paymentMode || ''}
-                  onChange={e => setDiag('paymentMode', e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                >
-                  <option value="">Select mode…</option>
-                  {['UPI', 'Credit Card', 'Debit Card', 'Net Banking', 'Wallet'].map(m => <option key={m}>{m}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Transaction State</Label>
-                <div className="flex flex-col gap-2">
-                  {['Failed at Gateway', 'Deducted but Order Not Created', 'Pending / Timeout'].map(s => (
-                    <button key={s} onClick={() => setDiag('transactionState', s)}
-                      className={`text-left py-2.5 px-4 rounded-xl border-2 text-xs font-semibold transition-all ${form.diagnostics.transactionState === s ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'}`}>
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Category C – Refunds */}
-          {form.category === 'refunds_invoicing' && (
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Transaction ID / Payment Reference</Label>
-                <Input value={form.diagnostics.transactionId || ''} onChange={e => setDiag('transactionId', e.target.value)} placeholder="e.g. pay_PkHFxyz123" className="rounded-xl" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Billing Invoice Number</Label>
-                <Input value={form.diagnostics.invoiceNumber || ''} onChange={e => setDiag('invoiceNumber', e.target.value)} placeholder="e.g. INV/2026/A1B2C3" className="rounded-xl" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Requested Action</Label>
-                <select value={form.diagnostics.requestedAction || ''} onChange={e => setDiag('requestedAction', e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
-                  <option value="">Select action…</option>
-                  {['Full Refund Request', 'Missing PDF Invoice', 'Invoice Correction', 'Duplicate Charge Dispute'].map(a => <option key={a}>{a}</option>)}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Category D – Platform Errors */}
-          {form.category === 'platform_errors' && (
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Impacted Sub-System</Label>
-                <select value={form.diagnostics.impactedSubsystem || ''} onChange={e => setDiag('impactedSubsystem', e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
-                  <option value="">Select sub-system…</option>
-                  {['ATS Pipeline Dashboard', 'AI Candidate Matching', 'Video Interview Sync', 'Campus Drive QR Registration', 'Job Search & Filters', 'Resume Builder', 'Messaging System'].map(s => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Environment</Label>
-                <button onClick={() => setDiag('environmentContext', 'Production')}
-                  className="px-4 py-2 rounded-lg border-2 text-xs font-bold border-emerald-500 bg-emerald-50 text-emerald-700">
-                  Production (app.)
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Attach Console / Error Log (optional)</Label>
-                <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${logFile ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                  {logFile ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <span className="text-sm font-medium text-emerald-700">{logFile.name}</span>
-                      <button onClick={() => setLogFile(null)} className="text-slate-400 hover:text-red-500 transition-colors"><X size={14} /></button>
-                    </div>
-                  ) : (
-                    <label className="cursor-pointer">
-                      <Upload size={20} className="mx-auto mb-2 text-slate-400" />
-                      <p className="text-sm text-slate-500">Drop .txt, .log, or .json file here or <span className="text-emerald-600 font-semibold">browse</span></p>
-                      <p className="text-xs text-slate-400 mt-1">Max 5 MB</p>
-                      <input type="file" accept=".txt,.log,.json" className="hidden" onChange={e => setLogFile(e.target.files[0])} />
-                    </label>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Category E – Others */}
-          {form.category === 'others' && (
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Area of Concern</Label>
-                <Input value={form.diagnostics.areaOfConcern || ''} onChange={e => setDiag('areaOfConcern', e.target.value)} placeholder="e.g. Feature Request, Data Compliance Query" className="rounded-xl" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Detailed Description</Label>
-                <textarea
-                  value={form.diagnostics.detailedDescription || ''}
-                  onChange={e => setDiag('detailedDescription', e.target.value)}
-                  rows={5}
-                  placeholder="Please provide a step-by-step description of what you were doing when the issue occurred, including any visible error codes or unusual platform behaviors."
-                  className="w-full p-3 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+              <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>User ID / Registered Email</Text>}>
+                <Input
+                  size="large"
+                  value={form.accountIdentity}
+                  onChange={e => set('accountIdentity', e.target.value)}
+                  placeholder="e.g. JS26-00123 or you@example.com"
                 />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">System Action Impacted</Label>
-                <select value={form.diagnostics.systemActionImpacted || ''} onChange={e => setDiag('systemActionImpacted', e.target.value)}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
-                  <option value="">Select impact level…</option>
-                  {['Blocks Workflow Entirely', 'Annoying but Manageable Workaround Available', 'General Question'].map(i => <option key={i}>{i}</option>)}
-                </select>
-              </div>
+              </Form.Item>
+
+              <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Issue Category</Text>}>
+                <Radio.Group 
+                  value={form.category} 
+                  onChange={e => set('category', e.target.value)}
+                  style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}
+                >
+                  {CATEGORIES.map(cat => (
+                    <Radio.Button key={cat.value} value={cat.value} style={{ width: '100%', textAlign: 'left', borderRadius: 8, height: 'auto', padding: '10px 15px' }}>
+                      {cat.label}
+                    </Radio.Button>
+                  ))}
+                </Radio.Group>
+              </Form.Item>
+            </Form>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button type="primary" size="large" disabled={!canProceedStep0} onClick={() => setCurrent(1)}>
+                Continue <RightOutlined />
+              </Button>
             </div>
-          )}
+          </Space>
+        )}
 
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(0)} className="rounded-xl border-slate-200">
-              <ChevronLeft size={15} className="mr-1" /> Back
-            </Button>
-            <Button onClick={() => setStep(2)} className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6">
-              Continue <ChevronRight size={15} className="ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+        {current === 1 && (
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Title level={5}>Step 2: Provide Diagnostics</Title>
 
-      {/* Step 2 – Submit */}
-      {step === 2 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-6">
-          <h2 className="font-bold text-slate-800">Step 3: Finalize & Submit</h2>
+            <Form layout="vertical">
+              {form.category === 'subscription_gating' && (
+                <>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Impacted Plan</Text>}>
+                    <Select
+                      size="large"
+                      value={form.diagnostics.impactedPlan}
+                      onChange={val => setDiag('impactedPlan', val)}
+                      placeholder="Select plan…"
+                      options={(ROLE_PLANS[form.userRole] || []).map(p => ({ value: p, label: p }))}
+                    />
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Gated Feature Encountered</Text>}>
+                    <Select
+                      size="large"
+                      value={form.diagnostics.gatedFeature}
+                      onChange={val => setDiag('gatedFeature', val)}
+                      placeholder="Select feature…"
+                      options={['AI Resume Review', 'Candidate DB Export', 'Branded Careers Page', 'Video Interview Integration', 'Auto-Generated Reports'].map(f => ({ value: f, label: f }))}
+                    />
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Error Type</Text>}>
+                    <Radio.Group value={form.diagnostics.errorType} onChange={e => setDiag('errorType', e.target.value)}>
+                      <Space>
+                        <Radio.Button value="Plan Limit Reached Prematurely">Plan Limit Reached Prematurely</Radio.Button>
+                        <Radio.Button value="Feature Blocked Incorrectly">Feature Blocked Incorrectly</Radio.Button>
+                      </Space>
+                    </Radio.Group>
+                  </Form.Item>
+                </>
+              )}
 
-          {/* Severity */}
-          <div className="space-y-3">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Impact Severity</Label>
-            <div className="space-y-3">
-              {SEVERITIES.map(sev => {
-                const colorMap = { red: 'border-red-400 bg-red-50 text-red-700', amber: 'border-amber-400 bg-amber-50 text-amber-700', blue: 'border-blue-400 bg-blue-50 text-blue-700' };
-                const defaultCls = 'border-slate-200 text-slate-600 hover:border-slate-300';
-                const active = form.severity === sev.value;
-                return (
-                  <button key={sev.value} onClick={() => set('severity', sev.value)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${active ? colorMap[sev.color] : defaultCls}`}>
-                    <div className="flex items-center gap-3">
-                      {sev.color === 'red' && <span className="text-lg">🔴</span>}
-                      {sev.color === 'amber' && <span className="text-lg">🟡</span>}
-                      {sev.color === 'blue' && <span className="text-lg">🔵</span>}
-                      <div>
-                        <p className="text-sm font-bold">{sev.label}</p>
-                        <p className="text-xs opacity-75 mt-0.5">{sev.desc}</p>
+              {form.category === 'payment_checkout' && (
+                <>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Payment Gateway</Text>}>
+                    <Radio.Group value={form.diagnostics.paymentGateway} onChange={e => setDiag('paymentGateway', e.target.value)}>
+                      <Radio.Button value="Razorpay">Razorpay</Radio.Button>
+                    </Radio.Group>
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Payment Mode</Text>}>
+                    <Select
+                      size="large"
+                      value={form.diagnostics.paymentMode}
+                      onChange={val => setDiag('paymentMode', val)}
+                      placeholder="Select mode…"
+                      options={['UPI', 'Credit Card', 'Debit Card', 'Net Banking', 'Wallet'].map(m => ({ value: m, label: m }))}
+                    />
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Transaction State</Text>}>
+                    <Radio.Group value={form.diagnostics.transactionState} onChange={e => setDiag('transactionState', e.target.value)} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {['Failed at Gateway', 'Deducted but Order Not Created', 'Pending / Timeout'].map(s => (
+                        <Radio.Button key={s} value={s}>{s}</Radio.Button>
+                      ))}
+                    </Radio.Group>
+                  </Form.Item>
+                </>
+              )}
+
+              {form.category === 'refunds_invoicing' && (
+                <>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Transaction ID / Payment Reference</Text>}>
+                    <Input size="large" value={form.diagnostics.transactionId} onChange={e => setDiag('transactionId', e.target.value)} placeholder="e.g. pay_PkHFxyz123" />
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Billing Invoice Number</Text>}>
+                    <Input size="large" value={form.diagnostics.invoiceNumber} onChange={e => setDiag('invoiceNumber', e.target.value)} placeholder="e.g. INV/2026/A1B2C3" />
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Requested Action</Text>}>
+                    <Select
+                      size="large"
+                      value={form.diagnostics.requestedAction}
+                      onChange={val => setDiag('requestedAction', val)}
+                      placeholder="Select action…"
+                      options={['Full Refund Request', 'Missing PDF Invoice', 'Invoice Correction', 'Duplicate Charge Dispute'].map(a => ({ value: a, label: a }))}
+                    />
+                  </Form.Item>
+                </>
+              )}
+
+              {form.category === 'platform_errors' && (
+                <>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Impacted Sub-System</Text>}>
+                    <Select
+                      size="large"
+                      value={form.diagnostics.impactedSubsystem}
+                      onChange={val => setDiag('impactedSubsystem', val)}
+                      placeholder="Select sub-system…"
+                      options={['ATS Pipeline Dashboard', 'AI Candidate Matching', 'Video Interview Sync', 'Campus Drive QR Registration', 'Job Search & Filters', 'Resume Builder', 'Messaging System'].map(s => ({ value: s, label: s }))}
+                    />
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Environment</Text>}>
+                    <Radio.Group value={form.diagnostics.environmentContext} onChange={e => setDiag('environmentContext', e.target.value)}>
+                      <Radio.Button value="Production">Production (app.)</Radio.Button>
+                    </Radio.Group>
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Attach Console / Error Log (optional)</Text>}>
+                    <Dragger {...uploadProps}>
+                      <p className="ant-upload-drag-icon">
+                        <UploadOutlined />
+                      </p>
+                      <p className="ant-upload-text">Click or drag file to this area to upload</p>
+                      <p className="ant-upload-hint">Support for a single .txt, .log, or .json file. Max 5 MB.</p>
+                    </Dragger>
+                  </Form.Item>
+                </>
+              )}
+
+              {form.category === 'others' && (
+                <>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Area of Concern</Text>}>
+                    <Input size="large" value={form.diagnostics.areaOfConcern} onChange={e => setDiag('areaOfConcern', e.target.value)} placeholder="e.g. Feature Request, Data Compliance Query" />
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Detailed Description</Text>}>
+                    <TextArea
+                      size="large"
+                      rows={5}
+                      value={form.diagnostics.detailedDescription}
+                      onChange={e => setDiag('detailedDescription', e.target.value)}
+                      placeholder="Please provide a step-by-step description of what you were doing when the issue occurred, including any visible error codes or unusual platform behaviors."
+                    />
+                  </Form.Item>
+                  <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>System Action Impacted</Text>}>
+                    <Select
+                      size="large"
+                      value={form.diagnostics.systemActionImpacted}
+                      onChange={val => setDiag('systemActionImpacted', val)}
+                      placeholder="Select impact level…"
+                      options={['Blocks Workflow Entirely', 'Annoying but Manageable Workaround Available', 'General Question'].map(i => ({ value: i, label: i }))}
+                    />
+                  </Form.Item>
+                </>
+              )}
+            </Form>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+              <Button size="large" onClick={() => setCurrent(0)}>
+                <LeftOutlined /> Back
+              </Button>
+              <Button type="primary" size="large" onClick={() => setCurrent(2)}>
+                Continue <RightOutlined />
+              </Button>
+            </div>
+          </Space>
+        )}
+
+        {current === 2 && (
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Title level={5}>Step 3: Finalize & Submit</Title>
+
+            <Form layout="vertical">
+              <Form.Item label={<Text strong type="secondary" style={{ textTransform: 'uppercase', fontSize: 12 }}>Impact Severity</Text>}>
+                <Radio.Group 
+                  value={form.severity} 
+                  onChange={e => set('severity', e.target.value)}
+                  style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}
+                >
+                  {SEVERITIES.map(sev => (
+                    <Radio.Button key={sev.value} value={sev.value} style={{ height: 'auto', padding: '15px', borderRadius: 8, textAlign: 'left' }}>
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <span style={{ fontSize: 24 }}>
+                          {sev.value === 'critical' ? '🔴' : sev.value === 'major' ? '🟡' : '🔵'}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: 'bold' }}>{sev.label}</div>
+                          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{sev.desc}</div>
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    </Radio.Button>
+                  ))}
+                </Radio.Group>
+              </Form.Item>
+            </Form>
 
-          {/* Summary */}
-          <div className="bg-slate-50 rounded-xl p-4 space-y-1.5 text-xs">
-            <p className="font-bold text-slate-700 mb-2">Ticket Summary</p>
-            <p><span className="text-slate-400">Role:</span> <span className="font-semibold text-slate-700 capitalize">{form.userRole}</span></p>
-            <p><span className="text-slate-400">Category:</span> <span className="font-semibold text-slate-700">{CATEGORIES.find(c => c.value === form.category)?.label}</span></p>
-            <p><span className="text-slate-400">Account:</span> <span className="font-semibold text-slate-700">{form.accountIdentity}</span></p>
-          </div>
+            <Card size="small" style={{ backgroundColor: '#f8fafc', border: 'none' }}>
+              <Title level={5} style={{ marginTop: 0 }}>Ticket Summary</Title>
+              <Text type="secondary">Role:</Text> <Text strong style={{ textTransform: 'capitalize' }}>{form.userRole}</Text><br/>
+              <Text type="secondary">Category:</Text> <Text strong>{CATEGORIES.find(c => c.value === form.category)?.label}</Text><br/>
+              <Text type="secondary">Account:</Text> <Text strong>{form.accountIdentity}</Text>
+            </Card>
 
-          {/* Consent */}
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox 
               checked={form.diagnosticsConsent}
               onChange={e => set('diagnosticsConsent', e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded accent-emerald-600"
-            />
-            <span className="text-xs text-slate-600 leading-relaxed">
-              I authorize support personnel to securely review the metadata payload associated with my user ID (<code className="font-mono bg-slate-100 px-1 rounded">users.id</code>) for resolution purposes.
-            </span>
-          </label>
-
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(1)} className="rounded-xl border-slate-200">
-              <ChevronLeft size={15} className="mr-1" /> Back
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={!canSubmit || submitting}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 font-bold"
             >
-              {submitting ? 'Submitting…' : (<><Send size={14} className="mr-2" /> Submit Ticket</>)}
-            </Button>
-          </div>
-        </div>
-      )}
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                I authorize support personnel to securely review the metadata payload associated with my user ID (<Text code>users.id</Text>) for resolution purposes.
+              </Text>
+            </Checkbox>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+              <Button size="large" onClick={() => setCurrent(1)}>
+                <LeftOutlined /> Back
+              </Button>
+              <Button 
+                type="primary" 
+                size="large" 
+                onClick={handleSubmit} 
+                disabled={!canSubmit || submitting}
+                loading={submitting}
+                icon={<SendOutlined />}
+              >
+                Submit Ticket
+              </Button>
+            </div>
+          </Space>
+        )}
+      </Card>
     </div>
   );
 };

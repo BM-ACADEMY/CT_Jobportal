@@ -21,7 +21,7 @@ const CATEGORY_LABELS = {
 const STATUS_CONFIG = {
   open:        { label: 'Open',        color: 'bg-blue-50 text-blue-600',       icon: AlertCircle },
   in_progress: { label: 'In Progress', color: 'bg-amber-50 text-amber-600',     icon: RefreshCw },
-  resolved:    { label: 'Resolved',    color: 'bg-emerald-50 text-emerald-600', icon: CheckCircle2 },
+  resolved:    { label: 'Resolved',    color: 'bg-blue-50 text-blue-600',       icon: CheckCircle2 },
   closed:      { label: 'Closed',      color: 'bg-slate-50 text-slate-400',     icon: CheckCircle2 },
 };
 
@@ -56,25 +56,17 @@ const MyTickets = () => {
     })();
   }, []);
 
-  // True if the user has ANY active ticket (determines global chat eligibility)
   const hasActiveTicket = tickets.some(t => ACTIVE_STATUSES.includes(t.status));
 
-  // Get the admin user ID — we POST to /conversation with the admin's userId.
-  // We resolve the admin dynamically via the backend (no hardcoded ID needed).
   const handleChatWithSupport = async (ticketId) => {
     setChatLoading(ticketId);
     try {
       const token = localStorage.getItem('token');
-
-      // Step 1: Ask backend who the admin is for this ticket's conversation
-      // Backend: POST /api/messages/conversation with recipientId = admin user id
-      // We use a dedicated endpoint to get the admin's user id
       const adminRes = await axios.get(`${API}/tickets/${ticketId}/support-contact`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const adminUserId = adminRes.data.adminId;
 
-      // Step 2: Get or create conversation (backend will validate active ticket)
       const convRes = await axios.post(`${API}/messages/conversation`, { recipientId: adminUserId }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -94,7 +86,7 @@ const MyTickets = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+      <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
     </div>
   );
 
@@ -102,12 +94,12 @@ const MyTickets = () => {
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Support Tickets</h1>
-          <p className="text-sm text-slate-500 mt-1">{tickets.length} ticket{tickets.length !== 1 ? 's' : ''} raised</p>
+          <h1 className="text-lg font-semibold text-slate-900 tracking-tight">My Support Tickets</h1>
+          <p className="text-xs text-slate-500 mt-1">{tickets.length} ticket{tickets.length !== 1 ? 's' : ''} raised</p>
         </div>
         <Button
           onClick={() => navigate('/tickets/raise')}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold"
+          className="bg-blue-500 hover:bg-blue-600 text-white rounded font-medium text-xs h-9 px-4 border-none cursor-pointer"
         >
           <Plus size={15} className="mr-1.5" /> New Ticket
         </Button>
@@ -115,9 +107,9 @@ const MyTickets = () => {
 
       {/* Chat eligibility banner */}
       {tickets.length > 0 && (
-        <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium border ${
+        <div className={`flex items-center gap-3 px-4 py-3 rounded-none text-xs font-medium border ${
           hasActiveTicket
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            ? 'bg-blue-50 border-blue-100 text-blue-700'
             : 'bg-slate-50 border-slate-200 text-slate-500'
         }`}>
           {hasActiveTicket
@@ -128,11 +120,11 @@ const MyTickets = () => {
       )}
 
       {tickets.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 p-16 text-center">
-          <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white rounded-none border border-[#e8e8e8] p-16 text-center shadow-none">
+          <div className="w-14 h-14 bg-slate-50 rounded-none border border-slate-100 flex items-center justify-center mx-auto mb-4">
             <AlertCircle size={24} className="text-slate-300" />
           </div>
-          <p className="text-slate-500 font-medium">No tickets raised yet.</p>
+          <p className="text-slate-500 font-medium text-sm">No tickets raised yet.</p>
           <p className="text-xs text-slate-400 mt-1">Click "New Ticket" to raise your first support request.</p>
         </div>
       ) : (
@@ -145,7 +137,7 @@ const MyTickets = () => {
             return (
               <div
                 key={t._id}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden group"
+                className="bg-white rounded-none border border-[#e8e8e8] shadow-none overflow-hidden group"
               >
                 <div 
                   className="flex items-start justify-between gap-4 p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
@@ -154,37 +146,36 @@ const MyTickets = () => {
                   <div className="flex-1 min-w-0">
                     {/* Badges */}
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold ${statusCfg.color}`}>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-none text-[10px] font-semibold ${statusCfg.color}`}>
                         <Icon size={10} /> {statusCfg.label}
                       </span>
-                      <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase ${SEV_BADGE[t.severity]}`}>
+                      <span className={`px-2.5 py-0.5 rounded-none text-[10px] font-semibold uppercase ${SEV_BADGE[t.severity]}`}>
                         {t.severity === 'critical' ? '🔴' : t.severity === 'major' ? '🟡' : '🔵'} {t.severity}
                       </span>
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-mono rounded">
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-mono rounded-none">
                         #{t._id.slice(-6).toUpperCase()}
                       </span>
                     </div>
 
-                    <p className="font-bold text-slate-800 text-sm">{CATEGORY_LABELS[t.category]}</p>
-                    <p className="text-xs text-slate-400 mt-1 capitalize">
+                    <p className="font-semibold text-slate-800 text-sm">{CATEGORY_LABELS[t.category]}</p>
+                    <p className="text-xs text-slate-400 mt-1 capitalize font-normal">
                       Role: {t.userRole} &bull; {new Date(t.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
 
                     {t.conclusion && (
-                      <p className="mt-2 text-xs text-slate-600 bg-emerald-50 rounded-lg px-3 py-1.5 border-l-2 border-emerald-400">
-                        <span className="font-semibold text-emerald-700">Resolution: </span>{t.conclusion}
+                      <p className="mt-2 text-xs text-blue-700 bg-blue-50/50 rounded-none px-3 py-1.5 border-l-2 border-blue-400">
+                        <span className="font-semibold text-blue-800">Resolution: </span>{t.conclusion}
                       </p>
                     )}
                   </div>
 
                   {/* Right side actions */}
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    {/* Chat with Support — only on active tickets */}
                     {isActive ? (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleChatWithSupport(t._id); }}
                         disabled={chatLoading === t._id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all disabled:opacity-60"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-all disabled:opacity-60 cursor-pointer border-none"
                       >
                         {chatLoading === t._id
                           ? <RefreshCw size={12} className="animate-spin" />
@@ -193,7 +184,7 @@ const MyTickets = () => {
                         Chat with Support
                       </button>
                     ) : (
-                      <span className="flex items-center gap-1 text-[10px] text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-lg border border-slate-200">
+                      <span className="flex items-center gap-1 text-[10px] text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-none border border-slate-200">
                         <Lock size={10} /> Chat locked
                       </span>
                     )}
@@ -214,14 +205,14 @@ const MyTickets = () => {
 
                 {/* Expanded detail */}
                 {expanded === t._id && (
-                  <div className="border-t border-slate-100 p-5 space-y-5 bg-slate-50/30">
+                  <div className="border-t border-[#e8e8e8] p-5 space-y-5 bg-slate-50/30">
                     {/* Diagnostics */}
                     {Object.keys(t.diagnostics || {}).length > 0 && (
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Diagnostics Provided</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                           {Object.entries(t.diagnostics).map(([k, v]) => v ? (
-                            <div key={k} className="bg-white rounded-xl border border-slate-200 p-3">
+                            <div key={k} className="bg-white rounded-none border border-[#e8e8e8] p-3">
                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{k.replace(/([A-Z])/g, ' $1').trim()}</p>
                               <p className="text-xs font-semibold text-slate-700 break-words">{v}</p>
                             </div>

@@ -170,21 +170,18 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-slate-50">
 
       {/* ─── Left Panel ─── */}
       <div
-        className={`hidden lg:flex w-[42%] flex-shrink-0 relative overflow-hidden flex-col justify-between p-12 transition-all duration-500
-          ${isRecruiter 
-            ? 'bg-gradient-to-br from-emerald-900 via-emerald-700 to-green-600' 
-            : 'bg-gradient-to-br from-emerald-800 via-teal-700 to-cyan-600'}`}
+        className="hidden lg:flex w-[44%] flex-shrink-0 relative overflow-hidden flex-col justify-between py-14 pl-20 pr-14 xl:py-16 xl:pl-28 xl:pr-16 bg-cover bg-center" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80")' }}
       >
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/5" />
-        <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-white/5" />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-slate-900/75" />
 
         <div className="flex flex-col relative z-10">
           <Link to="/" className="inline-block no-underline mb-16" aria-label="Velaivaaipu home">
-            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-24 w-[180px] object-contain" />
+            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-11 w-auto object-contain" />
           </Link>
 
           <div>
@@ -226,7 +223,7 @@ const RegisterPage = () => {
           </div>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 shadow-xl relative z-10">
+        <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl p-7 border border-white/10 space-y-4 relative z-10">
           <div className="flex gap-0.5 mb-2">
             {[1,2,3,4,5].map(i => <StarIcon key={i} />)}
           </div>
@@ -244,64 +241,66 @@ const RegisterPage = () => {
       </div>
 
       {/* ─── Right: Form Panel ─── */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background overflow-y-auto">
-        <div className="w-full max-w-[420px]">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 overflow-y-auto">
+        <div className="w-full max-w-[520px] bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_40px_-8px_rgba(15,23,42,0.08)] p-8 sm:p-10 my-8 space-y-8">
+          <Link to="/" className="lg:hidden inline-block no-underline mb-2" aria-label="Velaivaaipu home">
+            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" className="h-9 w-auto object-contain" />
+          </Link>
 
           {step === 'form' ? (
-            <div className="animate-in fade-in duration-500">
+            <div className="animate-in fade-in duration-500 space-y-6">
               {/* Heading */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-black text-foreground mb-2 tracking-tight">
+              <div className="space-y-1.5"><h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                   Create your account
                 </h1>
-                <p className="text-muted-foreground text-sm font-bold">
+                <p className="text-slate-500 text-sm">
                   Join millions of professionals on Velaivaaipu
                 </p>
               </div>
 
               {/* Role Toggle */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              <div className="grid grid-cols-2 gap-3 mb-6">
                 {[
-                  { key: 'jobseeker', label: 'Job Seeker', desc: "I'm looking for a job", Icon: Briefcase, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
-                  { key: 'recruiter', label: 'Recruiter', desc: "I'm hiring talent", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
-                  { key: 'company', label: 'Company', desc: "Direct organization", Icon: Building2, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
-                  { key: 'college', label: 'College', desc: "Educational Inst.", Icon: ShieldCheck, activeColor: 'emerald-600', borderColor: 'border-emerald-600', bgColor: 'bg-emerald-600/5', textColor: 'text-emerald-700' },
+                  { key: 'jobseeker', label: 'Job Seeker', Icon: Briefcase },
+                  { key: 'recruiter', label: 'Recruiter', Icon: Building2 },
+                  { key: 'company', label: 'Company', Icon: Building2 },
+                  { key: 'college', label: 'College', Icon: ShieldCheck },
                 ].map(role => {
                   const active = selectedRole === role.key;
                   return (
                     <button
                       key={role.key}
+                      type="button"
                       onClick={() => setSelectedRole(role.key)}
-                      className={`relative flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all duration-200
-                        ${active ? `${role.borderColor} ${role.bgColor}` : 'border-border bg-muted/20 hover:bg-muted/40'}`}
+                      className={`flex items-center justify-center gap-2 h-11 rounded-lg border transition-all text-sm font-medium
+                        ${active 
+                          ? 'border-emerald-400 bg-emerald-50 text-emerald-700' 
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
                     >
-                      {active && (
-                        <CircleCheck size={15} className={`absolute top-2 right-2 ${role.textColor}`} />
-                      )}
-                      <role.Icon size={20} className={active ? role.textColor : 'text-muted-foreground/60'} />
-                      <span className={`font-black text-[13px] ${active ? role.textColor : 'text-muted-foreground'}`}>{role.label}</span>
-                      <span className={`font-bold text-[10px] opacity-70 ${active ? role.textColor : 'text-muted-foreground/60'}`}>{role.desc}</span>
+                      <role.Icon size={16} className={active ? 'text-emerald-600' : 'text-slate-400'} />
+                      {role.label}
                     </button>
                   );
                 })}
               </div>
 
               {error && (
-                <Alert variant="destructive" className="mb-6 rounded-2xl border-destructive/20 bg-destructive/5 py-3">
-                  <AlertDescription className="text-xs font-bold">{error}</AlertDescription>
+                <Alert variant="destructive" className="rounded-xl border-rose-100 bg-rose-50 py-3 mb-6">
+                  <AlertDescription className="text-sm font-medium text-rose-600">{error}</AlertDescription>
                 </Alert>
               )}
 
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'TPO Name' : 'Full Name'}</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                            <User size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <Input 
                               placeholder={selectedRole === 'college' ? 'TPO name' : 'Full name'} 
                               {...field} 
@@ -309,11 +308,11 @@ const RegisterPage = () => {
                                 const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                                 field.onChange(val);
                               }}
-                              className="h-12 pl-12 rounded-xl" 
+                              className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
                             />
                           </div>
                         </FormControl>
-                        <FormMessage className="text-[11px] font-bold" />
+                        <FormMessage className="text-xs font-medium text-rose-500" />
                       </FormItem>
                     )}
                   />
@@ -322,19 +321,20 @@ const RegisterPage = () => {
                     control={form.control}
                     name="email"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'College Email' : 'Email Address'}</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                            <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <Input 
                               placeholder={selectedRole === 'college' ? 'TPO email address' : 'Email address'} 
                               {...field} 
                               onChange={(e) => field.onChange(e.target.value.toLowerCase())}
-                              className="h-12 pl-12 rounded-xl" 
+                              className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
                             />
                           </div>
                         </FormControl>
-                        <FormMessage className="text-[11px] font-bold" />
+                        <FormMessage className="text-xs font-medium text-rose-500" />
                       </FormItem>
                     )}
                   />
@@ -343,7 +343,8 @@ const RegisterPage = () => {
                     control={form.control}
                     name="mobileNumber"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'TPO Number' : 'Mobile Number'}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <PhoneInput
@@ -373,13 +374,13 @@ const RegisterPage = () => {
                                 required: true,
                                 placeholder: selectedRole === 'college' ? 'TPO number' : 'Mobile number'
                               }}
-                              inputClass="!w-full !h-12 !pl-[52px] !rounded-xl !border-input !bg-background !text-sm focus:!ring-2 focus:!ring-ring focus:!outline-none"
-                              buttonClass="!border-input !bg-background !rounded-l-xl !w-[45px] hover:!bg-muted"
-                              dropdownClass="!bg-background !text-foreground"
+                              inputClass="!w-full !h-11 !pl-[52px] !rounded-lg !border-slate-200 !bg-white !text-sm focus:!border-emerald-400 focus:!ring-1 focus:!ring-emerald-400 focus:!outline-none transition-all"
+                              buttonClass="!border-slate-200 !bg-slate-50 !rounded-l-lg !w-[45px] hover:!bg-slate-100"
+                              dropdownClass="!bg-white !text-slate-700"
                             />
                           </div>
                         </FormControl>
-                        <FormMessage className="text-[11px] font-bold" />
+                        <FormMessage className="text-xs font-medium text-rose-500" />
                       </FormItem>
                     )}
                   />
@@ -390,14 +391,15 @@ const RegisterPage = () => {
                         control={form.control}
                         name="collegeName"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <div className="relative">
-                                <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                                <Input placeholder="College name" {...field} className="h-12 pl-12 rounded-xl" />
+                          <FormItem className="space-y-1.5">
+                            <FormLabel className="text-sm font-medium text-slate-700">College Name</FormLabel>
+                        <FormControl>
+                                <div className="relative">
+                                  <Building2 size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <Input placeholder="College name" {...field} className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" />
                               </div>
                             </FormControl>
-                            <FormMessage className="text-[11px] font-bold" />
+                            <FormMessage className="text-xs font-medium text-rose-500" />
                           </FormItem>
                         )}
                       />
@@ -405,14 +407,15 @@ const RegisterPage = () => {
                         control={form.control}
                         name="collegeEmail"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <div className="relative">
-                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                                <Input placeholder="College email address" {...field} className="h-12 pl-12 rounded-xl" />
+                          <FormItem className="space-y-1.5">
+                            <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'College Email' : 'Email Address'}</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <Input placeholder="College email address" {...field} className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" />
                               </div>
                             </FormControl>
-                            <FormMessage className="text-[11px] font-bold" />
+                            <FormMessage className="text-xs font-medium text-rose-500" />
                           </FormItem>
                         )}
                       />
@@ -420,11 +423,12 @@ const RegisterPage = () => {
                         control={form.control}
                         name="collegePhone"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="space-y-1.5">
+                            <FormLabel className="text-sm font-medium text-slate-700">College Number</FormLabel>
                             <FormControl>
                               <PhoneNumberInput value={field.value} onChange={field.onChange} inputProps={{ placeholder: 'College number' }} />
                             </FormControl>
-                            <FormMessage className="text-[11px] font-bold" />
+                            <FormMessage className="text-xs font-medium text-rose-500" />
                           </FormItem>
                         )}
                       />
@@ -435,26 +439,27 @@ const RegisterPage = () => {
                     control={form.control}
                     name="password"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-sm font-medium text-slate-700">Password</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                            <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <Input 
                               type={showPassword ? "text" : "password"} 
                               placeholder="Create a password" 
                               {...field} 
-                              className="h-12 pl-12 pr-12 rounded-xl" 
+                              className="h-11 pl-10 pr-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
                             />
                             <button 
                               type="button" 
                               onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/60"
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                             >
-                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                              {showPassword ? <EyeOff size={18} /> : <Eye size={17} />}
                             </button>
                           </div>
                         </FormControl>
-                        <FormMessage className="text-[11px] font-bold" />
+                        <FormMessage className="text-xs font-medium text-rose-500" />
                       </FormItem>
                     )}
                   />
@@ -463,31 +468,32 @@ const RegisterPage = () => {
                     control={form.control}
                     name="confirmPassword"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-sm font-medium text-slate-700">Confirm Password</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                            <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <Input 
                               type={showConfirmPassword ? "text" : "password"} 
                               placeholder="Confirm password" 
                               {...field} 
-                              className="h-12 pl-12 pr-12 rounded-xl" 
+                              className="h-11 pl-10 pr-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
                             />
                             <button 
                               type="button" 
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/60"
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                             >
-                              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={17} />}
                             </button>
                           </div>
                         </FormControl>
-                        <FormMessage className="text-[11px] font-bold" />
+                        <FormMessage className="text-xs font-medium text-rose-500" />
                       </FormItem>
                     )}
                   />
 
-                  <p className="text-[11px] text-muted-foreground font-bold leading-relaxed mb-4">
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
                     By creating an account, you agree to our{' '}
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
@@ -496,56 +502,54 @@ const RegisterPage = () => {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className={`w-full h-14 rounded-2xl text-base font-black transition-all shadow-lg
-                      ${isRecruiter || selectedRole === 'college' || selectedRole === 'company'
-                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20' 
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98]'}`}
+                    className="w-full h-11 rounded-lg text-sm font-semibold transition-all shadow-sm bg-emerald-700 text-white hover:bg-emerald-800 mt-2"
                   >
                     {loading ? 'Processing...' : `Create ${selectedRole === 'company' ? 'Company' : selectedRole === 'college' ? 'College' : isRecruiter ? 'Recruiter' : 'Job Seeker'} Account`}
                   </Button>
                 </form>
               </Form>
 
-              <p className="text-center text-sm text-muted-foreground font-bold mt-8">
+              <p className="text-center text-sm text-slate-500 mt-6">
                 Already have an account?{' '}
-                <Link to="/login" className="text-emerald-600 font-black hover:underline">
+                <Link to="/login" className="text-emerald-700 font-semibold hover:underline">
                   Sign in
                 </Link>
               </p>
 
               {/* Social Logins */}
-              <div className="flex items-center gap-4 my-8">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">OR SIGN UP WITH</span>
-                <div className="flex-1 h-px bg-border" />
+              <div className="flex items-center gap-3 my-6">
+                <div className="flex-1 h-px bg-slate-200" />
+                <span className="text-xs text-slate-400 font-medium">or continue with</span>
+                <div className="flex-1 h-px bg-slate-200" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <button 
                   onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google?role=${selectedRole}`}
-                  className="flex items-center justify-center h-12 rounded-xl border border-border bg-background hover:bg-muted transition-all"
+                  className="flex items-center justify-center h-12 rounded-xl border border-border bg-slate-50 hover:bg-muted transition-all"
                 >
                   <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-5" />
                 </button>
-                <button 
+                <button
+                  type="button"
                   onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/github?role=${selectedRole}`}
-                  className="flex items-center justify-center h-12 rounded-xl border border-border bg-slate-900 hover:opacity-90 transition-all"
+                  className="flex items-center justify-center gap-2 h-11 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-sm font-medium text-slate-700"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.416-4.041-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#334155"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.416-4.041-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 </button>
               </div>
             </div>
           ) : (
             <div className="animate-in slide-in-from-right-4 duration-500 flex flex-col py-5">
-              <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl flex items-center justify-center mb-8">
+              <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-8">
                 <ShieldCheck size={32} className="text-emerald-600" />
               </div>
 
               <div className="mb-10">
-                <h1 className="text-3xl font-black text-foreground mb-3 tracking-tight">
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight tracking-tight">
                   Verify email
                 </h1>
-                <p className="text-muted-foreground text-sm font-bold leading-relaxed">
+                <p className="text-slate-500 text-sm leading-relaxed">
                   We've sent a 6-digit code to <br className="hidden md:block"/>
                   <span className="font-black text-foreground">{registeredEmail}</span>
                 </p>
@@ -553,7 +557,7 @@ const RegisterPage = () => {
               
               {error && (
                 <Alert variant="destructive" className="mb-8 rounded-2xl border-destructive/20 bg-destructive/5">
-                  <AlertDescription className="text-xs font-bold">{error}</AlertDescription>
+                  <AlertDescription className="text-sm font-medium text-rose-600">{error}</AlertDescription>
                 </Alert>
               )}
 
@@ -574,7 +578,7 @@ const RegisterPage = () => {
                       <InputOTPSlot 
                         key={index} 
                         index={index} 
-                        className="h-14 w-12 rounded-xl border-border bg-muted/20 font-black text-xl"
+                        className="h-12 w-10 rounded-lg border-slate-200 bg-white font-bold text-lg focus-visible:border-emerald-400"
                       />
                     ))}
                   </InputOTPGroup>
@@ -584,7 +588,7 @@ const RegisterPage = () => {
               <Button 
                 onClick={handleVerifyOtp} 
                 disabled={loading}
-                className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] mb-6"
+                className="h-11 w-full rounded-lg text-sm font-semibold bg-emerald-700 text-white hover:bg-emerald-800 shadow-sm transition-all mb-6"
               >
                 {loading ? 'Verifying...' : 'Verify & Continue'}
               </Button>
@@ -605,7 +609,7 @@ const RegisterPage = () => {
                   Wrong email?{' '}
                   <button 
                     onClick={() => setStep('form')} 
-                    className="text-emerald-600 font-black hover:underline"
+                    className="text-emerald-700 font-semibold hover:underline"
                   >
                     Go back
                   </button>

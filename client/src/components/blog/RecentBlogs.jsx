@@ -15,7 +15,7 @@ const RecentBlogs = ({ compact = false }) => (
 
     <div className={compact ? 'space-y-4' : 'grid md:grid-cols-2 gap-6'}>
       {RECENT_BLOGS.map((blog) => (
-        <article key={blog.slug} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-shadow">
+        <article key={blog.slug} className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-shadow">
           <img src={blog.image} alt="" className={`${compact ? 'h-24' : 'h-40'} w-full object-cover`} />
           <div className={compact ? 'p-4' : 'p-6'}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-2">{blog.category} · {blog.readTime}</p>
@@ -25,7 +25,7 @@ const RecentBlogs = ({ compact = false }) => (
               Read more <ArrowRight size={14} />
             </Link>
             <div className={`${compact ? 'mt-3 pt-3' : 'mt-5 pt-4'} flex items-center gap-2.5 border-t border-slate-100`}>
-              <div className={`${compact ? 'h-8 w-8 text-[10px]' : 'h-9 w-9 text-xs'} flex shrink-0 items-center justify-center rounded-full bg-emerald-500 font-black text-white`} aria-hidden="true">V</div>
+              <div className={`${compact ? 'h-8 w-8 text-[10px]' : 'h-9 w-9 text-xs'} flex shrink-0 items-center justify-center rounded-none bg-emerald-500 font-black text-white`} aria-hidden="true">V</div>
               <div className="min-w-0">
                 <p className={`${compact ? 'text-xs' : 'text-sm'} truncate font-bold text-slate-900`}>{blog.author || 'Velai Vaaipu'}</p>
                 <time dateTime={blog.date} className="block text-[11px] text-slate-500">{blog.date}</time>

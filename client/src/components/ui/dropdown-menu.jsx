@@ -139,6 +139,14 @@ const DropdownMenuShortcut = ({
 }
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
 
+const DropdownMenuArrow = React.forwardRef(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Arrow
+    ref={ref}
+    className={cn("fill-[#1b496d]", className)}
+    {...props} />
+))
+DropdownMenuArrow.displayName = DropdownMenuPrimitive.Arrow.displayName
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -155,4 +163,5 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
+  DropdownMenuArrow,
 }

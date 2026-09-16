@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Video, Calendar, Link2, Loader2, Briefcase, Clock, X, CheckCircle2, ChevronDown, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Card, Row, Col, Select, Input, Button, Spin, Badge } from 'antd';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
-import { Badge } from '@/components/ui/badge';
+const { TextArea } = Input;
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { JitsiMeeting } from '@jitsi/react-sdk';
 import { useAuth } from '@/context/AuthContext';
@@ -14,9 +14,9 @@ import dayjs from 'dayjs';
 const API = import.meta.env.VITE_API_BASE_URL;
 
 const statusStyles = {
-  scheduled: 'bg-blue-50 text-blue-700',
-  completed: 'bg-emerald-50 text-emerald-700',
-  cancelled: 'bg-red-50 text-red-600'
+  scheduled: { bg: '#eff6ff', text: '#1d4ed8' },
+  completed: { bg: '#ecfdf5', text: '#047857' },
+  cancelled: { bg: '#fef2f2', text: '#dc2626' }
 };
 
 const ScheduleModal = ({ jobs, onClose, onScheduled }) => {
@@ -298,11 +298,7 @@ const VideoInterview = () => {
   const upcoming = interviews.filter(i => i.status === 'scheduled' && new Date(i.scheduledAt) >= new Date());
   const past = interviews.filter(i => i.status !== 'scheduled' || new Date(i.scheduledAt) < new Date());
 
-  const stats = [
-    { label: 'Scheduled', value: upcoming.length },
-    { label: 'Completed', value: interviews.filter(i => i.status === 'completed').length },
-    { label: 'Cancelled', value: interviews.filter(i => i.status === 'cancelled').length }
-  ];
+
 
   return (
     <FeatureGate
@@ -341,21 +337,59 @@ const VideoInterview = () => {
             <p className="text-sm text-slate-500">Schedule and manage interviews with your applicants and candidates.</p>
           </div>
           <Button
+            type="primary"
+            size="large"
             onClick={() => setShowScheduleModal(true)}
-            className="h-10 px-5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm gap-2 shrink-0"
+            icon={<Plus size={15} />}
+            style={{ backgroundColor: '#f43f5e', border: 'none' }}
+            className="font-bold rounded-xl"
           >
-            <Plus size={15} /> Schedule Interview
+            Schedule Interview
           </Button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          {stats.map(s => (
-            <div key={s.label} className="rounded-2xl border border-slate-100 bg-white p-5 text-center">
-              <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">{s.label}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card
+            bordered={false}
+            style={{ backgroundColor: '#9061F9', color: 'white', borderRadius: 0, overflow: 'hidden' }}
+            styles={{ body: { padding: '24px', position: 'relative' } }}
+          >
+            <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
+            <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-white/10" />
+            
+            <Calendar size={22} className="text-white mb-6" strokeWidth={1.5} />
+            <p className="text-[12px] font-black text-white/90 uppercase tracking-widest mb-1">Scheduled</p>
+            <p className="text-[40px] font-black text-white leading-none mt-2">{upcoming.length}</p>
+          </Card>
+
+          <Card
+            bordered={false}
+            style={{ backgroundColor: '#10B981', color: 'white', borderRadius: 0, overflow: 'hidden' }}
+            styles={{ body: { padding: '24px', position: 'relative' } }}
+          >
+            <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
+            <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-white/10" />
+
+            <CheckCircle2 size={22} className="text-white mb-6" strokeWidth={1.5} />
+            <p className="text-[12px] font-black text-white/90 uppercase tracking-widest mb-1">Completed</p>
+            <p className="text-[40px] font-black text-white leading-none mt-2">{interviews.filter(i => i.status === 'completed').length}</p>
+          </Card>
+
+          <Card
+            bordered={false}
+            style={{ backgroundColor: '#F43F5E', color: 'white', borderRadius: 0, overflow: 'hidden' }}
+            styles={{ body: { padding: '24px', position: 'relative' } }}
+          >
+            <div className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full bg-white/10" />
+            <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-white/10" />
+
+            <div className="w-[22px] h-[22px] border-2 border-white rounded-[4px] flex items-center justify-center mb-6">
+              <X size={14} className="text-white" strokeWidth={2.5} />
             </div>
-          ))}
+            <p className="text-[12px] font-black text-white/90 uppercase tracking-widest mb-1">Cancelled</p>
+            <p className="text-[40px] font-black text-white leading-none mt-2">{interviews.filter(i => i.status === 'cancelled').length}</p>
+          </Card>
         </div>
 
         {loading ? (
@@ -365,8 +399,14 @@ const VideoInterview = () => {
             <Video size={36} className="text-slate-200 mx-auto mb-3" />
             <p className="text-sm font-bold text-slate-500">No interviews scheduled yet</p>
             <p className="text-xs text-slate-400 mt-1 mb-4">Schedule interviews with shortlisted candidates.</p>
-            <Button onClick={() => setShowScheduleModal(true)} className="rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs gap-2">
-              <Plus size={12} /> Schedule Interview
+            <Button 
+              type="primary"
+              onClick={() => setShowScheduleModal(true)} 
+              icon={<Plus size={12} />}
+              style={{ backgroundColor: '#f43f5e', border: 'none' }}
+              className="font-bold rounded-xl"
+            >
+              Schedule Interview
             </Button>
           </div>
         ) : (
@@ -416,54 +456,60 @@ const InterviewCard = ({ interview, onAction, updating, readonly, onJoinNative }
   const dt = new Date(iv.scheduledAt);
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-white hover:border-rose-100 hover:shadow-sm transition-all">
-      <div className="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center shrink-0">
-        <Video size={15} className="text-rose-600" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-slate-900">{iv.candidate?.name || 'Candidate'}</p>
-        <div className="flex flex-wrap items-center gap-2 mt-0.5">
-          <span className="text-[11px] text-slate-500">{iv.job?.title}</span>
-          <span className="text-[10px] text-slate-400 flex items-center gap-1">
-            <Clock size={9} /> {dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at {dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-          </span>
-          <span className="text-[10px] text-slate-400">{iv.duration} min</span>
+    <Card bordered={false} className="mb-3 shadow-sm rounded-xl hover:border-rose-100 transition-all border border-slate-100" bodyStyle={{ padding: '16px' }}>
+      <div className="flex items-center gap-4">
+        <div className="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center shrink-0">
+          <Video size={15} className="text-rose-600" />
         </div>
-        {iv.meetingLink ? (
-          <a href={iv.meetingLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-600 hover:underline flex items-center gap-1 mt-0.5">
-            <Link2 size={9} /> Join External Meeting
-          </a>
-        ) : (
-          <button onClick={() => onJoinNative(iv)} className="text-[10px] text-emerald-600 font-bold hover:underline flex items-center gap-1 mt-0.5">
-            <Video size={10} /> Join Native Room
-          </button>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-slate-900">{iv.candidate?.name || 'Candidate'}</p>
+          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+            <span className="text-[11px] text-slate-500">{iv.job?.title}</span>
+            <span className="text-[10px] text-slate-400 flex items-center gap-1">
+              <Clock size={9} /> {dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at {dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            <span className="text-[10px] text-slate-400">{iv.duration} min</span>
+          </div>
+          {iv.meetingLink ? (
+            <a href={iv.meetingLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-sky-600 hover:underline flex items-center gap-1 mt-0.5">
+              <Link2 size={9} /> Join External Meeting
+            </a>
+          ) : (
+            <button onClick={() => onJoinNative(iv)} className="text-[10px] text-emerald-600 font-bold hover:underline flex items-center gap-1 mt-0.5">
+              <Video size={10} /> Join Native Room
+            </button>
+          )}
+        </div>
+        <Badge 
+          count={iv.status}
+          style={{ backgroundColor: statusStyles[iv.status]?.bg, color: statusStyles[iv.status]?.text, fontSize: '10px', boxShadow: 'none' }}
+          className="shrink-0 font-bold"
+        />
+        {!readonly && isUpcoming && (
+          <div className="flex gap-2 shrink-0 ml-2">
+            <Button
+              size="small"
+              type="primary"
+              onClick={() => onAction(iv._id, 'complete')}
+              disabled={updating === iv._id}
+              loading={updating === iv._id}
+              style={{ backgroundColor: '#10b981', border: 'none' }}
+              className="font-bold rounded-lg"
+            >
+              Done
+            </Button>
+            <Button
+              size="small"
+              onClick={() => onAction(iv._id, 'cancel')}
+              disabled={updating === iv._id}
+              className="font-bold rounded-lg text-slate-600"
+            >
+              Cancel
+            </Button>
+          </div>
         )}
       </div>
-      <Badge className={`text-[10px] font-bold border-none shrink-0 ${statusStyles[iv.status]}`}>
-        {iv.status}
-      </Badge>
-      {!readonly && isUpcoming && (
-        <div className="flex gap-2 shrink-0">
-          <Button
-            size="sm"
-            onClick={() => onAction(iv._id, 'complete')}
-            disabled={updating === iv._id}
-            className="h-8 px-3 text-xs font-bold rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white"
-          >
-            {updating === iv._id ? <Loader2 size={11} className="animate-spin" /> : 'Done'}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onAction(iv._id, 'cancel')}
-            disabled={updating === iv._id}
-            className="h-8 px-3 text-xs font-bold rounded-lg border-slate-200 text-slate-600"
-          >
-            Cancel
-          </Button>
-        </div>
-      )}
-    </div>
+    </Card>
   );
 };
 

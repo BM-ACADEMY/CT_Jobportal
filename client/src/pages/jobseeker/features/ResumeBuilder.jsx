@@ -8,10 +8,13 @@ import {
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { Card, Typography, Button, Dropdown, Alert } from 'antd';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
 import AIGenerateModal from './AIGenerateModal';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
+
+const { Title, Text } = Typography;
 
 // ─── LocalStorage ─────────────────────────────────────────────────────────────
 const STORE_KEY = 'ct_resumes_v1';
@@ -878,58 +881,67 @@ const downloadPDF = async (pageFormat, fileName) => {
 };
 
 // ─── Resume Card ──────────────────────────────────────────────────────────────
-const fmtDate = (ts) => new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const fmtDate = (ts) => new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
 
 const ResumeCard = ({ resume, onEdit, onDelete, onDuplicate }) => {
-  const [menu, setMenu] = useState(false);
+  const menuItems = [
+    { key: 'edit', label: 'Edit', icon: <Edit3 size={14} />, onClick: () => onEdit(resume.id) },
+    { key: 'duplicate', label: 'Duplicate', icon: <Copy size={14} />, onClick: () => onDuplicate(resume.id) },
+    { type: 'divider' },
+    { key: 'delete', label: <span className="text-red-500">Delete</span>, icon: <Trash2 size={14} className="text-red-500" />, onClick: () => onDelete(resume.id) }
+  ];
+
   return (
-    <div className="group relative rounded-2xl border border-slate-200 bg-white overflow-hidden hover:shadow-md hover:border-emerald-200 transition-all">
+    <Card 
+      bordered={true} 
+      bodyStyle={{ padding: 0 }}
+      className="group relative rounded-xl border border-slate-200 bg-white overflow-hidden hover:shadow-md transition-all flex flex-col h-full"
+    >
       {/* Thumbnail */}
-      <div className="h-36 bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex flex-col gap-1.5 cursor-pointer relative overflow-hidden" onClick={() => onEdit(resume.id)}>
-        <div className="h-3 rounded-sm w-1/2" style={{ backgroundColor: resume.style?.accent || '#0f172a' }} />
-        <div className="h-2 bg-slate-200 rounded-sm w-3/4" />
-        <div className="h-px bg-slate-200 my-1 w-full" />
-        {[80, 60, 70, 50, 65].map((w, i) => <div key={i} className="h-1.5 bg-slate-200 rounded-sm" style={{ width: `${w}%` }} />)}
-        <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/8 transition-colors flex items-center justify-center">
-          <span className="text-emerald-700 text-xs font-bold bg-white/90 px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">Open Editor</span>
+      <div className="h-44 bg-slate-50 p-6 flex flex-col gap-4 cursor-pointer relative overflow-hidden border-b border-slate-100" onClick={() => onEdit(resume.id)}>
+        <div className="h-3 rounded-sm w-1/3" style={{ backgroundColor: '#10b981' }} />
+        <div className="space-y-2">
+           <div className="h-1.5 bg-slate-200 rounded-sm w-3/4" />
+           <div className="h-1.5 bg-slate-200 rounded-sm w-5/6" />
+        </div>
+        <div className="h-px bg-slate-200 w-full my-1" />
+        <div className="space-y-2">
+           <div className="h-1.5 bg-slate-200 rounded-sm w-full" />
+           <div className="h-1.5 bg-slate-200 rounded-sm w-2/3" />
         </div>
       </div>
       {/* Info */}
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-3">
+      <div className="p-4 flex-1 flex flex-col bg-white">
+        <div className="flex items-start justify-between gap-2 mb-4">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">{resume.name}</p>
-            <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-              <Clock size={9} /> {fmtDate(resume.updatedAt)}
+            <h3 className="text-base font-medium text-slate-800 truncate m-0 mb-1">{resume.name}</h3>
+            <p className="text-[11px] text-slate-400 flex items-center gap-1.5 uppercase tracking-wider font-medium">
+              <Clock size={12} /> {fmtDate(resume.updatedAt)}
             </p>
           </div>
-          <div className="relative shrink-0">
-            <button onClick={() => setMenu(!menu)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><MoreHorizontal size={15} /></button>
-            {menu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setMenu(false)} />
-                <div className="absolute right-0 top-8 w-36 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
-                  <button onClick={() => { onEdit(resume.id); setMenu(false); }} className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"><Edit3 size={12} /> Edit</button>
-                  <button onClick={() => { onDuplicate(resume.id); setMenu(false); }} className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"><Copy size={12} /> Duplicate</button>
-                  <div className="h-px bg-slate-100 mx-2" />
-                  <button onClick={() => { onDelete(resume.id); setMenu(false); }} className="w-full text-left px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 size={12} /> Delete</button>
-                </div>
-              </>
-            )}
-          </div>
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button type="text" className="w-8 h-8 p-0 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md" icon={<MoreHorizontal size={18} />} />
+          </Dropdown>
         </div>
-        {/* Action buttons — Edit + visible Delete */}
-        <div className="flex gap-2">
-          <button onClick={() => onEdit(resume.id)} className="flex-1 h-8 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5">
-            <Edit3 size={12} /> Edit
-          </button>
-          <button onClick={() => onDelete(resume.id)} title="Delete resume"
-            className="h-8 w-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-600 transition-colors flex items-center justify-center shrink-0">
-            <Trash2 size={13} />
-          </button>
+        {/* Action buttons */}
+        <div className="flex gap-3 mt-auto">
+          <Button 
+            type="primary" 
+            className="flex-1 rounded-md shadow-sm bg-[#1677ff] hover:bg-blue-600 h-10 font-medium tracking-wide flex items-center justify-center gap-2 uppercase text-xs" 
+            onClick={() => onEdit(resume.id)}
+          >
+            <Edit3 size={15} /> Edit
+          </Button>
+          <Button 
+            danger 
+            className="rounded-md shadow-sm h-10 w-11 p-0 flex items-center justify-center border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300"
+            onClick={() => onDelete(resume.id)} 
+          >
+            <Trash2 size={16} />
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -960,53 +972,65 @@ const ResumeList = ({ onNew, onEdit, limit, setLimitError, onAIGenerate }) => {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-              <FileText size={16} className="text-blue-600" />
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">Resume Builder</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-[#e6f4ff] flex items-center justify-center rounded-md">
+            <FileText size={20} className="text-[#1677ff]" />
           </div>
-          <p className="text-sm text-slate-500">Build and manage your professional resumes.</p>
+          <div>
+            <h1 className="text-2xl m-0 font-semibold tracking-tight text-slate-800">Resume Builder</h1>
+            <p className="text-slate-600 font-medium m-0 text-sm mt-0.5">Build and manage your professional resumes.</p>
+          </div>
         </div>
-        <button onClick={onNew}
-          className="flex items-center gap-2 h-10 px-5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition-colors shadow-sm shadow-emerald-500/20">
-          <Plus size={15} /> New Resume
-        </button>
+        <Button 
+          type="primary" 
+          onClick={onNew}
+          icon={<Plus size={16} />}
+          className="bg-[#1677ff] hover:bg-blue-600 h-10 px-5 rounded-md font-medium text-sm shadow-sm tracking-wide uppercase"
+        >
+          New Resume
+        </Button>
       </div>
 
       {visibleResumes.length === 0 ? (
-        <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-10 text-center">
-          <div className="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Sparkles size={26} className="text-emerald-400" />
+        <Card bordered={false} className="text-center py-20 rounded-xl border border-dashed border-slate-200 shadow-none bg-slate-50 mt-6">
+          <div className="w-14 h-14 bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4 rounded-xl">
+            <Sparkles size={24} className="text-[#1677ff]" />
           </div>
-          <h2 className="text-lg font-bold text-white mb-2">No resumes yet</h2>
-          <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">Create your first professional resume with live preview and instant PDF download.</p>
+          <Title level={4} className="m-0 text-slate-700 font-medium tracking-tight mb-2">No resumes yet</Title>
+          <Text className="text-slate-500 block mb-8">Create your first professional resume with live preview and instant PDF download.</Text>
           <div className="flex items-center justify-center gap-3">
-            <button onClick={onNew}
-              className="inline-flex items-center gap-2 h-11 px-6 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm rounded-xl transition-all shadow-lg">
-              <FileText size={15} /> Build Manually
-            </button>
-            <button onClick={() => setShowAIModal(true)}
-              className="inline-flex items-center gap-2 h-11 px-6 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-emerald-900/30">
-              <Sparkles size={15} /> Generate with AI
-            </button>
+            <Button size="large" onClick={onNew} icon={<FileText size={16} />} className="rounded-md shadow-sm font-medium uppercase tracking-widest text-xs">
+              Build Manually
+            </Button>
+            <Button size="large" type="primary" onClick={() => setShowAIModal(true)} icon={<Sparkles size={16} />} className="rounded-md shadow-sm bg-[#1677ff] hover:bg-blue-600 font-medium uppercase tracking-widest text-xs">
+              Generate with AI
+            </Button>
           </div>
-        </div>
+        </Card>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
           {visibleResumes.map(r => (
             <ResumeCard key={r.id} resume={r} onEdit={onEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} />
           ))}
-          <button onClick={() => setShowAIModal(true)} className="rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50 hover:border-emerald-300 transition-all flex flex-col items-center justify-center min-h-[220px] gap-2 text-emerald-600 hover:text-emerald-700">
-            <Sparkles size={24} />
-            <span className="text-xs font-bold uppercase tracking-widest">Generate with AI</span>
-          </button>
-          <button onClick={onNew} className="rounded-2xl border-2 border-dashed border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex flex-col items-center justify-center min-h-[220px] gap-2 text-slate-400 hover:text-slate-600">
-            <Plus size={24} />
-            <span className="text-xs font-bold uppercase tracking-widest">New Resume</span>
-          </button>
+          <Card 
+            bordered={false}
+            onClick={() => setShowAIModal(true)} 
+            className="rounded-xl border-2 border-dashed border-[#a7f3d0] bg-white hover:bg-emerald-50 hover:border-[#34d399] transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer shadow-none"
+            bodyStyle={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '24px', gap: '16px' }}
+          >
+            <Sparkles size={32} className="text-slate-700" strokeWidth={1.5} />
+            <span className="text-sm font-semibold uppercase tracking-widest text-slate-700">Generate with AI</span>
+          </Card>
+          <Card 
+            bordered={false}
+            onClick={onNew} 
+            className="rounded-xl border-2 border-dashed border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50 transition-all flex flex-col items-center justify-center min-h-[300px] cursor-pointer shadow-none"
+            bodyStyle={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '24px', gap: '16px' }}
+          >
+            <Plus size={32} className="text-slate-700" strokeWidth={1.5} />
+            <span className="text-sm font-semibold uppercase tracking-widest text-slate-700">New Resume</span>
+          </Card>
         </div>
       )}
       

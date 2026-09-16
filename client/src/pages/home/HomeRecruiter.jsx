@@ -107,7 +107,7 @@ const HomeRecruiter = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="lg:col-span-5 hidden lg:flex flex-col gap-4"
+            className="lg:col-span-5 flex flex-col gap-4 mt-10 lg:mt-0"
           >
             {[
               { icon: Zap, text: 'Post in 5 minutes', color: 'bg-emerald-500 text-slate-900' },

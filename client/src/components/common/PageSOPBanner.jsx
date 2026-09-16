@@ -23,34 +23,34 @@ const PageSOPBanner = ({ pageKey }) => {
   };
 
   return (
-    <div className="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:p-5 relative">
+    <div className="mb-6 rounded-none border border-slate-200 bg-slate-50 p-4 sm:p-5 relative">
       <button
         onClick={handleDismiss}
-        className="absolute top-3 right-3 text-emerald-400 hover:text-emerald-700 p-1 rounded-lg hover:bg-emerald-100/60 transition-colors"
+        className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-200/50 transition-colors cursor-pointer"
         aria-label="Dismiss"
       >
         <X size={16} />
       </button>
       <div className="flex gap-3 pr-8">
-        <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded bg-slate-200/60 text-slate-600 flex items-center justify-center shrink-0">
           <Info size={16} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-emerald-900">{title}</h3>
-          <p className="text-xs text-emerald-800/80 mt-1 leading-relaxed">{whatItIs}</p>
+          <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+          <p className="text-xs text-slate-600 mt-1 leading-relaxed">{whatItIs}</p>
           {howItWorks.length > 0 && (
             <>
               <button
                 type="button"
                 onClick={() => setExpanded(!expanded)}
-                className="mt-2 flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900"
+                className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-700 cursor-pointer bg-transparent border-none"
               >
                 How it works {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>
               {expanded && (
                 <ol className="mt-2 space-y-1 list-decimal pl-4">
                   {howItWorks.map((step, i) => (
-                    <li key={i} className="text-xs text-emerald-800/90">{step}</li>
+                    <li key={i} className="text-xs text-slate-600">{step}</li>
                   ))}
                 </ol>
               )}

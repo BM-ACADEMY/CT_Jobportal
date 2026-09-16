@@ -188,7 +188,7 @@ const AutoRenewToggle = ({ enabled, onToggle, saving }) => (
     onClick={onToggle}
     disabled={saving}
     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none shrink-0 ${
-      enabled ? 'bg-emerald-500' : 'bg-slate-200'
+      enabled ? 'bg-blue-500' : 'bg-slate-200'
     } ${saving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
     role="switch"
     aria-checked={enabled}
@@ -503,33 +503,33 @@ const SubscriptionPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Subscription & Billing</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage your account tier and monitor service utilization.</p>
+          <h1 className="text-lg font-semibold text-slate-900 tracking-tight">Subscription & Billing</h1>
+          <p className="text-xs text-slate-500 mt-1">Manage your account tier and monitor service utilization.</p>
         </div>
       </div>
 
       {/* Current Plan Status */}
       {currentPlan ? (
-        <div className={`rounded-2xl border p-6 flex flex-col gap-5 ${
-          isExpired ? 'border-red-200 bg-red-50' :
-          isExpiringSoon ? 'border-amber-200 bg-amber-50' :
-          'border-emerald-200 bg-emerald-50'
+        <div className={`rounded-none border p-6 flex flex-col gap-5 ${
+          isExpired ? 'border-red-200 bg-red-50/50' :
+          isExpiringSoon ? 'border-amber-200 bg-amber-50/50' :
+          'border-blue-200 bg-blue-50/40'
         }`}>
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-              isExpired ? 'bg-red-100' : isExpiringSoon ? 'bg-amber-100' : 'bg-emerald-100'
+            <div className={`w-12 h-12 rounded-none flex items-center justify-center shrink-0 ${
+              isExpired ? 'bg-red-100' : isExpiringSoon ? 'bg-amber-100' : 'bg-blue-100'
             }`}>
               {isExpired ? <AlertCircle size={22} className="text-red-600" /> :
                isExpiringSoon ? <Clock size={22} className="text-amber-600" /> :
-               <Crown size={22} className="text-emerald-600" />}
+               <Crown size={22} className="text-blue-500" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                <p className="font-bold text-slate-900">{currentPlan.name}</p>
-                <Badge className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg border-none ${
+                <p className="font-semibold text-slate-900">{currentPlan.name}</p>
+                <Badge className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-none border-none ${
                   isExpired ? 'bg-red-100 text-red-700' :
                   isExpiringSoon ? 'bg-amber-100 text-amber-700' :
-                  'bg-emerald-100 text-emerald-700'
+                  'bg-blue-100 text-blue-700'
                 }`}>
                   {isExpired ? 'Expired' : isExpiringSoon ? `${daysLeft}d left` : 'Active'}
                 </Badge>
@@ -545,7 +545,7 @@ const SubscriptionPage = () => {
                 <Button
                   onClick={() => downloadInvoice(payments.find(p => p.status === 'completed' && p.paymentType !== 'pay-per-feature' && (p.plan?._id?.toString() === currentPlan?._id?.toString() || p.plan?.id === currentPlan?._id?.toString())), user)}
                   variant="outline"
-                  className="h-10 px-4 rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-bold text-sm flex items-center gap-2"
+                  className="h-9 px-4 rounded border-[#d9d9d9] text-slate-700 hover:text-[#39c884] hover:border-[#39c884] hover:bg-white font-medium text-xs flex items-center gap-2 cursor-pointer"
                 >
                   <Download size={14} /> Download Invoice
                 </Button>
@@ -553,7 +553,7 @@ const SubscriptionPage = () => {
               {(isExpired || isExpiringSoon) && (
                 <Button
                   onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="h-10 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold text-sm"
+                  className="h-9 px-6 rounded bg-[#39c884] hover:bg-[#2ea86e] text-white font-medium text-xs border-none cursor-pointer"
                 >
                   Renew Now
                 </Button>
@@ -561,13 +561,13 @@ const SubscriptionPage = () => {
             </div>
           </div>
 
-          {/* Auto-renew toggle — this is the user's own personal plan, so it's always theirs to manage */}
+          {/* Auto-renew toggle */}
           {!isExpired && (
-            <div className="flex items-center justify-between rounded-xl bg-white/70 border border-white px-4 py-3">
+            <div className="flex items-center justify-between rounded-none bg-white border border-[#e8e8e8] px-4 py-3">
               <div className="flex items-center gap-2.5">
-                <RefreshCw size={15} className={autoRenew ? 'text-emerald-600' : 'text-slate-400'} />
+                <RefreshCw size={15} className={autoRenew ? 'text-blue-500' : 'text-slate-400'} />
                 <div>
-                  <p className="text-xs font-bold text-slate-800 leading-tight">Auto-Renewal</p>
+                  <p className="text-xs font-semibold text-slate-800 leading-tight">Auto-Renewal</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     {autoRenew ? 'Your plan renews automatically before expiry' : 'Your plan will not auto-renew'}
                   </p>
@@ -578,12 +578,12 @@ const SubscriptionPage = () => {
           )}
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 flex items-center gap-5">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center shrink-0">
+        <div className="rounded-none border border-[#e8e8e8] bg-slate-50 p-6 flex items-center gap-5">
+          <div className="w-12 h-12 rounded-none bg-slate-100 flex items-center justify-center shrink-0">
             <ShieldCheck size={22} className="text-slate-400" />
           </div>
           <div>
-            <p className="font-bold text-slate-700">Free Tier</p>
+            <p className="font-semibold text-slate-700">Free Tier</p>
             <p className="text-xs text-slate-400 font-medium mt-0.5">Upgrade to unlock premium features below</p>
           </div>
         </div>
@@ -594,11 +594,11 @@ const SubscriptionPage = () => {
         <Tabs defaultValue={defaultTab} className="w-full space-y-8">
           {user?.role !== 'recruiter' && user?.role !== 'company' && user?.role !== 'college' && user?.role !== 'org_employee' && (
             <div className="flex justify-center">
-              <TabsList className="bg-slate-100 p-1 rounded-xl w-fit">
-                <TabsTrigger value="recruiter" className="rounded-lg px-8 py-2.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <TabsList className="bg-slate-100 p-1 rounded-none w-fit">
+                <TabsTrigger value="recruiter" className="rounded-none px-8 py-2.5 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
                   Recruiters
                 </TabsTrigger>
-                <TabsTrigger value="company" className="rounded-lg px-8 py-2.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <TabsTrigger value="company" className="rounded-none px-8 py-2.5 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
                   Organizations
                 </TabsTrigger>
               </TabsList>
@@ -607,27 +607,27 @@ const SubscriptionPage = () => {
 
           {loading ? (
             <div className="flex flex-col items-center py-16">
-              <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-4" />
-              <p className="text-slate-400 text-sm font-semibold">Loading plans...</p>
+              <div className="w-8 h-8 border-2 border-[#39c884]/30 border-t-[#39c884] rounded-full animate-spin mb-4" />
+              <p className="text-slate-400 text-sm font-medium">Loading plans...</p>
             </div>
           ) : (
             <>
               <TabsContent value="recruiter" className="m-0">
                 {isRestrictedTeamMember && user?.organizationSubscription && (
-                  <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-start gap-2.5">
+                  <div className="mb-5 rounded-none border border-[#e8e8e8] bg-slate-50 px-4 py-3 flex items-start gap-2.5">
                     <Info size={16} className="text-slate-400 shrink-0 mt-0.5" />
                     <p className="text-xs text-slate-600 font-medium">
-                      Your organization ({user.employerCompanyName || 'your company'}) is on the <span className="font-bold">{user.organizationSubscription.name}</span> plan — that's managed by your organization admin. The plans below are separate: buy one for your own personal use.
+                      Your organization ({user.employerCompanyName || 'your company'}) is on the <span className="font-semibold">{user.organizationSubscription.name}</span> plan — that's managed by your organization admin. The plans below are separate: buy one for your own personal use.
                     </p>
                   </div>
                 )}
                 {plans.filter(p => p.role === 'recruiter').length === 0 ? (
-                  <div className="text-center py-16 rounded-2xl border border-dashed border-slate-200">
+                  <div className="text-center py-16 rounded-none border border-dashed border-[#e8e8e8]">
                     <Zap size={32} className="text-slate-200 mx-auto mb-3" />
-                    <p className="text-slate-500 font-semibold">No recruiter plans available</p>
+                    <p className="text-slate-500 font-medium">No recruiter plans available</p>
                   </div>
                 ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                     {plans.filter(p => p.role === 'recruiter').map((plan, idx) => (
                       <PricingCard
                         key={plan._id}
@@ -645,12 +645,12 @@ const SubscriptionPage = () => {
 
               <TabsContent value="company" className="m-0">
                 {plans.filter(p => p.role === 'company').length === 0 ? (
-                  <div className="text-center py-16 rounded-2xl border border-dashed border-slate-200">
+                  <div className="text-center py-16 rounded-none border border-dashed border-[#e8e8e8]">
                     <Zap size={32} className="text-slate-200 mx-auto mb-3" />
-                    <p className="text-slate-500 font-semibold">No organization plans available</p>
+                    <p className="text-slate-500 font-medium">No organization plans available</p>
                   </div>
                 ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                     {plans.filter(p => p.role === 'company').map((plan, idx) => (
                       <PricingCard
                         key={plan._id}
@@ -668,12 +668,12 @@ const SubscriptionPage = () => {
 
               <TabsContent value="college" className="m-0">
                 {plans.filter(p => p.role === 'college').length === 0 ? (
-                  <div className="text-center py-16 rounded-2xl border border-dashed border-slate-200">
+                  <div className="text-center py-16 rounded-none border border-dashed border-[#e8e8e8]">
                     <Zap size={32} className="text-slate-200 mx-auto mb-3" />
-                    <p className="text-slate-500 font-semibold">No campus plans available</p>
+                    <p className="text-slate-500 font-medium">No campus plans available</p>
                   </div>
                 ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                     {plans.filter(p => p.role === 'college').sort((a, b) => a.price - b.price).map((plan, idx) => (
                       <PricingCard
                         key={plan._id}

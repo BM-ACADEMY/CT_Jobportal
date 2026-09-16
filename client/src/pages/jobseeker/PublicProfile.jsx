@@ -18,11 +18,13 @@ import {
   Star,
   BadgeCheck
 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+import { Button, Card, Tag as Badge, Avatar, Divider as Separator } from 'antd';
+
+// Wrappers for Shadcn APIs to Antd
+const CardTitle = ({ className, children }) => <h4 className={`!m-0 text-inherit ${className}`}>{children}</h4>;
+const CardHeader = ({ className, children }) => <div className={className}>{children}</div>;
+const CardContent = ({ className, children }) => <div className={className}>{children}</div>;
+const AvatarFallback = ({ className, children }) => <span className={className}>{children}</span>;
 import { toast } from "sonner";
 
 const PublicProfile = () => {

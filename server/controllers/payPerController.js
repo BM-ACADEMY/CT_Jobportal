@@ -1,6 +1,6 @@
 const PayPerFeature = require('../models/PayPerFeature');
 const crypto = require('crypto');
-const razorpay = require('../config/razorpay');
+const getRazorpay = require('../config/razorpay');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
 const Settings = require('../models/Settings');
@@ -133,7 +133,7 @@ exports.purchaseCreateOrder = async (req, res) => {
       receipt: `payper_${Date.now()}`,
     };
 
-    const order = await razorpay.orders.create(options);
+    const order = await getRazorpay().orders.create(options);
 
     res.json({
       orderId: order.id,

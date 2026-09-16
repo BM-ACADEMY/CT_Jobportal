@@ -63,7 +63,7 @@ const WriteReview = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
       </div>
     );
   }
@@ -71,22 +71,22 @@ const WriteReview = () => {
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Platform Feedback</h1>
-        <p className="text-sm text-slate-500 mt-1">Share your experience with Velaivaaipu.</p>
+        <h1 className="text-lg font-semibold text-slate-900 tracking-tight">Platform Feedback</h1>
+        <p className="text-xs text-slate-500 mt-1">Share your experience with Velaivaaipu.</p>
       </div>
 
       {status && (
-        <div className={`p-4 rounded-xl border flex items-start gap-3 ${
-          status === 'approved' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+        <div className={`p-4 rounded-none border flex items-start gap-3 ${
+          status === 'approved' ? 'bg-blue-50 border-blue-200 text-blue-800' :
           status === 'rejected' ? 'bg-rose-50 border-rose-200 text-rose-800' :
           'bg-blue-50 border-blue-200 text-blue-800'
         }`}>
-          {status === 'approved' && <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" />}
+          {status === 'approved' && <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" />}
           {status === 'rejected' && <AlertCircle className="text-rose-500 shrink-0 mt-0.5" />}
           {status === 'pending' && <AlertCircle className="text-blue-500 shrink-0 mt-0.5" />}
           
           <div>
-            <p className="font-bold text-sm capitalize">Status: {status}</p>
+            <p className="font-semibold text-sm capitalize">Status: {status}</p>
             <p className="text-xs opacity-80 mt-0.5">
               {status === 'approved' && 'Your review has been approved and may be featured on our homepage!'}
               {status === 'rejected' && 'Your review was rejected because it did not meet our community guidelines. You can edit and resubmit.'}
@@ -96,12 +96,12 @@ const WriteReview = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 sm:p-8 shadow-sm">
+      <div className="bg-white rounded-none border border-[#e8e8e8] p-6 sm:p-8 shadow-none">
         <form onSubmit={handleSubmit} className="space-y-6">
           
           {/* Rating */}
           <div className="space-y-3 text-center">
-            <label className="block text-sm font-bold text-slate-700">How would you rate your experience?</label>
+            <label className="block text-sm font-semibold text-slate-700">How would you rate your experience?</label>
             <div className="flex items-center justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -110,7 +110,7 @@ const WriteReview = () => {
                   onMouseEnter={() => setHoverRating(star)}
                   onMouseLeave={() => setHoverRating(0)}
                   onClick={() => setRating(star)}
-                  className="transition-transform hover:scale-110 focus:outline-none"
+                  className="transition-transform hover:scale-110 focus:outline-none cursor-pointer"
                 >
                   <Star
                     size={40}
@@ -124,7 +124,7 @@ const WriteReview = () => {
               ))}
             </div>
             {rating > 0 && (
-              <p className="text-xs font-medium text-amber-600">
+              <p className="text-xs font-semibold text-amber-600">
                 {['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating - 1]}
               </p>
             )}
@@ -132,14 +132,14 @@ const WriteReview = () => {
 
           {/* Comment */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
               <MessageSquareQuote size={16} /> Your Review
             </label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Tell us what you loved or how we can improve..."
-              className="w-full h-32 p-4 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none"
+              className="w-full h-32 p-4 rounded-none border border-[#d9d9d9] text-xs outline-none hover:border-blue-500 focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.15)] transition-all resize-none placeholder:text-slate-400"
               maxLength={500}
             />
             <div className="flex justify-end">
@@ -153,7 +153,7 @@ const WriteReview = () => {
             <Button
               type="submit"
               disabled={saving || (status === 'approved' && !comment)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 font-bold"
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded px-8 font-medium h-9 text-xs border-none cursor-pointer flex items-center justify-center"
             >
               {saving ? 'Submitting...' : status ? 'Update Review' : 'Submit Review'}
             </Button>
