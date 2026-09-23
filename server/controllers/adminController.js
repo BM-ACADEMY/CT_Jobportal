@@ -10,6 +10,8 @@ const Payment = require('../models/Payment');
 const Subscription = require('../models/Subscription');
 const sendEmail = require('../utils/sendEmail');
 const { notifyUser } = require('../utils/inAppNotifications');
+const { notifyJobClosedOrRemoved } = require('../utils/jobNotifications');
+const { emailWrapper } = require('../utils/emailTemplates');
 
 const generateToken = (id, roleName) => {
   return jwt.sign(
@@ -249,6 +251,18 @@ const getUsers = async (req, res) => {
 // @route   DELETE /api/admin/users/:id
 const deleteUser = async (req, res) => {
   try {
+    // An in-app notification would die with the account, so this one is email-only.
+    const deletedUser = await User.findById(req.params.id).select('name email');
+    if (deletedUser?.email) {
+      sendEmail({
+        email: deletedUser.email,
+        subject: 'Your Velaivaaipu account has been removed',
+        html: emailWrapper('Account removed', `
+          <p>Hi ${deletedUser.name || 'there'},</p>
+          <p>Your Velaivaaipu account has been removed by an administrator. If you think this is a mistake, please contact our support team.</p>
+        `)
+      }).catch(() => {});
+    }
     await User.findByIdAndDelete(req.params.id);
     res.json({ msg: 'User deleted successfully' });
   } catch (err) {
@@ -448,6 +462,17 @@ const toggleBlockUser = async (req, res) => {
     user.isAdminBlocked = !user.isAdminBlocked;
     await user.save();
 
+    notifyUser({
+      io: req.io,
+      recipientId: user._id,
+      title: user.isAdminBlocked ? 'Your account has been blocked' : 'Your account has been unblocked',
+      message: user.isAdminBlocked
+        ? 'An administrator has blocked your Velaivaaipu account. Please contact support if you think this is a mistake.'
+        : 'An administrator has unblocked your Velaivaaipu account. You can log in and use the portal again.',
+      type: 'account_status',
+      metadata: { blocked: user.isAdminBlocked }
+    }).catch(err => console.error('Account status notification failed:', err.message));
+
     res.json({ msg: `User ${user.isAdminBlocked ? 'blocked' : 'unblocked'} successfully`, isAdminBlocked: user.isAdminBlocked });
   } catch (err) {
     console.error('Block User Error:', err.message);
@@ -471,6 +496,12 @@ const getRoles = async (req, res) => {
 // @route   DELETE /api/admin/jobs/:id
 const deleteJob = async (req, res) => {
   try {
+    const job = await Job.findById(req.params.id).select('title recruiter company');
+    if (job) {
+      // Notify before deleting so the applicants can still be looked up.
+      await notifyJobClosedOrRemoved({ io: req.io, job, actorId: req.user?.id, action: 'removed' })
+        .catch(err => console.error('Job removed notification failed:', err.message));
+    }
     await Job.findByIdAndDelete(req.params.id);
     res.json({ msg: 'Job deleted successfully' });
   } catch (err) {

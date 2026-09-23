@@ -19,6 +19,100 @@ const STATUS_LABELS = {
   withdrawn: 'Withdrawn'
 };
 
+// Tells the job's poster (and the rest of their company) that someone applied, and confirms
+// the submission to the applicant. All three go out as in-app notifications and emails.
+const notifyApplicationSubmitted = async ({ io, jobId, application, applicant, isPriority }) => {
+  const job = await Job.findById(jobId).select('title recruiter company').populate('company', 'name');
+  if (!job) return;
+
+  const applicantName = applicant.name || 'A candidate';
+  const companyName = job.company?.name;
+  const companyUsers = job.company
+    ? await User.find({ company: job.company._id, _id: { $ne: job.recruiter } }).select('_id')
+    : [];
+  const metadata = { jobId, applicationId: application._id, applicantId: applicant._id };
+  const title = isPriority ? 'New high-priority application' : 'New job application';
+  const emailSubject = `${isPriority ? 'High-priority application' : 'New application'} — ${job.title}`;
+  const priorityNote = isPriority ? ' This application carries a Priority badge and is flagged for your immediate attention.' : '';
+  const link = `/company/applicants/${jobId}`;
+
+  await Promise.allSettled([
+    notifyUser({
+      io,
+      recipientId: job.recruiter,
+      title,
+      message: `${applicantName} has applied for the job “${job.title}” posted by you.${priorityNote}`,
+      type: 'application_received',
+      link,
+      metadata,
+      emailSubject
+    }),
+    notifyUsers({
+      io,
+      recipientIds: companyUsers.map(companyUser => companyUser._id),
+      title,
+      message: `${applicantName} has applied for the job “${job.title}” posted by your company.${priorityNote}`,
+      type: 'application_received',
+      link,
+      metadata,
+      emailSubject
+    }),
+    notifyUser({
+      io,
+      recipientId: applicant._id,
+      title: 'Application submitted',
+      message: `Your application for “${job.title}”${companyName ? ` at ${companyName}` : ''} was submitted successfully. We will let you know when the recruiter reviews it.`,
+      type: 'application_submitted',
+      link: '/candidate/applications',
+      metadata
+    })
+  ]);
+};
+
+// Tells the job's poster and their colleagues that an application moved to a new status. The person
+// who made the change gets a confirmation; everyone else is told who changed it. (The applicant is
+// emailed separately by the caller.)
+const notifyStatusChangeToTeam = async ({ io, application, label, actorId, actorName }) => {
+  const job = application.job;
+  if (!job) return;
+
+  const companyUsers = job.company?._id
+    ? await User.find({ company: job.company._id }).select('_id')
+    : [];
+  const recipientIds = [...new Set([job.recruiter, ...companyUsers.map(companyUser => companyUser._id)]
+    .filter(Boolean).map(String))];
+  const actorIsRecipient = recipientIds.includes(String(actorId));
+
+  const applicantName = application.applicant?.name || 'a candidate';
+  const title = 'Application status changed';
+  const emailSubject = `${applicantName} — ${label} — ${job.title}`;
+  const link = `/company/applicants/${job._id}`;
+  const metadata = { jobId: job._id, applicationId: application._id, status: application.status };
+
+  await Promise.allSettled([
+    actorIsRecipient && notifyUser({
+      io,
+      recipientId: actorId,
+      title,
+      message: `You changed the status of ${applicantName}'s application for “${job.title}” to ${label}.`,
+      type: 'application_status_changed',
+      link,
+      metadata,
+      emailSubject
+    }),
+    notifyUsers({
+      io,
+      recipientIds: recipientIds.filter(id => id !== String(actorId)),
+      title,
+      message: `${actorName} changed the status of ${applicantName}'s application for “${job.title}” to ${label}.`,
+      type: 'application_status_changed',
+      link,
+      metadata,
+      emailSubject
+    })
+  ].filter(Boolean));
+};
+
 exports.getMyApplications = async (req, res) => {
   try {
     const applicantId = req.user.id;
@@ -53,7 +147,11 @@ exports.applyJob = async (req, res) => {
         await existingApplication.save();
         
         await Job.findByIdAndUpdate(jobId, { $inc: { applicantsCount: 1 } });
-        
+
+        const reapplicant = await User.findById(applicantId).select('name');
+        notifyApplicationSubmitted({ io: req.io, jobId, application: existingApplication, applicant: reapplicant, isPriority: existingApplication.isPriority })
+          .catch(err => console.error('Application notification failed:', err.message));
+
         return res.status(200).json({ msg: 'Application re-submitted successfully', application: existingApplication });
       }
       return res.status(400).json({ msg: 'You have already applied for this job' });
@@ -126,35 +224,11 @@ exports.applyJob = async (req, res) => {
     // Increment applicants count in Job model
     await Job.findByIdAndUpdate(jobId, { $inc: { applicantsCount: 1 } });
 
-    const appliedJob = await Job.findById(jobId).select('title recruiter company');
-    if (appliedJob) {
-      const companyUsers = appliedJob.company
-        ? await User.find({ company: appliedJob.company }).select('_id')
-        : [];
-      notifyUsers({
-        io: req.io,
-        recipientIds: [appliedJob.recruiter, ...companyUsers.map(companyUser => companyUser._id)],
-        title: 'New job application',
-        message: `${user.name || 'A candidate'} applied for ${appliedJob.title}.`,
-        type: 'application_received',
-        link: `/company/applicants/${jobId}`,
-        metadata: { jobId, applicationId: application._id, applicantId }
-      }).catch(err => console.error('Application notification failed:', err.message));
-    }
+    notifyApplicationSubmitted({ io: req.io, jobId, application, applicant: user, isPriority })
+      .catch(err => console.error('Application notification failed:', err.message));
 
     if (isPriority) {
       const jobWithRecruiter = await Job.findById(jobId).select('title recruiter').populate('recruiter', 'name email recruiterProfile.phone companyProfile.phone');
-      if (jobWithRecruiter?.recruiter?.email) {
-        sendEmail({
-          email: jobWithRecruiter.recruiter.email,
-          subject: `High-Priority Application — ${jobWithRecruiter.title}`,
-          html: emailWrapper('New High-Priority Application', `
-            <p>Hi ${jobWithRecruiter.recruiter.name || 'there'},</p>
-            <p><strong>${user.name || 'A candidate'}</strong> just applied to <strong>${jobWithRecruiter.title}</strong> using a Priority Application badge — this application is flagged for your immediate attention.</p>
-            <p><a href="${FRONTEND_URL}/company/jobs" style="color:#059669;">Review applicants</a></p>
-          `)
-        }).catch(() => {});
-      }
       const recruiterPhone = getUserPhone(jobWithRecruiter?.recruiter);
       if (recruiterPhone) {
         sendWhatsAppTemplate({
@@ -235,7 +309,7 @@ exports.updateApplicationStatus = async (req, res) => {
       id,
       { $set: updateFields },
       { new: true }
-    ).populate('applicant', 'name email profileImage profile').populate({ path: 'job', select: 'title company', populate: { path: 'company', select: 'name' } });
+    ).populate('applicant', 'name email profileImage profile').populate({ path: 'job', select: 'title company recruiter', populate: { path: 'company', select: 'name' } });
 
     if (!application) return res.status(404).json({ msg: 'Application not found' });
 
@@ -246,9 +320,11 @@ exports.updateApplicationStatus = async (req, res) => {
         subject: `Your application for ${application.job?.title || 'a job'} — ${label}`,
         html: emailWrapper('Application Status Update', `
           <p>Hi ${application.applicant.name || 'there'},</p>
-          <p>Your application for <strong>${application.job?.title || 'the role'}</strong> has been updated to:</p>
+          <p>Your application for <strong>${application.job?.title || 'the role'}</strong>${application.job?.company?.name ? ` at <strong>${application.job.company.name}</strong>` : ''} has been updated to:</p>
           <p style="font-size:18px;font-weight:800;color:#059669;">${label}</p>
           ${status === 'accepted' ? '<p>Congratulations! The recruiter will be in touch with next steps.</p>' : ''}
+          ${status === 'shortlisted' ? '<p>Good news — you have been shortlisted. The recruiter may contact you about the next round.</p>' : ''}
+          ${status === 'rejected' ? '<p>Thank you for your interest. The employer has decided not to move forward with your application this time. Keep applying — there are more roles waiting for you.</p>' : ''}
           <p><a href="${FRONTEND_URL}/jobseeker/applications" style="color:#059669;">View your applications</a></p>
         `)
       }).catch(() => {});
@@ -263,8 +339,19 @@ exports.updateApplicationStatus = async (req, res) => {
         message: `Your application for ${application.job?.title || 'the role'} is now ${label}.`,
         type: 'application_status',
         link: '/candidate/applications',
+        email: false, // the status email above already covers this
         metadata: { applicationId: application._id, status }
       }).catch(err => console.error('Application status notification failed:', err.message));
+    }
+
+    if (statusChanged && status !== 'withdrawn') {
+      User.findById(req.user.id).select('name').then(actor => notifyStatusChangeToTeam({
+        io: req.io,
+        application,
+        label: STATUS_LABELS[status] || status,
+        actorId: req.user.id,
+        actorName: actor?.name || 'An administrator'
+      })).catch(err => console.error('Team status notification failed:', err.message));
     }
 
     const applicantPhone = getUserPhone(application.applicant);
@@ -319,6 +406,48 @@ exports.revokeApplication = async (req, res) => {
     await application.save();
 
     await Job.findByIdAndUpdate(application.job, { $inc: { applicantsCount: -1 } });
+
+    const [withdrawnJob, withdrawnApplicant] = await Promise.all([
+      Job.findById(application.job).select('title recruiter company'),
+      User.findById(req.user.id).select('name')
+    ]);
+    if (withdrawnJob) {
+      const companyUsers = withdrawnJob.company
+        ? await User.find({ company: withdrawnJob.company, _id: { $ne: withdrawnJob.recruiter } }).select('_id')
+        : [];
+      const metadata = { jobId: withdrawnJob._id, applicationId: application._id, applicantId: req.user.id };
+      const link = `/company/applicants/${withdrawnJob._id}`;
+      const applicantName = withdrawnApplicant?.name || 'A candidate';
+      Promise.allSettled([
+        notifyUser({
+          io: req.io,
+          recipientId: withdrawnJob.recruiter,
+          title: 'Application withdrawn',
+          message: `${applicantName} has withdrawn their application for the job “${withdrawnJob.title}” posted by you.`,
+          type: 'application_withdrawn',
+          link,
+          metadata
+        }),
+        notifyUsers({
+          io: req.io,
+          recipientIds: companyUsers.map(companyUser => companyUser._id),
+          title: 'Application withdrawn',
+          message: `${applicantName} has withdrawn their application for the job “${withdrawnJob.title}” posted by your company.`,
+          type: 'application_withdrawn',
+          link,
+          metadata
+        }),
+        notifyUser({
+          io: req.io,
+          recipientId: req.user.id,
+          title: 'Application withdrawn',
+          message: `You withdrew your application for “${withdrawnJob.title}”.`,
+          type: 'application_withdrawn',
+          link: '/candidate/applications',
+          metadata
+        })
+      ]);
+    }
 
     res.json({ msg: 'Application revoked successfully' });
   } catch (err) {

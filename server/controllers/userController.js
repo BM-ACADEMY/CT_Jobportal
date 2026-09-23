@@ -5,6 +5,23 @@ const jwt = require('jsonwebtoken');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const pdfParse = require('pdf-parse');
 const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
+const Company = require('../models/Company');
+const { notifyUser } = require('../utils/inAppNotifications');
+
+// The invite is sent by whoever owns the company account, so that is who hears the answer.
+const notifyInviteResponse = async ({ io, company, invitee, accepted }) => {
+  const inviter = company?.admin_email ? await User.findOne({ email: company.admin_email }).select('_id') : null;
+  if (!inviter) return;
+  await notifyUser({
+    io,
+    recipientId: inviter._id,
+    title: accepted ? 'Team invitation accepted' : 'Team invitation declined',
+    message: `${invitee.name || 'A user'} ${accepted ? 'accepted' : 'declined'} your invitation to join ${company.name}.`,
+    type: 'company_invite_response',
+    link: '/company/team',
+    metadata: { companyId: company._id, inviteeId: invitee._id, accepted }
+  });
+};
 
 // A JWT's role claim is fixed at sign-time — accepting an invite can change the user's actual
 // role (jobseeker -> org_employee, or a recruiter gaining team access) without the client ever
@@ -629,6 +646,9 @@ const acceptCompanyInvite = async (req, res) => {
     await user.save();
     await user.populate('role');
 
+    notifyInviteResponse({ io: req.io, company, invitee: user, accepted: true })
+      .catch(err => console.error('Invite response notification failed:', err.message));
+
     const token = generateToken(user._id, user.role.name);
     res.json({ msg: 'Invite accepted. Your account is now part of the organization.', token, role: user.role.name });
   } catch (err) {
@@ -646,8 +666,13 @@ const declineCompanyInvite = async (req, res) => {
       return res.status(400).json({ msg: 'No pending invite found.' });
     }
 
+    const declinedCompany = await Company.findById(user.pendingCompanyInvite.company).select('name admin_email');
     user.pendingCompanyInvite = undefined;
     await user.save();
+
+    notifyInviteResponse({ io: req.io, company: declinedCompany, invitee: user, accepted: false })
+      .catch(err => console.error('Invite response notification failed:', err.message));
+
     res.json({ msg: 'Invite declined.' });
   } catch (err) {
     console.error('Decline Invite Error:', err);

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import DetailedJobCard from '../../components/jobseeker/DetailedJobCard';
 import RecommendedJobCard from '../../components/jobseeker/RecommendedJobCard';
 import { Button, Card, Tag, Skeleton, Spin, Row, Col, Typography, Space, Alert } from 'antd';
+import { Badge } from '@/components/ui/badge';
 import { ChevronRight, QrCode, Smartphone, ExternalLink, Sparkles, TrendingUp, CircleCheck, Loader2, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
@@ -184,12 +185,12 @@ const JobSeekerDashboard = () => {
         ) */}
 
         {campusStudent?.interviewScorecards?.length > 0 && (
-          <section className="relative z-10 rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8 shadow-sm space-y-6 xl:w-[calc(100%+372px)]">
+          <section className="relative z-10 rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8 shadow-sm space-y-6">
             <div className="flex items-start justify-between gap-3">
               <div><p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Campus placement feedback</p><h3 className="text-lg font-black text-slate-900 mt-1">My Interview Scorecards</h3><p className="text-xs text-slate-500 mt-1">Feedback recorded by your placement team for your campus interviews.</p></div>
               <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-50">{campusStudent.interviewScorecards.length} review{campusStudent.interviewScorecards.length === 1 ? '' : 's'}</Badge>
             </div>
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="grid md:grid-cols-2 2xl:grid-cols-3 gap-5">
               {campusStudent.interviewScorecards.map(card => {
                 const average = ((Number(card.technical || 0) + Number(card.communication || 0) + Number(card.problemSolving || 0)) / 3).toFixed(1);
                 const positive = ['strong_hire', 'hire'].includes(card.recommendation);
@@ -284,7 +285,7 @@ const JobSeekerDashboard = () => {
 
 
         {/* Job Listings Header */}
-        <div className="relative z-10 space-y-6 xl:w-[calc(100%+372px)]">
+        <div className="relative z-10 space-y-6">
           <div className="flex items-center justify-between px-2">
              <div className="space-y-0.5">
                <Title level={4} style={{ margin: 0 }}>Recent Opportunities</Title>

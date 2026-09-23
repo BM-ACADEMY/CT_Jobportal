@@ -3,19 +3,21 @@ const getRazorpay = require('../config/razorpay');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Payment = require('../models/Payment');
-const Settings = require('../models/Settings');
+const Role = require('../models/Role');
+const PayPerFeature = require('../models/PayPerFeature');
 const College = require('../models/College');
 const Company = require('../models/Company');
 const RenewalLog = require('../models/RenewalLog');
-const { generateMouPdf } = require('../utils/pdfGenerator');
-const { saveBufferToUploads } = require('../utils/fileStorage');
 const { sendWhatsAppMessage, triggerN8nWebhook } = require('../utils/notifications');
 const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const Coupon = require('../models/Coupon');
 const { reconcileTeamSeats } = require('../utils/teamMembership');
+const { fetchGstPercentage, getPricingOption, computeNextRenewalDate } = require('../utils/pricing');
+const { canPurchasePlan, fulfillPlanPayment, fulfillRecurringPayment, fulfillPayPerPayment, recordRenewalPayment } = require('../utils/paymentFulfillment');
 const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
+const { isValidSignature, isDuplicateKeyError, findPaymentByRazorpayId, checkoutNotes, findCoupon, countCouponUse } = require('../utils/paymentGuards');
 
 const RECURRING_ROLES = ['college', 'company'];
 const paymentHistoryLink = role => role === 'college'
@@ -23,46 +25,42 @@ const paymentHistoryLink = role => role === 'college'
   : ['company', 'recruiter', 'org_employee'].includes(role)
     ? '/company/payment-history'
     : '/candidate/payment-history';
-const STUDENT_LIMIT_UNLIMITED = 100000;
-const COLLEGE_TIER_MAP = {
-  'Campus Free': 'campus_free',
-  'Campus Lite': 'campus_lite',
-  'Campus Pro': 'campus_pro',
-  'Campus Elite': 'campus_elite'
-};
 const MAX_RENEWAL_FAILURES = 3;
 
-const computeNextRenewalDate = (duration, from = new Date()) => {
-  const d = new Date(from);
-  if (duration === 'Monthly') d.setMonth(d.getMonth() + 1);
-  else if (duration === 'Quarterly') d.setMonth(d.getMonth() + 3);
-  else if (duration === 'Yearly') d.setFullYear(d.getFullYear() + 1);
-  else d.setFullYear(d.getFullYear() + 100);
-  return d;
-};
-
-const fetchGstPercentage = async () => {
-  const settings = await Settings.findOne({ key: 'global' });
-  return settings?.gstPercentage || 0;
-};
-
-const getPricingOption = (plan, quantity) => {
-  if (plan.pricingOptions && plan.pricingOptions.length > 0) {
-    const opt = plan.pricingOptions.find(o => o.quantity === quantity);
-    if (opt) {
-      return opt.price;
+// Prices a purchase exactly as the checkout does: plan/quantity price, optional coupon, then GST.
+const computeCharge = async (plan, quantity, couponCode) => {
+  let baseAmount = getPricingOption(plan, quantity);
+  let discountPercentage = 0;
+  let couponApplied = null;
+  if (couponCode) {
+    const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+    if (coupon && (coupon.totalUses === 0 || coupon.currentUses < coupon.totalUses)) {
+      discountPercentage = coupon.percentage;
+      couponApplied = coupon._id;
+      baseAmount = baseAmount - (baseAmount * discountPercentage) / 100;
     }
   }
-  
-  // Default fallback calculation:
-  const basePerUnit = plan.price || plan.cost || 0;
-  const baseTotal = basePerUnit * quantity;
-  let discountPercentage = 0;
-  if (quantity >= 12) discountPercentage = 20;
-  else if (quantity >= 6) discountPercentage = 10;
-  else if (quantity >= 3) discountPercentage = 5;
-  const discountAmount = Math.round(baseTotal * discountPercentage) / 100;
-  return baseTotal - discountAmount;
+  const gstPercentage = await fetchGstPercentage();
+  const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
+  const totalAmount = baseAmount + gstAmount;
+  return {
+    baseAmount,
+    gstPercentage,
+    gstAmount,
+    totalAmount,
+    amountInPaise: Math.round(totalAmount * 100),
+    discountPercentage,
+    couponApplied
+  };
+};
+
+// A verify request whose Razorpay payment was already turned into a Payment row: answer as a
+// success without granting anything a second time (double-click, retry after a timeout, replay).
+const replyAlreadyProcessed = (res, payment, userId, extra = {}) => {
+  if (String(payment.user) !== String(userId)) {
+    return res.status(409).json({ msg: 'This payment has already been used.' });
+  }
+  return res.json({ success: true, alreadyProcessed: true, msg: 'This payment was already processed', ...extra });
 };
 
 // @desc    Create a Razorpay order
@@ -100,35 +98,22 @@ const createOrder = async (req, res) => {
 
     const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
     const { couponCode } = req.body;
-    const gstPercentage = await fetchGstPercentage();
-    
-    // Look up pricing option configured by admin, with default fallback
-    let baseAmount = getPricingOption(plan, quantity);
     const baseAmountPerUnit = plan.price || plan.cost || 0;
-
-    let discountPercentage = 0;
-    let couponApplied = null;
-    if (couponCode) {
-      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
-      if (coupon && (coupon.totalUses === 0 || coupon.currentUses < coupon.totalUses)) {
-        discountPercentage = coupon.percentage;
-        couponApplied = coupon._id;
-        const discountVal = (baseAmount * discountPercentage) / 100;
-        baseAmount = baseAmount - discountVal;
-      }
-    }
-
-    const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
-    const totalAmount = baseAmount + gstAmount;
-
-    // Amount in paise (1 INR = 100 paise)
-    const amountInPaise = Math.round(totalAmount * 100);
-    const currency = 'INR';
+    const { baseAmount, gstPercentage, gstAmount, totalAmount, amountInPaise, discountPercentage, couponApplied } =
+      await computeCharge(plan, quantity, couponCode);
 
     const options = {
       amount: amountInPaise,
-      currency,
+      currency: 'INR',
       receipt: `receipt_${Date.now()}`,
+      // Razorpay keeps these with the order, so verifyPayment can trust which plan, user, quantity
+      // and coupon were paid for instead of taking them from the client again.
+      notes: checkoutNotes({
+        userId: req.user.id,
+        planId: plan._id,
+        quantity,
+        couponCode: couponApplied ? couponCode.toUpperCase() : ''
+      })
     };
 
     const order = await getRazorpay().orders.create(options);
@@ -157,177 +142,100 @@ const createOrder = async (req, res) => {
 // @route   POST /api/payments/verify-payment
 const verifyPayment = async (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      planId,
-      isFree,
-      couponCode
-    } = req.body;
-    const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planId, autoRenew } = req.body;
+    if (!planId) return res.status(400).json({ msg: 'planId is required' });
 
-    if (!isFree) {
-      const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-      const expectedSignature = crypto
-        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-        .update(body.toString())
-        .digest('hex');
-
-      const isSignatureValid = expectedSignature === razorpay_signature;
-
-      if (!isSignatureValid) {
-        return res.status(400).json({ msg: 'Invalid payment signature' });
-      }
-    }
-
-    // Signature is valid, update user subscription
     const plan = await Subscription.findById(planId);
     if (!plan) {
       return res.status(404).json({ msg: 'Plan not found' });
     }
 
-    // Calculate expiry date (multiplied by quantity)
-    let expiryDate = new Date();
-    if (plan.duration === 'Monthly') {
-      expiryDate.setMonth(expiryDate.getMonth() + quantity);
-    } else if (plan.duration === 'Quarterly') {
-      expiryDate.setMonth(expiryDate.getMonth() + (3 * quantity));
-    } else if (plan.duration === 'Yearly') {
-      expiryDate.setFullYear(expiryDate.getFullYear() + quantity);
-    } else if (plan.duration === 'Lifetime') {
-      expiryDate.setFullYear(expiryDate.getFullYear() + 100);
+    // Whether a plan is free is decided by the plan itself, never by the request. A price of 0 on a
+    // custom-priced plan is only a placeholder, so those can't be self-activated.
+    if (plan.price === 0 && plan.isCustomPrice) {
+      return res.status(400).json({ msg: 'This plan is priced on request. Please contact us to activate it.' });
     }
-
-    const { autoRenew } = req.body;
+    const isFree = plan.price === 0;
 
     const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    // Only the actual org owner may purchase a company-tier plan — a delegated team member
-    // (a recruiter added by the org admin, or an org_employee) manages recruiting only and
-    // never billing, regardless of what the client UI shows/hides.
-    if (plan.role === 'company' && (user.isTeamManaged || req.user.role === 'org_employee')) {
+    if (!canPurchasePlan(user, plan, req.user.role)) {
       return res.status(403).json({ msg: 'Only your organization admin can change the organization plan.' });
     }
 
-    user.subscription = plan._id;
-    user.subscriptionDetails = plan.toObject();
-    user.subscriptionExpiry = expiryDate;
-    if (autoRenew !== undefined) user.autoRenew = !!autoRenew;
+    let quantity = 1;
+    let paidAmount = 0;
+    let couponCode = '';
 
-    // Reset usage stats on new subscription
-    user.downloadsUsed = 0;
-    user.candidateDBExportsUsed = 0;
-    user.searchUsed = 0;
-    user.jobsUsed = 0;
-    user.messagesUsed = 0;
-    user.counsellingSessionsUsed = 0;
+    if (!isFree) {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({ msg: 'Missing payment verification fields' });
+      }
+      if (!isValidSignature(`${razorpay_order_id}|${razorpay_payment_id}`, razorpay_signature)) {
+        return res.status(400).json({ msg: 'Invalid payment signature' });
+      }
 
-    await user.save();
+      // Replayed verify (double-click, retry) or already granted by the webhook: skip the Razorpay lookup.
+      const existing = await findPaymentByRazorpayId(razorpay_payment_id);
+      if (existing) {
+        return replyAlreadyProcessed(res, existing, req.user.id, {
+          user: { subscription: plan, subscriptionExpiry: user.subscriptionExpiry }
+        });
+      }
 
-    // This self-service (non-recurring) purchase path only updates the owner's own User doc.
-    // For a company-tier plan, also sync the Company doc — team members resolve their effective
-    // plan from Company.subscription (see authController.js), not the owner's User doc, so
-    // without this a team member would never see a plan the owner just paid for.
-    if (plan.role === 'company' && user.company) {
-      await Company.findByIdAndUpdate(user.company, {
-        subscription: plan._id,
-        subscriptionExpiry: expiryDate
-      }).catch(err => console.error('Company Subscription Sync Error:', err.message));
-    }
-
-    // Plan just changed (upgrade/downgrade) — trim any active team seats that now exceed
-    // the new plan's limit. Upgrades are a no-op here since the count never exceeds a higher limit.
-    await reconcileTeamSeats(user, plan).catch(err => console.error('Seat Reconciliation Error:', err.message));
-
-    // Deactivate existing completed plans (supersede them)
-    try {
-      await Payment.updateMany(
-        { user: req.user.id, status: 'completed' },
-        { $set: { status: 'superseded' } }
-      );
-    } catch (deactivationErr) {
-      console.error('Error deactivating old plans:', deactivationErr);
-    }
-
-    // Create payment record
-    try {
-      const gstPct = isFree ? 0 : await fetchGstPercentage();
-      
-      let baseAmt = 0;
-      let appliedCouponId = null;
-      if (!isFree) {
-        baseAmt = getPricingOption(plan, quantity);
-        if (couponCode) {
-          const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
-          if (coupon && (coupon.totalUses === 0 || coupon.currentUses < coupon.totalUses)) {
-            const discountVal = (baseAmt * coupon.percentage) / 100;
-            baseAmt = baseAmt - discountVal;
-            appliedCouponId = coupon._id;
-            
-            // Increment coupon uses
-            coupon.currentUses += 1;
-            await coupon.save();
-          }
+      // The signature only proves that this order was paid. Check the order really is for this
+      // user and this plan, so a cheap order cannot be used to claim an expensive plan.
+      const order = await getRazorpay().orders.fetch(razorpay_order_id);
+      const notes = order.notes || {};
+      if (notes.userId) {
+        if (notes.userId !== String(req.user.id) || notes.planId !== String(plan._id)) {
+          return res.status(400).json({ msg: 'This payment was made for a different plan or account.' });
+        }
+        quantity = Math.max(1, parseInt(notes.quantity) || 1);
+        couponCode = notes.couponCode || '';
+      } else {
+        // Order created before checkout notes existed: use the request, but only if what was
+        // charged matches what this plan costs.
+        quantity = Math.max(1, parseInt(req.body.quantity) || 1);
+        couponCode = req.body.couponCode || '';
+        const expected = await computeCharge(plan, quantity, couponCode);
+        if (expected.amountInPaise !== order.amount) {
+          return res.status(400).json({ msg: 'The amount paid does not match the selected plan.' });
         }
       }
-
-      const gstAmt = isFree ? 0 : Math.round(baseAmt * gstPct) / 100;
-      const totalAmt = baseAmt + gstAmt;
-
-      const paymentRecord = new Payment({
-        user: req.user.id,
-        plan: plan._id,
-        amount: totalAmt,
-        baseAmount: baseAmt,
-        gstPercentage: gstPct,
-        gstAmount: gstAmt,
-        quantity: isFree ? 1 : quantity,
-        currency: plan.currency || 'INR',
-        razorpay_order_id: razorpay_order_id || 'FREE_ORDER',
-        razorpay_payment_id: razorpay_payment_id || 'FREE_PAYMENT',
-        razorpay_signature: razorpay_signature || '',
-        status: 'completed',
-        paymentMethod: isFree ? 'None' : 'Razorpay',
-        couponApplied: appliedCouponId
-      });
-      await paymentRecord.save();
-
-      if (user.email && !isFree) {
-        sendEmail({
-          email: user.email,
-          subject: `Payment Receipt — ${plan.name}`,
-          html: emailWrapper('Payment Successful', `
-            <p>Hi ${user.name || 'there'},</p>
-            <p>Your payment for <strong>${plan.name}</strong> was successful.</p>
-            <p>Amount Paid: <strong>Rs ${totalAmt.toLocaleString('en-IN')}</strong></p>
-            <p>Valid Until: <strong>${plan.duration === 'Lifetime' ? 'Lifetime' : expiryDate.toLocaleDateString('en-IN')}</strong></p>
-            <p>Payment ID: ${razorpay_payment_id || '—'}</p>
-          `)
-        }).catch(() => {});
-      }
-    } catch (paymentErr) {
-      console.error('Error saving payment record:', paymentErr);
-      // We don't return error here because the subscription was already updated
+      paidAmount = order.amount / 100;
     }
 
-    notifyRoles({
-      io: req.io,
-      roles: ['admin', 'subadmin'],
-      title: 'Plan purchased',
-      message: `${user.name || 'A user'} purchased the ${plan.name} plan.`,
-      type: 'plan_purchased',
-      link: '/admin/payment-history',
-      metadata: { userId: user._id, planId: plan._id }
-    }).catch(err => console.error('Plan purchase notification failed:', err.message));
+    const result = await fulfillPlanPayment({
+      user,
+      plan,
+      quantity,
+      couponCode,
+      paidAmount,
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+      autoRenew,
+      io: req.io
+    });
+
+    if (result.duplicate) {
+      if (result.payment) return replyAlreadyProcessed(res, result.payment, req.user.id, { user: { subscription: plan, subscriptionExpiry: result.expiryDate } });
+      return res.json({
+        success: true,
+        alreadyProcessed: true,
+        msg: 'You are already on this plan',
+        user: { subscription: plan, subscriptionExpiry: result.expiryDate }
+      });
+    }
 
     res.json({
-      success: true, 
+      success: true,
       msg: 'Payment verified and subscription updated',
       user: {
         subscription: plan,
-        subscriptionExpiry: expiryDate
+        subscriptionExpiry: result.expiryDate
       }
     });
   } catch (err) {
@@ -443,131 +351,47 @@ const createSubscriptionOrder = async (req, res) => {
 // @route   POST /api/payments/verify-subscription
 const verifySubscriptionPayment = async (req, res) => {
   try {
-    const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, planId, couponCode } = req.body;
+    const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, planId } = req.body;
     if (!razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature || !planId) {
       return res.status(400).json({ msg: 'Missing payment verification fields' });
     }
 
-    const body = razorpay_payment_id + '|' + razorpay_subscription_id;
-    const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(body).digest('hex');
-    if (expectedSignature !== razorpay_signature) {
+    if (!isValidSignature(`${razorpay_payment_id}|${razorpay_subscription_id}`, razorpay_signature)) {
       return res.status(400).json({ msg: 'Invalid payment signature' });
     }
 
     const plan = await Subscription.findById(planId);
     if (!plan) return res.status(404).json({ msg: 'Plan not found' });
 
-    const nextRenewalDate = computeNextRenewalDate(plan.duration);
-
     const user = await User.findById(req.user.id);
-    user.subscription = plan._id;
-    user.subscriptionDetails = plan.toObject();
-    user.subscriptionExpiry = nextRenewalDate;
-    user.autoRenew = true;
-    await user.save();
+    if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    await reconcileTeamSeats(user, plan).catch(err => console.error('Seat Reconciliation Error:', err.message));
+    const alreadyProcessed = payment => replyAlreadyProcessed(res, payment, req.user.id, {
+      nextRenewalDate: user.subscriptionExpiry
+    });
+    const existing = await findPaymentByRazorpayId(razorpay_payment_id);
+    if (existing) return alreadyProcessed(existing);
 
-    let record = null;
-
-    if (plan.role === 'college') {
-      const college = await College.findOne({ tpoUser: req.user.id })
-        || (user.collegeProfile?.college && await College.findById(user.collegeProfile.college));
-
-      if (college) {
-        college.subscriptionTier = COLLEGE_TIER_MAP[plan.name] || college.subscriptionTier;
-        college.subscription = plan._id;
-        const studentLimitFeature = plan.features?.find(f => f.name === 'Student Capacity');
-        if (studentLimitFeature) {
-          college.studentLimit = studentLimitFeature.value > 0 ? studentLimitFeature.value : STUDENT_LIMIT_UNLIMITED;
-        }
-        college.razorpaySubscriptionId = razorpay_subscription_id;
-        college.nextRenewalDate = nextRenewalDate;
-        college.subscriptionExpiry = nextRenewalDate;
-        college.autoRenewEnabled = true;
-        college.renewalFailureCount = 0;
-
-        // Automated MoU Generation is a Pro/Elite perk per the Campus plan matrix — checked
-        // against the plan's own feature flag rather than a hardcoded tier list.
-        const hasAutoMoU = plan.features?.find(f => f.name === 'Automated MoU Generation')?.isActive;
-        if (hasAutoMoU) {
-          try {
-            const pdfBuffer = await generateMouPdf(college, plan);
-            college.mouDocument = saveBufferToUploads(pdfBuffer, `mou-${college.code || 'campus'}`);
-            college.mouSignedAt = new Date();
-          } catch (mouErr) {
-            console.error('MoU auto-generation failed:', mouErr.message);
-          }
-        }
-
-        await college.save();
-        record = college;
-      }
-    } else if (plan.role === 'company') {
-      const company = user.company && await Company.findById(user.company);
-      if (company) {
-        company.subscription = plan._id;
-        company.subscriptionExpiry = nextRenewalDate;
-        company.nextRenewalDate = nextRenewalDate;
-        company.razorpaySubscriptionId = razorpay_subscription_id;
-        company.autoRenewEnabled = true;
-        company.renewalFailureCount = 0;
-        await company.save();
-        record = company;
-      }
+    // The signature only proves this subscription was paid. createSubscriptionOrder stored the user
+    // and plan on the Razorpay subscription, so check them instead of trusting the request body.
+    const razorpaySubscription = await getRazorpay().subscriptions.fetch(razorpay_subscription_id);
+    const notes = razorpaySubscription.notes || {};
+    if (notes.userId !== String(req.user.id) || notes.planId !== String(plan._id)) {
+      return res.status(400).json({ msg: 'This payment was made for a different plan or account.' });
     }
 
-    try {
-      let baseAmount = plan.price;
-      let appliedCouponId = null;
+    const result = await fulfillRecurringPayment({
+      user,
+      plan,
+      couponCode: notes.couponCode,
+      subscriptionId: razorpay_subscription_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+      io: req.io
+    });
+    if (result.duplicate) return alreadyProcessed(result.payment);
 
-      if (couponCode) {
-        const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
-        if (coupon && (coupon.totalUses === 0 || coupon.currentUses < coupon.totalUses)) {
-          const discountVal = (baseAmount * coupon.percentage) / 100;
-          baseAmount = baseAmount - discountVal;
-          appliedCouponId = coupon._id;
-
-          // Increment coupon uses
-          coupon.currentUses += 1;
-          await coupon.save();
-        }
-      }
-
-      const gstPercentage = await fetchGstPercentage();
-      const gstAmount = Math.round(baseAmount * gstPercentage) / 100;
-
-      await Payment.create({
-        user: req.user.id,
-        plan: plan._id,
-        amount: baseAmount + gstAmount,
-        baseAmount: baseAmount,
-        gstPercentage,
-        gstAmount,
-        quantity: 1,
-        currency: plan.currency || 'INR',
-        razorpay_order_id: razorpay_subscription_id,
-        razorpay_payment_id,
-        razorpay_signature,
-        status: 'completed',
-        paymentMethod: 'Razorpay',
-        couponApplied: appliedCouponId
-      });
-    } catch (paymentErr) {
-      console.error('Error saving subscription payment record:', paymentErr.message);
-    }
-
-    notifyRoles({
-      io: req.io,
-      roles: ['admin', 'subadmin'],
-      title: 'Plan purchased',
-      message: `${record.name || 'An organization'} activated the ${plan.name} subscription.`,
-      type: 'plan_purchased',
-      link: '/admin/payment-history',
-      metadata: { planId: plan._id, subscriberId: record._id }
-    }).catch(err => console.error('Subscription notification failed:', err.message));
-
-    res.json({ success: true, msg: 'Subscription active and registration completed', nextRenewalDate, record });
+    res.json({ success: true, msg: 'Subscription active and registration completed', nextRenewalDate: result.nextRenewalDate, record: result.record });
   } catch (err) {
     console.error('Verify Subscription Payment Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });
@@ -981,6 +805,87 @@ const downgradeToFreePlan = async (subscriberModel, doc) => {
   doc.nextRenewalDate = null;
 };
 
+// Writes the RenewalLog row for a webhook event. Returns 'duplicate' when this event id was already
+// logged, i.e. Razorpay is redelivering an event that has already been applied.
+const logRenewalEvent = async entry => {
+  try {
+    await RenewalLog.create(entry);
+    return 'logged';
+  } catch (err) {
+    if (isDuplicateKeyError(err)) return 'duplicate';
+    throw err;
+  }
+};
+
+// order.paid: a one-time plan or pay-per-feature order was paid. The customer's browser normally
+// reports this itself through verify-payment; this grants it when the browser never got there
+// (tab closed, connection lost after paying). Whichever arrives second sees the recorded Payment
+// row and does nothing, so the purchase is granted once.
+const fulfillPaidOrder = async (payload, io) => {
+  const paymentEntity = payload.payload?.payment?.entity;
+  const orderEntity = payload.payload?.order?.entity;
+  if (!paymentEntity?.id || !orderEntity?.id) return;
+
+  // createOrder / purchaseCreateOrder always attach these notes (with a quantity). Orders without
+  // them — from before the notes existed, or subscription invoices — are left to the verify request.
+  const notes = orderEntity.notes || {};
+  if (!notes.userId || !notes.quantity) {
+    console.log(`[Webhook] order.paid for ${orderEntity.id} has no checkout notes, skipping`);
+    return;
+  }
+
+  const user = await User.findById(notes.userId);
+  if (!user) {
+    console.error(`[Webhook] order.paid ${orderEntity.id}: user ${notes.userId} not found — payment ${paymentEntity.id} needs manual reconciliation`);
+    return;
+  }
+  const quantity = Math.max(1, parseInt(notes.quantity) || 1);
+  const paidAmount = (orderEntity.amount_paid || orderEntity.amount || paymentEntity.amount) / 100;
+
+  if (notes.planId) {
+    const plan = await Subscription.findById(notes.planId);
+    const roleDoc = await Role.findById(user.role).select('name');
+    if (!plan || plan.price === 0 || !canPurchasePlan(user, plan, roleDoc?.name)) {
+      console.error(`[Webhook] order.paid ${orderEntity.id}: plan ${notes.planId} cannot be granted to user ${user._id} — payment ${paymentEntity.id} needs manual reconciliation`);
+      return;
+    }
+    await fulfillPlanPayment({
+      user, plan, quantity, couponCode: notes.couponCode, paidAmount,
+      orderId: orderEntity.id, paymentId: paymentEntity.id, io
+    });
+  } else if (notes.featureId) {
+    const feature = await PayPerFeature.findById(notes.featureId);
+    if (!feature) {
+      console.error(`[Webhook] order.paid ${orderEntity.id}: feature ${notes.featureId} not found — payment ${paymentEntity.id} needs manual reconciliation`);
+      return;
+    }
+    await fulfillPayPerPayment({
+      user, feature, quantity, paidAmount,
+      orderId: orderEntity.id, paymentId: paymentEntity.id
+    });
+  }
+};
+
+// First charge of a recurring subscription whose College/Company doesn't hold the mandate yet —
+// i.e. the customer paid but their browser never called verify-subscription. Grants it from here.
+const fulfillFirstSubscriptionCharge = async (payload, io) => {
+  const subscriptionEntity = payload.payload?.subscription?.entity;
+  const paymentEntity = payload.payload?.payment?.entity;
+  const notes = subscriptionEntity?.notes || {};
+  // paid_count is 1 only for the first charge; later charges are renewals of an already-set-up subscription.
+  if (Number(subscriptionEntity?.paid_count) !== 1 || !paymentEntity?.id || !notes.userId || !notes.planId) return;
+
+  const [user, plan] = await Promise.all([User.findById(notes.userId), Subscription.findById(notes.planId)]);
+  if (!user || !plan || !RECURRING_ROLES.includes(plan.role)) {
+    console.error(`[Webhook] subscription ${subscriptionEntity.id}: cannot grant plan ${notes.planId} to user ${notes.userId} — payment ${paymentEntity.id} needs manual reconciliation`);
+    return;
+  }
+  await fulfillRecurringPayment({
+    user, plan, couponCode: notes.couponCode,
+    subscriptionId: subscriptionEntity.id, paymentId: paymentEntity.id, io
+  });
+};
+
 // @desc    Razorpay recurring subscription webhook — success extends the period, repeated failure
 //          auto-downgrades to the Free tier per spec 9.2 (graceful, not an abrupt cutoff)
 // @route   POST /api/payments/razorpay/renewal-webhook
@@ -989,23 +894,40 @@ const handleRenewalWebhook = async (req, res) => {
     const signature = req.headers['x-razorpay-signature'];
     if (!signature) return res.status(400).send('Missing signature');
 
+    // The exact bytes Razorpay sent (captured in index.js, since express.json() parses the body first).
+    const rawBody = req.rawBody || (Buffer.isBuffer(req.body) ? req.body : null);
+    if (!rawBody) return res.status(400).send('Missing body');
+
     const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET)
-      .update(req.body.toString())
+      .update(rawBody)
       .digest('hex');
 
-    if (expectedSignature !== signature) {
+    const received = Buffer.from(String(signature));
+    const expected = Buffer.from(expectedSignature);
+    if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) {
       return res.status(400).send('Invalid signature');
     }
 
-    const payload = JSON.parse(req.body.toString());
+    const payload = JSON.parse(rawBody.toString());
     const event = payload.event;
+    // Razorpay retries webhooks (and can deliver one twice); this id is the same on every delivery.
+    const eventId = req.headers['x-razorpay-event-id'];
+    if (event === 'order.paid') {
+      await fulfillPaidOrder(payload, req.io);
+      return res.json({ status: 'ok' });
+    }
+
     const subscriptionEntity = payload.payload?.subscription?.entity;
     if (!subscriptionEntity) return res.json({ status: 'ignored' });
 
     const subscriptionId = subscriptionEntity.id;
     const found = await findSubscriberBySubscriptionId(subscriptionId);
     if (!found) {
-      console.log(`[Webhook] No College/Company found for subscription ${subscriptionId}`);
+      if (event === 'subscription.charged') {
+        await fulfillFirstSubscriptionCharge(payload, req.io);
+      } else {
+        console.log(`[Webhook] No College/Company found for subscription ${subscriptionId}`);
+      }
       return res.json({ status: 'ok' });
     }
 
@@ -1016,19 +938,34 @@ const handleRenewalWebhook = async (req, res) => {
 
     if (event === 'subscription.charged') {
       const paymentEntity = payload.payload?.payment?.entity;
-      doc.nextRenewalDate = computeNextRenewalDate(plan?.duration || 'Yearly');
-      doc.subscriptionExpiry = doc.nextRenewalDate;
-      doc.renewalFailureCount = 0;
-      await doc.save();
 
-      await RenewalLog.create({
+      // The first charge of a subscription is verified and recorded as a Payment by
+      // verifySubscriptionPayment, which already set the period and sent the receipt — it is not a renewal.
+      if (paymentEntity?.id && await Payment.exists({ razorpay_payment_id: paymentEntity.id, isRenewal: { $ne: true } })) {
+        return res.json({ status: 'ok' });
+      }
+
+      // Record the charge in the payer's payment history. Idempotent on the Razorpay payment id, and
+      // done before the event is logged so that a redelivery after a failure here still records it.
+      if (paymentEntity?.id) {
+        await recordRenewalPayment({ subscriberModel, doc, plan, paymentEntity, subscriptionId });
+      }
+
+      // Log first: the unique eventId means a redelivered event stops here instead of being applied twice.
+      if (await logRenewalEvent({
         subscriberModel,
         subscriber: doc._id,
         subscription: doc.subscription,
         razorpaySubscriptionId: subscriptionId,
         status: 'success',
-        amount: paymentEntity ? paymentEntity.amount / 100 : 0
-      });
+        amount: paymentEntity ? paymentEntity.amount / 100 : 0,
+        eventId
+      }) === 'duplicate') return res.json({ status: 'ok' });
+
+      doc.nextRenewalDate = computeNextRenewalDate(plan?.duration || 'Yearly');
+      doc.subscriptionExpiry = doc.nextRenewalDate;
+      doc.renewalFailureCount = 0;
+      await doc.save();
 
       if (contactEmail) {
         sendEmail({
@@ -1045,17 +982,20 @@ const handleRenewalWebhook = async (req, res) => {
       if (notifyPhone) sendWhatsAppMessage({ to: notifyPhone, template: 'renewal_success', variables: { name: doc.name } }).catch(() => {});
       console.log(`[Webhook] Subscription charged successfully for ${subscriptionId} (${subscriberModel} ${doc.name})`);
     } else if (event === 'subscription.halted' || event === 'subscription.pending') {
-      doc.renewalFailureCount = (doc.renewalFailureCount || 0) + 1;
+      const failureCount = (doc.renewalFailureCount || 0) + 1;
 
-      await RenewalLog.create({
+      if (await logRenewalEvent({
         subscriberModel,
         subscriber: doc._id,
         subscription: doc.subscription,
         razorpaySubscriptionId: subscriptionId,
         status: 'failed',
         failureReason: event,
-        failureCountAtEvent: doc.renewalFailureCount
-      });
+        failureCountAtEvent: failureCount,
+        eventId
+      }) === 'duplicate') return res.json({ status: 'ok' });
+
+      doc.renewalFailureCount = failureCount;
 
       if (doc.renewalFailureCount >= MAX_RENEWAL_FAILURES && event === 'subscription.halted') {
         await downgradeToFreePlan(subscriberModel, doc);

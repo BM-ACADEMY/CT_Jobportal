@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const axios = require('axios');
 const Company = require('../models/Company');
 const User = require('../models/User');
 const Job = require('../models/Job');
@@ -332,6 +333,13 @@ router.post('/contact', async (req, res) => {
 
     if (!emailSent) {
       console.warn('Contact form saved, but email notification failed to send.');
+    }
+
+    // Send a copy to the n8n contact-form webhook
+    try {
+      await axios.post('https://leados-n8n.abmgroups.org/webhook/contact-form', req.body);
+    } catch (webhookError) {
+      console.error('Failed to send data to webhook:', webhookError.message);
     }
 
     res.status(201).json({ msg: 'Message sent successfully.' });

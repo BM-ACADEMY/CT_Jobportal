@@ -8,6 +8,7 @@ const { hasCompanyAccess } = require('../utils/companyAccess');
 const { parse } = require('csv-parse/sync');
 const crypto = require('crypto');
 const { notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
+const { notifyJobClosedOrRemoved, notifyJobPublished } = require('../utils/jobNotifications');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -114,6 +115,9 @@ const createJob = async (req, res) => {
     const job = await newJob.save();
 
     if (job.status === 'active') {
+      notifyJobPublished({ io: req.io, job, recipientId: userId })
+        .catch(err => console.error('Job published notification failed:', err.message));
+
       notifyRoles({
         io: req.io,
         roles: ['admin', 'subadmin'],
@@ -144,6 +148,7 @@ const createJob = async (req, res) => {
           message: `${job.title} matches your profile and preferences.`,
           type: 'job_match',
           link: `/job/${job._id}`,
+          email: false, // matches up to 5000 seekers; too many for a shared SMTP mailbox
           metadata: { jobId: job._id }
         }).catch(err => console.error('Job match notification failed:', err.message));
       }
@@ -296,11 +301,22 @@ const updateJob = async (req, res) => {
       if (!updatedDesc) return res.status(400).json({ msg: 'Job description is required for publishing' });
     }
 
+    const previousStatus = job.status;
     job = await Job.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
     );
+
+    if (job.status !== previousStatus) {
+      if (job.status === 'closed') {
+        notifyJobClosedOrRemoved({ io: req.io, job, actorId: userId, action: 'closed' })
+          .catch(err => console.error('Job closed notification failed:', err.message));
+      } else if (job.status === 'active') {
+        notifyJobPublished({ io: req.io, job, recipientId: job.recruiter })
+          .catch(err => console.error('Job published notification failed:', err.message));
+      }
+    }
 
     res.json({ msg: 'Job updated successfully', job });
   } catch (err) {
@@ -326,6 +342,10 @@ const deleteJob = async (req, res) => {
     if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString() || !hasCompanyAccess(user))) {
       return res.status(403).json({ msg: 'Not authorized to delete this job' });
     }
+
+    // Notify before deleting so the applicants can still be looked up.
+    await notifyJobClosedOrRemoved({ io: req.io, job, actorId: userId, action: 'removed' })
+      .catch(err => console.error('Job removed notification failed:', err.message));
 
     await Job.findByIdAndDelete(req.params.id);
     res.json({ msg: 'Job removed successfully' });

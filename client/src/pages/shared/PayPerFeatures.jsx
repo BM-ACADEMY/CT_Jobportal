@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -162,6 +162,8 @@ const PayPerFeatures = () => {
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
+  // A ref, not state: two quick clicks both read the same stale `processingId`.
+  const purchaseInFlight = useRef(false);
   const [payments, setPayments] = useState([]);
   const [gstPercentage, setGstPercentage] = useState(0);
   const [checkoutFeature, setCheckoutFeature] = useState(null);
@@ -204,7 +206,13 @@ const PayPerFeatures = () => {
   };
 
   const handlePurchase = async (feature, quantity = 1) => {
+    if (purchaseInFlight.current) return;
+    purchaseInFlight.current = true;
     setProcessingId(feature._id);
+    const finishPurchase = () => {
+      purchaseInFlight.current = false;
+      setProcessingId(null);
+    };
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
@@ -241,12 +249,12 @@ const PayPerFeatures = () => {
           } catch (err) {
             toast.error(err.response?.data?.msg || 'Payment verification failed');
           } finally {
-            setProcessingId(null);
+            finishPurchase();
           }
         },
         modal: {
           ondismiss: () => {
-            setProcessingId(null);
+            finishPurchase();
           }
         },
         prefill: { name: user?.name, email: user?.email },
@@ -256,13 +264,13 @@ const PayPerFeatures = () => {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', () => {
         toast.error('Payment failed. Please try again.');
-        setProcessingId(null);
+        finishPurchase();
       });
       rzp.open();
     } catch (err) {
       console.error('Purchase error:', err);
       toast.error(err.response?.data?.msg || 'Failed to initiate purchase');
-      setProcessingId(null);
+      finishPurchase();
     }
   };
 

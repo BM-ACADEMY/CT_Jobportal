@@ -12,6 +12,7 @@ const applicationRoutes = require('./routes/application');
 const adminRoutes = require('./routes/adminRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const { captureWebhookRawBody } = require('./utils/webhookRawBody');
 const publicRoutes = require('./routes/publicRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const requestRoutes = require('./routes/requests');
@@ -121,7 +122,8 @@ io.on('connection', (socket) => {
 // responses, validation errors, and automatic OPTIONS responses all include it.
 app.use(cors(corsOptions));
 app.use(morgan('dev'));
-app.use(express.json());
+// The Razorpay webhook needs the unparsed body to check its signature (see utils/webhookRawBody.js).
+app.use(express.json({ verify: captureWebhookRawBody }));
 
 // Attach io to req for use in routes
 app.use((req, res, next) => {

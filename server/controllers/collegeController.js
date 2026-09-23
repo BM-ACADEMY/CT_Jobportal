@@ -2085,6 +2085,7 @@ const adminVerifyCollege = async (req, res) => {
           : `${college.name} verification was rejected. Please review and resubmit your proof.`,
         type: 'college_verification',
         link: '/college/settings',
+        email: false, // the verification email below already covers this
         metadata: { collegeId: college._id, status }
       }).catch(err => console.error('College verification notification failed:', err.message));
     }
