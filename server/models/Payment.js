@@ -69,7 +69,19 @@ const paymentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Coupon',
     default: null
+  },
+  // True for an automatic charge of an existing recurring subscription (as opposed to a purchase).
+  isRenewal: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
+
+// One Razorpay payment can only ever produce one Payment row, so a replayed verify request cannot
+// grant the same purchase twice. Free (amount 0) records use placeholder ids and are excluded.
+paymentSchema.index(
+  { razorpay_payment_id: 1 },
+  { unique: true, partialFilterExpression: { razorpay_payment_id: { $type: 'string' }, amount: { $gt: 0 } } }
+);
 
 module.exports = mongoose.model('Payment', paymentSchema);

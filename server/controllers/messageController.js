@@ -231,6 +231,7 @@ const sendMessage = async (req, res) => {
           title: `New message from ${sender?.name || 'a user'}`,
           message: content || 'Sent you an attachment.',
           type: 'message',
+          email: false, // messages already send their own email below
           link: ['recruiter', 'company', 'org_employee'].includes(req.user.role) ? '/candidate/messages' : '/company/messages',
           metadata: { conversationId, senderId }
         }).catch(err => console.error('Message notification failed:', err.message));

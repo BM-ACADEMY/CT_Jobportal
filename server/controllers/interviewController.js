@@ -108,6 +108,7 @@ const scheduleInterview = async (req, res) => {
       message: `Your interview for ${populated.job?.title || 'a role'} is scheduled for ${formatWhen(populated.scheduledAt)}.`,
       type: 'interview_scheduled',
       link: '/candidate/applications',
+      email: false, // the interview invitation email below already covers this
       metadata: { interviewId: populated._id, applicationId, scheduledAt: populated.scheduledAt }
     }).catch(err => console.error('Interview notification failed:', err.message));
 
@@ -212,6 +213,7 @@ const cancelInterview = async (req, res) => {
       message: `Your interview for ${interview.job?.title || 'a role'} scheduled for ${formatWhen(scheduledAt)} was cancelled.`,
       type: 'interview_cancelled',
       link: '/candidate/applications',
+      email: false, // the cancellation email below already covers this
       metadata: { interviewId: interview._id }
     }).catch(err => console.error('Interview cancellation notification failed:', err.message));
 

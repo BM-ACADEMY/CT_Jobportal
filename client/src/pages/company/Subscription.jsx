@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { toast } from 'sonner';
@@ -208,6 +208,9 @@ const SubscriptionPage = () => {
   const [gstPercentage, setGstPercentage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkoutPlan, setCheckoutPlan] = useState(null);
+  // Held from the moment a payment starts until Razorpay closes (or the request fails), so a
+  // second click cannot start another checkout while one is already running.
+  const paymentInFlight = useRef(false);
   const [autoRenew, setAutoRenew] = useState(!!user?.autoRenew);
   const [savingAutoRenew, setSavingAutoRenew] = useState(false);
   const [payments, setPayments] = useState([]);
@@ -317,6 +320,9 @@ const SubscriptionPage = () => {
   };
 
   const handleProceedPayment = async (plan, quantity = 1, selectedAutoRenew = true, couponCode = null) => {
+    if (paymentInFlight.current) return;
+    paymentInFlight.current = true;
+    let checkoutOpened = false; // once Razorpay is open it releases the lock when it closes
     try {
       const token = localStorage.getItem('token');
 
@@ -370,7 +376,12 @@ const SubscriptionPage = () => {
               }
             } catch (err) {
               toast.error(err.response?.data?.msg || 'Verification failed');
+            } finally {
+              paymentInFlight.current = false;
             }
+          },
+          modal: {
+            ondismiss: () => { paymentInFlight.current = false; }
           },
           prefill: { name: user?.name, email: user?.email },
           theme: { color: '#10b981' },
@@ -378,6 +389,7 @@ const SubscriptionPage = () => {
 
         const rzp = new window.Razorpay(options);
         rzp.open();
+        checkoutOpened = true;
         return;
       }
 
@@ -415,7 +427,12 @@ const SubscriptionPage = () => {
             }
           } catch (err) {
             toast.error(err.response?.data?.msg || 'Verification failed');
+          } finally {
+            paymentInFlight.current = false;
           }
+        },
+        modal: {
+          ondismiss: () => { paymentInFlight.current = false; }
         },
         prefill: { name: user?.name, email: user?.email },
         theme: { color: '#10b981' },
@@ -423,8 +440,11 @@ const SubscriptionPage = () => {
 
       const rzp = new window.Razorpay(options);
       rzp.open();
+      checkoutOpened = true;
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Payment failed to initiate');
+    } finally {
+      if (!checkoutOpened) paymentInFlight.current = false;
     }
   };
 

@@ -35,8 +35,14 @@ const renewalLogSchema = new mongoose.Schema({
   failureCountAtEvent: {
     type: Number,
     default: 0
+  },
+  // Razorpay's x-razorpay-event-id — webhooks are retried, so this makes each event count once.
+  eventId: {
+    type: String
   }
 }, { timestamps: true });
+
+renewalLogSchema.index({ eventId: 1 }, { unique: true, partialFilterExpression: { eventId: { $type: 'string' } } });
 
 renewalLogSchema.index({ subscriber: 1, createdAt: -1 });
 

@@ -740,6 +740,7 @@ const adminAssignRequest = async (req, res) => {
         message: `You were assigned a ${request.type.replaceAll('_', ' ')} request from ${request.user?.name || 'a user'}.`,
         type: 'service_assignment',
         link: '/company/requests',
+        email: false, // assignees are emailed below
         metadata: { requestId: request._id, requestType: request.type }
       }).catch(err => console.error('Assignment notification failed:', err.message));
 

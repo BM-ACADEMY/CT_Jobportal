@@ -7,6 +7,7 @@ const TeamActivityLog = require('../models/TeamActivityLog');
 const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
+const { notifyUser } = require('../utils/inAppNotifications');
 
 const TEAM_PERMISSIONS = [
   'post_job', 'my_jobs', 'candidate_search', 'messages',
@@ -325,6 +326,15 @@ const removeTeamMember = async (req, res) => {
     member.teamPermissions = [];
     await member.save();
 
+    Company.findById(currentUser.company).select('name').then(company => notifyUser({
+      io: req.io,
+      recipientId: member._id,
+      title: 'Removed from team',
+      message: `You have been removed from ${company?.name || 'the organization'}'s team on Velaivaaipu.`,
+      type: 'team_removed',
+      metadata: { companyId: currentUser.company }
+    })).catch(err => console.error('Team removal notification failed:', err.message));
+
     res.json({ msg: 'Team member removed successfully' });
   } catch (err) {
     console.error('Remove Team Member Error:', err);
@@ -477,6 +487,15 @@ const removeOrgEmployee = async (req, res) => {
 
     employee.employerCompany = undefined;
     await employee.save();
+
+    Company.findById(adminUser.company).select('name').then(company => notifyUser({
+      io: req.io,
+      recipientId: employee._id,
+      title: 'Removed from organization',
+      message: `You have been removed from ${company?.name || 'the organization'} on Velaivaaipu.`,
+      type: 'team_removed',
+      metadata: { companyId: adminUser.company }
+    })).catch(err => console.error('Employee removal notification failed:', err.message));
 
     res.json({ msg: 'Employee removed from organization successfully' });
   } catch (err) {
@@ -642,6 +661,16 @@ const acceptJoinRequest = async (req, res) => {
       await recruiter.save();
     }
 
+    notifyUser({
+      io: req.io,
+      recipientId: userId,
+      title: 'Join request accepted',
+      message: `${company.name} accepted your request to join their team.`,
+      type: 'company_join_accepted',
+      link: '/company/dashboard',
+      metadata: { companyId: company._id }
+    }).catch(err => console.error('Join accepted notification failed:', err.message));
+
     res.json({ msg: 'Request accepted successfully.' });
   } catch (err) {
     console.error('Accept Join Request Error:', err);
@@ -662,6 +691,15 @@ const rejectJoinRequest = async (req, res) => {
     // Remove from pending
     company.pendingJoinRequests = company.pendingJoinRequests.filter(reqItem => reqItem.user.toString() !== userId);
     await company.save();
+
+    notifyUser({
+      io: req.io,
+      recipientId: userId,
+      title: 'Join request declined',
+      message: `${company.name} declined your request to join their team.`,
+      type: 'company_join_rejected',
+      metadata: { companyId: company._id }
+    }).catch(err => console.error('Join rejected notification failed:', err.message));
 
     res.json({ msg: 'Request rejected successfully.' });
   } catch (err) {
