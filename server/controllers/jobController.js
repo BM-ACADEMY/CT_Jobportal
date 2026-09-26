@@ -9,6 +9,7 @@ const { parse } = require('csv-parse/sync');
 const crypto = require('crypto');
 const { notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved, notifyJobPublished } = require('../utils/jobNotifications');
+const { enforceJobLimits } = require('../utils/enforceJobLimits');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -221,9 +222,12 @@ const cloneJob = async (req, res) => {
 const getCompanyJobs = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).populate('subscription').populate('role');
 
     if (!user) return res.json([]);
+
+    // Enforce limits before fetching jobs
+    await enforceJobLimits(user, userId);
 
     let query = { recruiter: userId };
     if (user.company && hasCompanyAccess(user)) {
@@ -538,8 +542,11 @@ const getMatchingJobs = async (req, res) => {
 const getCompanyJobsWithStats = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).populate('subscription').populate('role');
     if (!user) return res.json([]);
+
+    // Enforce limits before fetching jobs
+    await enforceJobLimits(user, userId);
 
     let query = { recruiter: userId };
     if (user.company && hasCompanyAccess(user)) {
@@ -554,17 +561,50 @@ const getCompanyJobsWithStats = async (req, res) => {
       const appCount = await Application.countDocuments({ job: job._id });
       const shortlisted = await Application.countDocuments({ job: job._id, status: 'shortlisted' });
       const rejected = await Application.countDocuments({ job: job._id, status: 'rejected' });
+
+      // Check if there are new candidates since last viewed
+      let hasNewCandidates = false;
+      if (appCount > 0) {
+        const latestApp = await Application.findOne({ job: job._id })
+          .sort({ createdAt: -1 })
+          .select('createdAt')
+          .lean();
+        if (latestApp) {
+          hasNewCandidates = !job.lastViewedApplicantsAt || 
+            new Date(latestApp.createdAt) > new Date(job.lastViewedApplicantsAt);
+        }
+      }
+
       return {
         ...job.toObject(),
         applicantsCount: appCount,
         shortlistedCount: shortlisted,
-        rejectedCount: rejected
+        rejectedCount: rejected,
+        hasNewCandidates
       };
     }));
 
     res.json(jobsWithStats);
   } catch (err) {
     console.error('Get Company Jobs Stats Error:', err);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Mark job applicants as viewed (clears new candidate indicator)
+// @route   PATCH /api/jobs/:id/mark-viewed
+// @access  Private (Recruiter/Company)
+const markJobApplicantsViewed = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ msg: 'Job not found' });
+
+    job.lastViewedApplicantsAt = new Date();
+    await job.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Mark Viewed Error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
@@ -1304,5 +1344,6 @@ module.exports = {
   calculatePreMatch,
   cloneJob,
   importPipeline,
-  bulkAiMatch
+  bulkAiMatch,
+  markJobApplicantsViewed
 };

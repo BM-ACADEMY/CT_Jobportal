@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { Users, Search, Filter, Download, Upload, ChevronDown, ShieldCheck, X, Clock, LogIn, LogOut, CheckCircle2, XCircle, Eye, Edit2, Trash2, Loader2, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, Tag } from 'antd';
 import { Input } from '@/components/ui/input';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
@@ -371,31 +372,48 @@ const Students = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <Users size={18} className="text-[#39c884]" /> Student Management
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
-            {listUnlocked ? `${total} students total` : 'Select a course and year, or search to view all students'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {listUnlocked && (
-            <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="rounded text-xs font-medium gap-1 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white transition-all cursor-pointer">
-              <Filter size={14} /> Filters <ChevronDown size={12} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setShowImport(!showImport)} className="rounded text-xs font-medium gap-1 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white transition-all cursor-pointer">
-            <Upload size={14} /> Bulk CSV Import
-          </Button>
-          <Button variant="outline" size="sm" onClick={downloadCredentials} className="rounded text-xs font-medium gap-1 border-[#d9d9d9] hover:text-[#39c884] hover:border-[#39c884] hover:bg-white transition-all cursor-pointer text-slate-700">
-            <Download size={14} /> Export Credentials
-          </Button>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 min-w-0 space-y-12">
+        {/* Premium Welcome Header */}
+        <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)', borderRadius: 0 }} className="relative shadow-sm overflow-hidden group">
+          <div className="p-8 sm:p-10 relative z-10">
+            <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+            <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#34b678]/10 blur-[80px] rounded-full transition-all duration-700" />
+            
+            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-[#34b678] rounded-none flex items-center justify-center border border-white/10 shrink-0">
+                  <Users className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                   <div className="flex items-center gap-3 mb-2">
+                     <Tag style={{ background: 'rgba(52, 182, 120, 0.2)', borderColor: 'rgba(52, 182, 120, 0.3)', color: '#34b678', fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', fontSize: 9, padding: '2px 8px', borderRadius: 0 }}>
+                       Student Roster
+                     </Tag>
+                   </div>
+                   <h2 className="text-2xl font-black text-white tracking-tight m-0">Student Management</h2>
+                   <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
+                     {listUnlocked ? `${total} students total` : 'Select a course and year, or search to view all students'}
+                   </p>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-2">
+                {listUnlocked && (
+                  <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="rounded-none text-white border-white/10 hover:bg-white/20 text-xs font-bold gap-1 transition-all cursor-pointer bg-transparent" style={{ height: 44, padding: '0 16px', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1 }}>
+                    <Filter size={14} /> Filters <ChevronDown size={12} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => setShowImport(!showImport)} className="rounded-none text-white border-white/10 hover:bg-white/20 text-xs font-bold gap-1 transition-all cursor-pointer bg-transparent" style={{ height: 44, padding: '0 16px', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1 }}>
+                  <Upload size={14} /> Bulk CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={downloadCredentials} className="rounded-none text-white border-white/10 hover:bg-white/20 text-xs font-bold gap-1 transition-all cursor-pointer bg-transparent" style={{ height: 44, padding: '0 16px', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1 }}>
+                  <Download size={14} /> Export Credentials
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
 
       {/* CSV Import */}
       {showImport && (
@@ -896,6 +914,7 @@ const Students = () => {
         loading={bulkDeleting}
         onConfirm={confirmBulkDelete}
       />
+      </div>
     </div>
   );
 };

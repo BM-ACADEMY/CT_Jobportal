@@ -36,4 +36,27 @@ const markAllRead = async (req, res) => {
   }
 };
 
-module.exports = { listNotifications, markRead, markAllRead };
+const deleteNotification = async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndDelete({
+      _id: req.params.id,
+      recipient: req.user.id
+    });
+    if (!notification) return res.status(404).json({ msg: 'Notification not found' });
+    res.json({ msg: 'Notification deleted' });
+  } catch (err) {
+    res.status(500).json({ msg: 'Failed to delete notification', error: err.message });
+  }
+};
+
+const deleteReadNotifications = async (req, res) => {
+  try {
+    const result = await Notification.deleteMany({ recipient: req.user.id, isRead: true });
+    res.json({ msg: `${result.deletedCount} read notification(s) deleted`, deletedCount: result.deletedCount });
+  } catch (err) {
+    res.status(500).json({ msg: 'Failed to delete notifications', error: err.message });
+  }
+};
+
+module.exports = { listNotifications, markRead, markAllRead, deleteNotification, deleteReadNotifications };
+

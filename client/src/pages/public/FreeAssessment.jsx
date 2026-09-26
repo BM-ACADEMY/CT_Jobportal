@@ -254,6 +254,24 @@ const FreeAssessment = () => {
             <p className="text-xs text-center text-slate-400 font-semibold mt-2">
               Takes less than 30 seconds. No credit card required.
             </p>
+            <p className="text-xs text-center text-slate-500 font-semibold mt-4">
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem('pendingAssessment', JSON.stringify({
+                    skill, difficulty, score, total: questions.length,
+                    percentage: Math.round((score / questions.length) * 100),
+                    passed: (score / questions.length) >= 0.6,
+                    questions, answers
+                  }));
+                  navigate('/login');
+                }}
+                className="text-emerald-700 font-bold hover:underline"
+              >
+                Sign in to see your marks
+              </button>
+            </p>
           </div>
         </div>
       </div>

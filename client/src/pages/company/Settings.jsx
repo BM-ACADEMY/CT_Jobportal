@@ -420,77 +420,96 @@ const RecruiterSettings = () => {
     };
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8 space-y-10 animate-in fade-in duration-700">
-            <PageSOPBanner pageKey="recruiterSettings" />
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight text-[#0f172a]">
-                        Account <span className="text-emerald-600">Infrastructure</span>
-                    </h1>
-                    <p className="text-base text-slate-500 font-medium">Manage your professional profile and organizational identity</p>
+        <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex-1 min-w-0 space-y-10">
+                <PageSOPBanner pageKey="recruiterSettings" />
+
+                <div style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)' }} className="relative shadow-sm overflow-hidden group">
+                    <div className="p-8 sm:p-10 relative z-10">
+                        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+                        <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#34b678]/10 blur-[80px] rounded-full transition-all duration-700" />
+                        
+                        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-[#34b678] rounded-none flex items-center justify-center border border-white/10 shrink-0">
+                                    <Settings2 className="w-7 h-7 text-white" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <Badge style={{ background: 'rgba(52, 182, 120, 0.2)', borderColor: 'rgba(52, 182, 120, 0.3)', color: '#34b678', fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', fontSize: 9, padding: '2px 8px', borderRadius: 0 }}>
+                                            Configuration
+                                        </Badge>
+                                    </div>
+                                    <h2 className="text-2xl font-black text-white tracking-tight m-0">Account Infrastructure</h2>
+                                    <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
+                                        Manage your professional profile and organizational identity.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                                {isEditing ? (
+                                    <>
+                                        <Button 
+                                            variant="ghost" 
+                                            onClick={handleCancel}
+                                            className="h-11 rounded-none text-xs font-bold uppercase tracking-widest text-slate-300 hover:text-white px-6 border border-slate-600 hover:bg-slate-700"
+                                        >
+                                            Discard
+                                        </Button>
+                                        <Button 
+                                            onClick={handleSave}
+                                            disabled={loading}
+                                            className="h-11 px-8 rounded-none bg-[#34b678] hover:bg-[#2ea86e] text-white font-bold text-xs uppercase tracking-widest shadow-sm border-none transition-all"
+                                        >
+                                            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                                            Commit Changes
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button 
+                                        onClick={() => setIsEditing(true)}
+                                        className="h-11 px-8 rounded-none bg-[#34b678] hover:bg-[#2ea86e] text-white font-bold text-xs uppercase tracking-widest shadow-sm border-none transition-all"
+                                    >
+                                        <Settings2 className="w-4 h-4 mr-2" /> Modify Profile
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    {isEditing ? (
-                        <>
-                            <Button 
-                                variant="ghost" 
-                                onClick={handleCancel}
-                                className="h-11 text-xs font-bold uppercase tracking-widest text-slate-500 px-6"
-                            >
-                                Discard
-                            </Button>
-                            <Button 
-                                onClick={handleSave}
-                                disabled={loading}
-                                className="h-11 px-8 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-sm transition-all"
-                            >
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                                Commit Changes
-                            </Button>
-                        </>
-                    ) : (
-                        <Button 
-                            onClick={() => setIsEditing(true)}
-                            className="h-11 px-8 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-sm transition-all"
-                        >
-                            <Settings2 className="w-4 h-4 mr-2" /> Modify Profile
-                        </Button>
-                    )}
-                </div>
-            </div>
 
             <Tabs defaultValue="personal" className="w-full">
-                <TabsList className="bg-slate-50 border border-slate-100 rounded-xl p-1.5 h-auto flex justify-start overflow-x-auto shadow-sm flex-nowrap w-full [&::-webkit-scrollbar]:hidden gap-1 mb-10">
-                    <TabsTrigger value="personal" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                <TabsList className="bg-slate-50 border border-slate-100 rounded-none p-1.5 h-auto flex justify-start overflow-x-auto shadow-sm flex-nowrap w-full [&::-webkit-scrollbar]:hidden gap-1 mb-10">
+                    <TabsTrigger value="personal" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Personal
                     </TabsTrigger>
-                    <TabsTrigger value="company" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="company" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Organization
                     </TabsTrigger>
-                    <TabsTrigger value="profile" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="profile" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Detailed
                     </TabsTrigger>
-                    <TabsTrigger value="culture" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="culture" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Culture
                     </TabsTrigger>
-                    <TabsTrigger value="tech" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="tech" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Tech
                     </TabsTrigger>
-                    <TabsTrigger value="legal" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="legal" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         Legal
                     </TabsTrigger>
                     {user?.role !== 'company' && (
                         <>
-                            <TabsTrigger value="history" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                            <TabsTrigger value="history" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                                 Experience
                             </TabsTrigger>
-                            <TabsTrigger value="academic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                            <TabsTrigger value="academic" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                                 Credentials
                             </TabsTrigger>
                         </>
                     )}
-                    <TabsTrigger value="branding" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
+                    <TabsTrigger value="branding" className="h-10 px-6 rounded-none text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent">
                         Branding
                     </TabsTrigger>
                 </TabsList>
@@ -498,7 +517,7 @@ const RecruiterSettings = () => {
                 {/* ── TAB: PERSONAL PROFILE ── */}
                 <TabsContent value="personal" className="space-y-8 outline-none mt-4">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <Card className="lg:col-span-2 rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="lg:col-span-2 rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <div className="relative h-48 sm:h-64 bg-slate-100 group">
                                 {formData.coverPic ? (
                                     !isEditing ? (
@@ -520,7 +539,7 @@ const RecruiterSettings = () => {
                                     <div className="w-full h-full bg-gradient-to-r from-emerald-100 to-teal-50" />
                                 )}
                                 {isEditing && (
-                                    <label className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 px-3 rounded-xl shadow-sm cursor-pointer hover:bg-white transition-all text-[10px] font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2 border border-slate-200/50 hover:border-emerald-200 hover:text-emerald-600">
+                                    <label className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 px-3 rounded-none shadow-sm cursor-pointer hover:bg-white transition-all text-[10px] font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2 border border-slate-200/50 hover:border-emerald-200 hover:text-emerald-600">
                                         <Upload size={14} /> Update Cover
                                         <Input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e, 'coverPic')} />
                                     </label>
@@ -557,7 +576,7 @@ const RecruiterSettings = () => {
                             </div>
                             <CardHeader className="pt-16 p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <User className="w-5 h-5" />
                                     </div>
                                     Identity Foundation
@@ -607,7 +626,7 @@ const RecruiterSettings = () => {
                                                     <Input 
                                                         value={formData.name} 
                                                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                                        className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                                     />
                                                 </div>
                                             </div>
@@ -644,7 +663,7 @@ const RecruiterSettings = () => {
                                                             ...formData, 
                                                             recruiterProfile: {...formData.recruiterProfile, jobTitle: e.target.value}
                                                         })}
-                                                        className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                                     />
                                                 </div>
                                             </div>
@@ -658,7 +677,7 @@ const RecruiterSettings = () => {
                                                             ...formData, 
                                                             recruiterProfile: {...formData.recruiterProfile, location: e.target.value}
                                                         })}
-                                                        className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                                     />
                                                 </div>
                                             </div>
@@ -675,7 +694,7 @@ const RecruiterSettings = () => {
                                                                     ...formData, 
                                                                     recruiterProfile: {...formData.recruiterProfile, currentExp: e.target.value}
                                                                 })}
-                                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                                                className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                                             />
                                                         </div>
                                                     </div>
@@ -690,14 +709,14 @@ const RecruiterSettings = () => {
                                                                     ...formData, 
                                                                     recruiterProfile: {...formData.recruiterProfile, previousExp: e.target.value}
                                                                 })}
-                                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                                                className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                                             />
                                                         </div>
                                                     </div>
                                                     <div className="md:col-span-2 space-y-2">
                                                         <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Bio</Label>
                                                         <textarea 
-                                                            className="w-full min-h-[120px] p-4 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
+                                                            className="w-full min-h-[120px] p-4 rounded-none bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
                                                             value={formData.recruiterProfile.bio}
                                                             onChange={(e) => setFormData({
                                                                 ...formData, 
@@ -713,10 +732,10 @@ const RecruiterSettings = () => {
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <Target className="w-5 h-5" />
                                     </div>
                                     Strategic Expertise
@@ -730,15 +749,15 @@ const RecruiterSettings = () => {
                                             onChange={(e) => setNewSkill(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && addSkill()}
                                             placeholder="Append skill..." 
-                                            className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                            className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
                                         />
-                                        <Button onClick={addSkill} size="sm" className="bg-slate-900 hover:bg-emerald-600 h-11 px-5 rounded-xl text-white font-bold text-xs uppercase tracking-widest transition-all">Inject</Button>
+                                        <Button onClick={addSkill} size="sm" className="bg-slate-900 hover:bg-emerald-600 h-11 px-5 rounded-none text-white font-bold text-xs uppercase tracking-widest transition-all">Inject</Button>
                                     </div>
                                 )}
                                 <div className="flex flex-wrap gap-2.5">
                                     {formData.recruiterProfile.skills.length > 0 ? (
                                         formData.recruiterProfile.skills.map((skill) => (
-                                            <Badge key={skill} variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100 py-2 px-4 rounded-xl flex items-center gap-2 font-bold text-[11px] shadow-sm transition-all">
+                                            <Badge key={skill} variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100 py-2 px-4 rounded-none flex items-center gap-2 font-bold text-[11px] shadow-sm transition-all">
                                                 {skill}
                                                 {isEditing && <X size={14} className="cursor-pointer text-emerald-400 hover:text-emerald-600" onClick={() => removeSkill(skill)} />}
                                             </Badge>
@@ -757,23 +776,23 @@ const RecruiterSettings = () => {
 
                 {/* ── TAB: PROFESSIONAL HISTORY ── */}
                 <TabsContent value="history" className="space-y-8 outline-none mt-4">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                         <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between bg-white/50">
                             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                     <Briefcase className="w-5 h-5" />
                                 </div>
                                 Professional Dossier
                             </CardTitle>
                             {isEditing && (
-                                <Button onClick={addExperience} variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all">
+                                <Button onClick={addExperience} variant="ghost" size="sm" className="h-9 px-4 rounded-none text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all">
                                     <Plus className="w-4 h-4 mr-2" /> Add Experience
                                 </Button>
                             )}
                         </CardHeader>
                         <CardContent className="p-8 space-y-8">
                             {formData.recruiterProfile.experience.map((item, idx) => (
-                                <div key={idx} className={`relative p-8 rounded-2xl border transition-all ${isEditing ? 'bg-slate-50/50 border-slate-100' : 'bg-white border-slate-100/50 shadow-sm'}`}>
+                                <div key={idx} className={`relative p-8 rounded-none border transition-all ${isEditing ? 'bg-slate-50/50 border-slate-100' : 'bg-white border-slate-100/50 shadow-sm'}`}>
                                     {isEditing && (
                                         <Button 
                                             onClick={() => {
@@ -781,7 +800,7 @@ const RecruiterSettings = () => {
                                                 newExp.splice(idx, 1);
                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, experience: newExp}});
                                             }}
-                                            variant="ghost" size="icon" className="absolute top-6 right-6 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl h-9 w-9 transition-all"
+                                            variant="ghost" size="icon" className="absolute top-6 right-6 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-none h-9 w-9 transition-all"
                                         >
                                             <Trash2 size={18} />
                                         </Button>
@@ -808,7 +827,7 @@ const RecruiterSettings = () => {
                                                                 newExp[idx].company = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, experience: newExp}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
@@ -820,7 +839,7 @@ const RecruiterSettings = () => {
                                                                 newExp[idx].role = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, experience: newExp}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
@@ -832,14 +851,14 @@ const RecruiterSettings = () => {
                                                                 newExp[idx].duration = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, experience: newExp}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Description</Label>
                                                     <textarea 
-                                                        className="w-full h-full min-h-[160px] p-4 rounded-xl bg-white border border-slate-200 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
+                                                        className="w-full h-full min-h-[160px] p-4 rounded-none bg-white border border-slate-200 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
                                                         value={item.description}
                                                         onChange={(e) => {
                                                             const newExp = [...formData.recruiterProfile.experience];
@@ -867,23 +886,23 @@ const RecruiterSettings = () => {
                 <TabsContent value="academic" className="space-y-8 outline-none mt-4">
                     <div className="grid grid-cols-1 gap-10">
                         {/* Education */}
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <GraduationCap className="w-5 h-5" />
                                     </div>
                                     Academic Foundation
                                 </CardTitle>
                                 {isEditing && (
-                                    <Button onClick={addQualification} variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all">
+                                    <Button onClick={addQualification} variant="ghost" size="sm" className="h-9 px-4 rounded-none text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all">
                                         <Plus className="w-4 h-4 mr-2" /> Add Qualification
                                     </Button>
                                 )}
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
                                 {formData.recruiterProfile.qualification.map((item, idx) => (
-                                    <div key={idx} className={`relative p-6 rounded-2xl border transition-all ${isEditing ? 'bg-slate-50/50 border-slate-100' : 'bg-white border-slate-100/50 shadow-sm'}`}>
+                                    <div key={idx} className={`relative p-6 rounded-none border transition-all ${isEditing ? 'bg-slate-50/50 border-slate-100' : 'bg-white border-slate-100/50 shadow-sm'}`}>
                                         {isEditing && (
                                             <Button 
                                                 onClick={() => {
@@ -891,7 +910,7 @@ const RecruiterSettings = () => {
                                                     newQual.splice(idx, 1);
                                                     setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, qualification: newQual}});
                                                 }}
-                                                variant="ghost" size="icon" className="absolute top-5 right-5 text-slate-300 hover:text-rose-600 rounded-xl h-8 w-8 transition-all"
+                                                variant="ghost" size="icon" className="absolute top-5 right-5 text-slate-300 hover:text-rose-600 rounded-none h-8 w-8 transition-all"
                                             >
                                                 <Trash2 size={16} />
                                             </Button>
@@ -914,7 +933,7 @@ const RecruiterSettings = () => {
                                                                 newQual[idx].degree = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, qualification: newQual}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
@@ -926,7 +945,7 @@ const RecruiterSettings = () => {
                                                                 newQual[idx].institution = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, qualification: newQual}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
@@ -938,7 +957,7 @@ const RecruiterSettings = () => {
                                                                 newQual[idx].year = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, qualification: newQual}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                 </>
@@ -950,23 +969,23 @@ const RecruiterSettings = () => {
                         </Card>
 
                         {/* Certifications */}
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <Award className="w-5 h-5" />
                                     </div>
                                     Professional Credentials
                                 </CardTitle>
                                 {isEditing && (
-                                    <Button onClick={addCertification} variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all">
+                                    <Button onClick={addCertification} variant="ghost" size="sm" className="h-9 px-4 rounded-none text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all">
                                         <Plus className="w-4 h-4 mr-2" /> Add Certification
                                     </Button>
                                 )}
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
                                 {formData.recruiterProfile.certifications.map((item, idx) => (
-                                    <div key={idx} className={`relative p-6 rounded-2xl border transition-all ${isEditing ? 'bg-slate-50/50 border-slate-100' : 'bg-white border-slate-100/50 shadow-sm'}`}>
+                                    <div key={idx} className={`relative p-6 rounded-none border transition-all ${isEditing ? 'bg-slate-50/50 border-slate-100' : 'bg-white border-slate-100/50 shadow-sm'}`}>
                                         {isEditing && (
                                             <Button 
                                                 onClick={() => {
@@ -974,7 +993,7 @@ const RecruiterSettings = () => {
                                                     newCert.splice(idx, 1);
                                                     setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, certifications: newCert}});
                                                 }}
-                                                variant="ghost" size="icon" className="absolute top-5 right-5 text-slate-300 hover:text-rose-600 rounded-xl h-8 w-8 transition-all"
+                                                variant="ghost" size="icon" className="absolute top-5 right-5 text-slate-300 hover:text-rose-600 rounded-none h-8 w-8 transition-all"
                                             >
                                                 <Trash2 size={16} />
                                             </Button>
@@ -997,7 +1016,7 @@ const RecruiterSettings = () => {
                                                                 newCert[idx].name = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, certifications: newCert}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
@@ -1009,7 +1028,7 @@ const RecruiterSettings = () => {
                                                                 newCert[idx].organization = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, certifications: newCert}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
@@ -1021,7 +1040,7 @@ const RecruiterSettings = () => {
                                                                 newCert[idx].year = e.target.value;
                                                                 setFormData({...formData, recruiterProfile: {...formData.recruiterProfile, certifications: newCert}});
                                                             }}
-                                                            className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                            className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                         />
                                                     </div>
                                                 </>
@@ -1036,10 +1055,10 @@ const RecruiterSettings = () => {
 
                 {/* ── TAB: ORGANIZATION DETAILS ── */}
                 <TabsContent value="company" className="space-y-8 outline-none mt-4">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                         <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                     <Building2 className="w-5 h-5" />
                                 </div>
                                 Organizational Blueprint
@@ -1064,7 +1083,7 @@ const RecruiterSettings = () => {
                                             <div className="flex flex-wrap gap-2.5 pt-1">
                                                 {formData.companyData.industry_tag?.length > 0 ? (
                                                     formData.companyData.industry_tag.map((ind, i) => (
-                                                        <Badge key={i} variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100 px-4 py-2 rounded-xl font-bold text-[10px] shadow-sm">
+                                                        <Badge key={i} variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100 px-4 py-2 rounded-none font-bold text-[10px] shadow-sm">
                                                             {ind}
                                                         </Badge>
                                                     ))
@@ -1084,7 +1103,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.name} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, name: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
@@ -1095,7 +1114,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.legal_name} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, legal_name: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
@@ -1106,7 +1125,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.display_name} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, display_name: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
@@ -1117,7 +1136,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.slug} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, slug: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
@@ -1128,13 +1147,13 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.headquarters_address} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, headquarters_address: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
                                         <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-50">
                                             <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Strategic Industry Sectors (Select Multiple)</Label>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50/50 p-6 rounded-[24px] border border-slate-100 shadow-inner">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50/50 p-6 rounded-none border border-slate-100 shadow-inner">
                                                 {INDUSTRIES.map((ind) => {
                                                     const isSelected = formData.companyData.industry_tag?.includes(ind);
                                                     return (
@@ -1148,7 +1167,7 @@ const RecruiterSettings = () => {
                                                                     : [...current, ind];
                                                                 setFormData({...formData, companyData: {...formData.companyData, industry_tag: next}});
                                                             }}
-                                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold transition-all border
+                                                            className={`flex items-center gap-3 px-4 py-3 rounded-none text-[10px] font-bold transition-all border
                                                                 ${isSelected 
                                                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/10 scale-[1.02]' 
                                                                     : 'bg-white text-slate-500 border-slate-100 hover:border-emerald-200'}`}
@@ -1170,7 +1189,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.company_size_range} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, company_size_range: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
@@ -1182,7 +1201,7 @@ const RecruiterSettings = () => {
                                                     type="number"
                                                     value={formData.companyData.founded_year || formData.companyData.foundedYear} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, founded_year: e.target.value, foundedYear: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
@@ -1195,10 +1214,10 @@ const RecruiterSettings = () => {
 
                 {/* ── TAB: DETAILED PROFILE ── */}
                 <TabsContent value="profile" className="space-y-8 outline-none mt-4">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                         <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                     <FileText className="w-5 h-5" />
                                 </div>
                                 Brand Narrative
@@ -1227,14 +1246,14 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.tagline} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, tagline: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Mission Statement</Label>
                                             <textarea 
-                                                className="w-full min-h-[100px] p-4 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
+                                                className="w-full min-h-[100px] p-4 rounded-none bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
                                                 value={formData.companyData.mission_statement}
                                                 onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, mission_statement: e.target.value}})}
                                             />
@@ -1242,7 +1261,7 @@ const RecruiterSettings = () => {
                                         <div className="space-y-2">
                                             <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Corporate Overview (Detailed)</Label>
                                             <textarea 
-                                                className="w-full min-h-[180px] p-4 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
+                                                className="w-full min-h-[180px] p-4 rounded-none bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
                                                 value={formData.companyData.about_us}
                                                 onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, about_us: e.target.value, description: e.target.value}})}
                                             />
@@ -1253,7 +1272,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.social_links?.linkedin} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, social_links: {...formData.companyData.social_links, linkedin: e.target.value}}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -1261,7 +1280,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.social_links?.twitter} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, social_links: {...formData.companyData.social_links, twitter: e.target.value}}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -1269,7 +1288,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.social_links?.glassdoor} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, social_links: {...formData.companyData.social_links, glassdoor: e.target.value}}})}
-                                                    className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
@@ -1283,10 +1302,10 @@ const RecruiterSettings = () => {
                 {/* ── TAB: CULTURE & PERKS ── */}
                 <TabsContent value="culture" className="space-y-8 outline-none mt-4">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <Sparkles className="w-5 h-5" />
                                     </div>
                                     Corporate Ethos & Values
@@ -1297,7 +1316,7 @@ const RecruiterSettings = () => {
                                     {!isEditing ? (
                                         <div className="flex flex-wrap gap-3">
                                             {formData.companyData.work_model?.map((model, i) => (
-                                                <Badge key={i} variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100 px-4 py-2 rounded-xl font-bold text-[10px] shadow-sm">
+                                                <Badge key={i} variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100 px-4 py-2 rounded-none font-bold text-[10px] shadow-sm">
                                                     {model}
                                                 </Badge>
                                             ))}
@@ -1320,7 +1339,7 @@ const RecruiterSettings = () => {
                                                                     : [...current, option];
                                                                 setFormData({...formData, companyData: {...formData.companyData, work_model: next}});
                                                             }}
-                                                            className={`px-5 py-2.5 rounded-xl text-[10px] font-bold transition-all border
+                                                            className={`px-5 py-2.5 rounded-none text-[10px] font-bold transition-all border
                                                                 ${isSelected 
                                                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/10' 
                                                                     : 'bg-white text-slate-500 border-slate-100 hover:border-emerald-200'}`}
@@ -1337,7 +1356,7 @@ const RecruiterSettings = () => {
                                         <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Core Culture Values</Label>
                                         <div className="flex flex-wrap gap-3">
                                             {formData.companyData.culture_values?.map((val, i) => (
-                                                <Badge key={i} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-[10px] shadow-sm">
+                                                <Badge key={i} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 px-4 py-2 rounded-none flex items-center gap-2 font-bold text-[10px] shadow-sm">
                                                     {val}
                                                     {isEditing && <X size={14} className="cursor-pointer text-slate-300 hover:text-rose-500 transition-colors" onClick={() => {
                                                         const newVals = [...formData.companyData.culture_values];
@@ -1348,7 +1367,7 @@ const RecruiterSettings = () => {
                                             ))}
                                             {isEditing && (
                                                 <Button 
-                                                    size="sm" variant="ghost" className="h-9 rounded-xl border border-dashed border-slate-200 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all"
+                                                    size="sm" variant="ghost" className="h-9 rounded-none border border-dashed border-slate-200 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all"
                                                     onClick={() => openAddItemModal('culture')}
                                                 >
                                                     <Plus className="w-3.5 h-3.5 mr-2" /> Add Value
@@ -1360,10 +1379,10 @@ const RecruiterSettings = () => {
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <Award className="w-5 h-5" />
                                     </div>
                                     Incentives & Provisions
@@ -1377,7 +1396,7 @@ const RecruiterSettings = () => {
                                     { key: 'learning_stipend', label: 'Annual L&D Fund ($)', type: 'number', icon: BookOpen },
                                     { key: 'remote_stipend', label: 'Infrastructure Grant ($)', type: 'number', icon: Globe },
                                 ].map(perk => (
-                                    <div key={perk.key} className="flex flex-col gap-3 p-6 rounded-2xl bg-slate-50/50 border border-slate-100 transition-all hover:bg-white hover:shadow-md hover:shadow-slate-200/50">
+                                    <div key={perk.key} className="flex flex-col gap-3 p-6 rounded-none bg-slate-50/50 border border-slate-100 transition-all hover:bg-white hover:shadow-md hover:shadow-slate-200/50">
                                         <div className="flex items-center gap-2 mb-1">
                                             <perk.icon className="w-3.5 h-3.5 text-emerald-600/70" />
                                             <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{perk.label}</Label>
@@ -1409,7 +1428,7 @@ const RecruiterSettings = () => {
                                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
                                                     <Input 
                                                         type="number" 
-                                                        className="h-11 rounded-xl bg-white border-slate-100 pl-8 focus:border-emerald-300 transition-all font-medium text-sm"
+                                                        className="h-11 rounded-none bg-white border-slate-100 pl-8 focus:border-emerald-300 transition-all font-medium text-sm"
                                                         value={formData.companyData.perks?.[perk.key] || 0}
                                                         onChange={(e) => setFormData({
                                                             ...formData, 
@@ -1432,10 +1451,10 @@ const RecruiterSettings = () => {
                 {/* ── TAB: TECH & TEAM ── */}
                 <TabsContent value="tech" className="space-y-8 outline-none mt-4">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <LayoutGrid className="w-5 h-5" />
                                     </div>
                                     Technological Ecosystem
@@ -1444,7 +1463,7 @@ const RecruiterSettings = () => {
                             <CardContent className="p-8 space-y-8">
                                 <div className="flex flex-wrap gap-3">
                                     {formData.companyData.tech_stack?.map((tech, i) => (
-                                        <Badge key={i} variant="secondary" className="bg-slate-900 text-white border-slate-900 px-4 py-2 rounded-xl flex items-center gap-3 font-bold text-[10px] shadow-md shadow-slate-900/10">
+                                        <Badge key={i} variant="secondary" className="bg-slate-900 text-white border-slate-900 px-4 py-2 rounded-none flex items-center gap-3 font-bold text-[10px] shadow-md shadow-slate-900/10">
                                             {tech}
                                             {isEditing && <X size={14} className="cursor-pointer text-white/50 hover:text-white transition-colors" onClick={() => {
                                                 const newStack = [...formData.companyData.tech_stack];
@@ -1455,7 +1474,7 @@ const RecruiterSettings = () => {
                                     ))}
                                     {isEditing && (
                                         <Button 
-                                            size="sm" variant="ghost" className="h-9 rounded-xl border border-dashed border-slate-200 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all"
+                                            size="sm" variant="ghost" className="h-9 rounded-none border border-dashed border-slate-200 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all"
                                             onClick={() => openAddItemModal('tech')}
                                         >
                                             <Plus className="w-3.5 h-3.5 mr-2" /> Add Tech Asset
@@ -1465,10 +1484,10 @@ const RecruiterSettings = () => {
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <MapPin className="w-5 h-5" />
                                     </div>
                                     Global Infrastructure
@@ -1477,7 +1496,7 @@ const RecruiterSettings = () => {
                             <CardContent className="p-8 space-y-8">
                                 <div className="flex flex-wrap gap-3">
                                     {formData.companyData.office_locations?.map((loc, i) => (
-                                        <Badge key={i} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 px-4 py-2 rounded-xl flex items-center gap-3 font-bold text-[10px] shadow-sm">
+                                        <Badge key={i} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 px-4 py-2 rounded-none flex items-center gap-3 font-bold text-[10px] shadow-sm">
                                             {loc}
                                             {isEditing && <X size={14} className="cursor-pointer text-slate-300 hover:text-rose-500 transition-colors" onClick={() => {
                                                 const newLocs = [...formData.companyData.office_locations];
@@ -1488,7 +1507,7 @@ const RecruiterSettings = () => {
                                     ))}
                                     {isEditing && (
                                         <Button 
-                                            size="sm" variant="ghost" className="h-9 rounded-xl border border-dashed border-slate-200 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all"
+                                            size="sm" variant="ghost" className="h-9 rounded-none border border-dashed border-slate-200 text-emerald-600 hover:bg-emerald-50 font-bold text-[10px] uppercase tracking-widest transition-all"
                                             onClick={() => openAddItemModal('office')}
                                         >
                                             <Plus className="w-3.5 h-3.5 mr-2" /> Add Office Hub
@@ -1502,10 +1521,10 @@ const RecruiterSettings = () => {
 
                 {/* ── TAB: LEGAL & ADMIN ── */}
                 <TabsContent value="legal" className="space-y-8 outline-none mt-4">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden max-w-4xl mx-auto">
+                    <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden max-w-4xl mx-auto">
                         <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                     <ShieldCheck className="w-5 h-5" />
                                 </div>
                                 Governance & Compliance
@@ -1524,7 +1543,7 @@ const RecruiterSettings = () => {
                                 </div>
 
                                 {isEditing && (
-                                    <div className="md:col-span-2 p-8 rounded-[24px] bg-emerald-50/30 border border-emerald-100/50 space-y-6 mt-4">
+                                    <div className="md:col-span-2 p-8 rounded-none bg-emerald-50/30 border border-emerald-100/50 space-y-6 mt-4">
                                         <div className="flex items-center gap-2">
                                             <ShieldAlert className="w-4 h-4 text-emerald-600" />
                                             <p className="text-[10px] font-bold text-emerald-900 uppercase tracking-[0.1em]">Administrative Control Interface</p>
@@ -1535,7 +1554,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.tax_id_ein} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, tax_id_ein: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -1543,7 +1562,7 @@ const RecruiterSettings = () => {
                                                 <Input 
                                                     value={formData.companyData.admin_email} 
                                                     onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, admin_email: e.target.value}})}
-                                                    className="h-11 rounded-xl bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                    className="h-11 rounded-none bg-white border-slate-200 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 />
                                             </div>
                                         </div>
@@ -1557,10 +1576,10 @@ const RecruiterSettings = () => {
                 {/* ── TAB: BRANDING & MULTIMEDIA ── */}
                 <TabsContent value="branding" className="space-y-8 outline-none mt-4">
                     <div className="grid grid-cols-1 gap-8">
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <Plus className="w-5 h-5" />
                                     </div>
                                     Company Gallery & Media
@@ -1571,7 +1590,7 @@ const RecruiterSettings = () => {
                                     <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Gallery Images (URLs)</Label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                         {(formData.companyData.gallery_images || []).map((img, idx) => (
-                                            <div key={idx} className="relative group rounded-xl overflow-hidden aspect-video border border-slate-100 bg-slate-50">
+                                            <div key={idx} className="relative group rounded-none overflow-hidden aspect-video border border-slate-100 bg-slate-50">
                                                 <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
                                                 {isEditing && (
                                                     <button 
@@ -1580,7 +1599,7 @@ const RecruiterSettings = () => {
                                                             next.splice(idx, 1);
                                                             setFormData({...formData, companyData: {...formData.companyData, gallery_images: next}});
                                                         }}
-                                                        className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-none opacity-0 group-hover:opacity-100 transition-opacity"
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
@@ -1601,7 +1620,7 @@ const RecruiterSettings = () => {
                                                         });
                                                     }
                                                 }}
-                                                className="flex flex-col items-center justify-center aspect-video rounded-xl border-2 border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all text-slate-400 hover:text-emerald-600"
+                                                className="flex flex-col items-center justify-center aspect-video rounded-none border-2 border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all text-slate-400 hover:text-emerald-600"
                                             >
                                                 <Plus size={24} className="mb-2" />
                                                 <span className="text-[10px] font-bold uppercase tracking-wider">Add Image</span>
@@ -1619,7 +1638,7 @@ const RecruiterSettings = () => {
                                             <Input 
                                                 value={formData.companyData.video_intro_url} 
                                                 onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, video_intro_url: e.target.value}})}
-                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
+                                                className="h-11 rounded-none bg-slate-50 border-slate-100 pl-11 focus:border-emerald-300 transition-all font-medium text-sm" 
                                                 placeholder="https://youtube.com/watch?v=..."
                                             />
                                         </div>
@@ -1628,10 +1647,10 @@ const RecruiterSettings = () => {
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                        <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="p-8 border-b border-slate-50 bg-white/50">
                                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <div className="w-10 h-10 rounded-none bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
                                         <ShieldCheck className="w-5 h-5" />
                                     </div>
                                     Norms & Conditions
@@ -1641,12 +1660,12 @@ const RecruiterSettings = () => {
                                 <div className="space-y-4">
                                     <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Company Policies & Norms</Label>
                                     {!isEditing ? (
-                                        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 min-h-[150px] whitespace-pre-wrap text-sm text-slate-600 font-medium">
+                                        <div className="p-6 rounded-none bg-slate-50 border border-slate-100 min-h-[150px] whitespace-pre-wrap text-sm text-slate-600 font-medium">
                                             {formData.companyData.norms_conditions || 'No norms specified.'}
                                         </div>
                                     ) : (
                                         <textarea 
-                                            className="w-full min-h-[200px] p-6 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
+                                            className="w-full min-h-[200px] p-6 rounded-none bg-slate-50 border border-slate-100 focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 text-sm font-medium transition-all"
                                             value={formData.companyData.norms_conditions}
                                             onChange={(e) => setFormData({...formData, companyData: {...formData.companyData, norms_conditions: e.target.value}})}
                                             placeholder="Specify your company norms, work culture rules, or conditions..."
@@ -1665,7 +1684,7 @@ const RecruiterSettings = () => {
                     <div className="h-2 w-full bg-emerald-600" />
                     <div className="p-10 space-y-8">
                         <DialogHeader className="space-y-4">
-                            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center shadow-sm border border-emerald-100 mx-auto lg:mx-0">
+                            <div className="w-16 h-16 bg-emerald-50 rounded-none flex items-center justify-center shadow-sm border border-emerald-100 mx-auto lg:mx-0">
                                 <Plus className="text-emerald-600 w-8 h-8" />
                             </div>
                             <div className="space-y-1">
@@ -1687,16 +1706,16 @@ const RecruiterSettings = () => {
                                     value={modalConfig.value}
                                     onChange={(e) => setModalConfig({ ...modalConfig, value: e.target.value })}
                                     onKeyDown={(e) => e.key === 'Enter' && handleModalConfirm()}
-                                    className="h-12 rounded-xl bg-slate-50 border-slate-100 px-5 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-50 transition-all font-medium text-base"
+                                    className="h-12 rounded-none bg-slate-50 border-slate-100 px-5 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-50 transition-all font-medium text-base"
                                 />
                             </div>
                         </div>
 
                         <DialogFooter className="pt-4 flex flex-col sm:flex-row gap-4">
-                            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="flex-1 h-12 rounded-xl font-bold text-slate-400 hover:bg-slate-50">
+                            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="flex-1 h-12 rounded-none font-bold text-slate-400 hover:bg-slate-50">
                                 Discard
                             </Button>
-                            <Button onClick={handleModalConfirm} className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95">
+                            <Button onClick={handleModalConfirm} className="flex-1 h-12 rounded-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95">
                                 Finalize Entry
                             </Button>
                         </DialogFooter>
@@ -1711,8 +1730,10 @@ const RecruiterSettings = () => {
                     onCancel={() => setCropModal({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 })}
                 />
             )}
+            </div>
         </div>
     );
 };
 
 export default RecruiterSettings;
+

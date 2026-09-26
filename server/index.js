@@ -174,7 +174,7 @@ app.use('/api/notifications', notificationRoutes);
 
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/jobportal';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/velaivaaipu';
 
 console.log(`Connecting to MongoDB at: ${MONGODB_URI.replace(/\/\/.*@/, '//****:****@')}`);
 

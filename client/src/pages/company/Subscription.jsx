@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, Tag } from 'antd';
 import PricingCard from '../../components/subscription/PricingCard';
 import CheckoutModal from '../../components/subscription/CheckoutModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
@@ -487,7 +488,8 @@ const SubscriptionPage = () => {
   const isRestrictedTeamMember = (user?.role === 'recruiter' && user?.isTeamManaged) || user?.role === 'org_employee';
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-20 pt-4">
+    <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 min-w-0 space-y-12">
       <PageSOPBanner pageKey="companySubscription" />
 
       {/* Checkout summary modal */}
@@ -520,13 +522,40 @@ const SubscriptionPage = () => {
         }}
       />
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-900 tracking-tight">Subscription & Billing</h1>
-          <p className="text-xs text-slate-500 mt-1">Manage your account tier and monitor service utilization.</p>
+      {/* Premium Welcome Header */}
+      <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)', borderRadius: 0 }} className="relative shadow-sm overflow-hidden group">
+        <div className="p-8 sm:p-10 relative z-10">
+          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#34b678]/10 blur-[80px] rounded-full transition-all duration-700" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-[#34b678] rounded-none flex items-center justify-center border border-white/10 shrink-0">
+                <Crown className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                 <div className="flex items-center gap-3 mb-2">
+                   <Tag style={{ background: 'rgba(52, 182, 120, 0.2)', borderColor: 'rgba(52, 182, 120, 0.3)', color: '#34b678', fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', fontSize: 9, padding: '2px 8px', borderRadius: 0 }}>
+                     Billing & Plans
+                   </Tag>
+                 </div>
+                 <h2 className="text-2xl font-black text-white tracking-tight m-0">Subscription</h2>
+                 <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
+                   Manage your account tier and monitor service utilization seamlessly.
+                 </p>
+              </div>
+            </div>
+            
+            <Button
+              onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{ backgroundColor: '#34b678', borderColor: '#34b678', height: 44, padding: '0 24px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1 }}
+              className="rounded-none text-white border-none cursor-pointer flex items-center gap-2"
+            >
+              <Zap size={14} /> Upgrade Now
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Current Plan Status */}
       {currentPlan ? (
@@ -565,7 +594,7 @@ const SubscriptionPage = () => {
                 <Button
                   onClick={() => downloadInvoice(payments.find(p => p.status === 'completed' && p.paymentType !== 'pay-per-feature' && (p.plan?._id?.toString() === currentPlan?._id?.toString() || p.plan?.id === currentPlan?._id?.toString())), user)}
                   variant="outline"
-                  className="h-9 px-4 rounded border-[#d9d9d9] text-slate-700 hover:text-[#39c884] hover:border-[#39c884] hover:bg-white font-medium text-xs flex items-center gap-2 cursor-pointer"
+                  className="h-10 px-4 rounded-none border-[#d9d9d9] text-slate-700 hover:text-emerald-600 hover:border-emerald-600 hover:bg-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-colors"
                 >
                   <Download size={14} /> Download Invoice
                 </Button>
@@ -573,7 +602,7 @@ const SubscriptionPage = () => {
               {(isExpired || isExpiringSoon) && (
                 <Button
                   onClick={() => document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="h-9 px-6 rounded bg-[#39c884] hover:bg-[#2ea86e] text-white font-medium text-xs border-none cursor-pointer"
+                  className="h-10 px-6 rounded-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider border-none cursor-pointer transition-colors"
                 >
                   Renew Now
                 </Button>
@@ -614,11 +643,11 @@ const SubscriptionPage = () => {
         <Tabs defaultValue={defaultTab} className="w-full space-y-8">
           {user?.role !== 'recruiter' && user?.role !== 'company' && user?.role !== 'college' && user?.role !== 'org_employee' && (
             <div className="flex justify-center">
-              <TabsList className="bg-slate-100 p-1 rounded-none w-fit">
-                <TabsTrigger value="recruiter" className="rounded-none px-8 py-2.5 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <TabsList className="bg-slate-100 p-1 rounded-none w-fit border border-slate-200">
+                <TabsTrigger value="recruiter" className="rounded-none px-8 py-2.5 text-xs font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 transition-colors">
                   Recruiters
                 </TabsTrigger>
-                <TabsTrigger value="company" className="rounded-none px-8 py-2.5 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <TabsTrigger value="company" className="rounded-none px-8 py-2.5 text-xs font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 transition-colors">
                   Organizations
                 </TabsTrigger>
               </TabsList>
@@ -715,6 +744,7 @@ const SubscriptionPage = () => {
 
       <div className="text-center opacity-40">
         <p className="text-[9px] font-medium text-slate-500 uppercase tracking-[0.4em]">Secure Transactions via Razorpay</p>
+      </div>
       </div>
     </div>
   );

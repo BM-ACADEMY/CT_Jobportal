@@ -68,102 +68,126 @@ const PricingCard = ({
     plan.duration === 'Yearly' ? '40%' :
     plan.duration === 'Quarterly' ? '20%' : null;
 
-  const cardContent = (
-    <div className={`p-6 bg-white flex flex-col justify-between h-full ${isPopular ? 'rounded-[22px]' : 'rounded-3xl border border-neutral-200 hover:shadow-lg transition-shadow bg-white'}`}>
-      <div>
-        <h3 className="text-neutral-700 text-sm mb-6 font-medium">{plan.name}</h3>
-        <div className="flex items-baseline gap-1 mb-8">
-          <span className="text-[28px] font-bold text-neutral-900">
-            {plan.isCustomPrice ? 'Custom' : (isFree ? 'Free' : `₹${plan.price.toLocaleString()}`)}
-          </span>
-          {!isFree && (
-            <span className="text-neutral-600 text-xs">/{plan.duration.toLowerCase()}</span>
+  return (
+    <div className={`relative flex flex-col h-full transition-all duration-500 ${isPopular ? 'scale-105 z-10' : 'hover:-translate-y-2'}`}>
+      
+      {isPopular && (
+        <div className="absolute -top-4 inset-x-0 flex justify-center z-20">
+          <div className="bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-900 text-[10px] font-black uppercase tracking-[2px] px-4 py-1.5 rounded-none shadow-lg shadow-emerald-500/30">
+            Most Popular
+          </div>
+        </div>
+      )}
+
+      <div className={`flex flex-col flex-1 p-8 rounded-none border ${
+        isPopular 
+          ? 'bg-slate-900 border-slate-700 shadow-[0_0_40px_rgba(52,182,120,0.15)] relative overflow-hidden group' 
+          : 'bg-white border-slate-200 hover:border-emerald-500/30 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]'
+      }`}>
+        
+        {isPopular && (
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full transition-all duration-700 group-hover:bg-emerald-500/20" />
+        )}
+
+        <div className="relative z-10">
+          <h3 className={`text-xs font-black uppercase tracking-[2px] mb-6 ${isPopular ? 'text-emerald-400' : 'text-slate-500'}`}>
+            {plan.name}
+          </h3>
+          
+          <div className="flex items-baseline gap-1 mb-8">
+            <span className={`text-4xl font-black tracking-tight ${isPopular ? 'text-white' : 'text-slate-900'}`}>
+              {plan.isCustomPrice ? 'Custom' : (isFree ? 'Free' : `₹${plan.price.toLocaleString()}`)}
+            </span>
+            {!isFree && (
+              <span className={`text-xs font-bold ${isPopular ? 'text-slate-400' : 'text-slate-400'}`}>
+                /{plan.duration.toLowerCase()}
+              </span>
+            )}
+          </div>
+
+          {savePct && !isFree && (
+            <div className="mb-8 -mt-4">
+              <span className={`inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-none border ${
+                isPopular 
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                  : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+              }`}>
+                Save {savePct}
+              </span>
+            </div>
+          )}
+
+          <div className={`h-px w-full mb-8 ${isPopular ? 'bg-slate-800' : 'bg-slate-100'}`} />
+
+          <ul className="space-y-4 mb-10">
+            {features.map((feature, idx) => {
+              const { enabled, displayValue } = resolveFeature(feature, plan);
+              return (
+                <li key={idx} className="flex items-start gap-3 text-sm">
+                  {enabled ? (
+                    <div className={`mt-0.5 w-5 h-5 flex items-center justify-center shrink-0 ${isPopular ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-500'}`}>
+                      <Check size={14} strokeWidth={3} />
+                    </div>
+                  ) : (
+                    <div className={`mt-0.5 w-5 h-5 flex items-center justify-center shrink-0 ${isPopular ? 'bg-slate-800 text-slate-600' : 'bg-slate-50 text-slate-300'}`}>
+                      <X size={14} strokeWidth={3} />
+                    </div>
+                  )}
+                  
+                  <span className={`${enabled ? (isPopular ? 'text-slate-300 font-medium' : 'text-slate-600 font-medium') : (isPopular ? 'text-slate-600 line-through' : 'text-slate-400 line-through')}`}>
+                    {feature.label}
+                    {enabled && displayValue !== null && displayValue !== true && (
+                      <span className={`ml-1.5 ${isPopular ? 'text-white font-bold' : 'text-slate-900 font-bold'}`}>
+                        ({displayValue === 'Unlimited' ? 'Unlimited' : `${displayValue}${feature.unit ? ` ${feature.unit}` : ''}`})
+                      </span>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div className="mt-auto relative z-10 space-y-3">
+          {footer ?? (
+            <>
+              <button
+                onClick={() => onAction?.(plan)}
+                disabled={isCurrent}
+                className={`w-full h-12 rounded-none cursor-pointer text-xs font-black uppercase tracking-[1.5px] transition-all duration-300 flex items-center justify-center gap-2 border-none ${
+                  isCurrent
+                    ? (isPopular ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed')
+                    : (isPopular 
+                        ? 'bg-emerald-500 text-slate-900 hover:bg-emerald-400 shadow-[0_0_20px_rgba(52,182,120,0.3)] hover:shadow-[0_0_30px_rgba(52,182,120,0.5)]' 
+                        : 'bg-slate-900 text-white hover:bg-emerald-500 shadow-sm')
+                }`}
+              >
+                {isCurrent ? (
+                  'Current Plan'
+                ) : isFree ? (
+                  'Get started'
+                ) : (
+                  <>
+                    <Zap size={14} className={isPopular ? 'text-slate-900' : 'text-emerald-400'} fill="currentColor" /> 
+                    {actionLabel}
+                  </>
+                )}
+              </button>
+
+              {isCurrent && !isFree && onCancel && (
+                <button
+                  onClick={() => onCancel(plan)}
+                  className={`w-full py-3 rounded-none cursor-pointer text-[10px] font-bold uppercase tracking-[1px] transition-all flex items-center justify-center gap-2 bg-transparent border-none ${
+                    isPopular ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-500/10' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                  }`}
+                >
+                  <XCircle size={13} /> Cancel Subscription
+                </button>
+              )}
+            </>
           )}
         </div>
-
-        {savePct && !isFree && (
-          <div className="mb-6 -mt-4">
-            <span className="inline-block text-[10px] font-semibold text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-100">
-              Save {savePct}
-            </span>
-          </div>
-        )}
-
-        <ul className="space-y-4 mb-8">
-          {features.map((feature, idx) => {
-            const { enabled, displayValue } = resolveFeature(feature, plan);
-            return (
-              <li key={idx} className="flex items-center gap-3 text-sm text-neutral-600">
-                {enabled ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-check text-neutral-600 shrink-0"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x text-neutral-300 shrink-0"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6M9 9l6 6"></path></svg>
-                )}
-                <span className={enabled ? '' : 'text-neutral-400 line-through'}>
-                  {feature.label}
-                  {enabled && displayValue !== null && displayValue !== true && (
-                    <span className="font-semibold text-neutral-900 ml-1.5">
-                      ({displayValue === 'Unlimited' ? 'Unlimited' : `${displayValue}${feature.unit ? ` ${feature.unit}` : ''}`})
-                    </span>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
       </div>
-
-      <div className="space-y-2">
-        {footer ?? (
-          <>
-            <button
-              onClick={() => onAction?.(plan)}
-              disabled={isCurrent}
-              className={`w-full py-3 rounded-full cursor-pointer text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
-                isCurrent
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                  : 'bg-gradient-to-r from-[#FF5804] to-[#FF8D28]/70 text-white hover:opacity-95 shadow-sm'
-              }`}
-            >
-              {isCurrent ? (
-                <span>Current Plan</span>
-              ) : isFree ? (
-                'Get started'
-              ) : (
-                <>
-                  <Zap size={14} /> {actionLabel}
-                </>
-              )}
-            </button>
-
-            {isCurrent && !isFree && onCancel && (
-              <button
-                onClick={() => onCancel(plan)}
-                className="w-full py-2 rounded-full cursor-pointer text-xs font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all flex items-center justify-center gap-1 bg-transparent border-none"
-              >
-                <XCircle size={13} /> Cancel Plan
-              </button>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-  if (isPopular) {
-    return (
-      <div className="bg-gradient-to-r from-[#FF861C] to-[#FFDBC4] rounded-3xl p-1.5 shadow-xl hover:shadow-lg transition-shadow flex flex-col h-full">
-        <p className="text-center text-orange-700 text-xs font-semibold py-1.5">Popular</p>
-        <div className="flex-1 rounded-[22px] overflow-hidden">
-          {cardContent}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full flex flex-col">
-      {cardContent}
     </div>
   );
 };

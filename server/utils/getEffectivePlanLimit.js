@@ -19,9 +19,12 @@ const getEffectivePlanLimit = async (user, roleName) => {
     }
   }
 
+  // Map org_employee to company for free plan lookup since there is no 'org_employee' plan
+  const planRole = roleName === 'org_employee' ? 'company' : roleName;
+
   if (!plan) {
     // No plan at all — fall back to Free plan
-    const freePlan = await Subscription.findOne({ price: 0, role: roleName, isActive: true });
+    const freePlan = await Subscription.findOne({ price: 0, role: planRole, isActive: true });
     return freePlan?.activeJobPostings || 0;
   }
 
@@ -37,7 +40,7 @@ const getEffectivePlanLimit = async (user, roleName) => {
   }
 
   // Paid plan is expired — fall back to free plan for this role
-  const freePlan = await Subscription.findOne({ price: 0, role: roleName, isActive: true });
+  const freePlan = await Subscription.findOne({ price: 0, role: planRole, isActive: true });
   return freePlan?.activeJobPostings || 0;
 };
 

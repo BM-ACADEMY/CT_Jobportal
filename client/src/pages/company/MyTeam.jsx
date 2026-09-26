@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from 'sonner';
+import { Card, Tag } from 'antd';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import TeamTypePermissionPicker from '@/components/company/TeamTypePermissionPicker';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
@@ -166,29 +167,46 @@ const MyTeam = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto pb-12">
+    <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 min-w-0 space-y-12">
       <PageSOPBanner pageKey="myTeam" />
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
-              <Users size={20} strokeWidth={2.5} />
+      
+      {/* Premium Welcome Header */}
+      <div style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)' }} className="relative shadow-sm overflow-hidden group">
+        <div className="p-8 sm:p-10 relative z-10">
+          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#34b678]/10 blur-[80px] rounded-full transition-all duration-700" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-[#34b678] rounded-none flex items-center justify-center border border-white/10 shrink-0">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                 <div className="flex items-center gap-3 mb-2">
+                   <Tag style={{ background: 'rgba(52, 182, 120, 0.2)', borderColor: 'rgba(52, 182, 120, 0.3)', color: '#34b678', fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', fontSize: 9, padding: '2px 8px', borderRadius: 0 }}>
+                     Team Management
+                   </Tag>
+                 </div>
+                 <h2 className="text-2xl font-black text-white tracking-tight m-0">My Team</h2>
+                 <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
+                   Manage your organization's team members and staff accounts dynamically.
+                 </p>
+              </div>
             </div>
-            My Team
-          </h2>
-          <p className="text-sm text-slate-500 mt-2 ml-1">
-            Manage your organization's team members and staff accounts.
-          </p>
+            
+            {tab === 'members' && (
+              <button
+                onClick={() => setIsAdding(!isAdding)}
+                style={{ backgroundColor: '#34b678', borderColor: '#34b678' }}
+                className="h-11 px-6 font-bold uppercase text-[11px] tracking-widest text-white flex items-center gap-2 hover:opacity-90 transition-opacity"
+              >
+                <Plus size={16} />
+                {isAdding ? 'Cancel' : 'Add Team Member'}
+              </button>
+            )}
+          </div>
         </div>
-        {tab === 'members' && (
-          <Button
-            onClick={() => setIsAdding(!isAdding)}
-            className="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20 gap-2"
-          >
-            <Plus size={18} />
-            {isAdding ? 'Cancel' : 'Add Team Member'}
-          </Button>
-        )}
       </div>
 
       <div className="flex items-center gap-2 mb-6 border-b border-slate-100">
@@ -208,7 +226,7 @@ const MyTeam = () => {
       {tab === 'members' && (
         <>
           {isAdding && (
-            <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mb-8 animate-in fade-in slide-in-from-top-4">
+            <div className="bg-white rounded-none p-6 border border-slate-100 shadow-sm mb-8 animate-in fade-in slide-in-from-top-4">
               <h3 className="text-lg font-bold text-slate-900 mb-4">Add Team Member</h3>
               <form onSubmit={handleInvite} className="space-y-4">
                 <div>
@@ -220,7 +238,7 @@ const MyTeam = () => {
                       type="email"
                       value={inviteEmail}
                       onChange={e => setInviteEmail(e.target.value)}
-                      className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 outline-none focus:border-emerald-400 text-sm transition-all"
+                      className="w-full h-11 pl-10 pr-4 rounded-none border border-slate-200 outline-none focus:border-emerald-400 text-sm transition-all"
                       placeholder="john@company.com"
                     />
                   </div>
@@ -231,17 +249,17 @@ const MyTeam = () => {
                   permissions={invitePermissions}
                   onPermissionsChange={setInvitePermissions}
                 />
-                <Button type="submit" disabled={inviting} className="h-11 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                <Button type="submit" disabled={inviting} className="h-11 px-8 rounded-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
                   {inviting ? 'Sending...' : 'Send Invite'}
                 </Button>
               </form>
             </div>
           )}
 
-          <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-none border border-slate-100 shadow-sm overflow-hidden">
             {members.length === 0 ? (
               <div className="p-12 text-center">
-                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                <div className="w-16 h-16 bg-slate-50 rounded-none flex items-center justify-center mx-auto mb-4 border border-slate-100">
                   <Users size={24} className="text-slate-300" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">No team members yet</h3>
@@ -257,7 +275,7 @@ const MyTeam = () => {
                 {members.map(m => (
                   <div key={m._id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
                     <div className="flex items-center gap-4">
-                      <Avatar className="w-12 h-12 rounded-xl border border-slate-100">
+                      <Avatar className="w-12 h-12 rounded-none border border-slate-100">
                         <AvatarImage src={m.avatar?.startsWith('http') ? m.avatar : `${import.meta.env.VITE_API_DOMAIN}${m.avatar}`} />
                         <AvatarFallback className="bg-emerald-50 text-emerald-600 font-bold">
                           {m.name?.[0]?.toUpperCase()}
@@ -266,7 +284,7 @@ const MyTeam = () => {
                       <div>
                         <h4 className="font-bold text-slate-900 text-sm">{m.name}</h4>
                         <p className="text-xs text-slate-500 mb-1">{m.email}</p>
-                        <div className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        <div className={`inline-block px-2 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider ${
                           m.kind === 'recruiter' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'
                         }`}>
                           {m.kind === 'recruiter' ? 'Recruiter' : 'Employee'}
@@ -274,7 +292,7 @@ const MyTeam = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2 border border-slate-100 px-3 py-1.5 rounded-xl bg-slate-50/50">
+                      <div className="flex items-center gap-2 border border-slate-100 px-3 py-1.5 rounded-none bg-slate-50/50">
                         {m.isActiveSeat ? <ShieldCheck size={14} className="text-emerald-500" /> : <ShieldAlert size={14} className="text-slate-400" />}
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-2">
                           Active Seat
@@ -289,7 +307,7 @@ const MyTeam = () => {
                         {m.kind === 'recruiter' && (
                           <button
                             onClick={() => openEditPermissions(m)}
-                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all outline-none"
+                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-none transition-all outline-none"
                             title="Manage Permissions"
                           >
                             <Pencil size={18} />
@@ -297,7 +315,7 @@ const MyTeam = () => {
                         )}
                       <button
                         onClick={() => setRemoveTarget({ _id: m._id, kind: m.kind })}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all outline-none"
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-all outline-none"
                         title="Remove Member"
                       >
                         <Trash2 size={18} />
@@ -313,13 +331,13 @@ const MyTeam = () => {
       )}
 
       {tab === 'activity' && (
-        <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-none border border-slate-100 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-100 flex items-center gap-3">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filter by member</label>
             <select
               value={activityMemberId}
               onChange={e => setActivityMemberId(e.target.value)}
-              className="h-9 px-3 rounded-lg border border-slate-200 text-xs font-bold outline-none focus:border-emerald-400"
+              className="h-9 px-3 rounded-none border border-slate-200 text-xs font-bold outline-none focus:border-emerald-400"
             >
               <option value="">All team members</option>
               {members.filter(m => m.kind === 'recruiter').map(m => (
@@ -400,6 +418,7 @@ const MyTeam = () => {
           onPermissionsChange={setEditPermissions}
         />
       </ConfirmDialog>
+    </div>
     </div>
   );
 };

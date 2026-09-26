@@ -7,27 +7,26 @@ import { Badge } from '@/components/ui/badge';
 import {
   GraduationCap, Users, Briefcase, TrendingUp, CheckCircle2,
   Award, UserCheck, Building2, ArrowRight, BookOpen, QrCode,
-  ShieldCheck, BarChart2, Clock, Send
+  ShieldCheck, BarChart2, Clock, Send, Plus
 } from 'lucide-react';
+import { Button, Card, Tag, Typography } from 'antd';
+const { Title, Text } = Typography;
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
 const StatCard = ({ icon: Icon, label, value, bgGradient, subtext, onClick }) => (
   <div
     onClick={onClick}
-    className={`relative overflow-hidden p-5 text-white shadow-sm hover:shadow-md transition-all duration-300 group rounded-none bg-gradient-to-br ${bgGradient} ${onClick ? 'cursor-pointer hover:-translate-y-0.5' : ''}`}
+    className={`rounded-xl border border-slate-200 bg-slate-50/60 p-5 space-y-4 hover:-translate-y-1 transition-all duration-300 ${onClick ? 'cursor-pointer' : ''}`}
   >
-    <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
-    <div className="absolute -right-2 -bottom-2 w-16 h-16 rounded-full bg-white/10 pointer-events-none" />
-    
-    <div className="flex flex-col h-full justify-between relative z-10">
-      <div className="mb-6">
-        <Icon size={20} className="text-white opacity-90" strokeWidth={2.5} />
+    <div className="flex items-center gap-4 relative overflow-hidden">
+      <div className={`w-14 h-14 bg-gradient-to-br ${bgGradient} rounded-none flex items-center justify-center shrink-0 border border-white/50 shadow-sm relative z-10`}>
+        <Icon size={22} className="text-white" />
       </div>
-      <div>
-        <p className="text-[9px] font-bold uppercase tracking-widest text-white/80">{label}</p>
-        <p className="text-2xl font-black text-white tracking-tight mt-0.5">{value}</p>
-        {subtext && <p className="text-[9px] text-white/70 font-semibold mt-2">{subtext}</p>}
+      <div className="relative z-10">
+        <p className="text-3xl font-black tracking-tight text-slate-800">{value}</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+        {subtext && <p className="text-[9px] text-slate-400 font-semibold mt-1">{subtext}</p>}
       </div>
     </div>
   </div>
@@ -92,44 +91,60 @@ const CollegeDashboard = () => {
   const { college, stats, totalStudents, successRate, verifiedCount, departments, batches, totalDrives, recentStudents, placementFunnel, recruiterSpotlight } = data;
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Premium Header */}
-      <div className="relative rounded-none bg-gradient-to-br from-[#1b496d] via-[#153e5e] to-[#0d2e49] p-8 sm:p-10 text-white shadow-sm overflow-hidden group">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="relative shrink-0">
-              {college.logo ? (
-                <img src={college.logo.startsWith('http') ? college.logo : `${import.meta.env.VITE_API_DOMAIN}${college.logo}`} alt="" className="w-20 h-20 object-cover border border-white/10" />
-              ) : (
-                <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white border border-white/10">
-                  <GraduationCap size={36} />
-                </div>
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Badge variant="secondary" className="bg-[#34b678]/20 text-[#34b678] border border-[#34b678]/30 font-bold tracking-widest text-[9px] uppercase backdrop-blur-md rounded-none">
-                  TPO Dashboard
-                </Badge>
+    <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 min-w-0 space-y-12">
+      
+      {/* Premium Welcome Header */}
+      <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)', borderRadius: 0 }} className="relative shadow-sm overflow-hidden group">
+        <div className="p-8 sm:p-10 relative z-10">
+          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#34b678]/10 blur-[80px] rounded-full transition-all duration-700" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="relative shrink-0">
+                {college.logo ? (
+                  <img src={college.logo.startsWith('http') ? college.logo : `${import.meta.env.VITE_API_DOMAIN}${college.logo}`} alt="" className="w-16 h-16 object-cover border border-white/10" />
+                ) : (
+                  <div className="w-16 h-16 bg-[#34b678] rounded-none flex items-center justify-center border border-white/10 shrink-0">
+                    <GraduationCap className="w-7 h-7 text-white" />
+                  </div>
+                )}
               </div>
-              <h1 className="text-2xl font-black text-white tracking-tight">{college.name}</h1>
-              <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1">
-                Manage your institution's placement drives, student verification, and analytics dynamically.
-              </p>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                   <Tag style={{ background: 'rgba(52, 182, 120, 0.2)', borderColor: 'rgba(52, 182, 120, 0.3)', color: '#34b678', fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', fontSize: 9, padding: '2px 8px', borderRadius: 0 }}>
+                     TPO Dashboard
+                   </Tag>
+                </div>
+                <h2 className="text-2xl font-black text-white tracking-tight m-0">{college.name}</h2>
+                <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
+                  Manage your institution's placement drives, student verification, and analytics dynamically.
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-3 shrink-0">
-            <button onClick={() => navigate('/college/drives/new')} className="flex items-center gap-2 px-6 py-3 bg-[#34b678] hover:bg-[#2da36a] text-white font-bold transition-all text-[10px] uppercase tracking-widest hover:-translate-y-0.5 cursor-pointer rounded-none border-none">
-              <QrCode size={15} /> Launch Drive
-            </button>
-            <button onClick={() => navigate('/college/students')} className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/15 border border-white/15 text-white font-bold transition-all backdrop-blur-md text-[10px] uppercase tracking-widest hover:-translate-y-0.5 cursor-pointer rounded-none">
-              <Users size={15} /> Students
-            </button>
+            
+            <div className="flex flex-wrap gap-3 shrink-0">
+              <Button
+                type="primary"
+                onClick={() => navigate('/college/drives/new')}
+                icon={<QrCode size={16} />}
+                style={{ borderRadius: 0, backgroundColor: '#34b678', borderColor: '#34b678', height: 44, padding: '0 24px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1 }}
+              >
+                Launch Drive
+              </Button>
+              <Button
+                ghost
+                onClick={() => navigate('/college/students')}
+                icon={<Users size={16} />}
+                style={{ borderRadius: 0, height: 44, padding: '0 24px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1, borderColor: 'rgba(255,255,255,0.15)', color: '#fff' }}
+              >
+                Students
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Title & Filters Row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
@@ -336,6 +351,7 @@ const CollegeDashboard = () => {
             </table>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

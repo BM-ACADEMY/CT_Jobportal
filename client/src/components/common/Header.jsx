@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, LogOut, Settings, ChevronDown, BadgeCheck, CheckCheck, Menu } from 'lucide-react';
+import { Search, Bell, LogOut, Settings, ChevronDown, BadgeCheck, CheckCheck, Menu, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import axios from 'axios';
@@ -181,6 +181,31 @@ const Header = ({ toggleMobileSidebar }) => {
     setUnreadCount(0);
   };
 
+  const deleteNotificationItem = async (e, notificationId) => {
+    e.stopPropagation();
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/notifications/${notificationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(current => current.filter(n => n._id !== notificationId));
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
+  const clearReadNotifications = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/notifications/read`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(current => current.filter(n => !n.isRead));
+    } catch (err) {
+      console.error('Failed to clear read notifications:', err);
+    }
+  };
+
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       navigate(`/jobs?q=${encodeURIComponent(searchQuery.trim())}`);
@@ -242,17 +267,25 @@ const Header = ({ toggleMobileSidebar }) => {
                     <p className="text-xs font-bold text-white">Notifications</p>
                     <p className="text-[9px] text-slate-300 mt-0.5">{unreadCount} unread</p>
                   </div>
-                  {unreadCount > 0 && (
-                    <Button variant="ghost" size="sm" onClick={markAllNotificationsRead} className="h-7 text-[9px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-white/5 cursor-pointer px-2">
-                      <CheckCheck className="w-3 h-3 mr-1" /> Mark all read
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {notifications.some(n => n.isRead) && (
+                      <Button variant="ghost" size="sm" onClick={clearReadNotifications} className="h-7 text-[9px] font-bold text-rose-400 hover:text-rose-300 hover:bg-white/5 cursor-pointer px-2">
+                        <Trash2 className="w-3 h-3 mr-1" /> Clear read
+                      </Button>
+                    )}
+                    {unreadCount > 0 && (
+                      <Button variant="ghost" size="sm" onClick={markAllNotificationsRead} className="h-7 text-[9px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-white/5 cursor-pointer px-2">
+                        <CheckCheck className="w-3 h-3 mr-1" /> Mark all read
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="max-h-[300px] overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="py-8 text-center">
+                    <div className="py-8 px-4 text-center">
                       <Bell className="w-5 h-5 mx-auto text-slate-400 mb-1.5" />
-                      <p className="text-[11px] font-medium text-slate-300">No notifications yet</p>
+                      <p className="text-xs font-bold text-white">No unread notifications</p>
+                      <p className="text-[10px] text-slate-300 mt-0.5">No unread messages or notifications at this time.</p>
                     </div>
                   ) : notifications.map(notification => (
                     <DropdownMenuItem
@@ -260,13 +293,22 @@ const Header = ({ toggleMobileSidebar }) => {
                       onClick={() => openNotification(notification)}
                       className={`block px-4 py-3 rounded-none border-b border-white/5 cursor-pointer focus:bg-white/10 focus:text-white outline-none border-l-4 border-transparent focus:border-[#34b678] ${notification.isRead ? 'bg-transparent text-slate-300' : 'bg-white/5 text-white'}`}
                     >
-                      <div className="flex gap-2.5">
+                      <div className="flex gap-2.5 w-full">
                         <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${notification.isRead ? 'bg-slate-500' : 'bg-emerald-400'}`} />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-white leading-tight">{notification.title}</p>
                           <p className="text-[10px] text-slate-300 mt-0.5 leading-normal line-clamp-2">{notification.message}</p>
                           <p className="text-[8px] text-slate-400 mt-1">{new Date(notification.createdAt).toLocaleString()}</p>
                         </div>
+                        {notification.isRead && (
+                          <button
+                            onClick={(e) => deleteNotificationItem(e, notification._id)}
+                            className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors mt-0.5"
+                            title="Delete notification"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
                       </div>
                     </DropdownMenuItem>
                   ))}

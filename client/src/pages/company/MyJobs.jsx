@@ -120,7 +120,12 @@ const MyJobs = () => {
 
   const getDropdownMenu = (job) => (
     <Menu>
-      <Menu.Item key="1" icon={<TeamOutlined />} onClick={() => navigate(`/company/applicants/${job._id}`)}>
+      <Menu.Item key="1" icon={<TeamOutlined />} onClick={async () => {
+        if (job.hasNewCandidates) {
+          try { await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/jobs/${job._id}/mark-viewed`, {}, { headers }); } catch (e) { /* ignore */ }
+        }
+        navigate(`/company/applicants/${job._id}`);
+      }}>
         View Applicants
       </Menu.Item>
       <Menu.Item key="2" icon={<EditOutlined />} onClick={() => navigate(`/company/jobs/new?edit=${job._id}`)}>
@@ -145,42 +150,62 @@ const MyJobs = () => {
   );
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px' }}>
+    <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 min-w-0 space-y-12">
       <PageSOPBanner pageKey="myJobs" />
       
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
-        <div>
-          <Title level={2} style={{ margin: 0 }}>My Job Listings</Title>
-          <Text type="secondary">Manage all your posted positions and applicants.</Text>
-          {quota && !quota.unlimited && (
-            <div style={{ marginTop: 8 }}>
-              <Tag color={quota.used >= quota.limit ? 'error' : quota.used >= quota.limit * 0.8 ? 'warning' : 'success'}>
-                <Briefcase size={12} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
-                {quota.used}/{quota.limit} job postings used
-                {quota.used >= quota.limit && ' — Limit reached'}
-              </Tag>
+      {/* Premium Welcome Header */}
+      <Card variant="borderless" styles={{ body: { padding: 0 } }} style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)', borderRadius: 0 }} className="relative shadow-sm overflow-hidden group">
+        <div className="p-8 sm:p-10 relative z-10">
+          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#34b678]/10 blur-[80px] rounded-full transition-all duration-700" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-[#34b678] rounded-none flex items-center justify-center border border-white/10 shrink-0">
+                <Briefcase className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                 <div className="flex items-center gap-3 mb-2">
+                   <Tag style={{ background: 'rgba(52, 182, 120, 0.2)', borderColor: 'rgba(52, 182, 120, 0.3)', color: '#34b678', fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', fontSize: 9, padding: '2px 8px', borderRadius: 0 }}>
+                     Job Postings
+                   </Tag>
+                 </div>
+                 <h2 className="text-2xl font-black text-white tracking-tight m-0">My Job Listings</h2>
+                 <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
+                   Manage all your posted positions, analyze applicant flow, and track engagement dynamically.
+                 </p>
+                 {quota && !quota.unlimited && (
+                   <div style={{ marginTop: 8 }}>
+                     <Tag color={quota.used >= quota.limit ? 'error' : quota.used >= quota.limit * 0.8 ? 'warning' : 'success'} style={{ borderRadius: 0 }}>
+                       <Briefcase size={12} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+                       {quota.used}/{quota.limit} job postings used
+                       {quota.used >= quota.limit && ' — Limit reached'}
+                     </Tag>
+                   </div>
+                 )}
+              </div>
             </div>
-          )}
-        </div>
-        <Space>
-          {quota && !quota.unlimited && quota.used >= quota.limit && (
-            <Link to="/company/subscription">
-              <Button type="default" danger icon={<StarOutlined />}>
-                Upgrade
+            <Space>
+              {quota && !quota.unlimited && quota.used >= quota.limit && (
+                <Link to="/company/subscription">
+                  <Button danger icon={<StarOutlined />} style={{ borderRadius: 0, height: 44, padding: '0 24px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1 }}>
+                    Upgrade
+                  </Button>
+                </Link>
+              )}
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/company/jobs/new')}
+                disabled={quota && !quota.unlimited && quota.used >= quota.limit}
+                style={{ borderRadius: 0, backgroundColor: '#34b678', borderColor: '#34b678', height: 44, padding: '0 24px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1 }}
+              >
+                Post New Job
               </Button>
-            </Link>
-          )}
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/company/jobs/new')}
-            disabled={quota && !quota.unlimited && quota.used >= quota.limit}
-          >
-            Post New Job
-          </Button>
-        </Space>
-      </div>
+            </Space>
+          </div>
+        </div>
+      </Card>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
@@ -192,7 +217,7 @@ const MyJobs = () => {
         ].map((s, index) => (
           <div key={index} style={{
             background: s.color,
-            borderRadius: '12px',
+            borderRadius: 0,
             padding: '24px',
             position: 'relative',
             overflow: 'hidden',
@@ -274,39 +299,55 @@ const MyJobs = () => {
               </span>
             }
           >
-            {jobs.length === 0 && (
+            {jobs.length === 0 ? (
               <Button type="primary" onClick={() => navigate('/company/jobs/new')}>
                 Post a Job
               </Button>
-            )}
+            ) : <span />}
           </Empty>
         ) : (
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <div className="flex flex-col w-full gap-4">
             {filtered.map(job => (
               <Card
                 key={job._id}
                 hoverable
                 styles={{ body: { padding: '20px 24px' } }}
                 className="shadow-sm"
+                style={{ borderRadius: 0, ...(job.hasNewCandidates ? { borderLeft: '3px solid #3b82f6' } : {}) }}
               >
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
                   
                   {/* Icon */}
                   <div style={{
-                    width: 48, height: 48, borderRadius: 8, backgroundColor: '#ecfdf5',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    width: 48, height: 48, borderRadius: 0, backgroundColor: '#ecfdf5',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    position: 'relative'
                   }}>
                     <Briefcase size={24} color="#10b981" />
+                    {job.hasNewCandidates && (
+                      <span style={{
+                        position: 'absolute', top: -2, right: -2,
+                        width: 10, height: 10, borderRadius: '50%',
+                        backgroundColor: '#3b82f6', border: '2px solid #fff',
+                        boxShadow: '0 0 6px rgba(59,130,246,0.6)',
+                        animation: 'pulse 2s infinite'
+                      }} />
+                    )}
                   </div>
 
                   {/* Info */}
                   <div style={{ flex: 1, minWidth: 250 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                       <Text strong style={{ fontSize: 16 }}>{job.title}</Text>
-                      {job.isCloned && <Tag color="blue">Cloned</Tag>}
-                      <Tag color={STATUS_COLOR[job.status] || 'default'} style={{ textTransform: 'uppercase', fontSize: 10, fontWeight: 700 }}>
+                      {job.isCloned && <Tag color="blue" style={{ borderRadius: 0 }}>Cloned</Tag>}
+                      <Tag color={STATUS_COLOR[job.status] || 'default'} style={{ borderRadius: 0, textTransform: 'uppercase', fontSize: 10, fontWeight: 700 }}>
                         {job.status}
                       </Tag>
+                      {job.hasNewCandidates && (
+                        <Tag color="blue" style={{ borderRadius: 0, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          New Candidates
+                        </Tag>
+                      )}
                     </div>
                     <Space size="middle" wrap style={{ color: '#64748b', fontSize: 13 }}>
                       {job.location && (
@@ -330,17 +371,26 @@ const MyJobs = () => {
                     <Tooltip title="View Applicants">
                       <Button
                         type="dashed"
-                        onClick={() => navigate(`/company/applicants/${job._id}`)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, height: 'auto', padding: '6px 12px' }}
+                        onClick={async () => {
+                          if (job.hasNewCandidates) {
+                            try {
+                              await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/jobs/${job._id}/mark-viewed`, {}, { headers });
+                            } catch (e) { /* ignore */ }
+                          }
+                          navigate(`/company/applicants/${job._id}`);
+                        }}
+                        style={{ borderRadius: 0, display: 'flex', alignItems: 'center', gap: 8, height: 'auto', padding: '6px 12px',
+                          ...(job.hasNewCandidates ? { borderColor: '#3b82f6', color: '#3b82f6' } : {})
+                        }}
                       >
-                        <TeamOutlined style={{ color: '#64748b' }} />
+                        <TeamOutlined style={{ color: job.hasNewCandidates ? '#3b82f6' : '#64748b' }} />
                         <span style={{ fontWeight: 600 }}>{job.applicantsCount || 0}</span>
-                        <span style={{ fontSize: 12, color: '#64748b' }}>applicants</span>
+                        <span style={{ fontSize: 12, color: job.hasNewCandidates ? '#3b82f6' : '#64748b' }}>applicants</span>
                       </Button>
                     </Tooltip>
                     
                     {(job.shortlistedCount || 0) > 0 && (
-                      <Tag color="success" style={{ margin: 0, padding: '4px 8px', borderRadius: 4 }}>
+                      <Tag color="success" style={{ borderRadius: 0, margin: 0, padding: '4px 8px' }}>
                         {job.shortlistedCount} shortlisted
                       </Tag>
                     )}
@@ -348,16 +398,17 @@ const MyJobs = () => {
 
                   {/* Actions */}
                   <div style={{ flexShrink: 0 }}>
-                    <Dropdown overlay={getDropdownMenu(job)} trigger={['click']} placement="bottomRight">
+                    <Dropdown menu={{ items: getDropdownMenu(job).props.children.map(c => c.props.children ? { key: c.key, label: c.props.children, onClick: c.props.onClick, icon: c.props.icon, danger: c.props.danger } : { type: 'divider' }) }} trigger={['click']} placement="bottomRight">
                       <Button type="text" icon={<MoreOutlined />} />
                     </Dropdown>
                   </div>
                 </div>
               </Card>
             ))}
-          </Space>
+          </div>
         )}
       </Spin>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const AuthContext = createContext();
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/auth`;
@@ -60,17 +61,27 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // Saves a skill assessment taken before login/signup, and tells the caller where to
+  // send the user next: back to their results (not the role dashboard) once it's saved,
+  // or a message telling them how to find it themselves if the save didn't go through.
   const processPendingAssessment = async (role) => {
-    if (role !== 'jobseeker') return;
     const pending = localStorage.getItem('pendingAssessment');
-    if (pending) {
-      try {
-        const assessment = JSON.parse(pending);
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/skill-tests/save`, assessment);
-        localStorage.removeItem('pendingAssessment');
-      } catch (err) {
-        console.error('Error saving pending assessment:', err);
-      }
+    if (!pending) return {};
+
+    if (role !== 'jobseeker') {
+      // Assessment results only live on job seeker accounts — nothing to attach.
+      localStorage.removeItem('pendingAssessment');
+      return {};
+    }
+
+    try {
+      const assessment = JSON.parse(pending);
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/skill-tests/save`, assessment);
+      localStorage.removeItem('pendingAssessment');
+      return { redirect: '/candidate/skill-tests' };
+    } catch (err) {
+      console.error('Error saving pending assessment:', err);
+      return { msg: 'Please open Skill Tests from your dashboard to see your marks.' };
     }
   };
 
@@ -86,8 +97,9 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       setTokenAndHeader(resToken);
-      await processPendingAssessment(user.role);
-      return { success: true, redirect: getRoleRoute(user.role) };
+      const assessment = await processPendingAssessment(user.role);
+      if (assessment.msg) toast.info(assessment.msg);
+      return { success: true, redirect: assessment.redirect || getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Login failed' };
     }
@@ -139,8 +151,9 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       setTokenAndHeader(resToken);
-      await processPendingAssessment(user.role);
-      return { success: true, redirect: getRoleRoute(user.role) };
+      const assessment = await processPendingAssessment(user.role);
+      if (assessment.msg) toast.info(assessment.msg);
+      return { success: true, redirect: assessment.redirect || getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Registration failed' };
     }
@@ -153,8 +166,9 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       setTokenAndHeader(resToken);
-      await processPendingAssessment(user.role);
-      return { success: true, redirect: getRoleRoute(user.role) };
+      const assessment = await processPendingAssessment(user.role);
+      if (assessment.msg) toast.info(assessment.msg);
+      return { success: true, redirect: assessment.redirect || getRoleRoute(user.role) };
     } catch (err) {
       return { success: false, msg: err.response?.data?.msg || 'Invalid or expired OTP' };
     }
@@ -191,8 +205,9 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     setTokenAndHeader(token);
-    await processPendingAssessment(userData.role);
-    return { success: true, redirect: getRoleRoute(userData.role) };
+    const assessment = await processPendingAssessment(userData.role);
+    if (assessment.msg) toast.info(assessment.msg);
+    return { success: true, redirect: assessment.redirect || getRoleRoute(userData.role) };
   }, []);
 
   const updateUser = useCallback((newData) => {

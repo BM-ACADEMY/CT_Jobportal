@@ -51,7 +51,7 @@ const calculateCompletion = (user) => {
   if (profile.skills && profile.skills.length > 0) score += 15;
   if (profile.qualification && profile.qualification.length > 0) score += 15;
   if (profile.experience && profile.experience.length > 0) score += 10;
-  if (profile.resumeUrl) score += 20;
+  if (profile.resumeUrl || (profile.documents && profile.documents.length > 0)) score += 20;
   
   if (profile.preferredRole || (profile.interestedDomain && profile.interestedDomain.length > 0) || (prefs.jobTitles && prefs.jobTitles.length > 0)) {
     score += 10;
@@ -135,6 +135,18 @@ const uploadResume = async (req, res) => {
     
     user.profile.resumeUrl = resumeUrl;
     user.profile.resumeName = req.file.originalname;
+
+    if (!user.profile.documents) user.profile.documents = [];
+    user.profile.documents.forEach(d => { d.isPrimary = false; });
+    user.profile.documents.unshift({
+      name: req.body.name || req.file.originalname,
+      fileUrl: resumeUrl,
+      fileName: req.file.originalname,
+      fileType: req.file.mimetype,
+      fileSize: req.file.size,
+      uploadedAt: new Date(),
+      isPrimary: true
+    });
     
     // Recalculate completion
     user.profile.profileCompletion = calculateCompletion(user);
@@ -145,12 +157,209 @@ const uploadResume = async (req, res) => {
       msg: 'Resume uploaded successfully',
       resumeUrl: resumeUrl,
       resumeName: req.file.originalname,
+      documents: user.profile.documents,
       profileCompletion: user.profile.profileCompletion
     });
 
   } catch (err) {
     console.error('Resume Upload Error:', err.message);
     res.status(500).json({ msg: 'Server error during resume upload' });
+  }
+};
+
+// @desc    Upload Multiple Documents with Name
+// @route   POST /api/user/documents
+const uploadDocuments = async (req, res) => {
+  try {
+    const files = req.files;
+    if (!files || files.length === 0) {
+      return res.status(400).json({ msg: 'No files uploaded' });
+    }
+
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    if (!user.profile.documents) user.profile.documents = [];
+
+    // Parse custom document names
+    let names = [];
+    if (req.body.names) {
+      if (Array.isArray(req.body.names)) {
+        names = req.body.names;
+      } else if (typeof req.body.names === 'string') {
+        try {
+          const parsed = JSON.parse(req.body.names);
+          names = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          names = [req.body.names];
+        }
+      }
+    } else if (req.body.name) {
+      names = [req.body.name];
+    }
+
+    const primaryIndex = req.body.primaryIndex !== undefined && req.body.primaryIndex !== null
+      ? parseInt(req.body.primaryIndex, 10)
+      : -1;
+
+    const pathModule = require('path');
+    const addedDocs = [];
+
+    files.forEach((file, idx) => {
+      const ext = pathModule.extname(file.originalname);
+      const baseName = pathModule.basename(file.originalname, ext).replace(/[_-]+/g, ' ').trim();
+      const customName = (names[idx] && String(names[idx]).trim()) ? String(names[idx]).trim() : (baseName || file.originalname);
+      const fileUrl = `/uploads/${file.filename}`;
+      const isPrimary = (primaryIndex === idx) || (!user.profile.resumeUrl && user.profile.documents.length === 0 && idx === 0);
+
+      const docObj = {
+        name: customName,
+        fileUrl,
+        fileName: file.originalname,
+        fileType: file.mimetype,
+        fileSize: file.size,
+        uploadedAt: new Date(),
+        isPrimary: Boolean(isPrimary)
+      };
+
+      if (isPrimary) {
+        user.profile.documents.forEach(d => { d.isPrimary = false; });
+        user.profile.resumeUrl = fileUrl;
+        user.profile.resumeName = customName;
+      }
+
+      user.profile.documents.push(docObj);
+      addedDocs.push(docObj);
+    });
+
+    user.profile.profileCompletion = calculateCompletion(user);
+    await user.save();
+
+    res.json({
+      msg: `${addedDocs.length} ${addedDocs.length === 1 ? 'document' : 'documents'} uploaded successfully`,
+      documents: user.profile.documents,
+      resumeUrl: user.profile.resumeUrl,
+      resumeName: user.profile.resumeName,
+      profileCompletion: user.profile.profileCompletion
+    });
+  } catch (err) {
+    console.error('Upload Documents Error:', err);
+    res.status(500).json({ msg: 'Server error during document upload', error: err.message });
+  }
+};
+
+// @desc    Update Document Name or Primary Status
+// @route   PUT /api/user/documents/:docId
+const updateDocument = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { docId } = req.params;
+    const { name, isPrimary } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    if (!user.profile.documents) user.profile.documents = [];
+    const doc = user.profile.documents.id ? user.profile.documents.id(docId) : user.profile.documents.find(d => d._id?.toString() === docId);
+
+    if (!doc) {
+      return res.status(404).json({ msg: 'Document not found' });
+    }
+
+    if (name && name.trim()) {
+      doc.name = name.trim();
+      if (doc.isPrimary || user.profile.resumeUrl === doc.fileUrl) {
+        user.profile.resumeName = doc.name;
+      }
+    }
+
+    if (isPrimary !== undefined) {
+      if (isPrimary) {
+        user.profile.documents.forEach(d => { d.isPrimary = false; });
+        doc.isPrimary = true;
+        user.profile.resumeUrl = doc.fileUrl;
+        user.profile.resumeName = doc.name;
+      } else {
+        doc.isPrimary = false;
+        if (user.profile.resumeUrl === doc.fileUrl) {
+          user.profile.resumeUrl = '';
+          user.profile.resumeName = '';
+        }
+      }
+    }
+
+    user.profile.profileCompletion = calculateCompletion(user);
+    await user.save();
+
+    res.json({
+      msg: 'Document updated successfully',
+      documents: user.profile.documents,
+      resumeUrl: user.profile.resumeUrl,
+      resumeName: user.profile.resumeName,
+      profileCompletion: user.profile.profileCompletion
+    });
+  } catch (err) {
+    console.error('Update Document Error:', err);
+    res.status(500).json({ msg: 'Server error updating document', error: err.message });
+  }
+};
+
+// @desc    Delete Document
+// @route   DELETE /api/user/documents/:docId
+const deleteDocument = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { docId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    if (!user.profile.documents) user.profile.documents = [];
+    const docIndex = user.profile.documents.findIndex(d => d._id?.toString() === docId);
+
+    if (docIndex === -1) {
+      return res.status(404).json({ msg: 'Document not found' });
+    }
+
+    const removedDoc = user.profile.documents[docIndex];
+    user.profile.documents.splice(docIndex, 1);
+
+    // If removed doc was primary or resumeUrl
+    if (removedDoc.isPrimary || user.profile.resumeUrl === removedDoc.fileUrl) {
+      if (user.profile.documents.length > 0) {
+        user.profile.documents[0].isPrimary = true;
+        user.profile.resumeUrl = user.profile.documents[0].fileUrl;
+        user.profile.resumeName = user.profile.documents[0].name;
+      } else {
+        user.profile.resumeUrl = '';
+        user.profile.resumeName = '';
+      }
+    }
+
+    // Try deleting file from disk
+    if (removedDoc.fileUrl && removedDoc.fileUrl.startsWith('/uploads/')) {
+      const fs = require('fs');
+      const pathModule = require('path');
+      const filePath = pathModule.join(__dirname, '..', removedDoc.fileUrl);
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (e) { /* ignore */ }
+      }
+    }
+
+    user.profile.profileCompletion = calculateCompletion(user);
+    await user.save();
+
+    res.json({
+      msg: 'Document removed successfully',
+      documents: user.profile.documents,
+      resumeUrl: user.profile.resumeUrl,
+      resumeName: user.profile.resumeName,
+      profileCompletion: user.profile.profileCompletion
+    });
+  } catch (err) {
+    console.error('Delete Document Error:', err);
+    res.status(500).json({ msg: 'Server error deleting document', error: err.message });
   }
 };
 
@@ -330,7 +539,7 @@ const getPublicProfile = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await User.findById(id)
-      .select('name email avatar profile role isPhoneVisible subscription purchasedFeatures priorityApplicationsUsed')
+      .select('name email avatar coverPic profile role isPhoneVisible subscription purchasedFeatures priorityApplicationsUsed profileVerificationStatus display_id createdAt lastLoginAt')
       .populate('subscription');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
@@ -697,5 +906,8 @@ module.exports = {
   generateAIResume,
   analyzeResume,
   acceptCompanyInvite,
-  declineCompanyInvite
+  declineCompanyInvite,
+  uploadDocuments,
+  updateDocument,
+  deleteDocument
 };
