@@ -2621,17 +2621,26 @@ const downloadSummaryReport = async (req, res) => {
 // @route   GET /api/college/me/student
 const getMyCollegeStudent = async (req, res) => {
   try {
-    const student = await CollegeStudent.findOne({ user: req.user.id })
+    const students = await CollegeStudent.find({ user: req.user.id })
       .populate('college', 'name code logo verificationStatus')
       .sort({ createdAt: -1 });
-    if (!student) return res.json(null);
-    const employers = await CollegeEmployer.find({ college: student.college._id, 'scorecards.student': student._id })
-      .select('name industry scorecards').populate('scorecards.drive', 'title driveCode');
-    const interviewScorecards = employers.flatMap(employer => employer.scorecards
-      .filter(card => card.student?.toString() === student._id.toString())
-      .map(card => ({ ...card.toObject(), employer: { _id: employer._id, name: employer.name, industry: employer.industry } })))
-      .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-    res.json({ ...student.toObject(), interviewScorecards });
+      
+    if (!students || students.length === 0) return res.json(null);
+
+    const studentsWithScorecards = await Promise.all(students.map(async (student) => {
+      const employers = await CollegeEmployer.find({ college: student.college._id, 'scorecards.student': student._id })
+        .select('name industry scorecards').populate('scorecards.drive', 'title driveCode');
+        
+      const interviewScorecards = employers.flatMap(employer => employer.scorecards
+        .filter(card => card.student?.toString() === student._id.toString())
+        .map(card => ({ ...card.toObject(), employer: { _id: employer._id, name: employer.name, industry: employer.industry } })))
+        .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+      return { ...student.toObject(), interviewScorecards };
+    }));
+
+    // For backward compatibility while still exposing the array, we can return the array.
+    res.json(studentsWithScorecards);
   } catch (err) {
     res.status(500).json({ msg: 'Server Error', error: err.message });
   }
@@ -2695,7 +2704,14 @@ const joinCollege = async (req, res) => {
 // @route   POST /api/college/me/activate
 const activateProfile = async (req, res) => {
   try {
-    const student = await CollegeStudent.findOne({ user: req.user.id }).sort({ createdAt: -1 });
+    const studentId = req.body.studentId;
+    let student;
+    if (studentId) {
+      student = await CollegeStudent.findOne({ _id: studentId, user: req.user.id });
+    } else {
+      student = await CollegeStudent.findOne({ user: req.user.id }).sort({ createdAt: -1 });
+    }
+    
     if (!student) return res.status(404).json({ msg: 'You are not linked to a college yet' });
 
     if (student.idVerification?.status === 'pending') {
@@ -2733,22 +2749,31 @@ const activateProfile = async (req, res) => {
 // @route   GET /api/college/me/drives
 const getMyDrives = async (req, res) => {
   try {
-    const student = await CollegeStudent.findOne({ user: req.user.id }).sort({ createdAt: -1 });
-    if (!student) return res.json({ student: null, drives: [] });
+    const students = await CollegeStudent.find({ user: req.user.id }).sort({ createdAt: -1 });
+    if (!students || students.length === 0) return res.json({ student: null, drives: [] });
 
-    const drives = await CampusDrive.find({ college: student.college, isActive: true }).sort({ createdAt: -1 });
+    const allDrivesWithStatus = [];
+    
+    for (const student of students) {
+      const drives = await CampusDrive.find({ college: student.college, isActive: true }).sort({ createdAt: -1 });
 
-    const eligible = drives.filter(d =>
-      (!d.departments?.length || !student.department || d.departments.includes(student.department)) &&
-      (!d.batchYear || !student.batchYear || d.batchYear === student.batchYear)
-    );
+      const eligible = drives.filter(d =>
+        (!d.departments?.length || !student.department || d.departments.includes(student.department)) &&
+        (!d.batchYear || !student.batchYear || d.batchYear === student.batchYear)
+      );
 
-    const drivesWithStatus = eligible.map(d => {
-      const application = student.driveApplications.find(da => da.drive.toString() === d._id.toString());
-      return { ...d.toObject(), myApplication: application || null };
-    });
+      const drivesWithStatus = eligible.map(d => {
+        const application = student.driveApplications.find(da => da.drive.toString() === d._id.toString());
+        return { ...d.toObject(), myApplication: application || null, _studentId: student._id };
+      });
+      allDrivesWithStatus.push(...drivesWithStatus);
+    }
 
-    res.json({ student, drives: drivesWithStatus });
+    // Sort all combined drives by date
+    allDrivesWithStatus.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Return the first student as a fallback for the UI, but send all combined drives
+    res.json({ student: students[0], drives: allDrivesWithStatus });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error', error: err.message });
   }
@@ -2757,15 +2782,15 @@ const getMyDrives = async (req, res) => {
 // @route   POST /api/college/me/drives/:driveId/register
 const registerForDrive = async (req, res) => {
   try {
-    const student = await CollegeStudent.findOne({ user: req.user.id }).sort({ createdAt: -1 });
-    if (!student) return res.status(404).json({ msg: 'You are not linked to a college yet' });
+    const drive = await CampusDrive.findById(req.params.driveId);
+    if (!drive) return res.status(404).json({ msg: 'Drive not found' });
+    if (!drive.isActive) return res.status(400).json({ msg: 'This drive is closed' });
+
+    const student = await CollegeStudent.findOne({ user: req.user.id, college: drive.college });
+    if (!student) return res.status(404).json({ msg: 'You are not linked to the college hosting this drive' });
     if (student.idVerification?.status === 'rejected') {
       return res.status(403).json({ msg: 'Your college join request was rejected. Contact your TPO.' });
     }
-
-    const drive = await CampusDrive.findOne({ _id: req.params.driveId, college: student.college });
-    if (!drive) return res.status(404).json({ msg: 'Drive not found' });
-    if (!drive.isActive) return res.status(400).json({ msg: 'This drive is closed' });
 
     if (student.driveApplications.some(da => da.drive.toString() === drive._id.toString())) {
       return res.status(400).json({ msg: 'You are already registered for this drive' });

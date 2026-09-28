@@ -87,6 +87,15 @@ const userSchema = new mongoose.Schema({
     resumeUrl: { type: String, default: '' },
     resumeName: { type: String, default: '' },
     portfolioUrl: { type: String, default: '' },
+    documents: [{
+      name: { type: String, required: true },
+      fileUrl: { type: String, required: true },
+      fileName: { type: String, default: '' },
+      fileType: { type: String, default: '' },
+      fileSize: { type: Number, default: 0 },
+      uploadedAt: { type: Date, default: Date.now },
+      isPrimary: { type: Boolean, default: false }
+    }],
     profileCompletion: { type: Number, default: 0 },
     jobPreferences: {
       jobTitles: [{ type: String }],

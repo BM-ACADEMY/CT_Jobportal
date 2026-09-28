@@ -1,6 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const { updateProfile, uploadResume, uploadImage, toggleSaveJob, getSavedJobs, toggleHideJob, getHiddenJobs, getPublicProfile, toggleBlockEntity, trackProfileView, getProfileViewers, updateAutoRenew, searchUser, generateAIResume, analyzeResume, acceptCompanyInvite, declineCompanyInvite } = require('../controllers/userController');
+const { 
+  updateProfile, 
+  uploadResume, 
+  uploadImage, 
+  toggleSaveJob, 
+  getSavedJobs, 
+  toggleHideJob, 
+  getHiddenJobs, 
+  getPublicProfile, 
+  toggleBlockEntity, 
+  trackProfileView, 
+  getProfileViewers, 
+  updateAutoRenew, 
+  searchUser, 
+  generateAIResume, 
+  analyzeResume, 
+  acceptCompanyInvite, 
+  declineCompanyInvite,
+  uploadDocuments,
+  updateDocument,
+  deleteDocument
+} = require('../controllers/userController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
 
@@ -11,6 +32,9 @@ router.post('/generate-resume', generateAIResume);
 router.post('/analyze-resume', upload.single('resume'), analyzeResume);
 router.put('/profile', updateProfile);
 router.post('/resume', upload.single('resume'), uploadResume);
+router.post('/documents', upload.array('documents', 20), uploadDocuments);
+router.put('/documents/:docId', updateDocument);
+router.delete('/documents/:docId', deleteDocument);
 router.post('/upload-image', upload.single('image'), uploadImage);
 router.post('/save-job/:jobId', toggleSaveJob);
 router.get('/saved-jobs', getSavedJobs);

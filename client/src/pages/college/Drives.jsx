@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { QrCode, Plus, Users, Calendar, Copy, ExternalLink, ToggleLeft, ToggleRight, Trash2, X, Megaphone, UserPlus, CheckCircle2, Clock, Edit2, Building2, Download, Search, MessageSquare, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, Tag } from 'antd';
 import { Input } from '@/components/ui/input';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
@@ -434,18 +435,42 @@ const Drives = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-            <QrCode size={18} className="text-[#39c884]" /> Campus Drives
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">{drives.length} drives</p>
-        </div>
-        <Button onClick={() => (showCreate ? setShowCreate(false) : openCreate())} className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white text-xs font-medium gap-1 border-none cursor-pointer">
-          <Plus size={14} /> New Drive
-        </Button>
-      </div>
+    <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 min-w-0 space-y-12">
+        {/* Premium Welcome Header */}
+        <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)', borderRadius: 0 }} className="relative shadow-sm overflow-hidden group">
+          <div className="p-8 sm:p-10 relative z-10">
+            <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+            <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#34b678]/10 blur-[80px] rounded-full transition-all duration-700" />
+            
+            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-[#34b678] rounded-none flex items-center justify-center border border-white/10 shrink-0">
+                  <QrCode className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                   <div className="flex items-center gap-3 mb-2">
+                     <Tag style={{ background: 'rgba(52, 182, 120, 0.2)', borderColor: 'rgba(52, 182, 120, 0.3)', color: '#34b678', fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', fontSize: 9, padding: '2px 8px', borderRadius: 0 }}>
+                       Campus Operations
+                     </Tag>
+                   </div>
+                   <h2 className="text-2xl font-black text-white tracking-tight m-0">Campus Drives</h2>
+                   <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
+                     Organize and manage placement drives effortlessly. Total {drives.length} drives.
+                   </p>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => (showCreate ? setShowCreate(false) : openCreate())}
+                style={{ backgroundColor: '#34b678', borderColor: '#34b678', height: 44, padding: '0 24px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1 }}
+                className="rounded-none text-white border-none cursor-pointer flex items-center gap-2"
+              >
+                <Plus size={14} /> {showCreate ? 'Close Form' : 'New Drive'}
+              </Button>
+            </div>
+          </div>
+        </Card>
 
       {/* Create / Edit form */}
       {showCreate && (
@@ -997,6 +1022,7 @@ const Drives = () => {
         loading={removingIncharge}
         onConfirm={confirmRemoveIncharge}
       />
+      </div>
     </div>
   );
 };

@@ -5,7 +5,7 @@ import {
   User, Mail, Phone, MapPin, Briefcase, GraduationCap,
   Plus, X, Upload, FileText, CheckCircle2, Loader2,
   Save, Trash2, LayoutGrid, Clock, Target, Eye, EyeOff, Globe, MapPinned, Settings2, Download, BadgeCheck,
-  XCircle, AlertCircle, Building2, Camera
+  XCircle, AlertCircle, Building2, Camera, Edit2, Star, ExternalLink, FileUp, Sparkles, FolderArchive, File, Check, Layers
 } from 'lucide-react';
 import { Button, Input, Tag as Badge, Card, Tabs as AntdTabs, Progress } from 'antd';
 
@@ -112,6 +112,15 @@ const Settings = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [cropModal, setCropModal] = useState({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 });
 
+    // Asset Repository states
+    const [isAddDocsModalOpen, setIsAddDocsModalOpen] = useState(false);
+    const [pendingFiles, setPendingFiles] = useState([]);
+    const [uploadingDocs, setUploadingDocs] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null);
+    const [renameModal, setRenameModal] = useState({ isOpen: false, docId: null, currentName: '', newName: '' });
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, doc: null });
+    const [isDragging, setIsDragging] = useState(false);
+
     let isPriority = false;
     const plan = user?.subscription;
     if (plan && plan.hasPriorityBadge) {
@@ -144,6 +153,9 @@ const Settings = () => {
             interestedDomain: user?.profile?.interestedDomain || [],
             shifts: user?.profile?.shifts || [],
             preferredRole: user?.profile?.preferredRole || '',
+            resumeUrl: user?.profile?.resumeUrl || '',
+            resumeName: user?.profile?.resumeName || '',
+            documents: user?.profile?.documents || [],
             jobPreferences: user?.profile?.jobPreferences || {
                 jobTitles: [],
                 locationTypes: [],
@@ -369,6 +381,9 @@ const Settings = () => {
                     interestedDomain: user?.profile?.interestedDomain || [],
                     shifts: user?.profile?.shifts || [],
                     preferredRole: user?.profile?.preferredRole || '',
+                    resumeUrl: user?.profile?.resumeUrl || '',
+                    resumeName: user?.profile?.resumeName || '',
+                    documents: user?.profile?.documents || [],
                     jobPreferences: user?.profile?.jobPreferences || {
                         jobTitles: [],
                         locationTypes: [],
@@ -417,6 +432,9 @@ const Settings = () => {
                 interestedDomain: user?.profile?.interestedDomain || [],
                 shifts: user?.profile?.shifts || [],
                 preferredRole: user?.profile?.preferredRole || '',
+                resumeUrl: user?.profile?.resumeUrl || '',
+                resumeName: user?.profile?.resumeName || '',
+                documents: user?.profile?.documents || [],
                 jobPreferences: user?.profile?.jobPreferences || {
                     jobTitles: [],
                     locationTypes: [],
@@ -474,25 +492,299 @@ const Settings = () => {
         }
     };
 
-    const handleResumeDownload = async () => {
-        if (!user?.profile?.resumeUrl) return;
+    // Helper: format file sizes
+    const formatFileSize = (bytes) => {
+        if (!bytes || bytes === 0) return 'Unknown size';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    };
+
+    // Helper: clean document name from file name
+    const cleanDocName = (filename) => {
+        if (!filename) return '';
+        const withoutExt = filename.replace(/\.[^/.]+$/, '');
+        return withoutExt.replace(/[_-]+/g, ' ').trim();
+    };
+
+    // Helper: determine badge colors by file type
+    const getDocBadgeInfo = (filename = '', fileType = '') => {
+        const lower = (filename || fileType).toLowerCase();
+        if (lower.endsWith('.pdf') || lower.includes('pdf')) {
+            return { label: 'PDF', bg: 'bg-rose-50 text-rose-600 border-rose-200' };
+        }
+        if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.includes('word') || lower.includes('document')) {
+            return { label: 'DOC', bg: 'bg-blue-50 text-blue-600 border-blue-200' };
+        }
+        if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp') || lower.includes('image')) {
+            return { label: 'IMG', bg: 'bg-purple-50 text-purple-600 border-purple-200' };
+        }
+        return { label: 'DOC', bg: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+    };
+
+    // Download any document
+    const handleDownloadDoc = async (doc) => {
+        const targetUrl = doc?.fileUrl || user?.profile?.resumeUrl;
+        if (!targetUrl) {
+            toast.error("Document link unavailable");
+            return;
+        }
         try {
-            const url = user.profile.resumeUrl.startsWith('http')
-                ? user.profile.resumeUrl
-                : `${API_DOMAIN}${user.profile.resumeUrl}`;
-            const filename = user.profile.resumeName || 'resume.pdf';
+            const url = targetUrl.startsWith('http')
+                ? targetUrl
+                : `${API_DOMAIN}${targetUrl}`;
+            const ext = doc.fileName?.includes('.') ? '.' + doc.fileName.split('.').pop() : '.pdf';
+            const baseTitle = doc.name || doc.fileName || 'Document';
+            const downloadFilename = baseTitle.endsWith(ext) ? baseTitle : `${baseTitle}${ext}`;
+            
             const response = await fetch(url);
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = filename;
+            a.download = downloadFilename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch {
-            toast.error("Failed to download resume");
+            toast.error("Failed to download document");
+        }
+    };
+
+    const handleResumeDownload = async () => {
+        if (!user?.profile?.resumeUrl) return;
+        handleDownloadDoc({
+            fileUrl: user.profile.resumeUrl,
+            name: user.profile.resumeName || 'Resume',
+            fileName: user.profile.resumeName || 'Resume.pdf'
+        });
+    };
+
+    // Add files to upload staging list
+    const handleFilesSelected = (fileList) => {
+        if (!fileList || fileList.length === 0) return;
+        const newItems = Array.from(fileList).map(file => ({
+            id: `${file.name}-${Date.now()}-${Math.random()}`,
+            file,
+            name: cleanDocName(file.name),
+            isPrimary: false
+        }));
+        setPendingFiles(prev => [...prev, ...newItems]);
+    };
+
+    const updatePendingName = (id, newName) => {
+        setPendingFiles(prev => prev.map(item => item.id === id ? { ...item, name: newName } : item));
+    };
+
+    const togglePendingPrimary = (id) => {
+        setPendingFiles(prev => prev.map(item => ({
+            ...item,
+            isPrimary: item.id === id ? !item.isPrimary : false
+        })));
+    };
+
+    const removePendingFile = (id) => {
+        setPendingFiles(prev => prev.filter(item => item.id !== id));
+    };
+
+    // Upload all staged documents with their respective names
+    const handleUploadAllDocuments = async () => {
+        if (pendingFiles.length === 0) {
+            toast.error("Please select at least one document");
+            return;
+        }
+
+        const emptyNameItem = pendingFiles.find(item => !item.name || !item.name.trim());
+        if (emptyNameItem) {
+            toast.error("Please assign a name to each document");
+            return;
+        }
+
+        setUploadingDocs(true);
+        try {
+            const uploadData = new FormData();
+            const names = [];
+            pendingFiles.forEach(item => {
+                uploadData.append('documents', item.file);
+                names.push(item.name.trim());
+            });
+            uploadData.append('names', JSON.stringify(names));
+
+            const primaryIdx = pendingFiles.findIndex(item => item.isPrimary);
+            if (primaryIdx !== -1) {
+                uploadData.append('primaryIndex', primaryIdx);
+            }
+
+            const res = await axios.post(`${API_USER_URL}/documents`, uploadData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            updateUser({
+                profile: {
+                    ...user.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName,
+                    profileCompletion: res.data.profileCompletion
+                }
+            });
+
+            setFormData(prev => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName
+                }
+            }));
+
+            setPendingFiles([]);
+            setIsAddDocsModalOpen(false);
+            toast.success(res.data.msg || "Documents added to Asset Repository");
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.msg || "Document upload failed");
+        } finally {
+            setUploadingDocs(false);
+        }
+    };
+
+    // Set document as primary resume
+    const handleSetPrimaryDocument = async (doc) => {
+        if (doc._id === 'primary-resume' || doc.isPrimary) return;
+        setActionLoading(doc._id);
+        try {
+            const res = await axios.put(`${API_USER_URL}/documents/${doc._id}`, { isPrimary: true });
+            updateUser({
+                profile: {
+                    ...user.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName,
+                    profileCompletion: res.data.profileCompletion
+                }
+            });
+            setFormData(prev => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName
+                }
+            }));
+            toast.success(`"${doc.name}" marked as primary resume`);
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.msg || "Failed to update primary document");
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // Rename a document
+    const handleSaveRename = async () => {
+        if (!renameModal.docId || !renameModal.newName.trim()) {
+            toast.error("Please provide a valid document name");
+            return;
+        }
+        setActionLoading(renameModal.docId);
+        try {
+            const res = await axios.put(`${API_USER_URL}/documents/${renameModal.docId}`, {
+                name: renameModal.newName.trim()
+            });
+            updateUser({
+                profile: {
+                    ...user.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName,
+                    profileCompletion: res.data.profileCompletion
+                }
+            });
+            setFormData(prev => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName
+                }
+            }));
+            setRenameModal({ isOpen: false, docId: null, currentName: '', newName: '' });
+            toast.success("Document renamed successfully");
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.msg || "Failed to rename document");
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // Delete a document
+    const handleConfirmDelete = async () => {
+        const doc = deleteModal.doc;
+        if (!doc) return;
+        setDeleteModal({ isOpen: false, doc: null });
+
+        if (doc._id === 'primary-resume') {
+            try {
+                const res = await axios.put(`${API_USER_URL}/profile`, {
+                    profile: {
+                        ...formData.profile,
+                        resumeUrl: '',
+                        resumeName: '',
+                        documents: []
+                    }
+                });
+                updateUser(res.data.user);
+                setFormData(prev => ({
+                    ...prev,
+                    profile: {
+                        ...prev.profile,
+                        resumeUrl: '',
+                        resumeName: '',
+                        documents: []
+                    }
+                }));
+                toast.success("Document removed from repository");
+            } catch (err) {
+                console.error(err);
+                toast.error("Failed to delete document");
+            }
+            return;
+        }
+
+        setActionLoading(doc._id);
+        try {
+            const res = await axios.delete(`${API_USER_URL}/documents/${doc._id}`);
+            updateUser({
+                profile: {
+                    ...user.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName,
+                    profileCompletion: res.data.profileCompletion
+                }
+            });
+            setFormData(prev => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName
+                }
+            }));
+            toast.success(res.data.msg || "Document removed");
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.msg || "Failed to delete document");
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -501,21 +793,32 @@ const Settings = () => {
         if (!file) return;
 
         const uploadData = new FormData();
-        uploadData.append('resume', file);
+        uploadData.append('documents', file);
+        uploadData.append('names', JSON.stringify([cleanDocName(file.name)]));
 
         setUploading(true);
         try {
-            const res = await axios.post(`${API_USER_URL}/resume`, uploadData, {
+            const res = await axios.post(`${API_USER_URL}/documents`, uploadData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             updateUser({ 
                 profile: { 
                     ...user.profile, 
+                    documents: res.data.documents,
                     resumeUrl: res.data.resumeUrl, 
                     resumeName: res.data.resumeName,
                     profileCompletion: res.data.profileCompletion
                 } 
             });
+            setFormData(prev => ({
+                ...prev,
+                profile: {
+                    ...prev.profile,
+                    documents: res.data.documents,
+                    resumeUrl: res.data.resumeUrl,
+                    resumeName: res.data.resumeName
+                }
+            }));
             toast.success("Asset repository updated");
         } catch (err) {
             console.error(err);
@@ -654,6 +957,20 @@ const Settings = () => {
             }
         });
     };
+
+    const repositoryDocuments = (formData?.profile?.documents && formData.profile.documents.length > 0)
+        ? formData.profile.documents
+        : (user?.profile?.documents && user.profile.documents.length > 0)
+            ? user.profile.documents
+            : (user?.profile?.resumeUrl ? [{
+                _id: 'primary-resume',
+                name: user.profile.resumeName || 'Primary Resume',
+                fileName: user.profile.resumeName || 'Resume.pdf',
+                fileUrl: user.profile.resumeUrl,
+                fileSize: 0,
+                uploadedAt: null,
+                isPrimary: true
+            }] : []);
 
     return (
         <div className="max-w-5xl mx-auto space-y-10 py-8 px-4 animate-in fade-in duration-500">
@@ -1233,65 +1550,189 @@ const Settings = () => {
                     </Card>
                 </TabsContent>
 
-                {/* ── TAB: RESUME ── */}
+                {/* ── TAB: RESUME / ASSET REPOSITORY ── */}
                 <TabsContent value="resume" className="mt-8">
                     <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
-                        <CardHeader className="pb-4 border-b border-slate-200 p-6">
-                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-emerald-600" /> Asset Repository
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-10">
-                            {user?.profile?.resumeUrl ? (
-                                <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50 flex items-center justify-between shadow-sm">
-                                    <div className="flex items-center gap-5">
-                                        <div className="w-14 h-14 bg-white border border-slate-100 text-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
-                                            <FileText size={24} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <h4 className="text-sm font-bold text-slate-900">{user.profile.resumeName || 'Resume.pdf'}</h4>
-                                            <p className="text-[9px] text-emerald-600 uppercase tracking-widest flex items-center gap-1.5 font-bold">
-                                                <CheckCircle2 size={12} /> Verified Deployment
-                                            </p>
-                                        </div>
+                        <CardHeader className="p-6 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50/50 via-white to-emerald-50/20">
+                            <div>
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                                        <FileText className="w-5 h-5" />
                                     </div>
-                                    <div className="flex gap-3">
-                                         <Button variant="outline" size="sm" className="h-10 px-5 rounded-lg text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:bg-white hover:text-emerald-600 transition-all" asChild>
-                                            <a href={`${import.meta.env.VITE_API_DOMAIN}${user.profile.resumeUrl}`} target="_blank" rel="noreferrer">Review</a>
-                                         </Button>
-                                         <Button variant="outline" size="sm" onClick={handleResumeDownload} className="h-10 px-5 rounded-lg text-[10px] font-bold uppercase tracking-widest border-slate-200 hover:bg-white hover:text-emerald-600 transition-all flex items-center gap-1.5">
-                                            <Download size={12} /> Download
-                                         </Button>
-                                         {isEditing && (
-                                            <label className="cursor-pointer">
-                                                <input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} />
-                                                <div className="h-10 px-5 rounded-lg bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-sm">
-                                                    Replace
+                                    <div>
+                                        <CardTitle className="text-lg font-bold text-slate-900 tracking-tight">
+                                            Asset Repository
+                                        </CardTitle>
+                                        <CardDescription className="text-xs font-medium text-slate-500 mt-0.5">
+                                            Manage your resumes, certifications, portfolios, and job application documents with custom titles.
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                <span className="text-[11px] font-bold text-slate-500 bg-slate-100/80 border border-slate-200 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                                    <Layers size={13} className="text-slate-500" />
+                                    {repositoryDocuments.length} {repositoryDocuments.length === 1 ? 'Asset' : 'Assets'}
+                                </span>
+                                <Button 
+                                    type="primary"
+                                    onClick={() => {
+                                        setPendingFiles([]);
+                                        setIsAddDocsModalOpen(true);
+                                    }}
+                                    className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-sm border-none flex items-center gap-2"
+                                >
+                                    <Plus className="w-4 h-4" /> Add Documents
+                                </Button>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="p-6 md:p-8">
+                            {repositoryDocuments.length > 0 ? (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-3.5">
+                                        {repositoryDocuments.map((doc, idx) => {
+                                            const badgeInfo = getDocBadgeInfo(doc.fileName || doc.name, doc.fileType);
+                                            const isPrimary = Boolean(doc.isPrimary || (user?.profile?.resumeUrl && user.profile.resumeUrl === doc.fileUrl));
+                                            const docDownloadUrl = doc.fileUrl?.startsWith('http')
+                                                ? doc.fileUrl
+                                                : `${API_DOMAIN}${doc.fileUrl}`;
+                                            const isActionBusy = actionLoading === doc._id;
+
+                                            return (
+                                                <div 
+                                                    key={doc._id || idx}
+                                                    className="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/40 hover:bg-white hover:border-emerald-200/80 hover:shadow-md transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group"
+                                                >
+                                                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-xs border ${badgeInfo.bg}`}>
+                                                            {badgeInfo.label}
+                                                        </div>
+                                                        <div className="space-y-1 min-w-0 flex-1">
+                                                            <div className="flex items-center flex-wrap gap-2">
+                                                                <h4 className="text-sm font-bold text-slate-900 truncate max-w-md group-hover:text-emerald-700 transition-colors">
+                                                                    {doc.name}
+                                                                </h4>
+                                                                {isPrimary && (
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                                        <Star size={11} className="fill-emerald-600 text-emerald-600" /> Primary Document
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center flex-wrap gap-3 text-xs text-slate-500 font-medium">
+                                                                {doc.fileName && (
+                                                                    <span className="truncate max-w-[220px]" title={doc.fileName}>
+                                                                        {doc.fileName}
+                                                                    </span>
+                                                                )}
+                                                                {doc.fileSize > 0 && (
+                                                                    <>
+                                                                        <span className="text-slate-300">•</span>
+                                                                        <span>{formatFileSize(doc.fileSize)}</span>
+                                                                    </>
+                                                                )}
+                                                                {doc.uploadedAt && (
+                                                                    <>
+                                                                        <span className="text-slate-300">•</span>
+                                                                        <span>{new Date(doc.uploadedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center flex-wrap gap-2 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            className="h-9 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-all flex items-center gap-1.5"
+                                                            asChild
+                                                        >
+                                                            <a href={docDownloadUrl} target="_blank" rel="noreferrer">
+                                                                <ExternalLink size={12} /> Review
+                                                            </a>
+                                                        </Button>
+
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            onClick={() => handleDownloadDoc(doc)}
+                                                            className="h-9 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-all flex items-center gap-1.5"
+                                                        >
+                                                            <Download size={12} /> Download
+                                                        </Button>
+
+                                                        {doc._id !== 'primary-resume' && (
+                                                            <Button 
+                                                                variant="outline" 
+                                                                size="sm" 
+                                                                onClick={() => setRenameModal({ isOpen: true, docId: doc._id, currentName: doc.name, newName: doc.name })}
+                                                                className="h-9 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-all flex items-center gap-1.5"
+                                                            >
+                                                                <Edit2 size={12} /> Rename
+                                                            </Button>
+                                                        )}
+
+                                                        {!isPrimary && doc._id !== 'primary-resume' && (
+                                                            <Button 
+                                                                variant="outline" 
+                                                                size="sm" 
+                                                                disabled={isActionBusy}
+                                                                onClick={() => handleSetPrimaryDocument(doc)}
+                                                                className="h-9 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border-emerald-200 bg-emerald-50/50 text-emerald-700 hover:bg-emerald-100 transition-all flex items-center gap-1.5"
+                                                            >
+                                                                {isActionBusy ? <Loader2 size={12} className="animate-spin" /> : <Star size={12} />} Make Primary
+                                                            </Button>
+                                                        )}
+
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm" 
+                                                            disabled={isActionBusy}
+                                                            onClick={() => setDeleteModal({ isOpen: true, doc })}
+                                                            className="h-9 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all flex items-center gap-1"
+                                                            title="Delete document"
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                            </label>
-                                         )}
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Repository Footer Info */}
+                                    <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200/70 flex items-start gap-3">
+                                        <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                                            ✓
+                                        </div>
+                                        <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                            <span className="font-bold text-slate-800">Application Dispatch Note:</span> The document marked as <strong className="text-emerald-700">Primary Document</strong> will be automatically attached when applying to jobs via Instant 1-Click apply. You can switch the primary document anytime.
+                                        </p>
                                     </div>
                                 </div>
                             ) : (
-                                isEditing ? (
-                                    <label className="cursor-pointer">
-                                        <Input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} />
-                                        <div className="border-2 border-dashed border-slate-200 rounded-[24px] p-20 flex flex-col items-center gap-4 hover:bg-slate-50 hover:border-emerald-200 transition-all group">
-                                            <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:text-emerald-500 transition-all">
-                                                {uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Upload className="w-8 h-8" />}
-                                            </div>
-                                            <div className="text-center space-y-1">
-                                                <h3 className="text-base font-bold text-slate-900">Transmit Resume</h3>
-                                                <p className="text-xs text-slate-400 font-medium">Standard PDF or DOCX architecture (Max 5MB)</p>
-                                            </div>
-                                        </div>
-                                    </label>
-                                ) : (
-                                    <div className="text-center py-20 bg-slate-50/50 border border-dashed border-slate-200 rounded-[24px]">
-                                        <FileText className="w-12 h-12 mx-auto text-slate-200 mb-4" />
-                                        <p className="text-slate-400 text-sm font-medium italic">No assets detected in repository.</p>
+                                <div className="border-2 border-dashed border-slate-200 rounded-[24px] p-12 md:p-16 flex flex-col items-center justify-center text-center gap-4 hover:border-emerald-300 transition-all bg-slate-50/40">
+                                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-xs">
+                                        <Upload className="w-8 h-8" />
                                     </div>
-                                )
+                                    <div className="space-y-1.5 max-w-md">
+                                        <h3 className="text-base font-bold text-slate-900">Your Asset Repository is Empty</h3>
+                                        <p className="text-xs text-slate-500 font-medium">
+                                            Upload your resumes, certifications, cover letters, and transcripts. You can upload multiple documents and give a custom name to each.
+                                        </p>
+                                    </div>
+                                    <Button 
+                                        type="primary"
+                                        onClick={() => {
+                                            setPendingFiles([]);
+                                            setIsAddDocsModalOpen(true);
+                                        }}
+                                        className="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-md border-none flex items-center gap-2 mt-2"
+                                    >
+                                        <Plus className="w-4 h-4" /> Add Documents Now
+                                    </Button>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
@@ -1594,134 +2035,123 @@ const Settings = () => {
 
                 {/* ── TAB: CAMPUS ── */}
                 <TabsContent value="campus" className="mt-8">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                         <CardHeader className="pb-4 border-b border-slate-200 p-6">
                             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                                 <GraduationCap className="w-4 h-4 text-emerald-600" /> Campus / College Status
                             </CardTitle>
-                            <CardDescription className="text-xs font-medium text-slate-400">Link your account to your college's placement portal</CardDescription>
+                            <CardDescription className="text-xs font-medium text-slate-400">Link your account to multiple college placement portals</CardDescription>
                         </CardHeader>
-                        <CardContent className="p-8">
+                        <CardContent className="p-8 space-y-10">
                             {campusLoading ? (
                                 <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
-                            ) : campusStudent ? (
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <DataDisplay label="College" value={campusStudent.college?.name} icon={GraduationCap} isEditing={false} />
-                                        <DataDisplay label="Placement Status" value={campusStudent.placementStatus} icon={CheckCircle2} isEditing={false} />
-                                        <DataDisplay label="Registration Source" value={campusStudent.registrationSource} icon={FileText} isEditing={false} />
-                                        <DataDisplay 
-                                            label="ID Verification" 
-                                            value={campusStudent.idVerification?.status === 'pending' ? 'Awaiting TPO approval' : campusStudent.idVerification?.status} 
-                                            icon={BadgeCheck} 
-                                            isEditing={false} 
-                                        />
-                                    </div>
-                                    {campusStudent.idVerification?.status === 'rejected' ? (
-                                        <div className="p-6 rounded-2xl bg-red-50 border border-red-100 space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <XCircle size={18} className="text-red-500" />
-                                                <h4 className="text-sm font-bold text-slate-900">Join request rejected</h4>
-                                            </div>
-                                            <p className="text-xs text-slate-500">
-                                                Your request to join {campusStudent.college?.name || 'this college'} was rejected by the TPO.
-                                                {campusStudent.idVerification?.rejectionReason ? ` Reason: "${campusStudent.idVerification.rejectionReason}"` : ''}
-                                                {' '}You are not active or visible on their student list.
-                                            </p>
-                                            <form onSubmit={handleReapply} className="space-y-3 pt-1">
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div className="space-y-1">
-                                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Roll Number</Label>
-                                                        <Input value={reapplyForm.rollNumber} onChange={(e) => setReapplyForm(p => ({ ...p, rollNumber: e.target.value }))} className="h-10 rounded-xl bg-white border-slate-200 font-medium text-sm" />
+                            ) : (
+                                <>
+                                    {Array.isArray(campusStudent) && campusStudent.length > 0 ? (
+                                        <div className="space-y-6">
+                                            {campusStudent.map((student, idx) => (
+                                                <div key={student._id || idx} className="p-6 rounded-none border border-slate-200 bg-slate-50 relative">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <DataDisplay label="College" value={student.college?.name} icon={GraduationCap} isEditing={false} />
+                                                        <DataDisplay label="Placement Status" value={student.placementStatus} icon={CheckCircle2} isEditing={false} />
+                                                        <DataDisplay label="Registration Source" value={student.registrationSource} icon={FileText} isEditing={false} />
+                                                        <DataDisplay 
+                                                            label="ID Verification" 
+                                                            value={student.idVerification?.status === 'pending' ? 'Awaiting TPO approval' : student.idVerification?.status} 
+                                                            icon={BadgeCheck} 
+                                                            isEditing={false} 
+                                                        />
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Department</Label>
-                                                        <Input value={reapplyForm.department} onChange={(e) => setReapplyForm(p => ({ ...p, department: e.target.value }))} className="h-10 rounded-xl bg-white border-slate-200 font-medium text-sm" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Year of Passing</Label>
-                                                        <Input type="number" value={reapplyForm.batchYear} onChange={(e) => setReapplyForm(p => ({ ...p, batchYear: e.target.value }))} className="h-10 rounded-xl bg-white border-slate-200 font-medium text-sm" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
-                                                        <PhoneNumberInput value={reapplyForm.phone} onChange={(phone) => setReapplyForm(p => ({ ...p, phone }))} />
-                                                    </div>
+                                                    {student.idVerification?.status === 'rejected' ? (
+                                                        <div className="p-6 mt-4 rounded-none bg-red-50 border border-red-100 space-y-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <XCircle size={18} className="text-red-500" />
+                                                                <h4 className="text-sm font-bold text-slate-900">Join request rejected</h4>
+                                                            </div>
+                                                            <p className="text-xs text-slate-500">
+                                                                Your request to join {student.college?.name || 'this college'} was rejected by the TPO.
+                                                                {student.idVerification?.rejectionReason ? ` Reason: "${student.idVerification.rejectionReason}"` : ''}
+                                                            </p>
+                                                        </div>
+                                                    ) : student.idVerification?.status === 'pending' ? (
+                                                        <div className="p-4 mt-4 rounded-none bg-amber-50 border border-amber-100 flex items-start gap-3">
+                                                            <AlertCircle size={18} className="text-amber-500 mt-0.5 shrink-0" />
+                                                            <div>
+                                                                <h4 className="text-sm font-bold text-slate-900">Awaiting TPO approval</h4>
+                                                                <p className="text-xs text-slate-500 mt-1">Your join request to {student.college?.name} is under review.</p>
+                                                            </div>
+                                                        </div>
+                                                    ) : !student.isActivated ? (
+                                                        <div className="p-4 mt-4 rounded-none bg-amber-50 border border-amber-100 flex items-center gap-2 text-xs font-bold text-amber-700">
+                                                            <AlertCircle size={16} /> Your profile is approved but not active for {student.college?.name}.
+                                                        </div>
+                                                    ) : (
+                                                        <div className="p-4 mt-4 rounded-none bg-emerald-50 border border-emerald-100 flex items-center gap-2 text-xs font-bold text-emerald-600">
+                                                            <CheckCircle2 size={16} /> Active and visible to {student.college?.name}.
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <Button type="submit" disabled={reapplying} className="h-10 px-6 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest">
-                                                    {reapplying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Re-apply
-                                                </Button>
-                                            </form>
-                                        </div>
-                                    ) : campusStudent.idVerification?.status === 'pending' ? (
-                                        <div className="p-6 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3">
-                                            <AlertCircle size={18} className="text-amber-500 mt-0.5 shrink-0" />
-                                            <div>
-                                                <h4 className="text-sm font-bold text-slate-900">Awaiting TPO approval</h4>
-                                                <p className="text-xs text-slate-500 mt-1">Your join request is under review. You'll be able to activate your profile once your TPO approves it.</p>
-                                            </div>
-                                        </div>
-                                    ) : !campusStudent.isActivated ? (
-                                        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center gap-2 text-xs font-bold text-amber-700">
-                                            <AlertCircle size={16} /> Your profile is approved but not active. Activate it from your dashboard.
+                                            ))}
                                         </div>
                                     ) : (
-                                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-2 text-xs font-bold text-emerald-600">
-                                            <CheckCircle2 size={16} /> Your profile is active and visible to your TPO.
-                                        </div>
+                                        <div className="text-sm text-slate-500 font-medium">You are not linked to any colleges yet.</div>
                                     )}
-                                </div>
-                            ) : (
-                                <form onSubmit={handleJoinCollege} className="max-w-md space-y-4">
-                                    <p className="text-sm text-slate-500 font-medium">
-                                        Not linked to a college yet. Enter your details below (ask your TPO for the college code) to send a join request.
-                                    </p>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">College Code</Label>
-                                        <Input
-                                            value={joinForm.collegeCode}
-                                            onChange={(e) => setJoinForm(p => ({ ...p, collegeCode: e.target.value }))}
-                                            placeholder="e.g. SKCT"
-                                            className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
-                                        />
+
+                                    <div className="pt-6 border-t border-slate-200">
+                                        <h3 className="text-lg font-bold text-slate-900 mb-4">Join Another College</h3>
+                                        <form onSubmit={handleJoinCollege} className="max-w-md space-y-4">
+                                            <p className="text-sm text-slate-500 font-medium">
+                                                Enter your details below (ask your TPO for the college code) to send a join request.
+                                            </p>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">College Code</Label>
+                                                <Input
+                                                    value={joinForm.collegeCode}
+                                                    onChange={(e) => setJoinForm(p => ({ ...p, collegeCode: e.target.value }))}
+                                                    placeholder="e.g. SKCT"
+                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Roll Number</Label>
+                                                    <Input
+                                                        value={joinForm.rollNumber}
+                                                        onChange={(e) => setJoinForm(p => ({ ...p, rollNumber: e.target.value }))}
+                                                        placeholder="e.g. 21CS045"
+                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Department</Label>
+                                                    <Input
+                                                        value={joinForm.department}
+                                                        onChange={(e) => setJoinForm(p => ({ ...p, department: e.target.value }))}
+                                                        placeholder="e.g. CSE"
+                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Year of Passing / Batch</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={joinForm.batchYear}
+                                                        onChange={(e) => setJoinForm(p => ({ ...p, batchYear: e.target.value }))}
+                                                        placeholder="e.g. 2026"
+                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
+                                                    <PhoneNumberInput value={joinForm.phone} onChange={(phone) => setJoinForm(p => ({ ...p, phone }))} />
+                                                </div>
+                                            </div>
+                                            <Button type="submit" disabled={joiningCollege} className="h-11 px-6 rounded-none bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest">
+                                                {joiningCollege ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Send Join Request
+                                            </Button>
+                                        </form>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Roll Number</Label>
-                                            <Input
-                                                value={joinForm.rollNumber}
-                                                onChange={(e) => setJoinForm(p => ({ ...p, rollNumber: e.target.value }))}
-                                                placeholder="e.g. 21CS045"
-                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Department</Label>
-                                            <Input
-                                                value={joinForm.department}
-                                                onChange={(e) => setJoinForm(p => ({ ...p, department: e.target.value }))}
-                                                placeholder="e.g. CSE"
-                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Year of Passing / Batch</Label>
-                                            <Input
-                                                type="number"
-                                                value={joinForm.batchYear}
-                                                onChange={(e) => setJoinForm(p => ({ ...p, batchYear: e.target.value }))}
-                                                placeholder="e.g. 2026"
-                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
-                                            <PhoneNumberInput value={joinForm.phone} onChange={(phone) => setJoinForm(p => ({ ...p, phone }))} />
-                                        </div>
-                                    </div>
-                                    <Button type="submit" disabled={joiningCollege} className="h-11 px-6 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest">
-                                        {joiningCollege ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Send Join Request
-                                    </Button>
-                                </form>
+                                </>
                             )}
                         </CardContent>
                     </Card>
@@ -1769,6 +2199,293 @@ const Settings = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
+            {/* ── MODAL: ADD MULTIPLE DOCUMENTS WITH NAME FOR EACH ── */}
+            {isAddDocsModalOpen && (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[28px] max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="p-6 md:p-7 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                                    <FileUp className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">Add Documents to Repository</h3>
+                                    <p className="text-xs font-medium text-slate-500 mt-0.5">Select multiple documents and assign a unique title to each</p>
+                                </div>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    if (!uploadingDocs) {
+                                        setIsAddDocsModalOpen(false);
+                                        setPendingFiles([]);
+                                    }
+                                }}
+                                disabled={uploadingDocs}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-6 md:p-7 overflow-y-auto space-y-6 flex-1">
+                            {/* Dropzone */}
+                            <div
+                                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                onDragLeave={() => setIsDragging(false)}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    setIsDragging(false);
+                                    if (e.dataTransfer.files) handleFilesSelected(e.dataTransfer.files);
+                                }}
+                                className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${
+                                    isDragging 
+                                        ? 'border-emerald-500 bg-emerald-50/50 scale-[0.99]' 
+                                        : 'border-slate-200 hover:border-emerald-300 hover:bg-slate-50/60 bg-slate-50/30'
+                                }`}
+                                onClick={() => document.getElementById('repo-multi-file-input')?.click()}
+                            >
+                                <input 
+                                    id="repo-multi-file-input"
+                                    type="file"
+                                    multiple
+                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        if (e.target.files) handleFilesSelected(e.target.files);
+                                        e.target.value = '';
+                                    }}
+                                />
+                                <div className="w-12 h-12 mx-auto rounded-xl bg-white border border-slate-200 text-emerald-600 flex items-center justify-center shadow-xs mb-3">
+                                    <Upload size={22} />
+                                </div>
+                                <h4 className="text-sm font-bold text-slate-800">
+                                    Click to browse or drag and drop files here
+                                </h4>
+                                <p className="text-xs text-slate-400 font-medium mt-1">
+                                    PDF, DOC, DOCX, JPG, PNG or WEBP (Max 10MB per file)
+                                </p>
+                            </div>
+
+                            {/* Staged files with individual document name inputs */}
+                            {pendingFiles.length > 0 && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                                            <Layers size={13} className="text-emerald-600" />
+                                            Selected Documents ({pendingFiles.length})
+                                        </span>
+                                        <label 
+                                            htmlFor="repo-multi-file-input" 
+                                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer flex items-center gap-1"
+                                        >
+                                            <Plus size={13} /> Add more files
+                                        </label>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {pendingFiles.map((item, idx) => {
+                                            const badgeInfo = getDocBadgeInfo(item.file.name, item.file.type);
+                                            return (
+                                                <div 
+                                                    key={item.id}
+                                                    className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 shadow-xs space-y-3 transition-all"
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${badgeInfo.bg}`}>
+                                                                {badgeInfo.label}
+                                                            </span>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-medium text-slate-500 truncate max-w-xs" title={item.file.name}>
+                                                                    {item.file.name}
+                                                                </p>
+                                                                <p className="text-[10px] text-slate-400">
+                                                                    {formatFileSize(item.file.size)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => togglePendingPrimary(item.id)}
+                                                                className={`h-7 px-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 transition-all ${
+                                                                    item.isPrimary
+                                                                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                                                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                                                                }`}
+                                                                title="Set this as primary resume for applications"
+                                                            >
+                                                                <Star size={11} className={item.isPrimary ? 'fill-emerald-600 text-emerald-600' : ''} />
+                                                                {item.isPrimary ? 'Primary' : 'Make Primary'}
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removePendingFile(item.id)}
+                                                                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                                                title="Remove file"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Document Name input field */}
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">
+                                                            Document Title / Name <span className="text-rose-500">*</span>
+                                                        </label>
+                                                        <Input
+                                                            value={item.name}
+                                                            onChange={(e) => updatePendingName(item.id, e.target.value)}
+                                                            placeholder="e.g. Senior Frontend Resume, Degree Certificate, Recommendation Letter"
+                                                            className="h-10 rounded-lg text-xs font-semibold border-slate-200 focus:border-emerald-500 focus:ring-emerald-100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-5 md:p-6 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
+                            <Button
+                                onClick={() => {
+                                    setIsAddDocsModalOpen(false);
+                                    setPendingFiles([]);
+                                }}
+                                disabled={uploadingDocs}
+                                className="h-10 px-5 rounded-xl border-slate-200 bg-white font-bold text-xs uppercase tracking-widest text-slate-600 hover:bg-slate-50"
+                            >
+                                Cancel
+                            </Button>
+
+                            <Button
+                                type="primary"
+                                onClick={handleUploadAllDocuments}
+                                disabled={uploadingDocs || pendingFiles.length === 0}
+                                className="h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-md border-none flex items-center gap-2"
+                            >
+                                {uploadingDocs ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-4 h-4" />
+                                        Upload {pendingFiles.length > 0 ? `(${pendingFiles.length}) ` : ''}{pendingFiles.length === 1 ? 'Document' : 'Documents'}
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── MODAL: RENAME DOCUMENT ── */}
+            {renameModal.isOpen && (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
+                                    <Edit2 size={15} />
+                                </div>
+                                <h3 className="text-base font-bold text-slate-900">Rename Document</h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setRenameModal({ isOpen: false, docId: null, currentName: '', newName: '' })}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                Document Title
+                            </label>
+                            <Input
+                                value={renameModal.newName}
+                                onChange={(e) => setRenameModal(prev => ({ ...prev, newName: e.target.value }))}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSaveRename()}
+                                placeholder="Enter document title..."
+                                className="h-10 rounded-xl text-xs font-semibold"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2.5 pt-2">
+                            <Button
+                                onClick={() => setRenameModal({ isOpen: false, docId: null, currentName: '', newName: '' })}
+                                className="h-9 px-4 rounded-lg border-slate-200 font-bold text-xs"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="primary"
+                                onClick={handleSaveRename}
+                                disabled={actionLoading === renameModal.docId || !renameModal.newName.trim()}
+                                className="h-9 px-5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs border-none"
+                            >
+                                {actionLoading === renameModal.docId ? <Loader2 size={13} className="animate-spin" /> : 'Save Title'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── MODAL: DELETE CONFIRMATION ── */}
+            {deleteModal.isOpen && (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 p-6 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                                <Trash2 size={18} />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900">Remove Document</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Are you sure you want to remove this asset from your repository?</p>
+                            </div>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <p className="text-xs font-bold text-slate-800 truncate">
+                                {deleteModal.doc?.name}
+                            </p>
+                            {deleteModal.doc?.fileName && (
+                                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                    {deleteModal.doc.fileName}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2.5 pt-2">
+                            <Button
+                                onClick={() => setDeleteModal({ isOpen: false, doc: null })}
+                                className="h-9 px-4 rounded-lg border-slate-200 font-bold text-xs"
+                            >
+                                Keep Document
+                            </Button>
+                            <Button
+                                onClick={handleConfirmDelete}
+                                className="h-9 px-5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs border-none"
+                            >
+                                Delete Asset
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {cropModal.isOpen && (
                 <ImageCropperModal
                     imageSrc={cropModal.imageSrc}

@@ -98,6 +98,10 @@ const jobSchema = new mongoose.Schema({
   isCloned: {
     type: Boolean,
     default: false
+  },
+  lastViewedApplicantsAt: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
 

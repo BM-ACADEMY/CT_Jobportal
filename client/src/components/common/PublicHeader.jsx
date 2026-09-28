@@ -7,10 +7,12 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Bell, User, Settings, LogOut, ChevronDown,
-  Menu, X, Briefcase, Building2, Mail, Home, Newspaper
+  Bell, BellOff, User, Settings, LogOut, ChevronDown, CheckCheck,
+  Menu, X, Briefcase, Building2, Mail, Home, Newspaper, Trash2
 } from 'lucide-react';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
@@ -22,10 +24,85 @@ const NAV_LINKS = [
 
 const PublicHeader = () => {
   const { user, logout } = useAuth();
+  const socket = useSocket();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    axios.get(`${import.meta.env.VITE_API_BASE_URL}/notifications?limit=30`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(({ data }) => {
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
+    }).catch(err => console.error('Failed to load notifications:', err));
+  }, [user]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const receiveNotification = notification => {
+      setNotifications(current => [notification, ...current].slice(0, 30));
+      setUnreadCount(current => current + 1);
+    };
+    socket.on('notification:new', receiveNotification);
+    return () => socket.off('notification:new', receiveNotification);
+  }, [socket]);
+
+  const openNotification = async notification => {
+    if (!notification.isRead) {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/notifications/${notification._id}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+      setNotifications(current => current.map(item => item._id === notification._id ? { ...item, isRead: true } : item));
+      setUnreadCount(current => Math.max(0, current - 1));
+    }
+    if (notification.link) navigate(notification.link);
+  };
+
+  const markAllNotificationsRead = async () => {
+    const token = localStorage.getItem('token');
+    await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/notifications/read-all`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).catch(() => {});
+    setNotifications(current => current.map(item => ({ ...item, isRead: true })));
+    setUnreadCount(0);
+  };
+
+  const deleteNotificationItem = async (e, notificationId) => {
+    e.stopPropagation();
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/notifications/${notificationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(current => current.filter(n => n._id !== notificationId));
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
+  const clearReadNotifications = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/notifications/read`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(current => current.filter(n => !n.isRead));
+    } catch (err) {
+      console.error('Failed to clear read notifications:', err);
+    }
+  };
 
   const isDarkHero = false; // Always white header like Apna
 
@@ -93,13 +170,100 @@ const PublicHeader = () => {
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100"
-                >
-                  <Bell size={18} />
-                </Button>
+                {/* Notification Bell Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative h-9 w-9 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer"
+                      aria-label="Notifications"
+                    >
+                      <Bell size={18} />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white border-2 border-white rounded-full text-[9px] font-black flex items-center justify-center animate-in zoom-in-50">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" sideOffset={8} className="w-[320px] sm:w-[360px] rounded-2xl border border-slate-200/80 shadow-2xl p-0 bg-white text-slate-800 overflow-hidden z-50">
+                    <div className="px-4 py-3 flex items-center justify-between border-b border-slate-100 bg-slate-50/70">
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <Bell size={13} className="text-emerald-600" /> Notifications
+                        </p>
+                        <p className="text-[10px] font-semibold text-slate-500 mt-0.5">
+                          {unreadCount > 0 ? `${unreadCount} unread` : 'No unread messages'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {notifications.some(n => n.isRead) && (
+                          <button
+                            type="button"
+                            onClick={clearReadNotifications}
+                            className="text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 size={11} /> Clear read
+                          </button>
+                        )}
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={markAllNotificationsRead}
+                            className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <CheckCheck size={12} /> Mark all read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100">
+                      {notifications.length === 0 ? (
+                        <div className="py-10 px-4 text-center space-y-2">
+                          <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                            <BellOff size={22} />
+                          </div>
+                          <p className="text-xs font-bold text-slate-700">No unread notifications</p>
+                          <p className="text-[11px] text-slate-400 max-w-[240px] mx-auto font-medium">
+                            You have no unread messages or notifications at this time.
+                          </p>
+                        </div>
+                      ) : (
+                        notifications.map(notification => (
+                          <DropdownMenuItem
+                            key={notification._id}
+                            onClick={() => openNotification(notification)}
+                            className={`block px-4 py-3 cursor-pointer hover:bg-slate-50 focus:bg-slate-50 transition-colors ${
+                              notification.isRead ? 'bg-white opacity-75' : 'bg-emerald-50/30'
+                            }`}
+                          >
+                          <div className="flex items-start gap-3 w-full">
+                              <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${notification.isRead ? 'bg-slate-300' : 'bg-emerald-500 ring-4 ring-emerald-100'}`} />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-slate-900 leading-snug line-clamp-1">{notification.title}</p>
+                                <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{notification.message}</p>
+                                <p className="text-[9px] text-slate-400 font-medium mt-1">
+                                  {new Date(notification.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              {notification.isRead && (
+                                <button
+                                  onClick={(e) => deleteNotificationItem(e, notification._id)}
+                                  className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors mt-0.5"
+                                  title="Delete notification"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

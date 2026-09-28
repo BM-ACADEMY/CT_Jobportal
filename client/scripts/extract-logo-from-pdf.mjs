@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import { pdf } from 'pdf-to-img';
 import sharp from 'sharp';
 
-const source = 'C:/Users/Administrator/Downloads/Logo.pdf';
+const source = 'C:/Users/Administrator/Downloads/Logo-1.pdf';
 const document = await pdf(source, { scale: 4 });
 
 for await (const image of document) {

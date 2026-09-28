@@ -4,8 +4,9 @@ import { toast } from 'sonner';
 import {
   ClipboardList, RefreshCw, Loader2, X,
   CheckCircle2, ChevronLeft, ChevronRight,
-  Search, Building2
+  Search, Building2, Inbox
 } from 'lucide-react';
+import { Card, Tag } from 'antd';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -178,75 +179,76 @@ const JoinRequestsModule = () => {
     return (
       <div className="space-y-6">
         {user.pendingCompanyInvite && (
-          <div className="bg-white border-2 border-emerald-500 rounded-3xl p-6 shadow-lg shadow-emerald-500/10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="bg-white border-2 border-[#1b496d] rounded-none p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+              <div className="w-12 h-12 rounded-none bg-emerald-50 text-emerald-600 flex items-center justify-center font-black border border-emerald-100">
                 {user.pendingCompanyInvite.company?.name?.charAt(0) || 'C'}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Organization Invitation</h3>
-                <p className="text-sm text-slate-500">
+                <h3 className="text-lg font-black text-[#1b496d]">Organization Invitation</h3>
+                <p className="text-xs font-medium text-slate-500">
                   You have been invited to join <strong>{user.pendingCompanyInvite.company?.name}</strong>'s team as
-                  a <strong>{user.pendingCompanyInvite.type === 'recruiter' ? 'Recruiter' : 'Employee'}</strong>.
+                  a <strong className="text-emerald-600 uppercase tracking-wider text-[10px] ml-1">{user.pendingCompanyInvite.type === 'recruiter' ? 'Recruiter' : 'Employee'}</strong>.
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <Button onClick={() => handleInviteAction('decline')} variant="outline" className="flex-1 md:flex-none border-rose-200 text-rose-600 hover:bg-rose-50">Decline</Button>
-              <Button onClick={() => handleInviteAction('accept')} className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20">Accept Invite</Button>
+            <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+              <Button onClick={() => handleInviteAction('decline')} variant="outline" className="flex-1 md:flex-none rounded-none border-rose-200 text-rose-600 hover:bg-rose-50 font-bold uppercase text-[10px] tracking-widest h-10 px-6">Decline</Button>
+              <Button onClick={() => handleInviteAction('accept')} className="flex-1 md:flex-none rounded-none bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-[10px] tracking-widest h-10 px-6 shadow-md">Accept Invite</Button>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-none p-8 border border-slate-200 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/50 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+          <div className="flex items-center justify-between mb-6 relative z-10">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 mb-1">Join an Organization</h3>
-              <p className="text-xs text-slate-500">Search for an organization to request to join their team.</p>
+              <h3 className="text-base font-black text-slate-900 mb-1 tracking-tight">Join an Organization</h3>
+              <p className="text-xs font-medium text-slate-500">Search for an organization to request to join their team.</p>
             </div>
             {quota && (
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Join Requests</span>
-                <Badge className={`${quota.used >= quota.limit ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'} border-none font-black text-xs px-2`}>
+                <Badge className={`rounded-none ${quota.used >= quota.limit ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'} border-none font-black text-xs px-2`}>
                   {quota.used} / {quota.limit}
                 </Badge>
               </div>
             )}
           </div>
-          <form onSubmit={handleSearch} className="flex gap-2">
+          <form onSubmit={handleSearch} className="flex gap-2 relative z-10">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
                 type="text"
                 placeholder="Search companies by name or email..."
-                className="w-full pl-10 pr-4 h-10 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full pl-10 pr-4 h-11 text-sm font-medium rounded-none border border-slate-200 focus:outline-none focus:border-[#34b678] focus:ring-1 focus:ring-[#34b678]/20 transition-all bg-slate-50 hover:bg-white"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" disabled={searching} className="h-10 bg-slate-900 text-white hover:bg-emerald-600 rounded-xl px-6 font-bold">
+            <Button type="submit" disabled={searching} className="h-11 rounded-none bg-slate-900 text-white hover:bg-emerald-600 px-6 font-bold uppercase text-xs tracking-widest transition-colors">
               {searching ? <Loader2 size={16} className="animate-spin" /> : 'Search'}
             </Button>
           </form>
 
           {searchResults.length > 0 && (
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 space-y-3 relative z-10">
               {searchResults.map(company => (
-                <div key={company._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors bg-slate-50/50 gap-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10 rounded-lg shadow-sm border border-slate-200">
+                <div key={company._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-none border border-slate-200 hover:border-[#34b678]/50 transition-colors bg-white gap-4 group">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="w-12 h-12 rounded-none border border-slate-100 shadow-sm group-hover:border-[#34b678]/30 transition-colors">
                       <AvatarImage src={company.logo} />
-                      <AvatarFallback className="rounded-lg bg-emerald-50 text-emerald-700 font-bold">{company.name.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="rounded-none bg-slate-50 text-slate-400 font-black text-lg">{company.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">{company.name}</h4>
-                      <p className="text-[10px] text-slate-500">{company.admin_email}</p>
+                      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{company.admin_email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <select
                       id={`status-${company._id}`}
-                      className="h-8 text-xs rounded-lg border border-slate-200 bg-white px-2 focus:outline-none focus:border-emerald-500"
+                      className="h-10 text-xs font-bold uppercase tracking-wider rounded-none border border-slate-200 bg-slate-50 px-3 py-0 focus:outline-none focus:border-emerald-500 cursor-pointer text-slate-600"
                     >
                       <option value="Current">Current</option>
                       <option value="Previous">Previous</option>
@@ -254,7 +256,7 @@ const JoinRequestsModule = () => {
                     <Button onClick={() => {
                       const status = document.getElementById(`status-${company._id}`).value;
                       handleRequestJoin(company._id, status);
-                    }} size="sm" variant="outline" className="h-8 text-xs font-bold border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                    }} size="sm" variant="outline" className="h-10 px-4 text-[10px] uppercase tracking-widest font-bold rounded-none border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors">
                       Request to Join
                     </Button>
                   </div>
@@ -265,32 +267,32 @@ const JoinRequestsModule = () => {
         </div>
 
         {myRequests.length > 0 && (
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mt-6">
-            <h3 className="text-sm font-bold text-slate-900 mb-4">Requested Companies</h3>
+          <div className="bg-white rounded-none p-6 border border-slate-200 shadow-sm mt-6">
+            <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-tight">Requested Companies</h3>
             <div className="space-y-3">
               {myRequests.map((req, i) => (
-                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/50 gap-4">
+                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-none border border-slate-200 bg-white hover:border-[#34b678]/50 transition-colors gap-4">
                    <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10 rounded-lg shadow-sm border border-slate-200">
+                      <Avatar className="w-12 h-12 rounded-none shadow-sm border border-slate-100">
                         <AvatarImage src={req.logo} />
-                        <AvatarFallback className="rounded-lg font-bold bg-slate-100 text-slate-600">
+                        <AvatarFallback className="rounded-none font-black bg-slate-50 text-slate-400 text-lg">
                           {req.name?.charAt(0) || 'C'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <h4 className="text-sm font-bold text-slate-900">{req.name || 'Company'}</h4>
-                        <p className="text-[10px] text-slate-500">{req.admin_email}</p>
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{req.admin_email}</p>
                       </div>
                    </div>
                    <div className="flex items-center gap-3">
-                     <Badge className="bg-amber-100 text-amber-700 border-none text-[10px] uppercase">
+                     <Badge className="bg-amber-50 text-amber-600 border-amber-200 rounded-none font-bold text-[10px] uppercase tracking-widest px-3 py-1">
                        {req.status}
                      </Badge>
                      <Button 
                        onClick={() => handleRevokeRequest(req._id)} 
                        size="sm" 
                        variant="outline" 
-                       className="h-8 text-xs font-bold border-rose-200 text-rose-600 hover:bg-rose-50"
+                       className="h-10 px-4 rounded-none text-[10px] uppercase tracking-widest font-bold border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
                      >
                        Revoke
                      </Button>
@@ -303,21 +305,21 @@ const JoinRequestsModule = () => {
 
 
         {myCompanies.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mt-6">
-              <h3 className="text-sm font-bold text-slate-900 mb-4">Organizations you worked at</h3>
+            <div className="bg-white rounded-none p-6 border border-slate-200 shadow-sm mt-6">
+              <h3 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-tight">Organizations you worked at</h3>
               <div className="space-y-3">
                 {myCompanies.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((c, i) => (
-                  <div key={i} className={`flex items-center justify-between p-4 rounded-xl border ${c.status === 'Current' ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-100 bg-slate-50/50'}`}>
-                     <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 rounded-lg shadow-sm border border-slate-200">
+                  <div key={i} className={`flex items-center justify-between p-4 rounded-none border ${c.status === 'Current' ? 'border-[#34b678]/50 bg-emerald-50/20' : 'border-slate-200 bg-white hover:border-slate-300'} transition-colors`}>
+                     <div className="flex items-center gap-4">
+                        <Avatar className="w-12 h-12 rounded-none shadow-sm border border-slate-100">
                           <AvatarImage src={c.logo} />
-                          <AvatarFallback className={`rounded-lg font-bold ${c.status === 'Current' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                          <AvatarFallback className={`rounded-none font-black text-lg ${c.status === 'Current' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400'}`}>
                             {c.name?.charAt(0) || 'C'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <h4 className="text-sm font-bold text-slate-900">{c.name || 'Company'}</h4>
-                          <Badge className={`${c.status === 'Current' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'} border-none text-[10px] uppercase mt-1`}>
+                          <Badge className={`${c.status === 'Current' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'} rounded-none font-bold text-[9px] uppercase tracking-widest mt-1 px-2 py-0.5`}>
                             {c.status}
                           </Badge>
                         </div>
@@ -340,14 +342,14 @@ const JoinRequestsModule = () => {
               )}
             </div>
         )}
-      </div>
+        </div>
     );
   }
 
   if (user?.role === 'company') {
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-none p-6 border border-slate-200 shadow-sm">
           <h3 className="text-sm font-bold text-slate-900 mb-1">Incoming Join Requests</h3>
           <p className="text-xs text-slate-500 mb-4">Recruiters who have requested to join your organization.</p>
           
@@ -406,7 +408,7 @@ const JoinRequestsModule = () => {
         </div>
 
         {acceptedMembers.length > 0 && (
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mt-6">
+          <div className="bg-white rounded-none p-6 border border-slate-200 shadow-sm mt-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 mb-1">Accepted Requests</h3>
@@ -787,30 +789,50 @@ const AdminAssignedModule = () => {
 
 /* ─── Main Page ─────────────────────────────────────────────────────────────── */
 const AssignedRequests = () => {
+  const { user } = useAuth();
+  
   return (
-    <div className="space-y-6 pb-12">
+    <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 min-w-0 space-y-12">
       <PageSOPBanner pageKey="assignedRequests" />
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
-              <ClipboardList size={16} className="text-emerald-600" />
+      
+      {/* Premium Welcome Header */}
+      <Card bordered={false} bodyStyle={{ padding: 0 }} style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)', borderRadius: 0 }} className="relative shadow-sm overflow-hidden group">
+        <div className="p-8 sm:p-10 relative z-10">
+          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#34b678]/10 blur-[80px] rounded-full transition-all duration-700" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-[#34b678] rounded-none flex items-center justify-center border border-white/10 shrink-0">
+                <Inbox className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                 <div className="flex items-center gap-3 mb-2">
+                   <Tag style={{ background: 'rgba(52, 182, 120, 0.2)', borderColor: 'rgba(52, 182, 120, 0.3)', color: '#34b678', fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', fontSize: 9, padding: '2px 8px', borderRadius: 0 }}>
+                     {user?.role === 'recruiter' ? 'Recruiter Requests' : 'Company Requests'}
+                   </Tag>
+                 </div>
+                 <h2 className="text-2xl font-black text-white tracking-tight m-0">My Requests</h2>
+                 <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
+                   Manage organizational join requests and invitations dynamically.
+                 </p>
+              </div>
             </div>
-            <h1 className="text-xl font-bold text-slate-900">Requests</h1>
+            
+            <button
+              onClick={() => window.location.reload()}
+              className="text-white/70 hover:text-white transition-colors p-3 rounded-none border border-white/10 hover:bg-white/10 flex items-center gap-2"
+            >
+              <RefreshCw size={15} /> <span className="text-[10px] uppercase font-bold tracking-widest">Refresh</span>
+            </button>
           </div>
-          <p className="text-sm text-slate-500">Manage join requests and organization invites.</p>
         </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="self-start sm:self-auto text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-xl hover:bg-slate-100"
-        >
-          <RefreshCw size={15} />
-        </button>
-      </div>
+      </Card>
 
       <JoinRequestsModule />
       <AdminAssignedModule />
+      </div>
     </div>
   );
 };
