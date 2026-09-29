@@ -10,7 +10,7 @@ router.get('/conversations', getConversations);
 router.post('/conversation', getOrCreateConversation);
 router.get('/:conversationId', getMessages);
 router.post('/', sendMessage);
-router.post('/upload', upload.single('file'), uploadFile);
+router.post('/upload', upload.single('file'), upload.convertImagesToWebp, uploadFile);
 router.post('/bulk', sendBulkMessage);
 
 module.exports = router;

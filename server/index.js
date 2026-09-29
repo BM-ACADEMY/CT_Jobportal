@@ -47,14 +47,26 @@ const app = express();
 const server = http.createServer(app);
 
 const normalizeOrigin = (origin) => origin?.trim().replace(/\/$/, '');
-const allowedOrigins = new Set([
+
+// Fallback origins used only if ALLOWED_ORIGINS/FRONTEND_URL aren't set in the environment.
+// To allow a new domain (next CORS error), add it to ALLOWED_ORIGINS in .env instead of editing
+// this list — comma-separated, e.g. ALLOWED_ORIGINS=https://velaivaaipu.in,https://new-domain.com
+const DEFAULT_ORIGINS = [
   'https://velaivaaipu.in',
   'https://www.velaivaaipu.in',
   'https://admin.velaivaaipu.in',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-  ...((process.env.FRONTEND_URL || '').split(',').map(normalizeOrigin).filter(Boolean)),
-]);
+];
+
+const envOrigins = [process.env.ALLOWED_ORIGINS, process.env.FRONTEND_URL]
+  .filter(Boolean)
+  .join(',')
+  .split(',')
+  .map(normalizeOrigin)
+  .filter(Boolean);
+
+const allowedOrigins = new Set([...DEFAULT_ORIGINS, ...envOrigins]);
 
 const corsOptions = {
   origin(origin, callback) {

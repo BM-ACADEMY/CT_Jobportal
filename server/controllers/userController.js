@@ -373,7 +373,7 @@ const uploadImage = async (req, res) => {
     
     const type = req.query.type === 'cover' ? 'cover' : 'profile';
     const userId = req.user.id;
-    const ext = path.extname(req.file.originalname).toLowerCase();
+    const ext = path.extname(req.file.filename).toLowerCase();
     
     const targetDir = path.join(__dirname, '..', 'uploads', type);
     if (!fs.existsSync(targetDir)) {

@@ -22,7 +22,7 @@ router.get('/profile', getRecruiterProfile);
 router.put('/profile', upload.fields([
     { name: 'avatar', maxCount: 1 },
     { name: 'logo', maxCount: 1 }
-]), updateRecruiterProfile);
+]), upload.convertImagesToWebp, updateRecruiterProfile);
 
 // Team management routes (company/org only)
 router.get('/team', getTeamMembers);
