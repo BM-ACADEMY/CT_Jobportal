@@ -16,7 +16,7 @@ router.get('/profile', getRecruiterProfile);
 router.put('/profile', upload.fields([
     { name: 'avatar', maxCount: 1 },
     { name: 'logo', maxCount: 1 }
-]), updateRecruiterProfile);
+]), upload.convertImagesToWebp, updateRecruiterProfile);
 
 router.get('/search-companies', searchCompanies);
 router.post('/request-join/:companyId', requestJoinCompany);

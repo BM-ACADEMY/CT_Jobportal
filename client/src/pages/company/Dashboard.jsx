@@ -5,6 +5,7 @@ import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { UserPlus, Briefcase, FileText, Plus, Users, Loader2, TrendingUp, Eye, ChevronRight, Sparkles, Building2, LayoutDashboard } from 'lucide-react';
 import { Button, Card, Tag, Typography } from 'antd';
 const { Title, Text } = Typography;
+import { CardContent } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
 

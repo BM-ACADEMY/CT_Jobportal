@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
@@ -8,8 +8,8 @@ const run = async () => {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to DB');
 
-    const email = 'newadmin@example.com';
-    const password = 'AdminPassword123!';
+    const email = 'admin123@gmail.com';
+    const password = 'Admin@123';
     
     // Check if exists
     let admin = await Admin.findOne({ email });

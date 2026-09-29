@@ -150,7 +150,7 @@ router.get('/dashboard', verifyToken, authorizeRoles('college'), requireCollegeP
 router.get('/me/dashboard-stats', verifyToken, authorizeRoles('college'), getDashboardStats);
 router.get('/profile', verifyToken, authorizeRoles('college'), getProfile);
 router.put('/profile', verifyToken, authorizeRoles('college'), updateProfile);
-router.post('/proof-upload', verifyToken, authorizeRoles('college'), upload.single('proof'), uploadProofDocument);
+router.post('/proof-upload', verifyToken, authorizeRoles('college'), upload.single('proof'), upload.convertImagesToWebp, uploadProofDocument);
 router.post('/principal-passkey', verifyToken, authorizeRoles('college'), generatePrincipalPasskey);
 router.put('/me/subscription/auto-renew', verifyToken, authorizeRoles('college'), toggleAutoRenew);
 router.get('/operations/events', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), operations.getEvents);
@@ -174,7 +174,7 @@ router.get('/accreditation/template/:type', verifyToken, authorizeRoles('college
 router.post('/accreditation/import/placement', verifyToken, authorizeRoles('college'), csvUpload.single('file'), importPlacementCsv);
 router.post('/accreditation/import/progression', verifyToken, authorizeRoles('college'), csvUpload.single('file'), importProgressionCsv);
 router.get('/accreditation-export', verifyToken, authorizeRoles('college'), exportAccreditation);
-router.put('/students/:studentId/accreditation', verifyToken, authorizeRoles('college'), upload.single('evidence'), updateAccreditationRecord);
+router.put('/students/:studentId/accreditation', verifyToken, authorizeRoles('college'), upload.single('evidence'), upload.convertImagesToWebp, updateAccreditationRecord);
 
 // Drives
 router.post('/drives', verifyToken, authorizeRoles('college'), requireCollegePermission('drives'), createDrive);
@@ -226,7 +226,7 @@ router.post('/students/:id/verify', verifyToken, authorizeRoles('college', 'admi
 router.get('/company-match', verifyToken, authorizeRoles('college'), getCompanyMatchStatus);
 
 // Logo upload
-router.post('/upload-logo', verifyToken, authorizeRoles('college'), upload.single('logo'), async (req, res) => {
+router.post('/upload-logo', verifyToken, authorizeRoles('college'), upload.single('logo'), upload.convertImagesToWebp, async (req, res) => {
   if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
   const logoUrl = `/uploads/${req.file.filename}`;
   res.json({ logoUrl });
