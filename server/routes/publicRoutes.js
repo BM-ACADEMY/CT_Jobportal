@@ -299,29 +299,33 @@ router.post('/contact', async (req, res) => {
     const { name, email, subject, message } = req.body;
 
     if (!name || !email || !message) {
-      return res.status(400).json({ msg: 'Please provide name, email, and message.' });
+      return res.status(400).json({
+        msg: 'Please provide name, email, and message.'
+      });
     }
 
-    // Save to database
+    // Save contact message
     const newContactMessage = new ContactMessage({
       name,
       email,
       subject: subject || 'No Subject',
       message
     });
+
     await newContactMessage.save();
 
-    // Send email notification
-    const emailSubject = `New Contact Form Submission: ${subject || 'No Subject'}`;
+    // Send admin email
+    const emailSubject =
+      `New Contact Form Submission: ${subject || 'No Subject'}`;
+
     const emailHtml = `
-      <div style="font-family: sans-serif; max-width: 600px; padding: 20px; color: #333;">
-        <h2 style="color: #1d4ed8;">New Contact Form Submission</h2>
+      <div style="font-family:sans-serif;max-width:600px;padding:20px;color:#333">
+        <h2>New Contact Form Submission</h2>
+        <p><strong>Website Enquiry:</strong> velaivaaipu.in</p>
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Subject:</strong> ${subject || 'No Subject'}</p>
-        <hr style="border-top: 1px solid #eee; margin: 20px 0;" />
-        <p><strong>Message:</strong></p>
-        <p style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 5px;">${message}</p>
+        <p><strong>Message:</strong> ${message}</p>
       </div>
     `;
 
@@ -332,20 +336,38 @@ router.post('/contact', async (req, res) => {
     });
 
     if (!emailSent) {
-      console.warn('Contact form saved, but email notification failed to send.');
+      console.warn('Contact email notification failed.');
     }
 
-    // Send a copy to the n8n contact-form webhook
+    // Send enquiry to n8n
     try {
-      await axios.post('https://leados-n8n.abmgroups.org/webhook/contact-form', req.body);
+      const webhookData = {
+        ...req.body,
+        website: 'velaivaaipu.in',
+        form: 'Contact Form'
+      };
+
+      await axios.post(
+        'https://leados-n8n.abmgroups.org/webhook/contact-form',
+        webhookData
+      );
     } catch (webhookError) {
-      console.error('Failed to send data to webhook:', webhookError.message);
+      console.error(
+        'n8n webhook error:',
+        webhookError.message
+      );
     }
 
-    res.status(201).json({ msg: 'Message sent successfully.' });
+    return res.status(201).json({
+      msg: 'Message sent successfully.'
+    });
+
   } catch (err) {
     console.error('Public Contact Form Error:', err.message);
-    res.status(500).json({ msg: 'Server Error' });
+
+    return res.status(500).json({
+      msg: 'Server Error'
+    });
   }
 });
 
