@@ -153,6 +153,7 @@ const AppRoutes = () => {
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogDetails />} />
+        <Route path="/recruitment-agency-fees-india" element={<BlogDetails staticSlug="recruitment-agency-fees-india" />} />
       </Route>
 
 

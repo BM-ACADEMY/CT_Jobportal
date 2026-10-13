@@ -24,6 +24,7 @@ const PublicSEO = () => {
   const location = useLocation();
   const value = useMemo(() => {
     if (location.pathname.startsWith('/blog/')) return null;
+    if (location.pathname === '/recruitment-agency-fees-india') return null;
     if (location.pathname.startsWith('/job/')) return null;
     // Jobs owns its metadata because the live result count is only available there.
     if (location.pathname === '/jobs' || location.pathname.startsWith('/jobs/')) return null;

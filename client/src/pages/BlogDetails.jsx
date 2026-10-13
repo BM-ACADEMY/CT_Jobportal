@@ -332,11 +332,12 @@ const HtmlBlog = ({ blog }) => {
   return <div ref={hostRef} className="block min-h-screen bg-slate-50" />;
 };
 
-const BlogDetails = () => {
-  const { slug } = useParams();
+const BlogDetails = ({ staticSlug }) => {
+  const { slug: paramSlug } = useParams();
+  const slug = staticSlug || paramSlug;
   const blog = BLOGS.find((item) => item.slug === slug);
   if (!blog) return <Navigate to="/blog" replace />;
-  return <><SEOHead title={`${blog.title} | Velaivaaipu`} description={blog.excerpt} path={`/blog/${blog.slug}`} schema={{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: blog.title, image: blog.image, datePublished: blog.date, author: { '@type': 'Organization', name: 'Velaivaaipu' } }} /><HtmlBlog blog={blog} /></>;
+  return <><SEOHead title={`${blog.title} | Velaivaaipu`} description={blog.excerpt} path={staticSlug ? `/${staticSlug}` : `/blog/${blog.slug}`} schema={{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: blog.title, image: blog.image, datePublished: blog.date, author: { '@type': 'Organization', name: 'Velaivaaipu' } }} /><HtmlBlog blog={blog} /></>;
 };
 
 export default BlogDetails;
