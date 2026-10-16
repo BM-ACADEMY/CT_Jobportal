@@ -8,11 +8,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell, BellOff, User, Settings, LogOut, ChevronDown, CheckCheck,
-  Menu, X, Briefcase, Building2, Mail, Home, Newspaper, Trash2
+  Menu, X, Briefcase, Building2, Mail, Home, Newspaper, Trash2, ArrowRight
 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import MotionIcon from '@/components/home/MotionIcon';
+import BrandLogo from './BrandLogo';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
@@ -136,8 +138,10 @@ const PublicHeader = () => {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link to="/" className="group shrink-0 flex flex-col items-start gap-1" aria-label="Velaivaaipu home">
-            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-14 w-auto object-contain" />
+          <Link to="/" className="group shrink-0 flex flex-col items-start gap-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" aria-label="Velaivaaipu home">
+            <span data-brand-logo className="block h-14">
+              <BrandLogo className="h-full" />
+            </span>
           </Link>
 
           {/* Desktop Nav */}
@@ -314,9 +318,12 @@ const PublicHeader = () => {
                 </Link>
                 <Button
                   onClick={() => navigate('/register')}
-                  className="h-10 px-6 rounded-[3px] text-sm font-bold bg-[#138060] hover:bg-[#0f664d] text-white shadow-sm transition-all cursor-pointer"
+                  className="group home-shine relative overflow-hidden h-10 pl-6 pr-2 rounded-full text-sm font-bold bg-[#138060] hover:bg-[#0f664d] text-white shadow-md shadow-emerald-700/20 hover:shadow-lg hover:shadow-emerald-700/25 transition-all cursor-pointer gap-3"
                 >
                   Join free
+                  <span className="w-7 h-7 rounded-full bg-white text-[#138060] flex items-center justify-center transition-transform duration-300 group-hover:translate-x-0.5">
+                    <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={14} />
+                  </span>
                 </Button>
               </div>
             )}
@@ -354,13 +361,13 @@ const PublicHeader = () => {
                 <Button
                   variant="outline"
                   onClick={() => navigate('/login')}
-                  className="w-full h-11 rounded-[8px] border-slate-200 text-slate-750 font-bold"
+                  className="w-full h-11 rounded-full border-slate-200 text-slate-750 font-bold"
                 >
                   Login
                 </Button>
                 <Button
                   onClick={() => navigate('/register')}
-                  className="w-full h-11 rounded-[8px] bg-[#138060] hover:bg-[#0f664d] text-white font-bold"
+                  className="w-full h-11 rounded-full bg-[#138060] hover:bg-[#0f664d] text-white font-bold"
                 >
                   Join free
                 </Button>
