@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const sources = [
+  { file: path.resolve('where-to-advertise-job-vacancy-pondicherry (1).html'), slug: 'where-to-advertise-job-vacancy-pondicherry', date: 'Oct 14, 2026' },
+  { file: path.resolve('recruitment-agency-charges-india.html'), slug: 'recruitment-agency-charges-india', date: 'Oct 12, 2026' },
+  { file: path.resolve('how-to-spot-fake-job-offer-tamil-nadu.html'), slug: 'how-to-spot-fake-job-offer-tamil-nadu', date: 'Oct 10, 2026' },
   { file: 'C:/Users/Administrator/Downloads/Blog 10  (2).html', slug: 'jobs-in-tindivanam', date: 'Sep 5, 2026' },
   { file: 'C:/Users/Administrator/Downloads/blog 9  (1).html', slug: 'jobs-in-villupuram', date: 'Sep 3, 2026' },
   { file: 'C:/Users/Administrator/Downloads/Blog 8  (1).html', slug: 'jobs-in-cuddalore', date: 'Sep 1, 2026' },

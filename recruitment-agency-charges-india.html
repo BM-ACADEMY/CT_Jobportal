@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What Recruitment Agencies Actually Charge in India: A Practical Guide for Job Seekers and Recruiters</title>
+<style>
+  :root{
+    --indigo:#3730a3;
+    --blue:#1d4ed8;
+    --blue-bg:#dbeafe;
+    --green:#16a34a;
+    --green-bg:#eafaf0;
+    --navy:#161629;
+    --ink:#111318;
+    --body-text:#374151;
+    --gray:#6b7280;
+    --page-bg:#f7f8fa;
+    --card-border:#e5e7eb;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--page-bg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--body-text);
+  }
+  .container{
+    max-width:1180px;
+    margin:0 auto;
+    padding:40px 24px 64px;
+    display:grid;
+    grid-template-columns:minmax(0,680px) 320px;
+    gap:48px;
+    align-items:start;
+  }
+  main{min-width:0;}
+  .pill{
+    display:inline-block;
+    background:var(--blue-bg);
+    color:var(--blue);
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    padding:6px 14px;
+    border-radius:999px;
+    margin-bottom:16px;
+  }
+  h1{
+    font-size:34px;
+    font-weight:800;
+    line-height:1.2;
+    color:var(--ink);
+    margin:0 0 16px;
+  }
+  .byline{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+    color:var(--gray);
+    font-size:14px;
+    padding-bottom:20px;
+    border-bottom:1px solid #e5e7eb;
+    margin-bottom:24px;
+  }
+  .hero-img{
+    width:100%;
+    border-radius:16px;
+    display:block;
+    object-fit:cover;
+    aspect-ratio:16/9;
+    max-height:380px;
+  }
+  .caption{
+    font-size:13px;
+    font-style:italic;
+    color:var(--gray);
+    margin:10px 0 32px;
+  }
+  h2{
+    font-size:23px;
+    font-weight:800;
+    color:var(--ink);
+    margin:40px 0 16px;
+  }
+  h3{
+    font-size:19px;
+    font-weight:700;
+    color:var(--ink);
+    margin:28px 0 12px;
+  }
+  p{font-size:16px;line-height:1.7;margin:0 0 16px;}
+  ul, ol{
+    margin:0 0 18px;
+    padding-left:28px;
+  }
+  li{
+    font-size:16px;
+    line-height:1.75;
+    margin-bottom:8px;
+    padding-left:4px;
+  }
+  li > ul,
+  li > ol{
+    margin-top:8px;
+    margin-bottom:8px;
+    padding-left:28px;
+  }
+  li::marker{
+    color:var(--green);
+    font-weight:700;
+  }
+  .indent-list{
+    margin:0 0 20px;
+    padding-left:28px;
+  }
+  .indent-list li{
+    margin-bottom:10px;
+  }
+  .section-img{
+    width:100%;
+    border-radius:16px;
+    display:block;
+    margin:24px 0 8px;
+    max-height:320px;
+    object-fit:cover;
+    aspect-ratio:16/9;
+  }
+  .img-caption{
+    font-size:13px;
+    font-style:italic;
+    color:var(--gray);
+    margin:0 0 24px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:20px 0 28px;
+    font-size:14.5px;
+  }
+  th,td{
+    border:1px solid #e5e7eb;
+    padding:12px 14px;
+    text-align:left;
+  }
+  th{
+    background:#f3f4f6;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .table-scroll{
+    overflow-x:auto;
+    margin:20px 0 28px;
+    border-radius:14px;
+    border:1px solid #e5e7eb;
+  }
+  .table-scroll table{margin:0;border:none;}
+
+  /* Accordion for Differentiation / Comparison */
+  .diff-accordion{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    margin:24px 0 32px;
+  }
+  details.diff-item{
+    border:1px solid #dbeafe;
+    border-radius:14px;
+    background:#ffffff;
+    box-shadow:0 5px 18px rgba(15,23,42,.05);
+    overflow:hidden;
+    transition:all .2s ease;
+  }
+  details.diff-item[open]{
+    border-color:#93c5fd;
+    box-shadow:0 8px 24px rgba(37,99,235,.08);
+  }
+  details.diff-item summary{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 20px;
+    color:var(--ink);
+    font-weight:750;
+    font-size:16px;
+    line-height:1.45;
+    cursor:pointer;
+    list-style:none;
+    background:#f8fafc;
+    user-select:none;
+    transition:background .15s ease;
+  }
+  details.diff-item summary::-webkit-details-marker{display:none;}
+  details.diff-item summary:hover{background:#f1f5f9;}
+  details.diff-item summary::after{
+    content:'+';
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    background:#e0f2fe;
+    color:#0284c7;
+    font-size:18px;
+    font-weight:700;
+    flex-shrink:0;
+    margin-left:14px;
+    transition:transform .2s ease;
+  }
+  details.diff-item[open] summary::after{
+    content:'−';
+    background:#dbeafe;
+    color:#1d4ed8;
+  }
+  .diff-header-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .diff-title{
+    font-size:16px;
+    font-weight:800;
+    color:var(--ink);
+  }
+  .diff-badge{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    padding:4px 10px;
+    border-radius:999px;
+    background:#e2e8f0;
+    color:#475569;
+  }
+  .diff-badge-danger{background:#fee2e2;color:#b91c1c;}
+  .diff-badge-success{background:#dcfce7;color:#15803d;}
+  .diff-badge-blue{background:#dbeafe;color:#1d4ed8;}
+  .diff-badge-purple{background:#ede9fe;color:#6d28d9;}
+  .diff-badge-amber{background:#fef3c7;color:#b45309;}
+  .diff-body{
+    padding:20px;
+    border-top:1px solid #f1f5f9;
+    background:#ffffff;
+  }
+  .diff-specs{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+  }
+  .diff-spec-item{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .diff-spec-label{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:#64748b;
+    margin-bottom:4px;
+  }
+  .diff-spec-value{
+    font-size:14px;
+    font-weight:600;
+    color:var(--ink);
+    line-height:1.5;
+  }
+
+  .callout{
+    background:var(--blue-bg);
+    border-left:4px solid var(--blue);
+    border-radius:10px;
+    padding:16px 20px;
+    font-size:15.5px;
+    font-style:italic;
+    color:#1e3a8a;
+    margin:24px 0;
+  }
+  .cta-btn{
+    display:block;
+    text-align:center;
+    text-decoration:none;
+    color:#fff;
+    font-weight:700;
+    font-size:16px;
+    padding:16px 24px;
+    border-radius:999px;
+    margin:32px auto;
+    max-width:420px;
+    transition:transform .2s ease,background .2s ease,box-shadow .2s ease;
+  }
+  .cta-indigo{background:var(--indigo);}
+  .cta-indigo:hover{background:#312e81;transform:translateY(-2px);box-shadow:0 8px 20px rgba(55,48,163,.25);}
+  .cta-green{background:var(--green);}
+  .cta-green:hover{background:#15803d;transform:translateY(-2px);box-shadow:0 8px 20px rgba(22,163,74,.25);}
+
+  .checklist-card{
+    background:#f9fafb;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+    padding:20px 24px;
+    margin:24px 0;
+  }
+  .checklist-card p{margin:0 0 10px;font-weight:700;color:var(--ink);}
+  .checklist-card ol, .checklist-card ul{margin:0;padding-left:24px;}
+  .checklist-card li{margin-bottom:8px;font-size:15px;line-height:1.6;}
+
+  .final-cta{
+    background:linear-gradient(135deg,#3730a3,#4f46e5);
+    border-radius:20px;
+    padding:40px 32px;
+    text-align:center;
+    margin:48px 0;
+    color:#fff;
+  }
+  .final-cta h2{color:#fff;margin-top:0;font-size:26px;}
+  .final-cta p{color:#ddd6fe;margin-bottom:18px;}
+  .final-cta ul{
+    list-style:none;
+    padding:0;
+    display:inline-block;
+    text-align:left;
+    margin:16px auto 24px;
+  }
+  .final-cta li{color:#ede9fe;font-size:15.5px;margin-bottom:8px;}
+  .final-btn{
+    display:inline-block;
+    background:#fff;
+    color:var(--indigo);
+    font-weight:800;
+    text-decoration:none;
+    padding:16px 32px;
+    border-radius:999px;
+    font-size:16px;
+    transition:transform .2s ease,box-shadow .2s ease;
+  }
+  .final-btn:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(0,0,0,.2);}
+
+  aside{position:sticky;top:24px;display:flex;flex-direction:column;gap:20px;}
+  .card{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:16px;
+    padding:22px;
+  }
+  .card-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--gray);
+    font-weight:700;
+    margin-bottom:12px;
+  }
+  .brand-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .logo-circle{
+    width:40px;height:40px;border-radius:50%;
+    background:#facc15;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#78350f;font-size:16px;flex-shrink:0;
+  }
+  .brand-name{font-weight:800;color:var(--ink);font-size:15px;}
+  .card p{font-size:14px;line-height:1.6;color:var(--body-text);margin:0 0 14px;}
+  .divider{border:none;border-top:1px solid #e5e7eb;margin:14px 0;}
+  .tags{display:flex;flex-wrap:wrap;gap:8px;}
+  .tag{
+    background:#f3f4f6;
+    color:#4b5563;
+    font-size:12px;
+    padding:5px 12px;
+    border-radius:999px;
+  }
+  .card-green{background:var(--green-bg);border:1px solid #d1fae5;}
+  .card-green h3{margin:0 0 6px;color:var(--green);font-size:17px;}
+  .card-green p{margin:0 0 16px;color:#166534;}
+  .wa-btn{
+    display:block;
+    width:100%;
+    text-align:center;
+    background:var(--green);
+    color:#fff;
+    text-decoration:none;
+    font-weight:700;
+    padding:13px;
+    border-radius:999px;
+    font-size:14.5px;
+    transition:background .2s ease,transform .2s ease;
+  }
+  .wa-btn:hover{background:#15803d;transform:translateY(-1px);}
+
+  footer{
+    background:var(--navy);
+    color:#cbd5e1;
+    margin-top:56px;
+    padding:44px 24px 24px;
+  }
+  .footer-inner{max-width:1180px;margin:0 auto;}
+  .footer-brand{color:#fff;font-weight:800;font-size:20px;margin-bottom:6px;}
+  .footer-tag{color:#94a3b8;font-size:14px;margin-bottom:24px;}
+  .footer-contact{font-size:14px;line-height:1.8;margin-bottom:24px;}
+  .footer-divider{border:none;border-top:1px solid #2e2e45;margin:20px 0;}
+  .copyright{font-size:12.5px;color:#6b7280;text-align:center;}
+  @media (max-width:900px){
+    .container{grid-template-columns:1fr;}
+    aside{position:static;}
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <main>
+    <span class="pill">Recruitment &amp; HR Guidance</span>
+    <h1>What Recruitment Agencies Actually Charge in India: A Practical Guide for Job Seekers and Recruiters</h1>
+    <div class="byline">
+      <span>👤 Velai Vaaipu Team</span>
+      <span>📅 Oct 12, 2026</span>
+    </div>
+
+    <img loading="eager" decoding="async" fetchpriority="high" class="hero-img" src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1400&q=82" alt="Executive team analyzing recruitment consultancy contract and hiring plan">
+    <p class="caption">Transparent recruitment models create successful long-term partnerships.</p>
+
+    <h2>Introduction</h2>
+    <p>How much do recruitment agencies actually charge in India? Who pays the placement fee—the employer or the job seeker? These are crucial questions asked every day by business owners, HR managers, and job seekers across Pondicherry, Tamil Nadu, and throughout India. Misunderstandings about recruitment fees can lead to budget overruns for employers or costly scams for job seekers.</p>
+
+    <div class="callout">Recruitment agency charges-la transparency romba mukkiyam. Candidates kitta panam vanga koodadhu, employer kitta clear commercial agreement irukkanum.</div>
+
+    <p>Whether you are an employer looking to outsource hiring or a candidate wondering whether an agency asking for fees is legitimate, this guide provides a transparent, detailed breakdown of standard recruitment agency fee models in India, comparison accordions, legal norms, and local examples.</p>
+
+    <h2>What Does a Recruitment Agency Do?</h2>
+    <p>A recruitment agency acts as an intermediary connecting businesses that have open vacancies with qualified candidates seeking employment. Professional recruitment agencies add value across several operational stages:</p>
+    <ul class="indent-list">
+      <li><strong>Talent Sourcing:</strong> Searching active job boards, talent pools, social channels, and proprietary candidate databases.</li>
+      <li><strong>Screening &amp; Assessment:</strong> Conducting resume validation, initial screening calls, technical tests, and preliminary interviews.</li>
+      <li><strong>Interview Coordination:</strong> Managing schedules between hiring managers and shortlisted applicants.</li>
+      <li><strong>Salary Negotiation &amp; Onboarding:</strong> Assisting both parties in reaching mutual agreement on compensation, notice period buyout, and joining dates.</li>
+    </ul>
+
+    <h2>What Recruitment Agencies Actually Charge in India</h2>
+    <p>Recruitment agency pricing in India is not arbitrary. It follows structured commercial models determined by seniority, hiring volume, and employment nature:</p>
+
+    <h3>1. Percentage-Based Recruitment Fee</h3>
+    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=1400&q=82" alt="Reviewing financial calculations and recruitment percentage fees">
+    <p class="img-caption">Percentage fees are linked directly to the hired candidate's annual Cost to Company (CTC).</p>
+    <p>The percentage-based contingency model is the most widely adopted recruitment fee structure in India for permanent full-time positions. Under this model, the agency charges an agreed percentage of the candidate's first-year annual Cost to Company (CTC). Standard market rates generally fall into these tiers:</p>
+    <ul class="indent-list">
+      <li><strong>Junior &amp; Entry-Level Roles (up to ₹4 LPA):</strong> 8.33% (equivalent to approximately 1 month's gross salary) or a negotiated flat fee.</li>
+      <li><strong>Mid-Level Roles (₹4 LPA to ₹15 LPA):</strong> 8.33% to 12.5% of annual CTC depending on skill scarcity and hiring volume.</li>
+      <li><strong>Senior &amp; Leadership Positions (₹15 LPA to ₹30+ LPA):</strong> 12.5% to 18%+ of annual CTC.</li>
+      <li><strong>Key rule:</strong> This fee is strictly paid by the <strong>employer</strong> after the candidate successfully joins the company.</li>
+    </ul>
+
+    <h3>2. Fixed-Fee Recruitment</h3>
+    <p>In fixed-fee recruitment, the employer and agency agree on a predetermined flat fee per successful placement regardless of the candidate's exact final salary. For example, a business hiring 5 sales executives in Pondicherry might agree on a fixed fee of ₹15,000 per hire. This model provides budget predictability for companies hiring in high volume.</p>
+
+    <a rel="noopener noreferrer" class="cta-btn cta-indigo" href="https://wa.me/919944509441?text=Hi%2C%20I%20want%20to%20discuss%20recruitment%20services">🚀 Connect for Employer Hiring Support</a>
+
+    <h3>3. Retainer or Project-Based Recruitment</h3>
+    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1400&q=82" alt="HR leadership team planning dedicated executive recruitment in conference room">
+    <p class="img-caption">Retained search firms dedicate full-time headhunters to confidential and specialized C-level roles.</p>
+    <p>Retained recruitment is used for mission-critical executive appointments (such as VP of Engineering, Chief Financial Officer, or Plant Head). The employer pays an upfront retainer fee in stages:</p>
+    <ul class="indent-list">
+      <li><strong>Milestone 1:</strong> 33% on contract initiation and candidate specification setup.</li>
+      <li><strong>Milestone 2:</strong> 33% upon delivery of the qualified candidate shortlist.</li>
+      <li><strong>Milestone 3:</strong> Remaining balance upon candidate acceptance and joining.</li>
+    </ul>
+
+    <h3>4. Contract Staffing and Manpower Charges</h3>
+    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1400&q=82" alt="Diverse modern staffing team collaborating in corporate office">
+    <p class="img-caption">Contract staffing encompasses candidate salary, statutory compliance, and a transparent agency markup.</p>
+    <p>For temporary, seasonal, or project-based employment, the agency employs the staff on its own payroll and deploys them to the client's premises. The commercial structure comprises:</p>
+    <ul class="indent-list">
+      <li>The candidate's monthly gross take-home pay.</li>
+      <li>Mandatory statutory compliance contributions (EPF, ESI, Gratuity, Bonus, and Labor Welfare Fund).</li>
+      <li>An agency management markup or fee (typically 10% to 20% of CTC, or a fixed monthly administrative fee per deployed employee).</li>
+    </ul>
+
+    <h2>Recruitment Agency Charges: Interactive Comparison</h2>
+    <p>Explore the interactive accordion below to compare fee structures, billing triggers, and best use cases across the primary recruitment models in India:</p>
+
+    <!-- Interactive Fee Structure Accordion -->
+    <div class="diff-accordion">
+      <details class="diff-item" open>
+        <summary>
+          <div class="diff-header-left">
+            <span class="diff-title">1. Percentage-Based Contingency Model</span>
+            <span class="diff-badge diff-badge-blue">Employer Paid</span>
+          </div>
+        </summary>
+        <div class="diff-body">
+          <div class="diff-specs">
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Usually Paid By</div>
+              <div class="diff-spec-value">Employer only (0 charges to candidates)</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Fee Structure</div>
+              <div class="diff-spec-value">8.33% to 15%+ of annual CTC</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Payment Trigger</div>
+              <div class="diff-spec-value">After candidate successfully reports on Day 1</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Best Suited For</div>
+              <div class="diff-spec-value">Full-time professional, tech, and lateral hiring</div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="diff-item">
+        <summary>
+          <div class="diff-header-left">
+            <span class="diff-title">2. Fixed-Fee Recruitment Model</span>
+            <span class="diff-badge diff-badge-green">Budget Predictable</span>
+          </div>
+        </summary>
+        <div class="diff-body">
+          <div class="diff-specs">
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Usually Paid By</div>
+              <div class="diff-spec-value">Employer only</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Fee Structure</div>
+              <div class="diff-spec-value">Pre-agreed flat rate (e.g. ₹15,000–₹40,000 per hire)</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Payment Trigger</div>
+              <div class="diff-spec-value">On successful placement and joining</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Best Suited For</div>
+              <div class="diff-spec-value">High-volume entry roles and standardized openings</div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="diff-item">
+        <summary>
+          <div class="diff-header-left">
+            <span class="diff-title">3. Retainer / Project-Based Recruitment</span>
+            <span class="diff-badge diff-badge-purple">Executive Search</span>
+          </div>
+        </summary>
+        <div class="diff-body">
+          <div class="diff-specs">
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Usually Paid By</div>
+              <div class="diff-spec-value">Employer only</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Fee Structure</div>
+              <div class="diff-spec-value">Staged payments (typically 20% to 33% of CTC)</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Payment Trigger</div>
+              <div class="diff-spec-value">Staged milestones (Mandate, Shortlist, Placement)</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Best Suited For</div>
+              <div class="diff-spec-value">C-suite leaders, confidential &amp; niche hires</div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="diff-item">
+        <summary>
+          <div class="diff-header-left">
+            <span class="diff-title">4. Contract Staffing &amp; Manpower Deputation</span>
+            <span class="diff-badge diff-badge-amber">Flexible Workforce</span>
+          </div>
+        </summary>
+        <div class="diff-body">
+          <div class="diff-specs">
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Usually Paid By</div>
+              <div class="diff-spec-value">Client Company / Enterprise</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Fee Structure</div>
+              <div class="diff-spec-value">Salary + Statutory compliance + 10%–20% markup</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Payment Trigger</div>
+              <div class="diff-spec-value">Monthly billing cycle based on verified attendance</div>
+            </div>
+            <div class="diff-spec-item">
+              <div class="diff-spec-label">Best Suited For</div>
+              <div class="diff-spec-value">Seasonal staff, IT contracting, and field teams</div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Table fallback for complete accessibility -->
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Recruitment Model</th><th>Usually Paid By</th><th>How Cost Is Structured</th><th>Suitable For</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Percentage-based</td><td>Employer</td><td>Agreed percentage linked to candidate compensation</td><td>Professional hiring</td></tr>
+          <tr><td>Fixed-fee</td><td>Employer</td><td>Pre-agreed amount</td><td>Specific vacancies</td></tr>
+          <tr><td>Retainer/project</td><td>Employer</td><td>Agreed project or periodic fee</td><td>Multiple or continuous hiring</td></tr>
+          <tr><td>Contract staffing</td><td>Employer/client</td><td>Staffing cost + agreed service structure</td><td>Temporary/contract workforce</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Do Job Seekers Have to Pay Recruitment Agencies?</h2>
+    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1400&q=82" alt="Legal documents and regulations governing candidate protections in India">
+    <p class="img-caption">Indian labor guidelines mandate that domestic recruitment fees are the sole responsibility of the hiring employer.</p>
+    <p>In standard domestic recruitment in India, <strong>job seekers do NOT have to pay recruitment agencies</strong>. Legitimate recruitment consultancies earn their revenue entirely from the hiring company. Any agency or individual that demands money from a candidate for job alerts, registration, interview scheduling, or appointment letter release is operating unethically or committing fraud.</p>
+    <ul class="indent-list">
+      <li><strong>Ministry of External Affairs (MEA) Overseas Exception:</strong> For overseas employment, government-registered recruiting agents (RA) are legally permitted to charge a strictly capped service fee (up to ₹30,000 + GST as per MEA guidelines) with an official tax invoice.</li>
+      <li><strong>Domestic Jobs:</strong> For jobs within Tamil Nadu, Pondicherry, and India, candidate fees are entirely prohibited.</li>
+    </ul>
+
+    <h2>What Should Employers Check Before Hiring a Recruitment Agency?</h2>
+    <p>Before signing a Master Service Agreement (MSA) with a recruitment firm, employers should evaluate four key commercial elements:</p>
+    <div class="checklist-card">
+      <p>Key Commercial Elements to Review:</p>
+      <ol class="indent-list">
+        <li><strong>Understand the Fee Structure:</strong> Clarify whether the percentage is calculated on Basic Salary, Fixed CTC, or Total CTC including variable bonuses.</li>
+        <li><strong>Check the Replacement Guarantee Policy:</strong> If a hired candidate resigns or is terminated within 30, 60, or 90 days, does the agency provide a free replacement or credit note?</li>
+        <li><strong>Understand the Payment Trigger:</strong> Confirm whether payment is due 15, 30, or 45 days after the candidate's date of joining.</li>
+        <li><strong>Confirm the Sourcing Channels:</strong> Ensure the agency uses verified methods and does not misrepresent your employer brand.</li>
+      </ol>
+    </div>
+
+    <h2>What Should Job Seekers Check?</h2>
+    <p>If contacted by a recruitment agency claiming to represent an employer, candidates should always verify the following parameters:</p>
+    <ul class="indent-list">
+      <li><strong>Employer Name:</strong> Ask for the specific corporate entity hiring for the role.</li>
+      <li><strong>Job Role &amp; JD:</strong> Request a formal, detailed Job Description with clear responsibilities.</li>
+      <li><strong>Work Location:</strong> Confirm the actual work site and shift timings.</li>
+      <li><strong>Salary &amp; Benefits:</strong> Verify that the compensation package matches market benchmarks.</li>
+      <li><strong>Selection Process:</strong> Legitimate agencies will arrange genuine interviews with the client company.</li>
+      <li><strong>Payment Request:</strong> If any fee is requested, decline immediately and report the contact.</li>
+    </ul>
+
+    <h2>5 Practical Recruitment Examples in Pondicherry and Tamil Nadu</h2>
+    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=1400&q=82" alt="Successful candidate placed in professional executive role">
+    <p class="img-caption">Realistic placement fee calculations across common job profiles in Tamil Nadu and Pondicherry.</p>
+
+    <h3>1. Sales Executive in Pondicherry</h3>
+    <ul class="indent-list">
+      <li><strong>Candidate Annual CTC:</strong> ₹3,00,000 (₹25,000/month).</li>
+      <li><strong>Agency Fee (8.33%):</strong> ₹24,990 + GST.</li>
+      <li><strong>Commercial Terms:</strong> Paid by the employer 30 days after the sales executive joins, with a 60-day free replacement warranty.</li>
+    </ul>
+
+    <h3>2. Accountant in Cuddalore</h3>
+    <ul class="indent-list">
+      <li><strong>Candidate Annual CTC:</strong> ₹2,40,000 (₹20,000/month).</li>
+      <li><strong>Agency Fee:</strong> Fixed flat fee of ₹20,000 + GST negotiated for local manufacturing unit.</li>
+      <li><strong>Commercial Terms:</strong> Candidate pays ₹0; employer pays upon successful joining.</li>
+    </ul>
+
+    <h3>3. Digital Marketing Executive in Pondicherry</h3>
+    <ul class="indent-list">
+      <li><strong>Candidate Annual CTC:</strong> ₹4,20,000 (₹35,000/month).</li>
+      <li><strong>Agency Fee (10%):</strong> ₹42,000 + GST.</li>
+      <li><strong>Commercial Terms:</strong> Agency sources specialized candidate skilled in SEO and Google Ads; invoice cleared after 30 days of joining.</li>
+    </ul>
+
+    <h3>4. Software Developer in Chennai</h3>
+    <ul class="indent-list">
+      <li><strong>Candidate Annual CTC:</strong> ₹10,00,000.</li>
+      <li><strong>Agency Fee (12.5%):</strong> ₹1,25,000 + GST.</li>
+      <li><strong>Commercial Terms:</strong> Tech contingency search fee with a 90-day replacement clause.</li>
+    </ul>
+
+    <h3>5. Customer Support Executive in Tamil Nadu</h3>
+    <ul class="indent-list">
+      <li><strong>Employment Type:</strong> Contract staffing for 6 months.</li>
+      <li><strong>Billing Structure:</strong> Candidate take-home (₹18,000) + EPF/ESI statutory dues (₹4,200) + Agency service fee (₹2,500/month). Total monthly billing: ₹24,700 + GST.</li>
+    </ul>
+
+    <h2>How to Compare Recruitment Agencies</h2>
+    <p>When selecting a recruitment partner, businesses should not choose solely on the lowest percentage fee. Consider these four critical comparative factors:</p>
+    <ul class="indent-list">
+      <li><strong>Domain Specialization:</strong> Does the agency specialize in your sector (e.g., IT, healthcare, manufacturing, or retail)?</li>
+      <li><strong>Local Geographic Reach:</strong> Do they possess strong candidate networks in Pondicherry, Villupuram, Cuddalore, and surrounding industrial belts?</li>
+      <li><strong>Screening Depth:</strong> Do they submit pre-vetted resumes or simply forward unverified keyword-matched files?</li>
+      <li><strong>Turnaround Time (TAT):</strong> How quickly can they provide a qualified shortlist (typically 3 to 7 business days)?</li>
+    </ul>
+
+    <h2>Questions Employers Should Ask Before Signing</h2>
+    <div class="checklist-card">
+      <p>Ask these questions during agency negotiations:</p>
+      <ul class="indent-list">
+        <li>What is your fee percentage, and is it calculated on Fixed pay or Total CTC?</li>
+        <li>What is the duration of your replacement guarantee (30, 60, or 90 days)?</li>
+        <li>What happens if a candidate leaves within the replacement window and you cannot provide a suitable replacement?</li>
+        <li>What are your payment credit terms (15, 30, or 45 days)?</li>
+      </ul>
+    </div>
+
+    <h2>Why Local Recruitment Support Can Help</h2>
+    <p>While large national job portals offer volume, local recruitment platforms like Velai Vaaipu provide distinct geographic advantages: candidates are familiar with local commute routes, salary benchmarks reflect regional economic realities, and joining ratios are significantly higher. Combining broad portals with targeted regional platforms delivers the most reliable hiring outcomes.</p>
+
+    <h2>Frequently Asked Questions</h2>
+    <h3>1. What recruitment agencies actually charge in India?</h3>
+    <p>Standard recruitment agencies in India charge employers between 8.33% and 15%+ of the candidate's first-year annual CTC for permanent staffing, or a monthly management markup for contract staffing.</p>
+
+    <h3>2. Who usually pays a recruitment agency?</h3>
+    <p>The employer always pays the recruitment agency. Professional recruitment agencies never charge candidates for job placements in India.</p>
+
+    <h3>3. Do recruitment agencies charge candidates for jobs?</h3>
+    <p>No. Legitimate domestic agencies never charge candidates. Any agency demanding registration fees, interview fees, or placement charges from job seekers is engaging in unethical practices.</p>
+
+    <h3>4. How can an employer compare recruitment agency charges?</h3>
+    <p>Compare the fee percentage, calculation base (Fixed vs Total CTC), replacement guarantee period, payment terms, and candidate screening quality rather than cost alone.</p>
+
+    <h3>5. How can I find genuine job opportunities through Velai Vaaipu?</h3>
+    <p>You can join Velai Vaaipu's free WhatsApp alert service to receive verified, pre-screened job openings directly from reputable employers across Pondicherry and Tamil Nadu.</p>
+
+    <h2>Final Takeaway</h2>
+    <p>Transparent fee structures benefit everyone. Employers get quality talent with guaranteed replacement protection, and job seekers gain access to legitimate career opportunities without financial exploitation.</p>
+
+    <div class="final-cta">
+      <h2>Looking for Jobs or Hiring Talent in Tamil Nadu?</h2>
+      <p>Velai Vaaipu connects qualified candidates with trusted employers across Pondicherry, Cuddalore, Villupuram, and Tindivanam.</p>
+      <ul>
+        <li>✅ 100% Free candidate job alerts—Zero placement charges</li>
+        <li>✅ Pre-verified employer openings and transparent terms</li>
+        <li>✅ Reliable local recruitment solutions for MSMEs &amp; growing firms</li>
+      </ul>
+      <br>
+      <a rel="noopener noreferrer" class="final-btn" href="https://wa.me/919944509441?text=Hi%2C%20I%20want%20to%20know%20more%20about%20Velai%20Vaaipu%20services">💬 Connect on WhatsApp</a>
+    </div>
+
+  </main>
+
+  <aside>
+    <div class="card">
+      <div class="card-label">Quick Summary</div>
+      <p style="font-weight:700;color:var(--ink);margin-bottom:8px;">Standard Fee Models:</p>
+      <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.6;color:var(--body-text)">
+        <li>8.33% to 15%+ CTC for permanent placements.</li>
+        <li>Paid 100% by the hiring employer.</li>
+        <li>Zero fees charged to candidates in India.</li>
+        <li>Standard 30 to 90 day replacement policy.</li>
+        <li>Contract staffing uses monthly markups.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-label">About</div>
+      <div class="brand-row">
+        <div class="logo-circle">VV</div>
+        <div class="brand-name">Velai Vaaipu</div>
+      </div>
+      <p>Your local job search companion and recruitment partner, helping employers and job seekers connect transparently across Tamil Nadu and Pondicherry.</p>
+      <hr class="divider">
+      <div class="tags">
+        <span class="tag">Recruitment Agency</span>
+        <span class="tag">HR Guidance</span>
+        <span class="tag">Hiring Charges</span>
+        <span class="tag">Pondicherry Jobs</span>
+      </div>
+    </div>
+
+    <div class="card card-green">
+      <h3>Need Hiring Help?</h3>
+      <p>Looking to hire staff or find verified job alerts in Pondicherry and Tamil Nadu? Reach out to us directly on WhatsApp.</p>
+      <a rel="noopener noreferrer" class="wa-btn" href="https://wa.me/919944509441?text=Hi%2C%20I%20need%20hiring%20assistance">💬 Connect on WhatsApp</a>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">Velai Vaaipu</div>
+    <div class="footer-tag">Your local job search companion</div>
+    <div class="footer-contact">
+      Contact Us<br>
+      📞 +91 99445 09441<br>
+      📍 Puducherry, Tamil Nadu, India
+    </div>
+    <hr class="footer-divider">
+    <div class="copyright">© 2026 Velai Vaaipu. All rights reserved.</div>
+  </div>
+</footer>
+
+</body>
+</html>
