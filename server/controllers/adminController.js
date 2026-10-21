@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
 const Admin = require('../models/Admin');
 const User = require('../models/User');
 const Role = require('../models/Role');
@@ -16,8 +17,8 @@ const { emailWrapper } = require('../utils/emailTemplates');
 const generateToken = (id, roleName) => {
   return jwt.sign(
     { id, role: roleName },
-    process.env.JWT_SECRET || 'fallback_secret',
-    { expiresIn: '365d' }
+    getJwtSecret(),
+    { expiresIn: TOKEN_TTL }
   );
 };
 

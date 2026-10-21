@@ -2,6 +2,7 @@ const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const pdfParse = require('pdf-parse');
 const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
@@ -29,8 +30,8 @@ const notifyInviteResponse = async ({ io, company, invitee, accepted }) => {
 // request keeps checking the *old* role until the user manually logs out and back in.
 const generateToken = (userId, roleName) => jwt.sign(
   { id: userId, role: roleName },
-  process.env.JWT_SECRET || 'fallback_secret',
-  { expiresIn: '365d' }
+  getJwtSecret(),
+  { expiresIn: TOKEN_TTL }
 );
 
 // Helper to calculate profile completion

@@ -1,4 +1,12 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+const { assertJwtConfig, getJwtSecret } = require('./config/jwt');
+// Refuse to start with a missing/weak JWT secret rather than falling back to a guessable one.
+try {
+  assertJwtConfig();
+} catch (err) {
+  console.error(`FATAL: ${err.message}`);
+  process.exit(1);
+}
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -42,8 +50,12 @@ require('./config/passport'); // Passport Configuration
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const Conversation = require('./models/Conversation');
+const CollaborationGroup = require('./models/CollaborationGroup');
 
 const app = express();
+// Needed so req.ip (used by the rate limiter) is the real client IP behind Vercel/Render/nginx.
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 const normalizeOrigin = (origin) => origin?.trim().replace(/\/$/, '');
@@ -75,7 +87,7 @@ const corsOptions = {
     if (!origin || allowedOrigins.has(normalizeOrigin(origin))) {
       return callback(null, true);
     }
-    return callback(new Error(`CORS origin not allowed: ${origin}`));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -90,50 +102,73 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 5000;
 
 // Socket.io Logic
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  const token = socket.handshake.auth?.token;
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-      const userId = decoded.id || decoded.userId;
-      if (userId) socket.join(`user:${userId}`);
-    } catch (err) {
-      console.warn('Socket authentication failed:', err.message);
-    }
+// Every connection must present a valid JWT. The user id always comes from the token, and a
+// socket can only join / write to conversations and groups it actually belongs to.
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+    if (!token) return next(new Error('Authentication required'));
+    const decoded = jwt.verify(token, getJwtSecret());
+    const userId = decoded.id || decoded.userId || decoded.user?.id;
+    if (!userId) return next(new Error('Authentication required'));
+    socket.data.userId = String(userId);
+    next();
+  } catch (err) {
+    next(new Error('Authentication required'));
   }
+});
 
-  socket.on('join_room', (roomId) => {
-    socket.join(roomId);
-    console.log(`User ${socket.id} joined room: ${roomId}`);
+io.on('connection', (socket) => {
+  const userId = socket.data.userId;
+  socket.join(`user:${userId}`);
+
+  socket.on('join_room', async (roomId) => {
+    try {
+      const allowed = await Conversation.exists({ _id: roomId, participants: userId });
+      if (allowed) socket.join(String(roomId));
+    } catch (err) {
+      // invalid id or lookup failure: simply do not join
+    }
   });
 
   socket.on('send_message', (data) => {
-    // data: { roomId, content, senderId, timestamp, attachment }
-    io.to(data.roomId).emit('receive_message', data);
+    // Only relay into a room this socket has joined, and never trust a client-supplied sender id.
+    const roomId = data && String(data.roomId || '');
+    if (!roomId || !socket.rooms.has(roomId)) return;
+    io.to(roomId).emit('receive_message', { ...data, senderId: userId });
   });
 
-  socket.on('join_group', (groupId) => {
-    socket.join(groupId);
-    console.log(`User ${socket.id} joined group: ${groupId}`);
+  socket.on('join_group', async (groupId) => {
+    try {
+      const allowed = await CollaborationGroup.exists({
+        _id: groupId,
+        $or: [{ members: userId }, { admin: userId }],
+      });
+      if (allowed) socket.join(String(groupId));
+    } catch (err) {
+      // invalid id or lookup failure: simply do not join
+    }
   });
 
-  socket.on('send_group_message', (data) => {
-    // data: { groupId, message }
-    io.to(data.groupId).emit('receive_group_message', data.message);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
+  // Group messages are created and broadcast by the REST controller (which checks permissions);
+  // clients may not inject their own broadcast into a group.
 });
 
 // Middleware
 // Register CORS before logging, body parsing, sessions, and routes so successful
 // responses, validation errors, and automatic OPTIONS responses all include it.
 app.use(cors(corsOptions));
-app.use(morgan('dev'));
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
+  next();
+});
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 // The Razorpay webhook needs the unparsed body to check its signature (see utils/webhookRawBody.js).
 app.use(express.json({ verify: captureWebhookRawBody }));
 
@@ -144,14 +179,31 @@ app.use((req, res, next) => {
 });
 
 // Static folder for file uploads
+// Documents (resumes, MoUs, reports, KYC proofs) hold personal data. When PROTECT_DOCUMENT_UPLOADS=true
+// they need a valid token (Authorization header or ?token=); images (avatars, logos, covers) stay public.
+// Leave it off until the client links to documents with ?token= (see LAUNCH_READINESS.md).
+const PUBLIC_UPLOAD_EXT = new Set(['.webp', '.png', '.jpg', '.jpeg', '.gif']);
+app.use('/uploads', (req, res, next) => {
+  if (process.env.PROTECT_DOCUMENT_UPLOADS !== 'true') return next();
+  if (PUBLIC_UPLOAD_EXT.has(path.extname(req.path).toLowerCase())) return next();
+  const header = req.header('Authorization');
+  const token = header && header.startsWith('Bearer ') ? header.split(' ')[1] : req.query.token;
+  try {
+    jwt.verify(String(token || ''), getJwtSecret());
+    return next();
+  } catch (err) {
+    return res.status(401).json({ msg: 'Authentication required to view this file' });
+  }
+});
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // Session Middleware (needed for OAuth state management)
 app.use(session({
-  secret: process.env.JWT_SECRET || 'fallback_session_secret',
+  secret: getJwtSecret(),
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: false,
+  cookie: { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' }
 }));
 
 // Initialize Passport
@@ -204,6 +256,8 @@ mongoose.connect(MONGODB_URI)
     if (err.message.includes('ECONNREFUSED')) {
       console.error('TIP: Make sure your MongoDB service is running and accessible.');
     }
+    // Exit so the host/process manager restarts us instead of serving requests with no database.
+    process.exit(1);
   });
 
 app.get('/', (req, res) => {

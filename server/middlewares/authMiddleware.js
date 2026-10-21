@@ -1,9 +1,10 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+const { getJwtSecret } = require('../config/jwt');
+const User = require('../models/User');
 
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   const authHeader = req.header('Authorization');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -12,14 +13,27 @@ const verifyToken = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
+  let decoded;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded.user || decoded;
-    next();
+    decoded = jwt.verify(token, getJwtSecret());
   } catch (err) {
-    console.error(`JWT Verification Error: ${err.message}`, { token: token.substring(0, 10) + '...' });
-    res.status(401).json({ msg: 'Token is not valid', error: err.message });
+    return res.status(401).json({ msg: 'Token is not valid' });
   }
+
+  req.user = decoded.user || decoded;
+
+  // A token is valid for days, so a block applied by an admin must take effect immediately.
+  // Admin-panel accounts live in a separate collection, so a missing User row is fine here.
+  try {
+    const account = await User.findById(req.user.id).select('isAdminBlocked').lean();
+    if (account && account.isAdminBlocked) {
+      return res.status(403).json({ msg: 'Access denied: Account blocked.' });
+    }
+  } catch (err) {
+    console.error('Auth block check failed:', err.message);
+    return res.status(503).json({ msg: 'Service temporarily unavailable' });
+  }
+  next();
 };
 
 const authorizeRoles = (...roles) => {
@@ -41,7 +55,7 @@ const optionalVerifyToken = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     req.user = decoded.user || decoded;
     next();
   } catch (err) {

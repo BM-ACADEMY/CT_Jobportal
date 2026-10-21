@@ -187,7 +187,7 @@ const TermsAndConditions = () => {
 
           <Section id="third-party" title="12. Third-Party Services">
             <p>
-              The Platform integrates third-party services including Razorpay (payments), Google/GitHub/LinkedIn (social login), Google Gemini (AI-assisted content features), and Meta WhatsApp Business (messaging). Your use of these integrations is also subject to those providers' own terms and privacy policies. We are not responsible for outages, errors, or policy changes originating from third-party providers.
+              The Platform integrates third-party services including Razorpay (payments), Google/LinkedIn (social login), Google Gemini (AI-assisted content features), and Meta WhatsApp Business (messaging). Your use of these integrations is also subject to those providers' own terms and privacy policies. We are not responsible for outages, errors, or policy changes originating from third-party providers.
             </p>
           </Section>
 

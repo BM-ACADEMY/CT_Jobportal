@@ -10,7 +10,6 @@ const CompleteSocialProfile = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get('token') || localStorage.getItem('token');
-  const userId = queryParams.get('userId') || user?.id || user?._id;
 
   const [role, setRole] = useState('jobseeker');
   const [password, setPassword] = useState('');
@@ -31,10 +30,12 @@ const CompleteSocialProfile = () => {
 
     setLoading(true);
     try {
+      // The signed-in token identifies the account; no user id is sent from the client.
       const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/complete-social-profile`, {
-        userId,
         role,
         password
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       const { user, token: newToken } = res.data;
