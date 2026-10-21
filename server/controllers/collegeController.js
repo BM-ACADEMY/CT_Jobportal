@@ -12,6 +12,7 @@ const CollegeActivityLog = require('../models/CollegeActivityLog');
 const CollegeEmployer = require('../models/CollegeEmployer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
 const QRCode = require('qrcode');
 const { parse } = require('csv-parse/sync');
 const crypto = require('crypto');
@@ -997,7 +998,7 @@ const acceptInchargeInviteExisting = async (req, res) => {
     await drive.save();
 
     const roleName = user.role.name;
-    const token = jwt.sign({ id: user._id, role: roleName }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '365d' });
+    const token = jwt.sign({ id: user._id, role: roleName }, getJwtSecret(), { expiresIn: TOKEN_TTL });
 
     res.json({
       msg: 'Invite accepted — Manage Drive access added to your account',
@@ -1047,7 +1048,7 @@ const acceptInchargeInviteNew = async (req, res) => {
     invite.acceptedAt = new Date();
     await drive.save();
 
-    const token = jwt.sign({ id: user._id, role: 'drive_incharge' }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '365d' });
+    const token = jwt.sign({ id: user._id, role: 'drive_incharge' }, getJwtSecret(), { expiresIn: TOKEN_TTL });
 
     res.json({
       msg: 'Invite accepted — Drive access granted',

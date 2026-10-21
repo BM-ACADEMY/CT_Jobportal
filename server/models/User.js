@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: function() { return !this.googleId && !this.githubId; },
+    required: function() { return !this.googleId && !this.githubId && !this.linkedinId; },
   },
   isSocialIncomplete: {
     type: Boolean,
@@ -49,12 +49,22 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Wrong OTP guesses since the OTP was issued; the OTP is invalidated after too many.
+  otpAttempts: {
+    type: Number,
+    default: 0,
+  },
   googleId: {
     type: String,
     unique: true,
     sparse: true,
   },
   githubId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  linkedinId: {
     type: String,
     unique: true,
     sparse: true,

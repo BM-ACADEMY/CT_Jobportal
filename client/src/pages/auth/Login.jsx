@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import SocialLoginButtons from '../../components/auth/SocialLoginButtons';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, Briefcase, Building2, TrendingUp, CircleCheck } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,7 +27,8 @@ const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
+  const [error, setError] = useState(searchParams.get('error') || '');
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
@@ -212,6 +214,8 @@ const LoginPage = () => {
               </Button>
             </form>
           </Form>
+
+          <SocialLoginButtons role="jobseeker" />
 
           <p className="text-center text-sm text-slate-500 pt-2">
             New to the platform?{' '}

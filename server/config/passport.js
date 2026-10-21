@@ -1,9 +1,8 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const GitHubStrategy = require('passport-github2').Strategy;
-const OAuth2Strategy = require('passport-oauth2').Strategy;
 const User = require('../models/User');
 const Role = require('../models/Role');
+const { isSelfServeRole } = require('../utils/selfServeRoles');
 
 // Get default role for social logins (Job Seeker)
 const getDefaultRole = async () => {
@@ -29,10 +28,14 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
+      const googleEmail = (profile.emails && profile.emails[0]?.value || '').toLowerCase();
+      if (!googleEmail || profile._json?.email_verified === false) {
+        return done(null, false, { message: 'Your Google account has no verified email address.' });
+      }
       let user = await User.findOne({ 
         $or: [
           { googleId: profile.id },
-          { email: profile.emails[0].value }
+          { email: googleEmail }
         ]
       });
 
@@ -50,7 +53,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       if (req.query.state) {
         try {
           const stateObj = JSON.parse(req.query.state);
-          if (stateObj.role) intendedRole = stateObj.role;
+          // Never trust the role from the URL beyond the public sign-up roles.
+          if (isSelfServeRole(stateObj.role)) intendedRole = stateObj.role;
         } catch (e) {
           console.error("Failed to parse OAuth state:", e);
         }
@@ -61,12 +65,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
       user = await User.create({
         name: profile.displayName,
-        email: profile.emails[0].value,
+        email: googleEmail,
         googleId: profile.id,
         role: roleId,
         isVerified: true, // Social accounts are pre-verified
         isSocialIncomplete: true,
-        avatar: profile.photos[0]?.value || ''
+        avatar: profile.photos?.[0]?.value || ''
       });
 
       return done(null, user);
@@ -78,92 +82,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 } else {
   console.warn('Google OAuth strategy skipped: Missing credentials in .env');
 }
-
-// GitHub Strategy
-if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
-  passport.use(new GitHubStrategy({
-      clientID: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: callbackUrl('GITHUB_CALLBACK_URL'),
-      scope: ['user:email'],
-      passReqToCallback: true
-    },
-  async (req, accessToken, refreshToken, profile, done) => {
-    try {
-      let email = profile.emails && profile.emails[0]?.value;
-
-      // GitHub only includes an email in the profile response if the user made one public.
-      // The `user:email` scope still grants read access to their real (verified) address via
-      // this endpoint, so fetch it rather than fabricating a fake @github.com address.
-      if (!email) {
-        try {
-          const emailRes = await fetch('https://api.github.com/user/emails', {
-            headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'Velaivaaipu' }
-          });
-          if (emailRes.ok) {
-            const emails = await emailRes.json();
-            const primary = emails.find(e => e.primary && e.verified) || emails.find(e => e.verified) || emails[0];
-            email = primary?.email;
-          }
-        } catch (fetchErr) {
-          console.error('GitHub email fetch failed:', fetchErr.message);
-        }
-      }
-
-      let user = await User.findOne({
-        $or: [
-          { githubId: profile.id },
-          ...(email ? [{ email }] : [])
-        ]
-      });
-
-      if (user) {
-        if (!user.githubId) {
-          user.githubId = profile.id;
-          await user.save();
-        }
-        return done(null, user);
-      }
-
-      if (!email) {
-        return done(null, false, { message: 'Your GitHub account has no accessible email address. Please make an email public on GitHub or use a different sign-in method.' });
-      }
-
-      // Create new user
-      let intendedRole = 'jobseeker';
-      if (req.query.state) {
-        try {
-          const stateObj = JSON.parse(req.query.state);
-          if (stateObj.role) intendedRole = stateObj.role;
-        } catch (e) {
-          console.error("Failed to parse GitHub OAuth state:", e);
-        }
-      }
-
-      const role = await Role.findOne({ name: intendedRole });
-      const roleId = role ? role._id : await getDefaultRole();
-
-      user = await User.create({
-        name: profile.displayName || profile.username,
-        email,
-        githubId: profile.id,
-        role: roleId,
-        isVerified: true,
-        isSocialIncomplete: true,
-        avatar: profile.photos[0]?.value || ''
-      });
-
-      return done(null, user);
-    } catch (err) {
-      return done(err, null);
-    }
-  }
-  ));
-} else {
-  console.warn('GitHub OAuth strategy skipped: Missing credentials in .env');
-}
-
-
 
 passport.serializeUser((user, done) => {
   done(null, user.id);

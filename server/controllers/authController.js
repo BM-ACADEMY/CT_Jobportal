@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
 const User = require('../models/User');
 const Role = require('../models/Role');
 const Company = require('../models/Company');
@@ -7,6 +9,7 @@ const Subscription = require('../models/Subscription');
 const CampusDrive = require('../models/CampusDrive');
 const sendEmail = require('../utils/sendEmail');
 const { hasCompanyAccess } = require('../utils/companyAccess');
+const { isSelfServeRole } = require('../utils/selfServeRoles');
 
 // "Manage Drive" is a capability layered on top of whatever role a user already has —
 // surfaced on every user payload so the client can show the sidebar entry regardless of role.
@@ -34,7 +37,35 @@ const ensureFreePlan = async (user, roleName) => {
   }
 };
 
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const generateOTP = () => crypto.randomInt(100000, 1000000).toString();
+
+const MAX_OTP_ATTEMPTS = 5;
+const GENERIC_SERVER_ERROR = 'Something went wrong. Please try again.';
+
+// Coerces request-body values to plain strings so objects like {"$ne": null} can never reach a query.
+const cleanEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+
+// Checks an OTP with a per-OTP attempt limit. On a wrong guess the counter is saved; after
+// MAX_OTP_ATTEMPTS the OTP is burned and the user has to request a new one.
+const checkOtp = async (user, submitted) => {
+  if (!user.otp || !user.otpExpiry || user.otpExpiry < new Date()) return 'invalid';
+  if ((user.otpAttempts || 0) >= MAX_OTP_ATTEMPTS) {
+    user.otp = null; user.otpExpiry = null; user.otpAttempts = 0;
+    await user.save();
+    return 'locked';
+  }
+  const a = Buffer.from(String(user.otp));
+  const b = Buffer.from(typeof submitted === 'string' ? submitted : '');
+  if (a.length === b.length && crypto.timingSafeEqual(a, b)) return 'ok';
+  user.otpAttempts = (user.otpAttempts || 0) + 1;
+  await user.save();
+  return 'invalid';
+};
+const otpFailureResponse = (res, status) => (
+  status === 'locked'
+    ? res.status(429).json({ msg: 'Too many incorrect attempts. Please request a new OTP.' })
+    : res.status(400).json({ msg: 'Invalid or expired OTP' })
+);
 
 // Records a new open session on login; capped to the most recent 50 entries.
 const recordLogin = async (user) => {
@@ -48,8 +79,8 @@ const recordLogin = async (user) => {
 const generateToken = (userId, roleName) => {
   return jwt.sign(
     { id: userId, role: roleName },
-    process.env.JWT_SECRET || 'fallback_secret',
-    { expiresIn: '365d' }
+    getJwtSecret(),
+    { expiresIn: TOKEN_TTL }
   );
 };
 
@@ -59,8 +90,19 @@ const { notifyRoles } = require('../utils/inAppNotifications');
 // @route   POST /api/auth/register
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role, collegeName, collegeEmail, collegePhone, tpoPhone, phone } = req.body;
-    const normalizedEmail = email.toLowerCase();
+    const { name, password, role, collegeName, collegeEmail, collegePhone, tpoPhone, phone } = req.body;
+    const email = cleanEmail(req.body.email);
+    const normalizedEmail = email;
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ msg: 'Please enter a valid email address' });
+    }
+    if (typeof name !== 'string' || !name.trim() || typeof password !== 'string') {
+      return res.status(400).json({ msg: 'Name and password are required' });
+    }
+    // Only the four public roles may be chosen at sign-up; admin/subadmin/etc. are never self-serve.
+    if (!isSelfServeRole(role)) {
+      return res.status(400).json({ msg: 'Invalid role specified' });
+    }
 
     // Password Validation: 6 chars, 1 capital, 1 number, 1 symbol
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/\\|~`\-]).{6,}$/;
@@ -88,7 +130,6 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     
     const otp = generateOTP();
-    console.log(`\n\n=== [AUTH DEBUG] REGISTRATION OTP FOR ${normalizedEmail}: ${otp} ===\n\n`);
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     user = new User({
@@ -175,7 +216,7 @@ const registerUser = async (req, res) => {
     res.status(201).json({ requireOtp: true, email: user.email, msg: 'OTP sent to your email.' });
   } catch (err) {
     console.error('Registration Error:', err.message);
-    res.status(500).json({ msg: err.message, stack: err.stack });
+    res.status(500).json({ msg: GENERIC_SERVER_ERROR });
   }
 };
 
@@ -183,22 +224,22 @@ const registerUser = async (req, res) => {
 // @route   POST /api/auth/verify-otp
 const verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
-    const normalizedEmail = email ? email.toLowerCase() : '';
+    const { otp } = req.body;
+    const normalizedEmail = cleanEmail(req.body.email);
 
     const user = await User.findOne({ email: normalizedEmail }).populate(['role', 'subscription']);
     if (!user) {
-        return res.status(404).json({ msg: 'User not found' });
-    }
-
-    if (user.otp !== otp || user.otpExpiry < new Date()) {
       return res.status(400).json({ msg: 'Invalid or expired OTP' });
     }
+
+    const otpStatus = await checkOtp(user, otp);
+    if (otpStatus !== 'ok') return otpFailureResponse(res, otpStatus);
 
     // Mark verified
     user.isVerified = true;
     user.otp = null;
     user.otpExpiry = null;
+    user.otpAttempts = 0;
     await user.save();
 
     const roleName = user.role.name;
@@ -256,7 +297,7 @@ const verifyOtp = async (req, res) => {
 
   } catch (err) {
     console.error('Verify OTP Error:', err.message);
-    res.status(500).json({ msg: err.message, stack: err.stack });
+    res.status(500).json({ msg: GENERIC_SERVER_ERROR });
   }
 };
 
@@ -264,11 +305,15 @@ const verifyOtp = async (req, res) => {
 // @route   POST /api/auth/login
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const normalizedEmail = email ? email.toLowerCase() : '';
+    const { password } = req.body;
+    const email = cleanEmail(req.body.email);
+    const normalizedEmail = email;
+    if (!normalizedEmail || typeof password !== 'string') {
+      return res.status(400).json({ msg: 'Invalid Credentials' });
+    }
 
     const user = await User.findOne({ email: normalizedEmail }).populate(['role', 'subscription']);
-    if (!user) {
+    if (!user || !user.password) {
       return res.status(400).json({ msg: 'Invalid Credentials' });
     }
 
@@ -284,8 +329,8 @@ const loginUser = async (req, res) => {
     if (!user.isVerified) {
       // Setup new OTP and resend
       const otp = generateOTP();
-      console.log(`\n\n=== [AUTH DEBUG] RESEND OTP FOR ${email}: ${otp} ===\n\n`);
       user.otp = otp;
+    user.otpAttempts = 0;
       user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
 
@@ -361,7 +406,7 @@ const loginUser = async (req, res) => {
     });
   } catch (err) {
     console.error('Login Error:', err.message);
-    res.status(500).json({ msg: err.message, stack: err.stack });
+    res.status(500).json({ msg: GENERIC_SERVER_ERROR });
   }
 };
 
@@ -391,16 +436,17 @@ const logoutUser = async (req, res) => {
 // @route   POST /api/auth/forgot-password
 const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
+    const email = cleanEmail(req.body.email);
+    const user = email ? await User.findOne({ email }) : null;
 
+    // Same answer whether or not the account exists, so this can't be used to find registered emails.
     if (!user) {
-      return res.status(404).json({ msg: 'No user found with this email' });
+      return res.json({ msg: 'If this email is registered, a password reset OTP has been sent' });
     }
 
     const otp = generateOTP();
-    console.log(`\n\n=== [AUTH DEBUG] FORGOT PASSWORD OTP FOR ${email}: ${otp} ===\n\n`);
     user.otp = otp;
+    user.otpAttempts = 0;
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
@@ -419,16 +465,13 @@ const forgotPassword = async (req, res) => {
     const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Velaivaaipu', html: htmlContent });
 
     if (!emailSent) {
-      return res.json({ 
-        msg: 'OTP generated but email failed to send. Check the server console for the OTP code.',
-        emailSent: false 
-      });
+      console.error('Forgot password email failed for user', user._id.toString());
     }
 
-    res.json({ msg: 'Password reset OTP sent to email' });
+    res.json({ msg: 'If this email is registered, a password reset OTP has been sent' });
   } catch (err) {
     console.error('Forgot Password Error:', err.message);
-    res.status(500).json({ msg: err.message, stack: err.stack });
+    res.status(500).json({ msg: GENERIC_SERVER_ERROR });
   }
 };
 
@@ -436,15 +479,22 @@ const forgotPassword = async (req, res) => {
 // @route   POST /api/auth/reset-password
 const resetPassword = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
-    const user = await User.findOne({ email });
+    const { otp, newPassword } = req.body;
+    const email = cleanEmail(req.body.email);
+    const user = email ? await User.findOne({ email }) : null;
 
     if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
+      return res.status(400).json({ msg: 'Invalid or expired OTP' });
     }
 
-    if (user.otp !== otp || user.otpExpiry < new Date()) {
-      return res.status(400).json({ msg: 'Invalid or expired OTP' });
+    const otpStatus = await checkOtp(user, otp);
+    if (otpStatus !== 'ok') return otpFailureResponse(res, otpStatus);
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/\\|~`\-]).{6,}$/;
+    if (typeof newPassword !== 'string' || !passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        msg: 'Password must be at least 6 characters long and include an uppercase letter, a number, and a special character.'
+      });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -453,12 +503,13 @@ const resetPassword = async (req, res) => {
     user.password = hashedPassword;
     user.otp = null;
     user.otpExpiry = null;
+    user.otpAttempts = 0;
     await user.save();
 
     res.json({ msg: 'Password reset successful. You can now log in.' });
   } catch (err) {
     console.error('Reset Password Error:', err.message);
-    res.status(500).json({ msg: err.message, stack: err.stack });
+    res.status(500).json({ msg: GENERIC_SERVER_ERROR });
   }
 };
 
@@ -559,12 +610,11 @@ const getUserProfile = async (req, res) => {
 // @route   POST /api/auth/resend-otp
 const resendOtp = async (req, res) => {
   try {
-    const { email } = req.body;
-    const normalizedEmail = email.toLowerCase();
+    const normalizedEmail = cleanEmail(req.body.email);
 
-    const user = await User.findOne({ email: normalizedEmail });
+    const user = normalizedEmail ? await User.findOne({ email: normalizedEmail }) : null;
     if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
+      return res.json({ msg: 'If this email is registered, a new OTP has been sent' });
     }
 
     if (user.isVerified) {
@@ -572,9 +622,9 @@ const resendOtp = async (req, res) => {
     }
 
     const otp = generateOTP();
-    console.log(`\n\n=== [AUTH DEBUG] RESEND OTP FOR ${normalizedEmail}: ${otp} ===\n\n`);
     
     user.otp = otp;
+    user.otpAttempts = 0;
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
 
@@ -612,9 +662,16 @@ const resendOtp = async (req, res) => {
 };
 
 // @desc    Social Auth Callback (handle redirect)
-const socialAuthCallback = (req, res) => {
+const socialAuthCallback = async (req, res) => {
   const user = req.user;
-  const roleName = user.role.name || 'jobseeker'; // Use populated role or default
+  const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+  if (user.isAdminBlocked) {
+    return res.redirect(`${frontend}/login?error=${encodeURIComponent('Account blocked')}`);
+  }
+  // The role must be populated, otherwise `role.name` is undefined and every social login
+  // (including recruiters and colleges) would get a jobseeker token.
+  if (!user.role || !user.role.name) await user.populate('role');
+  const roleName = user.role?.name || 'jobseeker';
   const token = generateToken(user._id, roleName);
   
   // Create user object to send as JSON in query (simplified for demo)
@@ -642,7 +699,9 @@ const socialAuthCallback = (req, res) => {
 // @desc    Complete social profile (set role and password)
 const completeSocialProfile = async (req, res) => {
   try {
-    const { userId, role, password } = req.body;
+    // The account comes from the signed-in token, never from the request body.
+    const { role, password } = req.body;
+    const userId = req.user.id;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -653,6 +712,9 @@ const completeSocialProfile = async (req, res) => {
       return res.status(400).json({ msg: 'Profile already completed' });
     }
 
+    if (!isSelfServeRole(role)) {
+      return res.status(400).json({ msg: 'Invalid role specified' });
+    }
     const roleDoc = await Role.findOne({ name: role });
     if (!roleDoc) {
       return res.status(400).json({ msg: 'Invalid role specified' });
@@ -660,7 +722,7 @@ const completeSocialProfile = async (req, res) => {
 
     // Password Validation: 6 chars, 1 capital, 1 number, 1 symbol
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/\\|~`\-]).{6,}$/;
-    if (!passwordRegex.test(password)) {
+    if (typeof password !== 'string' || !passwordRegex.test(password)) {
       return res.status(400).json({ 
         msg: 'Password must be at least 6 characters long and include an uppercase letter, a number, and a special character.' 
       });
