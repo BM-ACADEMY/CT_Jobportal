@@ -56,6 +56,10 @@ Student ticks an optional consent box on the QR form (timestamp stored). If they
 
 Category to course mapping lives in `server/config/courseMap.js` (and the labels in `client/src/data/skillCategories.js`); change the course names there.
 
-## 6. Smoke test before launch
+## 6. Lifecycle mails (built, switched off)
+
+Full mapping of the Smart Reply Mail Plan to Velaivaaipu is in `docs/LIFECYCLE_MAIL_PLAN.md`. Summary: welcome, profile nudge, skill-test invite, skill-gap + course, win-back, paid Job Alerts delivery, employer tips and templates, college batch readiness, GST receipts, refund mails, contact-form auto-reply, one-click unsubscribe. Switch on with `LIFECYCLE_EMAILS_ENABLED=true` and the env in `.env.example` (needs `API_PUBLIC_URL` for the unsubscribe link). Start with `LIFECYCLE_MAX_PER_RUN=20`. Confirm the lead store (n8n "leados" or other) and the free-plan limits (2 jobs, 10 searches a day, 3 free hires), which I could not find in the code. All existing payment tests were not runnable in my environment; run `node --test server/tests/payments/*.test.js`. I changed one assertion in `webhook.test.js` (first charge now also sends a receipt).
+
+## 7. Smoke test before launch
 
 Signup with email OTP, Google login, LinkedIn login, forgot password; post a job and open its public URL; apply; subscribe with a real small payment and request a refund inside 24 hours; QR campus join with only name + WhatsApp, take the test, download the certificate; check that a closed job URL shows "position filled"; check `/for-colleges`, `/privacy-policy`, `/refund-policy`, `/terms`.

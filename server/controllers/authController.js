@@ -10,6 +10,7 @@ const CampusDrive = require('../models/CampusDrive');
 const sendEmail = require('../utils/sendEmail');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { isSelfServeRole } = require('../utils/selfServeRoles');
+const { sendWelcomeEmail } = require('../utils/lifecycleEmails');
 
 // "Manage Drive" is a capability layered on top of whatever role a user already has —
 // surfaced on every user payload so the client can show the sidebar entry regardless of role.
@@ -235,6 +236,8 @@ const verifyOtp = async (req, res) => {
     const otpStatus = await checkOtp(user, otp);
     if (otpStatus !== 'ok') return otpFailureResponse(res, otpStatus);
 
+    const firstVerification = !user.isVerified;
+
     // Mark verified
     user.isVerified = true;
     user.otp = null;
@@ -247,6 +250,7 @@ const verifyOtp = async (req, res) => {
 
     await ensureFreePlan(user, roleName);
     await recordLogin(user);
+    if (firstVerification) sendWelcomeEmail(user, roleName).catch(() => {});
 
     // `subscription` stays the user's own individual plan — it governs their personal
     // capacity (e.g. job postings made for themselves) and is what they purchase on the
@@ -733,6 +737,8 @@ const completeSocialProfile = async (req, res) => {
     user.role = roleDoc._id;
     user.isSocialIncomplete = false;
     await user.save();
+
+    sendWelcomeEmail(user, role).catch(() => {});
 
     notifyRoles({
       io: req.io,

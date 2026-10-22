@@ -1650,7 +1650,7 @@ const verifyStudent = async (req, res) => {
           'ID Verification',
           approved ? 'Approved' : 'Rejected',
           approved ? 'Verification successful! You now have full access to campus placement drives.' : (reason || 'Please re-upload a valid document'),
-          `${FRONTEND_URL}/jobseeker/campus-drives`
+          `${FRONTEND_URL}/candidate/campus-drives`
         ]
       }).catch(() => {});
     }
@@ -2390,7 +2390,7 @@ const updateDriveRoundStatus = async (req, res) => {
             student.user?.name || 'there',
             roundName || drive.title,
             label,
-            `${FRONTEND_URL}/jobseeker/campus-drives`
+            `${FRONTEND_URL}/candidate/campus-drives`
           ]
         }).catch(() => {});
       }
@@ -2442,7 +2442,7 @@ const postAnnouncement = async (req, res) => {
             student.college?.name || 'registered',
             title,
             message ? message.slice(0, 60) : 'See announcement for details',
-            link || `${FRONTEND_URL}/jobseeker/campus-drives`
+            link || `${FRONTEND_URL}/candidate/campus-drives`
           ]
         }).catch(() => {});
       }

@@ -311,6 +311,11 @@ const userSchema = new mongoose.Schema({
   lastLoginAt: {
     type: Date
   },
+  // Marketing / lifecycle mail preference. Receipts and security mails are never affected.
+  emailPrefs: {
+    marketingOptOut: { type: Boolean, default: false },
+    optOutAt: { type: Date, default: null }
+  },
   lastLogoutAt: {
     type: Date
   },
