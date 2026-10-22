@@ -16,10 +16,20 @@ const SKILL_CATEGORIES = [
 const byKey = new Map(SKILL_CATEGORIES.map((c) => [c.key, c]));
 const getCategory = (key) => (typeof key === 'string' ? byKey.get(key) || null : null);
 
-// The first offer: scholarship price when a scholarship is running, otherwise a free counselling call.
-const offerText = (env = process.env) => (
-  env.COURSE_SCHOLARSHIP_ACTIVE === 'true' && env.COURSE_SCHOLARSHIP_PRICE
-    ? `Scholarship price Rs ${env.COURSE_SCHOLARSHIP_PRICE} for students`
+// Scholarship is a festival offer only. It applies when COURSE_SCHOLARSHIP_ACTIVE=true AND today is inside
+// COURSE_SCHOLARSHIP_START..COURSE_SCHOLARSHIP_END (YYYY-MM-DD, India time, end day included).
+// At any other time the message offers a free 15-minute counselling call.
+const scholarshipOn = (env = process.env, now = new Date()) => {
+  if (env.COURSE_SCHOLARSHIP_ACTIVE !== 'true' || !env.COURSE_SCHOLARSHIP_PRICE) return false;
+  const ist = new Date(now.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  if (env.COURSE_SCHOLARSHIP_START && ist < env.COURSE_SCHOLARSHIP_START) return false;
+  if (env.COURSE_SCHOLARSHIP_END && ist > env.COURSE_SCHOLARSHIP_END) return false;
+  return true;
+};
+
+const offerText = (env = process.env, now = new Date()) => (
+  scholarshipOn(env, now)
+    ? `Festival scholarship price Rs ${env.COURSE_SCHOLARSHIP_PRICE} for students`
     : 'Free 15-minute counselling call'
 );
 
@@ -30,4 +40,4 @@ const isSendWindow = (date = new Date()) => {
   return h >= 9 && h < 20;
 };
 
-module.exports = { PASS_RATIO, SKILL_CATEGORIES, getCategory, offerText, isSendWindow };
+module.exports = { scholarshipOn, PASS_RATIO, SKILL_CATEGORIES, getCategory, offerText, isSendWindow };

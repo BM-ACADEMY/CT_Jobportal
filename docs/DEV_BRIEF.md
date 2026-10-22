@@ -52,7 +52,7 @@ New pages `/privacy-policy` and `/refund-policy` are live in the patch, and Term
 
 ## 5. WhatsApp follow-up (built, switched off)
 
-Student ticks an optional consent box on the QR form (timestamp stored). If they score below 60% on a test and consented, one follow-up is queued. Nothing is sent until Meta approves the template and `WHATSAPP_FOLLOWUP_ENABLED=true`. Template text, sample values and switch-on steps are in `docs/WHATSAPP_TEMPLATES.md`. A "STOP" reply is honoured through the Meta webhook (needs `WA_APP_SECRET`).
+Student ticks an optional consent box on the QR form (timestamp stored). If they score below 60% on a test and consented, one follow-up is queued. The scholarship line appears only on festival dates set in env (`COURSE_SCHOLARSHIP_*`); otherwise the message offers a free counselling call. Nothing is sent until Meta approves the template and `WHATSAPP_FOLLOWUP_ENABLED=true`. Template text, sample values and switch-on steps are in `docs/WHATSAPP_TEMPLATES.md`. A "STOP" reply is honoured through the Meta webhook (needs `WA_APP_SECRET`).
 
 Category to course mapping lives in `server/config/courseMap.js` (and the labels in `client/src/data/skillCategories.js`); change the course names there.
 
