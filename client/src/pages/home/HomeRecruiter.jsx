@@ -58,13 +58,7 @@ const HomeRecruiter = () => {
     return unique;
   }, [jobs]);
 
-  const useFallback = !platformStats || (platformStats.jobseekersCount < 1000 && platformStats.activeJobsCount < 1000);
-  const statCards = useFallback ? [
-    { label: 'Job Seekers', value: '50L+', icon: Users, invert: true },
-    { label: 'Active Jobs', value: '2L+', icon: Briefcase },
-    { label: 'Companies Hiring', value: '10K+', icon: Building2 },
-    { label: 'New Jobs This Week', value: '5K+', icon: Sparkles },
-  ] : [
+  const statCards = !platformStats ? [] : [
     { label: 'Job Seekers', value: formatCount(platformStats.jobseekersCount), icon: Users, invert: true },
     { label: 'Active Jobs', value: formatCount(platformStats.activeJobsCount), icon: Briefcase },
     { label: 'Companies Hiring', value: formatCount(platformStats.companiesCount), icon: Building2 },
@@ -128,7 +122,7 @@ const HomeRecruiter = () => {
         </div>
       </HeroShell>
 
-      <StatBento cards={statCards} />
+      {statCards.length > 0 && <StatBento cards={statCards} />}
 
       {/* Recent postings + "post yours too" */}
       <section className="py-24 bg-slate-50">

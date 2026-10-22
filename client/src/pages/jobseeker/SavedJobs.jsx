@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PageSOPBanner from '../../components/common/PageSOPBanner';
+import { jobPath } from '../../utils/jobUrl';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -111,7 +112,7 @@ const SavedJobs = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Link to={`/job/${job._id}`} className="block group">
+              <Link to={jobPath(job)} className="block group">
                 <Card 
                   bordered={false} 
                   bodyStyle={{ padding: '20px' }}

@@ -46,6 +46,13 @@ const collegeStudentSchema = new mongoose.Schema({
     enum: ['self', 'qr', 'csv'],
     default: 'self'
   },
+  // Campaign attribution captured at QR registration (checklist 4.6 / 4.9)
+  campusDriveCode: { type: String, default: '', index: true },
+  utm: {
+    source: { type: String, default: '' },
+    medium: { type: String, default: '' },
+    campaign: { type: String, default: '' }
+  },
   placementStatus: {
     type: String,
     enum: ['unplaced', 'registered', 'active', 'applied', 'shortlisted', 'interviewing', 'placed', 'opted_out'],

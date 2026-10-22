@@ -23,7 +23,9 @@ const SEOHead = ({ title, description, path, robots = 'index, follow', schema })
     setMeta('og:description', description, 'property');
     setMeta('og:url', canonicalUrl, 'property');
     setMeta('og:type', 'website', 'property');
+    setMeta('og:image', `${SITE_URL}/og-default.png`, 'property');
     setMeta('twitter:card', 'summary_large_image');
+    setMeta('twitter:image', `${SITE_URL}/og-default.png`);
 
     let canonical = document.head.querySelector('link[rel="canonical"]');
     if (!canonical) {

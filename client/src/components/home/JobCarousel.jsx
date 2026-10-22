@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ArrowUpRight, MapPin, IndianRupee, Clock, Briefcase, Loader2 } from 'lucide-react';
+import { jobPath } from '../../utils/jobUrl';
 
 const formatSalary = (salary) => {
   if (!salary || salary.isRangeHidden) return 'Not Disclosed';
@@ -62,7 +63,7 @@ const JobCarousel = ({
               {displayJobs.map((job) => (
                 <Link
                   key={job._id}
-                  to={`/job/${job._id}`}
+                  to={jobPath(job)}
                   className="group bg-emerald-50/30 rounded-lg p-6 border border-emerald-100/80 hover:border-emerald-500 hover:bg-emerald-50/60 shadow-sm hover:shadow-md hover:shadow-emerald-500/5 transition-all duration-300 flex flex-col justify-between min-h-[220px]"
                 >
                   <div>

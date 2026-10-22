@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+import { jobPath } from '../utils/jobUrl';
 
 const CompanyProfilePage = () => {
   const { id } = useParams();
@@ -271,7 +272,7 @@ const CompanyProfilePage = () => {
                     company.openJobs.map((job) => (
                       <Card key={job._id} className="rounded-2xl border-slate-100 shadow-sm hover:shadow-md transition-all group overflow-hidden">
                         <CardContent className="p-0">
-                          <Link to={`/job/${job._id}`} className="flex flex-col md:flex-row items-start md:items-center p-6 gap-6">
+                          <Link to={jobPath(job)} className="flex flex-col md:flex-row items-start md:items-center p-6 gap-6">
                             <div className="flex-1 space-y-2">
                               <h4 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{job.title}</h4>
                               <div className="flex flex-wrap gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">

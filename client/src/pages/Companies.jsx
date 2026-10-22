@@ -10,6 +10,7 @@ import {
   TrendingUp, Calendar, Link2, Star, ExternalLink, Mail
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { jobPath } from '../utils/jobUrl';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const DOMAIN = import.meta.env.VITE_API_DOMAIN;
@@ -186,7 +187,7 @@ const CompanyDetailModal = ({ item, onClose }) => {
                 {item.openJobs.map(job => (
                   <Link
                     key={job._id}
-                    to={`/job/${job._id}`}
+                    to={jobPath(job)}
                     onClick={onClose}
                     className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 hover:border-emerald-100 hover:bg-emerald-50/30 transition-all group"
                   >

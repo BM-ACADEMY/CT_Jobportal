@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const College = require('../models/College');
 const CampusDrive = require('../models/CampusDrive');
 const CollegeStudent = require('../models/CollegeStudent');
@@ -1689,7 +1690,22 @@ const getPublicDrive = async (req, res) => {
     if (drive.college?.verificationStatus !== 'verified') {
       return res.status(403).json({ msg: 'This institution is pending platform verification' });
     }
-    res.json(drive);
+    // Public QR page: expose only what registration needs. The raw drive document holds company
+    // access tokens and in-charge invite tokens, which grant access to student data / the drive.
+    res.json({
+      _id: drive._id,
+      title: drive.title,
+      driveCode: drive.driveCode,
+      batchYear: drive.batchYear,
+      departments: drive.departments,
+      college: drive.college && {
+        name: drive.college.name,
+        code: drive.college.code,
+        logo: drive.college.logo,
+        location: drive.college.location,
+        departments: drive.college.departments,
+      },
+    });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error' });
   }
@@ -1776,38 +1792,69 @@ const exportCompanyDriveStudents = async (req, res) => {
   }
 };
 
+// Indian mobile numbers: accepts 9876543210, 09876543210, 919876543210, +91 98765 43210.
+const normalizeIndianMobile = (value) => {
+  let digits = String(value || '').replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  return /^[6-9]\d{9}$/.test(digits) ? digits : '';
+};
+const cleanText = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+
 // @route   POST /api/college/public/drive/:driveCode/register
+// Campus QR registration: name + WhatsApp number is all a student has to give. Email is optional.
+// UTM parameters and the drive are stored on the student record for campaign attribution.
 const publicRegister = async (req, res) => {
   try {
-    const drive = await CampusDrive.findOne({ driveCode: req.params.driveCode, isActive: true })
+    const drive = await CampusDrive.findOne({ driveCode: String(req.params.driveCode || ''), isActive: true })
       .populate('college');
     if (!drive) return res.status(404).json({ msg: 'Drive not found or inactive' });
     if (drive.college?.verificationStatus !== 'verified') {
       return res.status(403).json({ msg: 'This institution is pending platform verification' });
     }
 
-    const { name, email, whatsapp, department, rollNumber, source } = req.body;
-    if (!name || !email) return res.status(400).json({ msg: 'Name and email are required' });
+    const name = cleanText(req.body.name, 100);
+    const whatsapp = normalizeIndianMobile(req.body.whatsapp);
+    const rawEmail = cleanText(req.body.email, 200).toLowerCase();
+    const department = cleanText(req.body.department, 60);
+    const rollNumber = cleanText(req.body.rollNumber, 40);
+    const source = req.body.source === 'qr' ? 'qr' : 'self';
 
-    const normalizedEmail = email.toLowerCase().trim();
+    if (!name) return res.status(400).json({ msg: 'Please enter your name' });
+    if (!whatsapp) return res.status(400).json({ msg: 'Please enter a valid 10-digit WhatsApp number' });
+    if (rawEmail && !/^\S+@\S+\.\S+$/.test(rawEmail)) {
+      return res.status(400).json({ msg: 'Please enter a valid email address or leave it blank' });
+    }
+
+    // Students who skip email get a non-deliverable placeholder login id, unique per college + number.
+    const cleanCode = String(drive.college.code || 'campus').toLowerCase().replace(/[^a-z0-9]/g, '') || 'campus';
+    const email = rawEmail || `${whatsapp}@${cleanCode}.portal`;
+
+    const utm = {};
+    ['source', 'medium', 'campaign'].forEach((key) => {
+      const value = cleanText(req.body.utm?.[key], 80);
+      if (value) utm[key] = value;
+    });
+
     const jobseekerRole = await Role.findOne({ name: 'jobseeker' });
 
     // Find or create user account
-    let user = await User.findOne({ email: normalizedEmail });
+    let user = await User.findOne({ email });
     let isNewUser = false;
 
     if (!user) {
-      const tempPassword = crypto.randomBytes(8).toString('hex');
+      // No password is ever handed out; the account is claimed later through the OTP / reset flow.
+      const randomPassword = crypto.randomBytes(16).toString('hex');
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(tempPassword, salt);
+      const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
       user = new User({
         name,
-        email: normalizedEmail,
+        email,
         password: hashedPassword,
         role: jobseekerRole._id,
         isVerified: true,
-        profile: { phone: whatsapp || '' }
+        profile: { phone: whatsapp }
       });
       await user.save();
       isNewUser = true;
@@ -1836,12 +1883,14 @@ const publicRegister = async (req, res) => {
       user: user._id,
       college: drive.college._id,
       campusDrive: drive._id,
+      campusDriveCode: drive.driveCode,
       driveApplications: [{ drive: drive._id, status: 'registered' }],
-      department: department || '',
+      department,
       batchYear: drive.batchYear,
-      rollNumber: rollNumber || '',
-      registrationSource: source === 'qr' ? 'qr' : 'self',
-      whatsappNumber: whatsapp || '',
+      rollNumber,
+      registrationSource: source,
+      utm,
+      whatsappNumber: whatsapp,
       placementStatus: 'registered'
     });
     await collegeStudent.save();
@@ -1857,18 +1906,34 @@ const publicRegister = async (req, res) => {
   } catch (err) {
     console.error('Public Registration Error:', err.message);
     if (err.code === 11000) return res.json({ msg: 'Already registered', alreadyRegistered: true });
-    res.status(500).json({ msg: 'Server Error', error: err.message });
+    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
   }
 };
 
 // @route   POST /api/college/public/submit-assessment
 const submitAssessment = async (req, res) => {
   try {
-    const { studentId, skill, score, total, category } = req.body;
-    if (!studentId || !skill) return res.status(400).json({ msg: 'studentId and skill required' });
+    const { studentId, category } = req.body;
+    const skill = typeof req.body.skill === 'string' ? req.body.skill.trim().slice(0, 60) : '';
+    if (!studentId || !skill || !mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({ msg: 'studentId and skill required' });
+    }
+
+    // The score is reported by the browser, so at least keep it within sane bounds.
+    // (Proper fix: score on the server — see docs/QC_GAP_ANALYSIS.md.)
+    const total = Number.isInteger(req.body.total) ? req.body.total : 10;
+    const score = Number.isInteger(req.body.score) ? req.body.score : 0;
+    if (total < 1 || total > 50 || score < 0 || score > total) {
+      return res.status(400).json({ msg: 'Invalid assessment result' });
+    }
 
     const student = await CollegeStudent.findById(studentId).populate('college').populate('user', 'name email');
     if (!student) return res.status(404).json({ msg: 'Student not found' });
+
+    // One certificate attempt per skill per student on this public, unauthenticated endpoint.
+    if ((student.assessmentScores || []).some((a) => a.skill === skill)) {
+      return res.status(409).json({ msg: 'You have already completed this assessment' });
+    }
 
     student.assessmentScores.push({
       skill,

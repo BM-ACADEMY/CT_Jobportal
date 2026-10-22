@@ -18,6 +18,7 @@ const FreeAssessment = lazy(() => import('../pages/public/FreeAssessment'));
 const CampusRegistration = lazy(() => import('../pages/public/CampusRegistration'));
 const Jobs = lazy(() => import('../pages/Jobs'));
 const JobDetails = lazy(() => import('../pages/JobDetails'));
+const ForColleges = lazy(() => import('../pages/ForColleges'));
 const Companies = lazy(() => import('../pages/Companies'));
 const CompanyProfilePage = lazy(() => import('../pages/CompanyProfilePage'));
 const Contact = lazy(() => import('../pages/Contact'));
@@ -140,6 +141,7 @@ const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/free-assessment" element={<FreeAssessment />} />
         <Route path="/campus/:driveCode" element={<CampusRegistration />} />
+        <Route path="/join/:driveCode" element={<CampusRegistration />} />
         <Route path="/principal/executive-summary/:passkey" element={<PrincipalExecutiveSummary />} />
         <Route path="/company-drive/:token" element={<CompanyDriveView />} />
         <Route path="/incharge/accept/:driveId/:token" element={<AcceptInchargeInvite />} />
@@ -149,6 +151,7 @@ const AppRoutes = () => {
         <Route path="/companies" element={<Companies />} />
         <Route path="/companies/:id" element={<CompanyProfilePage />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/for-colleges" element={<ForColleges />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/blog" element={<Blog />} />

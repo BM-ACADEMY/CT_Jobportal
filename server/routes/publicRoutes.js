@@ -14,6 +14,26 @@ const PayPerFeature = require('../models/PayPerFeature');
 const ContactMessage = require('../models/ContactMessage');
 const sendEmail = require('../utils/sendEmail');
 
+// @desc  GET /api/public/sitemap-feed
+//        Lightweight list of public URLs' data for the dynamic sitemap (jobs + companies).
+router.get('/sitemap-feed', async (req, res) => {
+  try {
+    const now = new Date();
+    const [jobs, companies] = await Promise.all([
+      Job.find({ status: 'active', $or: [{ validThrough: { $gte: now } }, { validThrough: null }] })
+        .select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
+      Company.find({}).select('name updatedAt').sort({ updatedAt: -1 }).limit(2000).lean()
+    ]);
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({
+      jobs: jobs.map((j) => ({ id: j._id, title: j.title, location: j.location, updatedAt: j.updatedAt })),
+      companies: companies.map((c) => ({ id: c._id, updatedAt: c.updatedAt }))
+    });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 // @desc  GET /api/public/stats
 //        Real, aggregate platform counts for the public home page.
 //        No placement/success-rate figures are returned — the platform
@@ -205,12 +225,18 @@ router.get('/companies/:id', async (req, res) => {
     const company = await Company.findById(id);
     if (!company) return res.status(404).json({ msg: 'Company not found' });
 
-    const openJobs = await Job.find({ company: id, status: { $ne: 'Closed' } })
+    const openJobs = await Job.find({ company: id, status: 'active' })
       .select('title location jobType salary experienceLevel createdAt')
       .sort({ createdAt: -1 })
       .limit(10);
 
-    res.json({ ...company.toObject(), openJobs, profileType: 'company' });
+    // Never publish billing / tax / internal fields on a public profile.
+    const publicCompany = company.toObject();
+    ['tax_id_ein', 'admin_email', 'legal_name', 'razorpaySubscriptionId', 'renewalFailureCount',
+      'nextRenewalDate', 'autoRenewEnabled', 'subscriptionExpiry', 'pendingJoinRequests'
+    ].forEach((field) => delete publicCompany[field]);
+
+    res.json({ ...publicCompany, openJobs, profileType: 'company' });
   } catch (err) {
     console.error('Company Detail Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });
@@ -233,7 +259,7 @@ router.get('/recruiters/:id', async (req, res) => {
 
     // Fetch jobs posted by this recruiter's company
     const openJobs = user.company
-      ? await Job.find({ company: user.company._id, status: { $ne: 'Closed' } })
+      ? await Job.find({ company: user.company._id, status: 'active' })
           .select('title location jobType salary experienceLevel createdAt')
           .sort({ createdAt: -1 })
           .limit(10)
@@ -243,7 +269,11 @@ router.get('/recruiters/:id', async (req, res) => {
       _id: user._id,
       name: user.name,
       avatar: user.avatar,
-      recruiterProfile: user.recruiterProfile,
+      recruiterProfile: (() => {
+        const profile = user.recruiterProfile ? user.recruiterProfile.toObject() : {};
+        delete profile.phone; // contact details are unlocked through the platform, never published
+        return profile;
+      })(),
       company: user.company,
       openJobs,
       profileType: 'recruiter',

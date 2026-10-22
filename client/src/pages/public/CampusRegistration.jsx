@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { GraduationCap, ArrowRight, Loader2, CheckCircle2, Sparkles, AlertCircle } from 'lucide-react';
+import { GraduationCap, ArrowRight, Loader2, CheckCircle2, Sparkles, AlertCircle, Download, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { trackEvent, getUtm } from '../../utils/analytics';
+import SEOHead from '../../components/seo/SEOHead';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -40,11 +42,17 @@ const CampusRegistration = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email) return toast.error('Name and email are required');
+    if (!form.name.trim()) return toast.error('Please enter your name');
+    if (!/^(\+?91)?0?[6-9]\d{9}$/.test(form.whatsapp.replace(/[\s-]/g, ''))) {
+      return toast.error('Please enter a valid 10-digit WhatsApp number');
+    }
     setSubmitting(true);
     try {
-      const res = await axios.post(`${API}/college/public/drive/${driveCode}/register`, { ...form, source: 'qr' });
+      const res = await axios.post(`${API}/college/public/drive/${driveCode}/register`, { ...form, source: 'qr', utm: getUtm() });
       setStudentId(res.data.studentId);
+      if (!res.data.alreadyRegistered) {
+        trackEvent('sign_up', { method: 'campus_qr', campus_drive_id: driveCode });
+      }
       toast.success(res.data.msg);
       // Load assessment
       loadAssessment();
@@ -90,12 +98,21 @@ const CampusRegistration = () => {
         total: questions.length,
         category: 'general'
       });
-      setResult({ score, total: questions.length, passed: res.data.passed, certificateCode: res.data.certificateCode });
+      setResult({
+        score,
+        total: questions.length,
+        passed: res.data.passed,
+        certificateCode: res.data.certificateCode,
+        certificateUrl: res.data.certificateDetails?.certificateUrl || ''
+      });
+      trackEvent('skill_test_complete', { campus_drive_id: driveCode, skill: drive?.departments?.[0] || 'aptitude', passed: !!res.data.passed });
     } catch {
       setResult({ score, total: questions.length, passed: score >= questions.length * 0.6 });
     }
     setStep('results');
   };
+
+  const noIndex = <SEOHead title="Campus Registration | Velaivaaipu" description="Register for your campus placement drive on Velaivaaipu." robots="noindex, nofollow" />;
 
   if (step === 'loading' || assessLoading) {
     return (
@@ -124,6 +141,7 @@ const CampusRegistration = () => {
   if (step === 'register') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
+        {noIndex}
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 space-y-6">
           <div className="text-center">
             {drive?.college?.logo ? (
@@ -141,16 +159,20 @@ const CampusRegistration = () => {
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Full Name *</label>
-              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Your full name" className="mt-1 h-11 rounded-xl" />
+              <Input autoComplete="name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Your full name" className="mt-1 h-11 rounded-xl" />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Email *</label>
-              <Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="you@email.com" className="mt-1 h-11 rounded-xl" />
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">WhatsApp Number *</label>
+              <Input type="tel" inputMode="numeric" autoComplete="tel" maxLength={14} value={form.whatsapp} onChange={e => setForm(p => ({ ...p, whatsapp: e.target.value }))} placeholder="9876543210" className="mt-1 h-11 rounded-xl" />
+              <p className="text-[11px] text-slate-400 mt-1">Your certificate and results are sent here.</p>
             </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">WhatsApp Number</label>
-              <Input value={form.whatsapp} onChange={e => setForm(p => ({ ...p, whatsapp: e.target.value }))} placeholder="9876543210" className="mt-1 h-11 rounded-xl" />
-            </div>
+            <details className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+              <summary className="cursor-pointer text-xs font-bold text-slate-500">Add more details (optional)</summary>
+              <div className="mt-3">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Email</label>
+                <Input type="email" autoComplete="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="you@email.com" className="mt-1 h-11 rounded-xl bg-white" />
+              </div>
+            </details>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Department</label>
@@ -247,6 +269,27 @@ const CampusRegistration = () => {
             <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
               <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-1">Certificate Code</p>
               <p className="text-lg font-mono font-black text-emerald-800">{result.certificateCode}</p>
+            </div>
+          )}
+
+          {result?.certificateUrl && (
+            <div className="space-y-2">
+              <a
+                href={result.certificateUrl.startsWith('http') ? result.certificateUrl : `${import.meta.env.VITE_API_DOMAIN}${result.certificateUrl}`}
+                target="_blank" rel="noopener noreferrer"
+                onClick={() => trackEvent('certificate_download', { campus_drive_id: driveCode })}
+                className="flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-slate-900 text-white font-bold text-sm"
+              >
+                <Download size={16} /> Download Certificate
+              </a>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`I just earned a skill certificate on Velaivaaipu! Code: ${result.certificateCode}`)}`}
+                target="_blank" rel="noopener noreferrer"
+                onClick={() => trackEvent('whatsapp_click', { placement: 'certificate_share', campus_drive_id: driveCode })}
+                className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 font-bold text-sm"
+              >
+                <MessageCircle size={16} /> Share on WhatsApp
+              </a>
             </div>
           )}
 

@@ -1,3 +1,4 @@
+import { trackEvent } from '../utils/analytics';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -94,6 +95,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       const { user, token: resToken } = res.data;
+      trackEvent('sign_up', { method: 'email', role: user.role });
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       setTokenAndHeader(resToken);

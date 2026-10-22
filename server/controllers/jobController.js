@@ -433,10 +433,24 @@ const getJobById = async (req, res) => {
     const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'subadmin');
 
     if (job.status !== 'active' && !isOwner && !isAdmin) {
-      return res.status(404).json({ msg: 'Job is no longer active' });
+      // Closed / filled jobs still answer 200 with a minimal record so the page can say "filled"
+      // (and keep its URL alive for search engines) instead of becoming a dead 404.
+      return res.json({
+        _id: job._id,
+        closed: true,
+        status: job.status,
+        title: job.title,
+        location: job.location,
+        company: job.company && { name: job.company.name, logo: job.company.logo }
+      });
     }
 
-    res.json(job);
+    // Public visitors only get the recruiter's display name — never their email.
+    const payload = job.toObject();
+    if (!isOwner && !isAdmin && payload.recruiter) {
+      payload.recruiter = { _id: payload.recruiter._id, name: payload.recruiter.name };
+    }
+    res.json(payload);
   } catch (err) {
     console.error('Get Job By ID Error:', err);
     res.status(500).json({ msg: 'Server error while fetching job' });
