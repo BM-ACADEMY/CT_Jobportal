@@ -12,7 +12,7 @@ A multi-role job platform connecting job seekers, companies/recruiters and colle
 | Server (`/server`) | Node.js, Express 5, MongoDB (Mongoose), Socket.io, node-cron |
 | Auth | Email + OTP, JWT, Google (Passport) and LinkedIn (OpenID Connect) |
 | Payments | Razorpay (orders, subscriptions, webhooks) |
-| AI | Google Gemini (resume review, candidate matching) |
+| AI | Google Gemini models through OpenRouter (skill tests, resume review and builder, candidate matching) |
 | Hosting | Client on Vercel (`client/vercel.json`) |
 
 ## Roles
@@ -48,7 +48,7 @@ npm run dev                 # http://localhost:5173
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Payments |
 | `GOOGLE_*`, `LINKEDIN_*` | OAuth client ids / secrets / callback URLs |
 | `EMAIL_*` / SMTP settings | OTP and notification emails (see `utils/sendEmail.js`) |
-| `GEMINI_API_KEY` | AI features |
+| `OPENROUTER_API_KEY` | All AI features (skill tests, resume review, candidate matching). Without it they fail. |
 | `WA_VERIFY_TOKEN` | WhatsApp webhook verification |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin account (recommended) |
 

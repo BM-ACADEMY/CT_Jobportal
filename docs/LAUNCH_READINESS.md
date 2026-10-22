@@ -128,7 +128,7 @@ I also did not review per-object authorization (e.g. can recruiter A open recrui
 **Before launch**
 5. Apply P0 fixes 7-8; untrack `server/uploads/`.
 6. Add helmet + rate limits (P1-3).
-7. Set env vars on the host: `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `FRONTEND_URL`, `RAZORPAY_KEY_ID/SECRET`, `RAZORPAY_WEBHOOK_SECRET` (set it separately from the key secret), email SMTP, Google/GitHub OAuth, `GEMINI_API_KEY`, `ADMIN_EMAIL/PASSWORD`.
+7. Set env vars on the host: `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `FRONTEND_URL`, `RAZORPAY_KEY_ID/SECRET`, `RAZORPAY_WEBHOOK_SECRET` (set it separately from the key secret), email SMTP, Google/GitHub OAuth, `OPENROUTER_API_KEY` (every AI feature uses this key; `GEMINI_API_KEY` is not read anywhere), `ADMIN_EMAIL/PASSWORD`.
 8. Register the Razorpay webhook URL: `https://<api-domain>/api/payments/razorpay/renewal-webhook`.
 9. Turn on MongoDB Atlas backups; set up uptime monitoring on `/`.
 10. Smoke test with a real small payment (refund it): signup → OTP email → subscribe → job post → apply → admin approve.

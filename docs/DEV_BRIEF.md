@@ -12,7 +12,7 @@ Then run locally: `cd server && npm i && node --test tests/auth/*.test.js tests/
 
 ## 1. Developer: set up (about half a day)
 
-**Server env** (see `server/.env.example`): `JWT_SECRET` (32+ random chars, server refuses to start otherwise), `MONGODB_URI`, `FRONTEND_URL`, `ALLOWED_ORIGINS`, Razorpay keys + `RAZORPAY_WEBHOOK_SECRET`, SMTP, `GEMINI_API_KEY`, `ADMIN_EMAIL` + `ADMIN_PASSWORD` (12+ chars, first admin only), Google OAuth, and `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `LINKEDIN_CALLBACK_URL` (`https://<api-domain>/api/auth/linkedin/callback`).
+**Server env** (see `server/.env.example`): `JWT_SECRET` (32+ random chars, server refuses to start otherwise), `MONGODB_URI`, `FRONTEND_URL`, `ALLOWED_ORIGINS`, Razorpay keys + `RAZORPAY_WEBHOOK_SECRET`, SMTP, `OPENROUTER_API_KEY` (every AI feature uses this key; `GEMINI_API_KEY` is not read anywhere), `ADMIN_EMAIL` + `ADMIN_PASSWORD` (12+ chars, first admin only), Google OAuth, and `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `LINKEDIN_CALLBACK_URL` (`https://<api-domain>/api/auth/linkedin/callback`).
 
 **Vercel (client) env:** `VITE_API_BASE_URL`, `VITE_API_DOMAIN`, `VITE_RAZORPAY_KEY_ID`, `VITE_GA_MEASUREMENT_ID`, `VITE_META_PIXEL_ID`, and for the SEO functions `API_BASE_URL` (the `/api` base of the server) and optional `SITE_URL`.
 
@@ -62,6 +62,15 @@ Category to course mapping lives in `server/config/courseMap.js` (and the labels
 
 Decisions made on Kamar's behalf (footer, senders, festival dates, pricing proposal) are in `docs/DECISIONS_AND_INPUTS.md`. Full mapping of the Smart Reply Mail Plan to Velaivaaipu is in `docs/LIFECYCLE_MAIL_PLAN.md`. Summary: welcome, profile nudge, skill-test invite, skill-gap + course, win-back, paid Job Alerts delivery, employer tips and templates, college batch readiness, GST receipts, refund mails, contact-form auto-reply, one-click unsubscribe. Switch on with `LIFECYCLE_EMAILS_ENABLED=true` and the env in `.env.example` (needs `API_PUBLIC_URL` for the unsubscribe link). Start with `LIFECYCLE_MAX_PER_RUN=20`. Confirm the lead store (n8n "leados" or other) and the free-plan limits (2 jobs, 10 searches a day, 3 free hires), which I could not find in the code. All existing payment tests were not runnable in my environment; run `node --test server/tests/payments/*.test.js`. I changed one assertion in `webhook.test.js` (first charge now also sends a receipt).
 
-## 7. Smoke test before launch
+## 7. Before promoting it as an "AI-powered job platform"
+
+- **Set `OPENROUTER_API_KEY`** on the server and keep credit in the OpenRouter account. All AI features use it (skill tests, resume review, resume builder, candidate matching). Earlier notes said `GEMINI_API_KEY`; that variable is not read anywhere. Without the key the AI features fail.
+- Test each AI feature on the live site with a real account: free skill test, AI resume review, AI resume builder, recruiter AI matching.
+- **Campus QR load:** every student who starts a test triggers a live AI call that generates new questions (no cache). Hundreds of students on one college Wi-Fi can hit rate limits, cost and slow replies. Build a pre-generated question bank per category (7 categories, a few sets each) and score on the server. This also closes the "answers visible in the browser" hole. Do this before the first big college drive.
+- What the code really does with AI (safe to claim): AI-generated skill tests with certificates, AI resume review, AI resume builder, AI ranking and match analysis of applicants for employers. Mock interviews and career counselling are booking forms for team sessions; confirm before calling them AI.
+- Claims removed in this patch: made-up testimonials (shown when there were no real reviews), "trusted by companies and colleges statewide", "thousands of professionals", and the "95% match relevance" figure in the Terms. Do not add numbers back unless they are true and provable.
+- The AI providers now appear in the Privacy Policy, because resumes are sent to them.
+
+## 8. Smoke test before launch
 
 Signup with email OTP, Google login, LinkedIn login, forgot password; post a job and open its public URL; apply; subscribe with a real small payment and request a refund inside 24 hours; QR campus join with only name + WhatsApp, take the test, download the certificate; check that a closed job URL shows "position filled"; check `/for-colleges`, `/privacy-policy`, `/refund-policy`, `/terms`.

@@ -70,7 +70,7 @@ const PrivacyPolicy = () => (
     </Section>
 
     <Section id="processors" title="6. Services we use">
-      <p>We use trusted providers to run the platform: Razorpay (payments), Meta WhatsApp Business (messages), Google and LinkedIn (sign-in), Google Analytics and Meta Pixel (analytics and advertising measurement), Google Gemini (AI features such as resume review and matching), email delivery services, and cloud hosting. They process data on our behalf or under their own privacy terms. Some of them store data on servers outside India.</p>
+      <p>We use trusted providers to run the platform: Razorpay (payments), Meta WhatsApp Business (messages), Google and LinkedIn (sign-in), Google Analytics and Meta Pixel (analytics and advertising measurement), AI model providers accessed through OpenRouter (for AI features such as skill tests, resume review and candidate matching; the text you submit for those features, such as your resume, is sent to them to produce the result), email delivery services, and cloud hosting. They process data on our behalf or under their own privacy terms. Some of them store data on servers outside India.</p>
     </Section>
 
     <Section id="retention" title="7. How long we keep data">
