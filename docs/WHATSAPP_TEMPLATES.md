@@ -23,14 +23,14 @@ Reply STOP to unsubscribe.
 | {{1}} | Priya |
 | {{2}} | MS Excel |
 | {{3}} | Data Analytics with Power BI |
-| {{4}} | Scholarship price Rs 2999 for students |
+| {{4}} | Festival scholarship price Rs 2999 for students |
 | {{5}} | https://learnwithkamar.ai |
 
 **Rules the code already follows:** only students who ticked the consent box get this; one message per student; sent between 9am and 8pm IST; a STOP reply switches it off for that number.
 
 ## Switching it on (after approval)
 
-Set on the server: `WHATSAPP_FOLLOWUP_ENABLED=true`, `COURSE_PAGE_URL=<the course page link>`, `WA_APP_SECRET=<Meta app secret>`. If a scholarship is running, also `COURSE_SCHOLARSHIP_ACTIVE=true` and `COURSE_SCHOLARSHIP_PRICE=<amount>`; otherwise the message offers a free 15-minute counselling call.
+Set on the server: `WHATSAPP_FOLLOWUP_ENABLED=true`, `COURSE_PAGE_URL=<the course page link>`, `WA_APP_SECRET=<Meta app secret>`. The scholarship is for festivals only. For a festival, set `COURSE_SCHOLARSHIP_ACTIVE=true`, `COURSE_SCHOLARSHIP_PRICE=<amount>`, `COURSE_SCHOLARSHIP_START=YYYY-MM-DD` and `COURSE_SCHOLARSHIP_END=YYYY-MM-DD`; it switches on and off by itself on those dates (India time). At all other times the message offers a free 15-minute counselling call. Message {{4}} changes with the date, so one approved template covers both.
 
 Also in the Meta app, subscribe the webhook `https://<api-domain>/api/whatsapp/webhook` to the `messages` field, so STOP replies reach us.
 
