@@ -62,7 +62,7 @@ test('mails are personalised and carry no false urgency or job guarantee', () =>
 test('wrapped mail has the unsubscribe link and the company footer', () => {
   const w = mails.wrap(all()[0], user._id);
   assert.match(w.html, /\/api\/public\/unsubscribe\?token=/);
-  assert.match(w.html, /Afra Ventures Pvt Ltd/);
+  assert.match(w.html, /Afra Ventures Private Limited/);
 });
 
 test('unsubscribe tokens are signed, purpose-bound and cannot be reused as other tokens', () => {
