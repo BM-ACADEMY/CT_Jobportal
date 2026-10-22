@@ -53,6 +53,21 @@ const collegeStudentSchema = new mongoose.Schema({
     medium: { type: String, default: '' },
     campaign: { type: String, default: '' }
   },
+  // Explicit opt-in for promotional WhatsApp (course offers). Service messages do not need it.
+  whatsappConsent: {
+    given: { type: Boolean, default: false },
+    at: { type: Date, default: null },
+    text: { type: String, default: '' }
+  },
+  whatsappOptOut: { type: Boolean, default: false },
+  // Course suggestion queued after a below-pass skill test (sent only if enabled, see cron/courseFollowUps.js)
+  followUp: {
+    category: { type: String, default: '' },
+    scorePercent: { type: Number, default: 0 },
+    status: { type: String, enum: ['', 'queued', 'sent', 'skipped', 'failed'], default: '' },
+    queuedAt: { type: Date, default: null },
+    sentAt: { type: Date, default: null }
+  },
   placementStatus: {
     type: String,
     enum: ['unplaced', 'registered', 'active', 'applied', 'shortlisted', 'interviewing', 'placed', 'opted_out'],

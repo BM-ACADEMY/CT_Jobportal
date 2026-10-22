@@ -24,6 +24,8 @@ const CompanyProfilePage = lazy(() => import('../pages/CompanyProfilePage'));
 const Contact = lazy(() => import('../pages/Contact'));
 const HowItWorks = lazy(() => import('../pages/HowItWorks'));
 const TermsAndConditions = lazy(() => import('../pages/TermsAndConditions'));
+const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
+const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
 const Blog = lazy(() => import('../pages/Blog'));
 const BlogDetails = lazy(() => import('../pages/BlogDetails'));
 const LoginPage = lazy(() => import('../pages/auth/Login'));
@@ -154,6 +156,8 @@ const AppRoutes = () => {
         <Route path="/for-colleges" element={<ForColleges />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogDetails />} />
         <Route path="/recruitment-agency-fees-india" element={<BlogDetails staticSlug="recruitment-agency-fees-india" />} />

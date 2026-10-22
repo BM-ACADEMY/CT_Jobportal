@@ -499,7 +499,7 @@ const RegisterPage = () => {
                   <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
                     By creating an account, you agree to our{' '}
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
+                    <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
                   </p>
 
                   <Button

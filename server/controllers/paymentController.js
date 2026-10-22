@@ -16,6 +16,7 @@ const Coupon = require('../models/Coupon');
 const { reconcileTeamSeats } = require('../utils/teamMembership');
 const { fetchGstPercentage, getPricingOption, computeNextRenewalDate } = require('../utils/pricing');
 const { canPurchasePlan, fulfillPlanPayment, fulfillRecurringPayment, fulfillPayPerPayment, recordRenewalPayment } = require('../utils/paymentFulfillment');
+const { checkRefundEligibility } = require('../utils/refundPolicy');
 const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 const { isValidSignature, isDuplicateKeyError, findPaymentByRazorpayId, checkoutNotes, findCoupon, countCouponUse } = require('../utils/paymentGuards');
 
@@ -519,16 +520,25 @@ const requestRefund = async (req, res) => {
     if (!payment) {
       return res.status(404).json({ msg: 'Payment record not found' });
     }
-    if (payment.status !== 'completed') {
-      return res.status(400).json({ msg: 'Only completed payments can be refunded' });
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 500) : '';
+    const user = await User.findById(req.user.id).select('email profile.phone recruiterProfile.phone companyProfile.phone');
+    const plan = payment.plan ? await Subscription.findById(payment.plan).select('role') : null;
+    const verdict = await checkRefundEligibility(payment, { Payment, User }, {
+      user, planRole: plan?.role, phone: getUserPhone(user),
+    });
+    if (!verdict.eligible) {
+      return res.status(verdict.code === 'contact_support' ? 403 : 400).json({ msg: verdict.msg, code: verdict.code });
     }
     payment.status = 'refund_pending';
+    payment.refundReason = reason;
+    payment.refundRequestedAt = new Date();
+    payment.refundDuplicate = Boolean(verdict.duplicate);
     await payment.save();
     notifyRoles({
       io: req.io,
       roles: ['admin', 'subadmin'],
-      title: 'New refund request',
-      message: `A refund was requested for payment ${payment._id}.`,
+      title: verdict.duplicate ? 'Refund request (duplicate charge)' : 'New refund request',
+      message: `A refund was requested for payment ${payment._id}.${verdict.duplicate ? ' Duplicate charge: refund in full.' : ' Confirm nothing was used before approving.'}`,
       type: 'refund_requested',
       link: '/admin/subscriptions/refunds',
       metadata: { paymentId: payment._id, userId: req.user.id }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from "@/components/ui/badge";
 import { FileText, ShieldAlert } from 'lucide-react';
 
-const EFFECTIVE_DATE = 'July 25, 2026';
+const EFFECTIVE_DATE = 'October 22, 2026';
 
 const SECTIONS = [
   { id: 'acceptance', title: '1. Acceptance of Terms' },
@@ -11,7 +11,7 @@ const SECTIONS = [
   { id: 'eligibility', title: '3. Eligibility & Account Registration' },
   { id: 'how-it-works', title: '4. How the Platform Works' },
   { id: 'subscriptions', title: '5. Subscription Plans, Billing & Payments' },
-  { id: 'no-refunds', title: '6. No-Refund Policy' },
+  { id: 'refunds', title: '6. Refunds & Cancellation' },
   { id: 'matching', title: '7. AI Matching & Accuracy Disclaimer' },
   { id: 'communications', title: '8. Email & WhatsApp Communications' },
   { id: 'campus', title: '9. Campus Drives & Verification' },
@@ -126,15 +126,16 @@ const TermsAndConditions = () => {
             </p>
           </Section>
 
-          <Section id="no-refunds" title="6. No-Refund Policy">
-            <p className="font-bold text-slate-900">
-              All payments made for Subscription plans and Pay-Per-Feature purchases are final and non-refundable, in whole or in part, regardless of the extent to which the plan or feature is used.
+          <Section id="refunds" title="6. Refunds & Cancellation">
+            <p>
+              You can ask for a refund within <strong>24 hours of payment</strong>, as long as you have not used the plan or feature you paid for. Each account, email address and phone number is eligible for one refund. If you were charged twice for the same item, we refund the duplicate in full, at any time.
             </p>
             <p>
-              This includes, without limitation: monthly, quarterly, and yearly subscription fees; upgrade or add-on charges; pay-per-feature credit purchases; and amounts charged via auto-renewal. No refunds, credits, or pro-rated reimbursements will be issued for unused time, unused credits, early cancellation, downgrade, account suspension for a Terms violation, or dissatisfaction with match outcomes or hiring results.
+              Refunds for College (campus) plans are handled directly by our team. Every refund is reviewed and approved by us before it is issued, and approved refunds go back to the original payment method. Outside these cases, payments are non-refundable, including for unused time, early cancellation, downgrade, account suspension for a Terms violation, or dissatisfaction with match outcomes or hiring results.
             </p>
             <p>
-              Where applicable law in your jurisdiction grants non-waivable refund rights, this section applies to the maximum extent permitted by that law.
+              The full rules and how to apply are on our{' '}
+              <Link to="/refund-policy" className="font-bold text-emerald-700 hover:underline">Refund & Cancellation Policy</Link>. Where applicable law gives you refund rights that cannot be waived, those rights apply.
             </p>
           </Section>
 
@@ -153,6 +154,9 @@ const TermsAndConditions = () => {
             </p>
             <p>
               These communications are necessary to the services you've signed up for and are not promotional opt-ins; you can update your contact details, but disabling delivery entirely may limit your ability to receive time-sensitive updates (e.g. interview schedules).
+            </p>
+            <p>
+              We send promotional messages, such as course or scholarship offers, on WhatsApp only if you opted in. You can stop them at any time by replying STOP.
             </p>
           </Section>
 
@@ -193,7 +197,7 @@ const TermsAndConditions = () => {
 
           <Section id="privacy" title="13. Data & Privacy">
             <p>
-              We collect and process personal data (profile details, resumes, contact information, usage data) to operate the Platform's core features — matching, applications, messaging, notifications, and billing. We do not sell your personal data to third parties. Full details will be published in our Privacy Policy; until then, this section governs data handling in conjunction with applicable law.
+              We collect and process personal data (profile details, resumes, contact information, usage data) to operate the Platform's core features — matching, applications, messaging, notifications, and billing. We do not sell your personal data to third parties. Full details are in our <Link to="/privacy-policy" className="font-bold text-emerald-700 hover:underline">Privacy Policy</Link>.
             </p>
           </Section>
 
@@ -217,7 +221,7 @@ const TermsAndConditions = () => {
 
           <Section id="termination" title="17. Termination & Suspension">
             <p>
-              We may suspend or terminate your account, with or without notice, for violation of these Terms, fraudulent activity, non-payment, or at our discretion to protect the Platform and its users. Sections 6, 11, 15, 16, and 19 survive termination. Termination does not entitle you to any refund under Section 6.
+              We may suspend or terminate your account, with or without notice, for violation of these Terms, fraudulent activity, non-payment, or at our discretion to protect the Platform and its users. Sections 6, 11, 15, 16, and 19 survive termination. Termination does not entitle you to a refund except as set out in Section 6.
             </p>
           </Section>
 

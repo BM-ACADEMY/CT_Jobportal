@@ -2,7 +2,7 @@
 import * as lib from './_lib.js';
 
 const STATIC_PAGES = [
-  '/', '/jobs', '/companies', '/how-it-works', '/contact', '/blog', '/for-colleges',
+  '/', '/jobs', '/companies', '/how-it-works', '/contact', '/blog', '/for-colleges', '/privacy-policy', '/refund-policy', '/terms',
   '/blog/it-jobs-in-pondicherry-for-freshers',
   '/blog/work-from-home-jobs-in-tamil-nadu',
   '/blog/private-jobs-in-pondicherry',
