@@ -44,6 +44,7 @@ const {
   getVerificationQueue,
   getPublicDrive,
   publicRegister,
+  getPublicAssessment,
   submitAssessment,
   getCompanyMatchStatus,
   exportCredentialsSheet,
@@ -137,6 +138,7 @@ const requireDriveAccess = async (req, res, next) => {
 // ── Public routes (no auth) ─────────────────────────────────────────────────
 router.get('/public/drive/:driveCode', getPublicDrive);
 router.post('/public/drive/:driveCode/register', publicRegisterLimiter, publicRegister);
+router.get('/public/assessment', publicSubmitLimiter, getPublicAssessment);
 router.post('/public/submit-assessment', publicSubmitLimiter, submitAssessment);
 router.post('/public/principal-report/:passkey', getPrincipalExecutiveReport);
 router.get('/drives/incharge/verify/:driveId/:token', verifyInchargeInvite);

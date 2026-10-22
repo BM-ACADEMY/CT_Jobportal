@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 const { getCategory, PASS_RATIO } = require('../config/courseMap');
+const CampusQuestionSet = require('../models/CampusQuestionSet');
+const { pickSet } = require('../utils/questionBank');
+const { publicQuestions, signAttempt, verifyAttempt, scoreAttempt } = require('../utils/campusTest');
 const College = require('../models/College');
 const CampusDrive = require('../models/CampusDrive');
 const CollegeStudent = require('../models/CollegeStudent');
@@ -1914,24 +1917,58 @@ const publicRegister = async (req, res) => {
   }
 };
 
+// @route   GET /api/college/public/assessment?category=ms-excel&studentId=...
+// Gives the student a ready-made question set WITHOUT the answers, plus a signed attempt token.
+const getPublicAssessment = async (req, res) => {
+  try {
+    const cat = getCategory(req.query.category);
+    const { studentId } = req.query;
+    if (!cat || !studentId || !mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({ msg: 'A valid category and studentId are required' });
+    }
+    const student = await CollegeStudent.findById(studentId).select('assessmentScores');
+    if (!student) return res.status(404).json({ msg: 'Student not found' });
+    if ((student.assessmentScores || []).some((a) => a.skill === cat.label)) {
+      return res.status(409).json({ msg: 'You have already completed this assessment', alreadyCompleted: true });
+    }
+
+    let set;
+    try {
+      set = await pickSet(cat.key);
+    } catch (err) {
+      console.error('Question bank unavailable:', err.message);
+      return res.status(503).json({ msg: 'The test is being prepared. Please try again in a few minutes.' });
+    }
+    res.json({
+      questions: publicQuestions(set),
+      total: set.questions.length,
+      attemptToken: signAttempt({ studentId, category: cat.key, setId: set._id }),
+    });
+  } catch (err) {
+    console.error('Get Public Assessment Error:', err.message);
+    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
+  }
+};
+
 // @route   POST /api/college/public/submit-assessment
+// Body: { studentId, category, attemptToken, answers: { "<questionId>": "a" } }. The score is computed here, never taken from the browser.
 const submitAssessment = async (req, res) => {
   try {
     const { studentId } = req.body;
     const cat = getCategory(req.body.category);
-    const category = cat ? cat.key : 'general';
-    const skill = cat ? cat.label : (typeof req.body.skill === 'string' ? req.body.skill.trim().slice(0, 60) : '');
-    if (!studentId || !skill || !mongoose.isValidObjectId(studentId)) {
-      return res.status(400).json({ msg: 'studentId and skill required' });
+    if (!cat || !studentId || !mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({ msg: 'studentId and a valid category are required' });
     }
+    const category = cat.key;
+    const skill = cat.label;
 
-    // The score is reported by the browser, so at least keep it within sane bounds.
-    // (Proper fix: score on the server — see docs/QC_GAP_ANALYSIS.md.)
-    const total = Number.isInteger(req.body.total) ? req.body.total : 10;
-    const score = Number.isInteger(req.body.score) ? req.body.score : 0;
-    if (total < 1 || total > 50 || score < 0 || score > total) {
-      return res.status(400).json({ msg: 'Invalid assessment result' });
-    }
+    const attempt = verifyAttempt(req.body.attemptToken, { studentId, category });
+    if (attempt.error === 'too_fast') return res.status(400).json({ msg: 'That was too quick. Please read the questions and try again.' });
+    if (attempt.error) return res.status(400).json({ msg: 'This test session is not valid. Please start the test again.' });
+
+    const set = mongoose.isValidObjectId(attempt.claims.set) ? await CampusQuestionSet.findById(attempt.claims.set) : null;
+    if (!set) return res.status(400).json({ msg: 'This test session has expired. Please start the test again.' });
+    const { score, total } = scoreAttempt(set, req.body.answers);
 
     const student = await CollegeStudent.findById(studentId).populate('college').populate('user', 'name email');
     if (!student) return res.status(404).json({ msg: 'Student not found' });
@@ -3033,6 +3070,7 @@ module.exports = {
   getVerificationQueue,
   getPublicDrive,
   publicRegister,
+  getPublicAssessment,
   submitAssessment,
   getCompanyMatchStatus,
   uploadProofDocument,
