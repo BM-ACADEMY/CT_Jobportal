@@ -141,7 +141,7 @@ const TermsAndConditions = () => {
 
           <Section id="matching" title="7. AI Matching & Accuracy Disclaimer">
             <p>
-              Paid Job Seeker and Recruiter plans include access to our AI-assisted matching engine, which is designed and tuned to target up to <strong>95% match relevance</strong> between candidate profiles and job requirements, based on the completeness, accuracy, and recency of the profile, resume, and job posting data provided by users.
+              Paid Job Seeker and Recruiter plans include access to our AI-assisted matching engine, which is designed to surface the most relevant matches between candidate profiles and job requirements, based on the completeness, accuracy, and recency of the profile, resume, and job posting data provided by users.
             </p>
             <p>
               Match relevance is an algorithmic estimate, not a guarantee. It does not guarantee that you will receive interview invitations, job offers, qualified applicants, or a successful hire, and actual relevance may vary based on data quality, market conditions, and factors outside our control. Subscribing to a paid plan does not create any warranty of employment or hiring outcomes.
@@ -191,7 +191,7 @@ const TermsAndConditions = () => {
 
           <Section id="third-party" title="12. Third-Party Services">
             <p>
-              The Platform integrates third-party services including Razorpay (payments), Google/LinkedIn (social login), Google Gemini (AI-assisted content features), and Meta WhatsApp Business (messaging). Your use of these integrations is also subject to those providers' own terms and privacy policies. We are not responsible for outages, errors, or policy changes originating from third-party providers.
+              The Platform integrates third-party services including Razorpay (payments), Google/LinkedIn (social login), AI model providers, accessed through OpenRouter (AI-assisted features such as skill tests, resume review and candidate matching), and Meta WhatsApp Business (messaging). Your use of these integrations is also subject to those providers' own terms and privacy policies. We are not responsible for outages, errors, or policy changes originating from third-party providers.
             </p>
           </Section>
 

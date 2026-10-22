@@ -150,7 +150,7 @@ const HomeGuest = () => {
 
             {/* Mini Instruction */}
             <p className="text-zinc-500 text-sm font-normal max-w-md leading-relaxed">
-              Connect with world-class employers. Discover opportunities that match your skills, location, and career aspirations.
+              AI-powered job matching, AI skill tests and AI resume review, built for Tamil Nadu and Pondicherry. Free to start.
             </p>
 
             {/* Custom rounded search card */}
@@ -374,7 +374,7 @@ const HomeGuest = () => {
         </div>
       </section>
 
-      <TestimonialCarousel subtitle="Join our growing community of professionals who found their career path through us." />
+      <TestimonialCarousel subtitle="What people say about Velaivaaipu." />
 
       {/* Recruiter CTA */}
       <section className="py-24 bg-white">
