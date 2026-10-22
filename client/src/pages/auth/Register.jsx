@@ -1,6 +1,6 @@
 import SocialLoginButtons from '../../components/auth/SocialLoginButtons';
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, CircleCheck, Briefcase, Building2, ShieldCheck, ArrowLeft, Phone } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -59,7 +59,9 @@ const registerSchema = z.object({
 const RegisterPage = () => {
   const { register, verifyOtp, resendOtp } = useAuth();
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState('jobseeker');
+  const [searchParams] = useSearchParams();
+  const requestedRole = searchParams.get('role');
+  const [selectedRole, setSelectedRole] = useState(['jobseeker', 'recruiter', 'company', 'college'].includes(requestedRole) ? requestedRole : 'jobseeker');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');

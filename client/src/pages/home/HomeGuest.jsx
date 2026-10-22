@@ -20,12 +20,6 @@ import TestimonialCarousel from '@/components/home/TestimonialCarousel';
 import StepFlow from '@/components/home/StepFlow';
 import ExplainerTabs from '@/components/home/ExplainerTabs';
 
-const fallbackStats = [
-  { label: 'Jobs Posted', value: '2L+', icon: Briefcase },
-  { label: 'Companies', value: '10K+', icon: Building2, invert: true },
-  { label: 'Job Seekers', value: '50L+', icon: Users },
-  { label: 'Avg Rating', value: '4.8★', icon: Star },
-];
 
 const formatCount = (n) => {
   if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr+`;
@@ -98,13 +92,10 @@ const HomeGuest = () => {
     [jobs]
   );
 
-  const useFallbackStats = !platformStats || (
-    platformStats.activeJobsCount < 1000 &&
-    platformStats.companiesCount < 1000 &&
-    platformStats.jobseekersCount < 1000
-  );
+  // Only real numbers are ever shown; until they load (or if the API is down) the stats band is hidden.
+  const useFallbackStats = !platformStats;
 
-  const statCards = useFallbackStats ? fallbackStats : [
+  const statCards = useFallbackStats ? [] : [
     { label: 'Active Jobs', value: formatCount(platformStats.activeJobsCount), icon: Briefcase },
     { label: 'Companies', value: formatCount(platformStats.companiesCount), icon: Building2, invert: true },
     { label: 'Job Seekers', value: formatCount(platformStats.jobseekersCount), icon: Users },
@@ -117,9 +108,9 @@ const HomeGuest = () => {
 
   const heroRatingValue = (!useFallbackStats && platformStats.reviewsCount > 0)
     ? platformStats.avgRating.toFixed(1)
-    : '4.8';
-  const heroJobsLabel = useFallbackStats ? '10K+' : formatCount(platformStats.activeJobsCount);
-  const heroCompaniesLabel = useFallbackStats ? '10K+' : formatCount(platformStats.companiesCount);
+    : null;
+  const heroJobsLabel = useFallbackStats ? null : formatCount(platformStats.activeJobsCount);
+  const heroCompaniesLabel = useFallbackStats ? null : formatCount(platformStats.companiesCount);
 
   const heroBadgeText = platformStats?.jobsPostedToday > 0
     ? `${platformStats.jobsPostedToday} new jobs posted today`
@@ -193,26 +184,23 @@ const HomeGuest = () => {
 
 
             {/* Stats Indicators */}
-            <div className="flex items-center gap-6 flex-wrap pt-6 border-t border-zinc-300">
-              <div className="flex -space-x-2">
-                {[11, 12, 13, 14].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-zinc-250 overflow-hidden ring-1 ring-zinc-100 shadow-sm">
-                    <img src={`https://i.pravatar.cc/100?img=${i}`} alt="" />
+            {(heroRatingValue || heroCompaniesLabel) && (
+              <div className="flex items-center gap-6 flex-wrap pt-6 border-t border-zinc-300">
+                {heroRatingValue && (
+                  <div>
+                    <p className="text-zinc-800 font-bold text-sm leading-none">{heroRatingValue} / 5</p>
+                    <p className="text-zinc-400 text-[10px] font-semibold uppercase tracking-wider mt-1.5">Candidate Rating</p>
                   </div>
-                ))}
-                <div className="w-8 h-8 rounded-full border-2 border-white bg-[#00D492] flex items-center justify-center text-[9px] font-bold text-white shadow-sm">+10k</div>
+                )}
+                {heroRatingValue && heroCompaniesLabel && <div className="h-6 w-px bg-zinc-300" />}
+                {heroCompaniesLabel && (
+                  <div>
+                    <p className="text-zinc-800 font-bold text-sm leading-none">{heroCompaniesLabel}</p>
+                    <p className="text-zinc-400 text-[10px] font-semibold uppercase tracking-wider mt-1.5">Companies Hiring</p>
+                  </div>
+                )}
               </div>
-              <div className="h-6 w-px bg-zinc-300" />
-              <div>
-                <p className="text-zinc-800 font-bold text-sm leading-none">{heroRatingValue} / 5</p>
-                <p className="text-zinc-400 text-[10px] font-semibold uppercase tracking-wider mt-1.5">Candidate Rating</p>
-              </div>
-              <div className="h-6 w-px bg-zinc-300" />
-              <div>
-                <p className="text-zinc-800 font-bold text-sm leading-none">{heroCompaniesLabel}</p>
-                <p className="text-zinc-400 text-[10px] font-semibold uppercase tracking-wider mt-1.5">Companies Hiring</p>
-              </div>
-            </div>
+            )}
           </motion.div>
 
           {/* Right Column */}
@@ -272,7 +260,7 @@ const HomeGuest = () => {
         <div className="max-w-5xl mx-auto border-b border-zinc-200 mt-10" />
       </section>
 
-      <StatBento cards={statCards} />
+      {statCards.length > 0 && <StatBento cards={statCards} />}
 
       <StepFlow title="Get Hired in 3 Simple Steps" steps={howItWorks} />
 

@@ -99,3 +99,36 @@ First concrete steps: a `/for-colleges` landing page, a 3-step college onboardin
 6. A jobseeker token returns 403 on every `/api/admin/*` route and on another user's application/message id.
 7. An unauthenticated socket cannot join a room or send a message.
 8. `GET /uploads/<resume>` without login returns 401/403.
+
+
+---
+
+## 7. Status update (after the second round of changes)
+
+| Checklist item | Now |
+|---|---|
+| 3.1 / 3.2 JobPosting JSON-LD in raw HTML | Done: `client/api/job.js` (needs `API_BASE_URL` set on Vercel; verify with Google Rich Results Test) |
+| 3.3 Clean job URL slugs | Done: `/job/<title>-<city>-<id>`; old `/job/<id>` links keep working |
+| 3.5 / 3.6 WhatsApp preview + 1200x630 OG image | Done: OG tags per job, `client/public/og-default.png` |
+| 3.7 / 3.8 Sitemap lists all pages and updates | Done: dynamic `/sitemap.xml` (jobs, companies, blogs) |
+| 3.9 robots.txt | Updated: blocks `/campus/`, `/join/`, `/api/`, dashboards |
+| 3.14 Closed job shows "filled", not 404 | Done: page stays live, `noindex` |
+| 3.16 Tamil keywords in meta | Done on the homepage; add to city pages |
+| 4.1-4.3 GA4 + Meta Pixel | Done in code; needs `VITE_GA_MEASUREMENT_ID` and `VITE_META_PIXEL_ID`, then verify with Pixel Helper / GA Realtime |
+| 4.4 / 4.5 WhatsApp click tracking | Partly: certificate share and job share are tracked. A "WhatsApp Apply" CTA does not exist yet |
+| 4.6 `campus_drive_id` captured | Done: `campusDrive`, `campusDriveCode` on the student record |
+| 4.7 / 4.8 Registration + skill-test events | Done: `sign_up`, `skill_test_complete` |
+| 4.9 UTM stored with the lead | Done for campus registration |
+| 6.1 `/join/<code>` | Done |
+| 6.2 Name + WhatsApp only | Done (email optional) |
+| 6.5 Instant certificate, shareable | Done: download and WhatsApp share buttons on the result screen |
+| 4.10 / 6.6 Skill-gap -> matching course on WhatsApp | NOT done: needs your category -> course map and an approved Meta template |
+| 7.6 Refund anti-abuse rules | NOT done: needs your exact rules (see notes) |
+| 7.10 Old brand name | Not touched |
+| 8.2 No PII in public results | Fixed: recruiter email/phone, company tax id/admin email/billing fields and draft jobs removed from public responses |
+
+Extra issues found and fixed on the way:
+- `GET /api/college/public/drive/:code` returned company access tokens and in-charge invite tokens to anyone who scanned the QR code.
+- Home pages showed invented statistics ("2L+ jobs", "10K+ companies", "50L+ job seekers", "4.8 rating", stock-photo avatars with "+10k") whenever real counts were low. They now show real numbers only.
+- `POST /api/college/public/submit-assessment` trusts the score sent by the browser. It is now bounded and limited to one attempt per skill, but the real fix is scoring on the server.
+- CSV import still uses the student's phone number (or roll number) as the default password.

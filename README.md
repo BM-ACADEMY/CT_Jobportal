@@ -59,6 +59,10 @@ npm run dev                 # http://localhost:5173
 | `VITE_API_BASE_URL` | e.g. `https://api.velaivaaipu.in/api` |
 | `VITE_API_DOMAIN` | API origin, used for Socket.io and uploads |
 | `VITE_RAZORPAY_KEY_ID` | Razorpay public key id |
+| `VITE_GA_MEASUREMENT_ID`, `VITE_META_PIXEL_ID` | GA4 and Meta Pixel (tracking is off when blank) |
+
+Vercel also needs `API_BASE_URL` (e.g. `https://api.velaivaaipu.in/api`) at runtime for the SEO functions in `client/api`
+(server-rendered job pages and the dynamic `sitemap.xml`).
 
 ## Project layout
 
@@ -95,10 +99,22 @@ Auth: send `Authorization: Bearer <jwt>`.
 
 Razorpay webhook: `POST /api/payments/razorpay/renewal-webhook` (signature verified against `RAZORPAY_WEBHOOK_SECRET`). Prices are always computed server-side.
 
+## SEO and sharing
+
+`client/api/job.js` serves every `/job/<slug>-<id>` page with the job's title, description, Open Graph tags and
+`JobPosting` JSON-LD already in the HTML (so Google and WhatsApp previews work without running JavaScript).
+`client/api/sitemap.js` builds `/sitemap.xml` from the live jobs list. Closed jobs stay reachable and are marked `noindex`.
+
+## Campus QR registration
+
+Students open `/join/<driveCode>` (older `/campus/<driveCode>` links still work), enter a name and WhatsApp number, and
+go straight into the skill test and certificate. UTM parameters and the drive code are stored on the student record.
+
 ## Scripts
 
 ```bash
-cd server && npm test        # payment + notification tests
+cd server && npm test        # payment, notification and auth tests
+node --test client/api/__tests__/seo.test.mjs   # SEO functions
 cd client && npm run build   # production build
 cd client && npm run lint
 ```
