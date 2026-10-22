@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getCategory, PASS_RATIO } = require('../config/courseMap');
 const College = require('../models/College');
 const CampusDrive = require('../models/CampusDrive');
 const CollegeStudent = require('../models/CollegeStudent');
@@ -1891,6 +1892,9 @@ const publicRegister = async (req, res) => {
       registrationSource: source,
       utm,
       whatsappNumber: whatsapp,
+      whatsappConsent: req.body.whatsappConsent === true
+        ? { given: true, at: new Date(), text: 'Send me course offers and updates on WhatsApp. Reply STOP to unsubscribe.' }
+        : { given: false },
       placementStatus: 'registered'
     });
     await collegeStudent.save();
@@ -1913,8 +1917,10 @@ const publicRegister = async (req, res) => {
 // @route   POST /api/college/public/submit-assessment
 const submitAssessment = async (req, res) => {
   try {
-    const { studentId, category } = req.body;
-    const skill = typeof req.body.skill === 'string' ? req.body.skill.trim().slice(0, 60) : '';
+    const { studentId } = req.body;
+    const cat = getCategory(req.body.category);
+    const category = cat ? cat.key : 'general';
+    const skill = cat ? cat.label : (typeof req.body.skill === 'string' ? req.body.skill.trim().slice(0, 60) : '');
     if (!studentId || !skill || !mongoose.isValidObjectId(studentId)) {
       return res.status(400).json({ msg: 'studentId and skill required' });
     }
@@ -1939,7 +1945,7 @@ const submitAssessment = async (req, res) => {
       skill,
       score: score || 0,
       total: total || 10,
-      category: category || 'general',
+      category,
       completedAt: new Date()
     });
 
@@ -1948,7 +1954,12 @@ const submitAssessment = async (req, res) => {
       student.placementStatus = 'active';
     }
 
-    const passed = (score / total) >= 0.6;
+    const passed = (score / total) >= PASS_RATIO;
+
+    // Below the pass mark, an opted-in student gets one course suggestion (queued; sent only when enabled).
+    if (!passed && cat && student.whatsappConsent?.given && !student.whatsappOptOut && !student.followUp?.status) {
+      student.followUp = { category: cat.key, scorePercent: Math.round((score / total) * 100), status: 'queued', queuedAt: new Date() };
+    }
 
     // Generate certificate code + PDF (co-branded with the college on any paid Campus plan)
     const certCode = `CERT-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
