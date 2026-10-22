@@ -97,21 +97,8 @@ You are an expert technical interviewer and examination engine. Your task is to 
         return res.json({ msg: 'Fetched from cache', questions: cachedAssessment.questions });
       } 
       
-      // Fallback 2: Generate mock questions so the UI doesn't crash
-      const mockQuestions = Array.from({ length: 10 }).map((_, i) => ({
-        id: i + 1,
-        question: `[Mock] Sample question ${i + 1} about ${skill} (${difficulty})?`,
-        options: {
-          a: 'Correct mock answer',
-          b: 'Incorrect mock answer 1',
-          c: 'Incorrect mock answer 2',
-          d: 'Incorrect mock answer 3'
-        },
-        correct_option: 'a',
-        explanation: 'This is a fallback mock assessment because the AI generation failed or API key was missing.'
-      }));
-      
-      return res.json({ msg: 'Mock assessment', questions: mockQuestions });
+      // Never show placeholder questions to real users.
+      return res.status(503).json({ msg: 'The test is not available right now. Please try again later.' });
     }
 
   } catch (err) {

@@ -21,6 +21,8 @@ const CampusRegistration = () => {
   const [studentId, setStudentId] = useState(null);
   const [category, setCategory] = useState(SKILL_CATEGORIES[0].key);
   const [consent, setConsent] = useState(false);
+  const [attemptToken, setAttemptToken] = useState('');
+  const [submittingTest, setSubmittingTest] = useState(false);
   const categoryLabel = SKILL_CATEGORIES.find(c => c.key === category)?.label || 'Aptitude';
 
   // Assessment state
@@ -59,24 +61,28 @@ const CampusRegistration = () => {
       }
       toast.success(res.data.msg);
       // Load assessment
-      loadAssessment();
+      loadAssessment(res.data.studentId);
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Registration failed');
     } finally { setSubmitting(false); }
   };
 
-  const loadAssessment = async () => {
+  const loadAssessment = async (id) => {
     setAssessLoading(true);
     try {
-      // Use a general skill based on drive info or default
-      const skill = categoryLabel.toLowerCase();
-      const res = await axios.get(`${API}/assessments/public`, { params: { skill, difficulty: 'medium' } });
+      const res = await axios.get(`${API}/college/public/assessment`, { params: { category, studentId: id } });
       setQuestions(res.data.questions || []);
+      setAttemptToken(res.data.attemptToken || '');
       setStep('assessment');
-    } catch {
-      // If assessment fails, still show success
+    } catch (err) {
+      // Registration already succeeded; explain why there is no test right now.
       setStep('results');
-      setResult({ score: 0, total: 0, passed: false, noAssessment: true });
+      setResult({
+        score: 0, total: 0, passed: false, noAssessment: true,
+        message: err.response?.data?.alreadyCompleted
+          ? 'You already took this test. Your result and certificate were sent to your WhatsApp.'
+          : (err.response?.data?.msg || 'You are registered. Your test will be available shortly.'),
+      });
     } finally { setAssessLoading(false); }
   };
 
@@ -91,29 +97,32 @@ const CampusRegistration = () => {
   };
 
   const submitAssessment = async () => {
-    let score = 0;
-    questions.forEach((q, i) => { if (answers[i] === q.correct_option) score++; });
-
+    if (submittingTest) return;
+    setSubmittingTest(true);
+    // The server scores the test; we only send the chosen options.
+    const picked = {};
+    questions.forEach((q, i) => { if (answers[i]) picked[q.id] = answers[i]; });
     try {
-      const res = await axios.post(`${API}/college/public/submit-assessment`, {
-        studentId,
-        skill: categoryLabel,
-        score,
-        total: questions.length,
-        category
-      });
+      const res = await axios.post(`${API}/college/public/submit-assessment`, { studentId, category, attemptToken, answers: picked });
       setResult({
-        score,
-        total: questions.length,
+        score: res.data.score,
+        total: res.data.total,
         passed: res.data.passed,
         certificateCode: res.data.certificateCode,
         certificateUrl: res.data.certificateDetails?.certificateUrl || ''
       });
       trackEvent('skill_test_complete', { campus_drive_id: driveCode, skill: categoryLabel, passed: !!res.data.passed });
-    } catch {
-      setResult({ score, total: questions.length, passed: score >= questions.length * 0.6 });
-    }
-    setStep('results');
+      setStep('results');
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 409) {
+        setResult({ score: 0, total: 0, passed: false, noAssessment: true, message: 'You already took this test. Your result and certificate were sent to your WhatsApp.' });
+        setStep('results');
+      } else {
+        // Do not invent a score. Let the student retry the submit.
+        toast.error(err.response?.data?.msg || 'Could not submit. Check your internet and press Next again.');
+      }
+    } finally { setSubmittingTest(false); }
   };
 
   const noIndex = <SEOHead title="Campus Registration | Velaivaaipu" description="Register for your campus placement drive on Velaivaaipu." robots="noindex, nofollow" />;
