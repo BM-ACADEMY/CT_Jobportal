@@ -21,6 +21,7 @@ const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 const { isValidSignature, isDuplicateKeyError, findPaymentByRazorpayId, checkoutNotes, findCoupon, countCouponUse } = require('../utils/paymentGuards');
 
 const RECURRING_ROLES = ['college', 'company'];
+const subscriptionPageFor = role => role === 'college' ? '/college/subscription' : ['company', 'recruiter', 'org_employee'].includes(role) ? '/company/subscription' : '/candidate/subscription';
 const paymentHistoryLink = role => role === 'college'
   ? '/college/payment-history'
   : ['company', 'recruiter', 'org_employee'].includes(role)
@@ -521,7 +522,7 @@ const requestRefund = async (req, res) => {
       return res.status(404).json({ msg: 'Payment record not found' });
     }
     const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 500) : '';
-    const user = await User.findById(req.user.id).select('email profile.phone recruiterProfile.phone companyProfile.phone');
+    const user = await User.findById(req.user.id).populate('role', 'name').select('email role profile.phone recruiterProfile.phone companyProfile.phone');
     const plan = payment.plan ? await Subscription.findById(payment.plan).select('role') : null;
     const verdict = await checkRefundEligibility(payment, { Payment, User }, {
       user, planRole: plan?.role, phone: getUserPhone(user),
@@ -543,6 +544,18 @@ const requestRefund = async (req, res) => {
       link: '/admin/subscriptions/refunds',
       metadata: { paymentId: payment._id, userId: req.user.id }
     }).catch(err => console.error('Refund request notification failed:', err.message));
+    notifyUser({
+      io: req.io,
+      recipientId: req.user.id,
+      title: 'We received your refund request',
+      message: 'Your refund request was received and is under review.',
+      type: 'refund_status',
+      link: paymentHistoryLink(user?.role?.name),
+      metadata: { paymentId: payment._id, status: 'refund_pending' },
+      emailSubject: 'We received your refund request',
+      emailBody: `<p>We have received your refund request${verdict.duplicate ? ' for a duplicate charge' : ''}. Our team reviews requests within 3 working days and will email you the decision.</p>
+        <p style="font-size:13px;color:#475569;">Until then your plan stays active. Details: <a href="${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/refund-policy" style="color:#059669;">Refund policy</a>.</p>`
+    }).catch(err => console.error('Refund acknowledgement failed:', err.message));
     res.json({ success: true, msg: 'Refund request submitted successfully' });
   } catch (err) {
     console.error('Request Refund Error:', err.message);
@@ -603,6 +616,7 @@ const approveRefund = async (req, res) => {
       recipientId: payment.user._id,
       title: 'Refund approved',
       message: 'Your refund request was approved and your subscription was updated.',
+      emailBody: '<p>Your refund request was approved. The money goes back to your original payment method and usually shows up within 5 to 7 working days, depending on your bank.</p><p>Your account has moved to the Free plan. You can subscribe again at any time.</p>',
       type: 'refund_status',
       link: paymentHistoryLink(user?.role?.name),
       metadata: { paymentId: payment._id, status: 'refunded' }
@@ -634,6 +648,7 @@ const rejectRefund = async (req, res) => {
       recipientId: payment.user,
       title: 'Refund request rejected',
       message: 'Your refund request was reviewed and rejected. The payment remains active.',
+      emailBody: `<p>We reviewed your refund request and could not approve it, so your payment and plan stay active. This usually happens when the plan or feature was already used, or the request fell outside our refund rules.</p><p style="font-size:13px;color:#475569;">Read the <a href="${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/refund-policy" style="color:#059669;">Refund policy</a> or write to support@velaivaaipu.in if you think this is a mistake.</p>`,
       type: 'refund_status',
       link: paymentHistoryLink(payment.user?.role?.name),
       metadata: { paymentId: payment._id, status: 'rejected' }
@@ -743,7 +758,7 @@ const sendRenewalReminder = async (req, res) => {
       return res.status(400).json({ msg: 'No users selected' });
     }
 
-    const users = await User.find({ _id: { $in: userIds } }).populate('subscription');
+    const users = await User.find({ _id: { $in: userIds } }).populate(['subscription', 'role']);
 
     if (users.length === 0) {
       return res.status(404).json({ msg: 'Selected users not found' });
@@ -780,7 +795,7 @@ const sendRenewalReminder = async (req, res) => {
         sendWhatsAppTemplate({
           to: userPhone,
           template: 'auto_renewal_billing_reminder',
-          params: [user.name || 'there', planName, expiryDate, planName, `${process.env.FRONTEND_URL}/jobseeker/settings`]
+          params: [user.name || 'there', planName, expiryDate, planName, `${process.env.FRONTEND_URL}${subscriptionPageFor(user.role?.name)}`]
         }).catch(() => {});
       }
     });

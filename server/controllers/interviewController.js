@@ -138,7 +138,7 @@ const scheduleInterview = async (req, res) => {
           formatDate(populated.scheduledAt),
           formatTime(populated.scheduledAt),
           populated.meetingLink ? 'Video Call' : 'In-Person',
-          populated.meetingLink || `${FRONTEND_URL}/jobseeker/interviews`
+          populated.meetingLink || `${FRONTEND_URL}/candidate/applications`
         ]
       }).catch(() => {});
     }

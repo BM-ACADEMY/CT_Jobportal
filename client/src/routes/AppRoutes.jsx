@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 // Layouts
@@ -23,9 +23,16 @@ const Companies = lazy(() => import('../pages/Companies'));
 const CompanyProfilePage = lazy(() => import('../pages/CompanyProfilePage'));
 const Contact = lazy(() => import('../pages/Contact'));
 const HowItWorks = lazy(() => import('../pages/HowItWorks'));
+// Old emails and WhatsApp messages linked to /jobseeker/...; the pages live under /candidate/....
+const JobseekerRedirect = () => {
+  const { '*': rest } = useParams();
+  return <Navigate to={`/candidate/${rest || 'applications'}`} replace />;
+};
+
 const TermsAndConditions = lazy(() => import('../pages/TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
 const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
+const JobPostTemplates = lazy(() => import('../pages/public/JobPostTemplates'));
 const Blog = lazy(() => import('../pages/Blog'));
 const BlogDetails = lazy(() => import('../pages/BlogDetails'));
 const LoginPage = lazy(() => import('../pages/auth/Login'));
@@ -157,7 +164,9 @@ const AppRoutes = () => {
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/jobseeker/*" element={<JobseekerRedirect />} />
         <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/job-post-templates" element={<JobPostTemplates />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogDetails />} />
         <Route path="/recruitment-agency-fees-india" element={<BlogDetails staticSlug="recruitment-agency-fees-india" />} />

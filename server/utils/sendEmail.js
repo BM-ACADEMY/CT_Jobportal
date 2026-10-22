@@ -28,9 +28,12 @@ const transporter = nodemailer.createTransport(
 );
 
 const sendEmail = async (options) => {
+  // Students who joined with only a WhatsApp number get a placeholder <phone>@<college>.portal address; never mail it
+  // (bounces hurt sender reputation).
+  if (/\.portal\s*$/i.test(String(options.email || ''))) return false;
   try {
     const mailOptions = {
-      from: `"Velaivaaipu" <${process.env.USER_EMAIL}>`,
+      from: options.from || `"Velaivaaipu" <${process.env.USER_EMAIL}>`,
       to: options.email,
       subject: options.subject,
       html: options.html,

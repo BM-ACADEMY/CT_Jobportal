@@ -34,7 +34,26 @@ Set on the server: `WHATSAPP_FOLLOWUP_ENABLED=true`, `COURSE_PAGE_URL=<the cours
 
 Also in the Meta app, subscribe the webhook `https://<api-domain>/api/whatsapp/webhook` to the `messages` field, so STOP replies reach us.
 
-## Already approved templates the app uses
+## Templates the app already uses (developer to confirm each is Approved in WhatsApp Manager)
 
-- `offer_letter_document_delivery` is used to send the skill certificate link (service message).
-- `assessment_testinvite` is used for assessment invites.
+Names are read from the code. The body text and approval status live in your Meta account, so compare the number of `{{variables}}` in each approved template with the parameter list below. A mismatch makes Meta reject the send.
+
+| Template | Used for | Who gets it | Parameters in the code, in order |
+|---|---|---|---|
+| `campus_welcome` | After QR registration | Student | name, college name (sent through the older `sendWhatsAppMessage` helper) |
+| `assessment_testinvite` | Company invites a candidate to a skill test | Candidate | name, skill, company, deadline, link |
+| `offer_letter_document_delivery` | Skill certificate link; offer letter | Student, candidate | name, college or company, document name, link |
+| `job_application_status_update` | Application status change | Candidate | name, job title, company, status label, link |
+| `whatsapp_interview_invitation` | Interview scheduled | Candidate | name, job title, company, date, time, mode (Video Call / In-Person), link |
+| `application_resume_unlockalert` | New applicant, and credit unlock alert | Recruiter | name, count, subject text, count, link |
+| `bulk_candidate_communication` | Recruiter bulk message | Candidate | name, sender, subject, date, link, link |
+| `off_platform_chat_bridge` | New chat message or drive invite | User, company owner | name, from, subject, message text, link |
+| `verification_approval_notification` | ID, college or drive-invite verification result | Student, college, company | name, item, Approved / Rejected, note, link |
+| `placement_onboarding_alert` | Drive round update | Student | name, round, status label, link |
+| `campus_drive_interview_notification` | Drive announcement | Student | name, company, college, title, message (60 characters), link |
+| `report_delivery_for_tp_officers_tpos` | Placement report | TPO | name, frequency, college, placement summary, link |
+| `auto_renewal_billing_reminder` | Admin-sent renewal reminder | Subscriber | name, plan, expiry date, plan, link (link fixed to the right subscription page in this patch) |
+| `renewal_success`, `renewal_failed` | Renewal result | College, company | name (and attempt number for failed), sent through `sendWhatsAppMessage` |
+| `course_followup_after_skill_test` (new) | Course suggestion after a low score | Student who ticked consent | see above |
+
+Template names, parameter counts and the `en` language code are what the code sends. If a template was approved under a different language code or with a different number of variables, tell the developer so the code or the template can be changed.

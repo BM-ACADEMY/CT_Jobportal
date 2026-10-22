@@ -66,7 +66,7 @@ const FAQS = [
 ];
 
 const Contact = () => {
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '', segment: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
@@ -165,7 +165,7 @@ const Contact = () => {
                     Thank you for reaching out. Our team will reply to your email within 24 hours.
                   </p>
                   <Button
-                    onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }); }}
+                    onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '', segment: '' }); }}
                     className="h-11 px-8 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold cursor-pointer"
                   >
                     Send Another Message
@@ -206,6 +206,21 @@ const Contact = () => {
                           className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-850 font-medium text-sm outline-none focus:border-[#00D492] focus:ring-4 focus:ring-[#00D492]/10 transition-all placeholder:text-zinc-400"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">I am a</label>
+                      <select
+                        name="segment"
+                        value={form.segment}
+                        onChange={handleChange}
+                        className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-850 font-medium text-sm outline-none focus:border-[#00D492] focus:ring-4 focus:ring-[#00D492]/10 transition-all"
+                      >
+                        <option value="">Select (optional)</option>
+                        <option value="jobseeker">Job seeker / student</option>
+                        <option value="company">Company hiring</option>
+                        <option value="college">College / placement officer</option>
+                      </select>
                     </div>
 
                     <div>

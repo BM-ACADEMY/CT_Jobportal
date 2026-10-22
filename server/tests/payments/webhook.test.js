@@ -135,7 +135,8 @@ describe('Razorpay webhook — recurring subscriptions', () => {
     assert.equal(redelivery.statusCode, 200);
     assert.equal(db.payments.length, 1);
     assert.equal(db.renewalLogs.length, 0);
-    assert.equal(db.emails.length, 0, 'no "renewed successfully" email straight after a purchase');
+    assert.equal(db.emails.filter(e => /renewed/i.test(e.subject)).length, 0, 'no "renewed successfully" email straight after a purchase');
+    assert.equal(db.emails.filter(e => /receipt/i.test(e.subject)).length, 1, 'one receipt, not repeated on redelivery');
   });
 
   it('does not grant a plan for a later charge of a subscription it does not know', async () => {
