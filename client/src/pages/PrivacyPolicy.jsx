@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
-import LegalPage, { Section, SUPPORT_EMAIL, LEGAL_ENTITY } from '../components/legal/LegalPage';
+import LegalPage, { Section, SUPPORT_EMAIL, LEGAL_ENTITY, LEGAL_ADDRESS, LEGAL_CIN } from '../components/legal/LegalPage';
 
 const SECTIONS = [
   { id: 'who', title: '1. Who we are' },
@@ -29,7 +29,7 @@ const PrivacyPolicy = () => (
     seoDescription="How Velaivaaipu collects, uses and protects personal data of job seekers, companies and colleges, and the choices you have."
   >
     <Section id="who" title="1. Who we are">
-      <p>{LEGAL_ENTITY} ("we", "us") runs velaivaaipu.in, a platform that connects job seekers, companies and colleges. We decide why and how your personal data is used on the platform. This policy applies to the website and the services on it, including campus QR registration and skill tests.</p>
+      <p>{LEGAL_ENTITY} ("we", "us"), CIN {LEGAL_CIN}, registered office {LEGAL_ADDRESS}, runs velaivaaipu.in, a platform that connects job seekers, companies and colleges. We decide why and how your personal data is used on the platform. This policy applies to the website and the services on it, including campus QR registration and skill tests.</p>
     </Section>
 
     <Section id="collect" title="2. What we collect">

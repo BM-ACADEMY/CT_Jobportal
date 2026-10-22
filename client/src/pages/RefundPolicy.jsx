@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { RotateCcw } from 'lucide-react';
-import LegalPage, { Section, SUPPORT_EMAIL } from '../components/legal/LegalPage';
+import LegalPage, { Section, SUPPORT_EMAIL, LEGAL_ENTITY, LEGAL_ADDRESS } from '../components/legal/LegalPage';
 
 const SECTIONS = [
   { id: 'summary', title: '1. In short' },
@@ -73,7 +73,7 @@ const RefundPolicy = () => (
     </Section>
 
     <Section id="contact" title="8. Contact">
-      <p>Questions about this policy: <strong>{SUPPORT_EMAIL}</strong> or our <Link to="/contact" className="font-bold text-emerald-700 hover:underline">Contact page</Link>.</p>
+      <p>{LEGAL_ENTITY}, {LEGAL_ADDRESS}. Questions about this policy: <strong>{SUPPORT_EMAIL}</strong> or our <Link to="/contact" className="font-bold text-emerald-700 hover:underline">Contact page</Link>.</p>
     </Section>
   </LegalPage>
 );

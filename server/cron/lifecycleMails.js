@@ -25,7 +25,10 @@ const optedOut = (u) => u?.emailPrefs?.marketingOptOut === true;
 const enabled = () => process.env.LIFECYCLE_EMAILS_ENABLED === 'true' && process.env.FRONTEND_URL && process.env.API_PUBLIC_URL;
 
 // Claims (user, key) first so two runs can never send the same mail, then sends.
-const deliver = async (state, user, key, mail) => {
+const SENDER_ENV = { seeker: 'LIFECYCLE_FROM_SEEKER', company: 'LIFECYCLE_FROM_COMPANY', college: 'LIFECYCLE_FROM_COLLEGE' };
+const senderFor = (audience) => process.env[SENDER_ENV[audience]] || process.env.LIFECYCLE_FROM || '';
+
+const deliver = async (state, user, key, mail, audience = 'seeker') => {
   if (state.sent >= MAX_PER_RUN || !mail) return false;
   if (!realEmail(user) || optedOut(user)) return false;
   const recent = await EmailLog.exists({ user: user._id, sentAt: { $gte: ago(20 / 24) } });
@@ -40,7 +43,7 @@ const deliver = async (state, user, key, mail) => {
     email: user.email,
     subject: mail.subject,
     html: mail.html,
-    ...(process.env.LIFECYCLE_FROM ? { from: process.env.LIFECYCLE_FROM } : {}),
+    ...(senderFor(audience) ? { from: senderFor(audience) } : {}),
   });
   if (!ok) { await EmailLog.deleteOne({ user: user._id, key }).catch(() => {}); return false; }
   state.sent += 1;
@@ -115,12 +118,12 @@ const employerMails = async (state) => {
 
   const owners = await Job.find({ status: 'active', createdAt: { $gte: ago(14), $lte: ago(1) } }).distinct('recruiter');
   const posters = await User.find({ ...baseUserFilter, _id: { $in: owners.slice(0, BATCH) }, role: { $in: roleIds } });
-  for (const u of posters) await deliver(state, u, 'co_first_job_tips', mails.wrap(mails.firstJobTips(u), u._id));
+  for (const u of posters) await deliver(state, u, 'co_first_job_tips', mails.wrap(mails.firstJobTips(u), u._id), 'company');
 
   const idle = await User.find({ ...baseUserFilter, role: { $in: roleIds }, isTeamManaged: { $ne: true }, createdAt: { $gte: ago(30), $lte: ago(5) } }).limit(BATCH);
   for (const u of idle) {
     if (await Job.exists({ recruiter: u._id })) continue;
-    await deliver(state, u, 'co_post_job_templates', mails.wrap(mails.postJobTemplates(u), u._id));
+    await deliver(state, u, 'co_post_job_templates', mails.wrap(mails.postJobTemplates(u), u._id), 'company');
   }
 };
 
@@ -133,7 +136,7 @@ const collegeMails = async (state) => {
     if (students.length < MIN_STUDENTS) continue;
     const stats = computeBatchStats(students);
     if (stats.tested < 5) continue;
-    await deliver(state, c.tpoUser, `batch-readiness-${month}`, mails.wrap(mails.batchReadiness(c.tpoUser, c, stats), c.tpoUser._id));
+    await deliver(state, c.tpoUser, `batch-readiness-${month}`, mails.wrap(mails.batchReadiness(c.tpoUser, c, stats), c.tpoUser._id), 'college');
   }
 };
 

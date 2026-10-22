@@ -4,8 +4,10 @@ import SEOHead from '../seo/SEOHead';
 
 // Shared layout for the legal pages (Privacy Policy, Refund Policy).
 export const SUPPORT_EMAIL = 'support@velaivaaipu.in';
-// Set the registered business name and address here once confirmed with your legal adviser.
-export const LEGAL_ENTITY = 'Velaivaaipu';
+// Registered business (from the incorporation records). Confirm with your CA / legal adviser before launch.
+export const LEGAL_ENTITY = 'Afra Ventures Private Limited';
+export const LEGAL_ADDRESS = '78 Lenin St, Kosapalayam, Puducherry 605013, India';
+export const LEGAL_CIN = 'U62011PY2026PTC009819';
 
 export const Section = ({ id, title, children }) => (
   <section id={id} className="scroll-mt-24 py-8 border-b border-slate-100 last:border-b-0">

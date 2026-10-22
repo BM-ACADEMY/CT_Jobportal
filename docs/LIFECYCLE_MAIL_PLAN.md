@@ -53,18 +53,13 @@ Free hooks #6 (skill-gap report to course), #7 (job post templates) and #8 (batc
 | Payment done: onboarding call, referral offer | Needs a decision on who calls and what the referral offer is. |
 | Cross-brand mails (BM Academy, CoreTalents, others to or from Velaivaaipu) | Those brands send from their own systems. On our side the sign-up links `/register?role=jobseeker|company|college` and `/for-colleges` work as deep links, and UTM tags are stored on campus students. Developer to confirm whether the n8n "leados" flow is the shared lead store. |
 | Day 1, 3, 7 nudges for contact-form leads | Needs the lead store above. |
-| Different sender names per audience (Team Velai Vaaippu, Ilayapallavan, Lokeshwari) | One `LIFECYCLE_FROM` for now. Per-audience senders are a small change once the mailboxes exist. |
 | Open and click metrics | Clicks show in GA4 through the UTM tags. Open tracking was left out on purpose (privacy and Gmail image blocking). |
 | WhatsApp within 5 minutes of Day 0 | Only the campus QR flow has a WhatsApp welcome (`campus_welcome`). A welcome template for normal sign-ups needs a new Meta template. |
 | SPF, DKIM, DMARC for velaivaaipu.in | Developer / domain admin. |
 
-## What Kamar needs to give
+## Inputs
 
-1. Footer: registered address and brand phone.
-2. Sender: approve one From name and a mailbox that can send (e.g. hello@velaivaaipu.in).
-3. The 10 most-hired roles (the template page has 10 common ones; change the list in `client/src/data/jobTemplates.js`).
-4. Festival dates for the Rs 2,999 offer.
-5. Velai Vaaippu company monthly plan and college yearly plan prices, when decided.
+Footer, sender names, festival dates, the 10 job template roles and a pricing proposal are filled in `docs/DECISIONS_AND_INPUTS.md`. Still needed from Kamar: the support phone or WhatsApp number for the footer, a yes on the pricing, and approval of the sender names.
 
 ## Switching on (developer)
 

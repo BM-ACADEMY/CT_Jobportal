@@ -245,7 +245,7 @@ const TermsAndConditions = () => {
 
           <Section id="contact" title="21. Contact Us">
             <p>
-              Questions about these Terms can be directed to <strong>support@velaivaaipu.in</strong> or via our{' '}
+              Velaivaaipu is operated by Afra Ventures Private Limited, 78 Lenin St, Kosapalayam, Puducherry 605013, India. Questions about these Terms can be directed to <strong>support@velaivaaipu.in</strong> or via our{' '}
               <Link to="/contact" className="font-bold text-emerald-700 hover:underline">Contact page</Link>.
             </p>
           </Section>

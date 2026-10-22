@@ -46,7 +46,7 @@ Then run locally: `cd server && npm i && node --test tests/auth/*.test.js tests/
 ## 4. Legal pages (Privacy, Refund, Terms)
 
 New pages `/privacy-policy` and `/refund-policy` are live in the patch, and Terms section 6 was rewritten to match the new refund rules. Before launch:
-1. Put the **registered business name and address** in `client/src/components/legal/LegalPage.jsx` (`LEGAL_ENTITY`). It currently says "Velaivaaipu". Also confirm `support@velaivaaipu.in` is a working inbox.
+1. The registered business name, address and CIN are filled in `client/src/components/legal/LegalPage.jsx` from the incorporation records; check them against the certificate. Confirm `support@velaivaaipu.in` is a working inbox.
 2. Have a lawyer read the three pages once. Points to check: DPDP Act 2023 wording, a named grievance officer, where data is stored, refund timelines, the Chennai jurisdiction clause.
 3. Confirm that "within 3 working days" for refund review and "5 to 7 working days" for money back are promises you will keep.
 
@@ -58,7 +58,7 @@ Category to course mapping lives in `server/config/courseMap.js` (and the labels
 
 ## 6. Lifecycle mails (built, switched off)
 
-Full mapping of the Smart Reply Mail Plan to Velaivaaipu is in `docs/LIFECYCLE_MAIL_PLAN.md`. Summary: welcome, profile nudge, skill-test invite, skill-gap + course, win-back, paid Job Alerts delivery, employer tips and templates, college batch readiness, GST receipts, refund mails, contact-form auto-reply, one-click unsubscribe. Switch on with `LIFECYCLE_EMAILS_ENABLED=true` and the env in `.env.example` (needs `API_PUBLIC_URL` for the unsubscribe link). Start with `LIFECYCLE_MAX_PER_RUN=20`. Confirm the lead store (n8n "leados" or other) and the free-plan limits (2 jobs, 10 searches a day, 3 free hires), which I could not find in the code. All existing payment tests were not runnable in my environment; run `node --test server/tests/payments/*.test.js`. I changed one assertion in `webhook.test.js` (first charge now also sends a receipt).
+Decisions made on Kamar's behalf (footer, senders, festival dates, pricing proposal) are in `docs/DECISIONS_AND_INPUTS.md`. Full mapping of the Smart Reply Mail Plan to Velaivaaipu is in `docs/LIFECYCLE_MAIL_PLAN.md`. Summary: welcome, profile nudge, skill-test invite, skill-gap + course, win-back, paid Job Alerts delivery, employer tips and templates, college batch readiness, GST receipts, refund mails, contact-form auto-reply, one-click unsubscribe. Switch on with `LIFECYCLE_EMAILS_ENABLED=true` and the env in `.env.example` (needs `API_PUBLIC_URL` for the unsubscribe link). Start with `LIFECYCLE_MAX_PER_RUN=20`. Confirm the lead store (n8n "leados" or other) and the free-plan limits (2 jobs, 10 searches a day, 3 free hires), which I could not find in the code. All existing payment tests were not runnable in my environment; run `node --test server/tests/payments/*.test.js`. I changed one assertion in `webhook.test.js` (first charge now also sends a receipt).
 
 ## 7. Smoke test before launch
 
