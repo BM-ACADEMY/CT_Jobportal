@@ -33,11 +33,16 @@ const sendEmail = async (options) => {
   if (/\.portal\s*$/i.test(String(options.email || ''))) return false;
   try {
     const mailOptions = {
-      from: options.from || `"Velaivaaipu" <${process.env.USER_EMAIL}>`,
+      // MAIL_FROM lets the visible sender (e.g. hello@velaivaaipu.in) differ from the SMTP login, which is
+      // required by relay services such as Amazon SES or Brevo whose login is not an email address.
+      from: options.from || process.env.MAIL_FROM || `"Velaivaaipu" <${process.env.USER_EMAIL}>`,
       to: options.email,
       subject: options.subject,
       html: options.html,
     };
+    const replyTo = options.replyTo || process.env.MAIL_REPLY_TO;
+    if (replyTo) mailOptions.replyTo = replyTo;
+    if (options.headers) mailOptions.headers = options.headers;
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent: %s', info.messageId);

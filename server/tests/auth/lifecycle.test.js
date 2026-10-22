@@ -65,6 +65,12 @@ test('wrapped mail has the unsubscribe link and the company footer', () => {
   assert.match(w.html, /Afra Ventures Private Limited/);
 });
 
+test('lifecycle mail carries the one-click List-Unsubscribe headers', () => {
+  const w = mails.wrap(all()[0], user._id);
+  assert.match(w.headers['List-Unsubscribe'], /^<https:\/\/api\.velaivaaipu\.in\/api\/public\/unsubscribe\?token=.+>$/);
+  assert.equal(w.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
+});
+
 test('unsubscribe tokens are signed, purpose-bound and cannot be reused as other tokens', () => {
   const token = signAlertToken(user._id, 'off');
   assert.equal(verifyAlertToken(token).uid, user._id);
