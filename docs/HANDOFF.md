@@ -11,6 +11,21 @@ Apply the code: `git checkout 7ba33a5 && git am launch-fixes.patch`. Full detail
 6. Open items, in order: move FreeAssessment.jsx to the new test endpoint; random passwords for CSV-imported students; protect /uploads; "Request refund" button; bounce handling and TLS rejectUnauthorized fix in sendEmail.
 7. Run the smoke test in DEV_BRIEF section 8 before announcing.
 
+## Meta template (Kamar submits; dev switches on after approval)
+Only one new template. All other templates the app uses are already verified (list in `WHATSAPP_TEMPLATES.md`; dev checks each is Approved and the variable counts match).
+
+- Name `course_followup_after_skill_test`, category Marketing, language `en`, no header/footer/buttons.
+- Body:
+```
+Hi {{1}}, thanks for taking the {{2}} skill test on Velaivaaipu. To build this skill faster, our {{3}} course can help. {{4}}. Know more: {{5}}
+
+Reply STOP to unsubscribe.
+```
+- Samples: {{1}} Priya | {{2}} MS Excel | {{3}} Data Analytics with Power BI | {{4}} Festival scholarship price Rs 2999 for students | {{5}} https://learnwithkamar.ai
+- {{4}} changes by date (festival scholarship line, otherwise a free 15-minute counselling call), so one template covers both.
+- After approval, dev: subscribe webhook `https://<api-domain>/api/whatsapp/webhook` to the `messages` field; set `WHATSAPP_FOLLOWUP_ENABLED=true`, `COURSE_PAGE_URL`, `WA_APP_SECRET`; for a festival set `COURSE_SCHOLARSHIP_ACTIVE=true`, `_PRICE`, `_START`, `_END` (YYYY-MM-DD, India time).
+- Rules already in code: consent box ticked, score below 60%, one message per student, 9am-8pm IST, STOP honoured.
+
 ## SEO team
 - Submit sitemap.xml to Google Search Console and Bing; check a job URL in the Rich Results Test (JobPosting).
 - Create GA4 and Meta Pixel, give IDs to dev; mark sign_up, generate_lead, skill_test_complete as key events.
