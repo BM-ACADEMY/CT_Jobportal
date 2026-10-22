@@ -18,6 +18,8 @@ Then run locally: `cd server && npm i && node --test tests/auth/*.test.js tests/
 
 **LinkedIn app:** developer.linkedin.com > Create app > add product "Sign In with LinkedIn using OpenID Connect" > add the redirect URL above. This path is written to LinkedIn's OIDC docs but has **not been tested against a real LinkedIn app**; test login for each role (jobseeker, recruiter, company) before launch.
 
+**Mail sending:** read `docs/EMAIL_DELIVERABILITY_PLAN.md` first. Today's OTP mail goes through a mailbox SMTP login; move app mail to Amazon SES (or Brevo) with SPF, DKIM and DMARC, and set `MAIL_FROM` / `MAIL_REPLY_TO` (see `.env.example`).
+
 **Production checks (today):**
 1. Look for `admin@ct.com` and any unknown `admin`/`subadmin`/`drive_incharge` users. Delete or change passwords.
 2. Rotate `JWT_SECRET` (signs everyone out; fine).

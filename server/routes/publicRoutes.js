@@ -18,7 +18,7 @@ const { verifyAlertToken, lifecycleWrapper, button, esc, frontend } = require('.
 
 // @desc  GET /api/public/unsubscribe?token=...
 //        One-click unsubscribe from marketing / lifecycle mail (receipts and security mail still arrive).
-router.get('/unsubscribe', async (req, res) => {
+const handleUnsubscribe = async (req, res) => {
   const page = (msg) => res.status(200).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Velaivaaipu</title><body style="font-family:Arial,sans-serif;max-width:480px;margin:15vh auto;padding:0 20px;color:#1e293b;text-align:center"><h2>${msg}</h2><p style="color:#64748b">You can still get payment receipts and account security mail.</p></body>`);
   const payload = verifyAlertToken(req.query.token);
   if (!payload || !mongoose.isValidObjectId(payload.uid)) return page('This link has expired or is not valid.');
@@ -29,7 +29,10 @@ router.get('/unsubscribe', async (req, res) => {
     console.error('Unsubscribe error:', err.message);
     return page('Something went wrong. Please write to support@velaivaaipu.in.');
   }
-});
+};
+// GET = the link in the mail footer; POST = the one-click button in Gmail / Yahoo (RFC 8058).
+router.get('/unsubscribe', handleUnsubscribe);
+router.post('/unsubscribe', handleUnsubscribe);
 
 // @desc  GET /api/public/sitemap-feed
 //        Lightweight list of public URLs' data for the dynamic sitemap (jobs + companies).

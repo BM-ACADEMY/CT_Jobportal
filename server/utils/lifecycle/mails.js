@@ -1,6 +1,6 @@
 // Copy for the lifecycle mails (Afra Ventures Smart Reply Mail Plan, Velaivaaipu rows).
 // Rules from the plan: under 120 words, one button, personalised, honest (no fake urgency), unsubscribe in footer.
-const { lifecycleWrapper, button, esc, frontend } = require('../lifecycleEmails');
+const { lifecycleWrapper, unsubscribeHeaders, button, esc, frontend } = require('../lifecycleEmails');
 
 const slugify = (t) => String(t ?? '').toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_]+/g, '-').replace(/-+/g, '-').slice(0, 60);
 const jobUrl = (job) => {
@@ -75,6 +75,6 @@ const batchReadiness = (user, college, s) => ({
     ${button(link('/college/reports', 'batch_readiness'), 'Open full reports')}`,
 });
 
-const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId) });
+const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
 module.exports = { profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, batchReadiness, wrap, jobUrl };

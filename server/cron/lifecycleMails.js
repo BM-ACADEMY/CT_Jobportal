@@ -43,6 +43,7 @@ const deliver = async (state, user, key, mail, audience = 'seeker') => {
     email: user.email,
     subject: mail.subject,
     html: mail.html,
+    headers: mail.headers,
     ...(senderFor(audience) ? { from: senderFor(audience) } : {}),
   });
   if (!ok) { await EmailLog.deleteOne({ user: user._id, key }).catch(() => {}); return false; }

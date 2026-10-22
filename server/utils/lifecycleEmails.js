@@ -96,4 +96,11 @@ const lifecycleWrapper = (title, bodyHtml, userId) => {
 </div>`;
 };
 
-module.exports = { lifecycleWrapper, sendWelcomeEmail, sendReceiptEmail, signAlertToken, verifyAlertToken, unsubscribeLink, button, esc, frontend, apiBase };
+// Headers that make Gmail / Yahoo show their own "Unsubscribe" button (required for bulk senders).
+const unsubscribeHeaders = (userId) => {
+  const url = unsubscribeLink(userId);
+  if (!url) return undefined;
+  return { 'List-Unsubscribe': `<${url}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' };
+};
+
+module.exports = { unsubscribeHeaders, lifecycleWrapper, sendWelcomeEmail, sendReceiptEmail, signAlertToken, verifyAlertToken, unsubscribeLink, button, esc, frontend, apiBase };
