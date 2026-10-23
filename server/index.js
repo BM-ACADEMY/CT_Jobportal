@@ -13,6 +13,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const onboardingRoutes = require('./routes/onboardingRoutes');
 const recruiterRoutes = require('./routes/recruiter');
 const jobRoutes = require('./routes/job');
 const companyRoutes = require('./routes/company');
@@ -213,6 +214,7 @@ app.use(passport.session());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/recruiter', recruiterRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/jobs', jobRoutes);

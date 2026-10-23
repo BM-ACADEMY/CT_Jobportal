@@ -37,6 +37,12 @@ const job = (over) => ({ _id: '64b0000000000000000000aa', title: 'Sales Executiv
 const all = () => [
   mails.profileIncomplete(user, 40),
   mails.skillTestInvite(user),
+  mails.profileIncomplete(user, 55, 'second'),
+  mails.profileIncomplete(user, 55, 'monthly'),
+  mails.companyProfileIncomplete(user),
+  mails.collegeVerify(user, { name: 'ABC College' }),
+  mails.collegeFirstDrive(user, { name: 'ABC College' }),
+  mails.collegeFirstStudents(user, { name: 'ABC College' }),
   mails.skillGap(user, { label: 'MS Excel', percent: 40, course: 'Data Analytics with Power BI', courseUrl: 'https://learnwithkamar.ai' }),
   mails.jobsForYou(user, [job({}), job({ title: 'Accountant' })], { paid: true, frequency: 'Weekly' }),
   mails.jobsForYou(user, [job({})], { paid: false }),

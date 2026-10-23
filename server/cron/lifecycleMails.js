@@ -5,6 +5,8 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const Job = require('../models/Job');
 const College = require('../models/College');
+const Company = require('../models/Company');
+const CampusDrive = require('../models/CampusDrive');
 const CollegeStudent = require('../models/CollegeStudent');
 const SkillTestResult = require('../models/SkillTestResult');
 const EmailLog = require('../models/EmailLog');
@@ -54,10 +56,19 @@ const deliver = async (state, user, key, mail, audience = 'seeker') => {
 
 const baseUserFilter = { isVerified: true, isAdminBlocked: { $ne: true }, 'emailPrefs.marketingOptOut': { $ne: true }, email: { $not: /\.portal$/i } };
 
+// Three nudges while the profile stays under 70%: day 2, day 7, then once a month. Each is sent at most once (the monthly one once per month).
 const profileIncomplete = async (state) => {
   const role = await Role.findOne({ name: 'jobseeker' }).select('_id');
-  const users = await User.find({ ...baseUserFilter, role: role._id, createdAt: { $gte: ago(30), $lte: ago(2) }, 'profile.profileCompletion': { $lt: 70 } }).limit(BATCH);
-  for (const u of users) await deliver(state, u, 'js_profile_incomplete', mails.wrap(mails.profileIncomplete(u, u.profile?.profileCompletion || 0), u._id));
+  const month = new Date().toISOString().slice(0, 7);
+  const stages = [
+    { stage: 'first', key: 'js_profile_incomplete', min: 2, max: 30 },
+    { stage: 'second', key: 'js_profile_incomplete_d7', min: 7, max: 30 },
+    { stage: 'monthly', key: `js_profile_monthly-${month}`, min: 30, max: 180 },
+  ];
+  for (const st of stages) {
+    const users = await User.find({ ...baseUserFilter, role: role._id, createdAt: { $gte: ago(st.max), $lte: ago(st.min) }, 'profile.profileCompletion': { $lt: 70 } }).limit(BATCH);
+    for (const u of users) await deliver(state, u, st.key, mails.wrap(mails.profileIncomplete(u, u.profile?.profileCompletion || 0, st.stage), u._id));
+  }
 };
 
 const skillTestInvite = async (state) => {
@@ -128,6 +139,31 @@ const employerMails = async (state) => {
   }
 };
 
+// Company page missing a logo or description, 3 to 30 days after sign-up.
+const companyProfileNudge = async (state) => {
+  const roles = await Role.find({ name: { $in: ['recruiter', 'company'] } }).select('_id');
+  const users = await User.find({ ...baseUserFilter, role: { $in: roles.map((r) => r._id) }, company: { $ne: null }, createdAt: { $gte: ago(30), $lte: ago(3) } }).limit(BATCH);
+  for (const u of users) {
+    const co = await Company.findById(u.company).select('logo logo_url description').lean();
+    if (!co || ((co.logo || co.logo_url) && co.description)) continue;
+    await deliver(state, u, 'co_complete_company_profile', mails.wrap(mails.companyProfileIncomplete(u), u._id), 'company');
+  }
+};
+
+// New colleges: verify (day 3), create a first drive (day 4), share the QR when a drive has no students (day 7).
+const collegeOnboarding = async (state) => {
+  const colleges = await College.find({ createdAt: { $gte: ago(45), $lte: ago(3) } }).populate('tpoUser', 'name email emailPrefs').limit(BATCH);
+  for (const c of colleges) {
+    if (!c.tpoUser) continue;
+    const ageDays = (Date.now() - new Date(c.createdAt).getTime()) / DAY;
+    const send = (key, mail) => deliver(state, c.tpoUser, key, mails.wrap(mail, c.tpoUser._id), 'college');
+    if (c.verificationStatus !== 'verified' && await send('col_verify', mails.collegeVerify(c.tpoUser, c))) continue;
+    const drives = await CampusDrive.countDocuments({ college: c._id });
+    if (!drives) { if (ageDays >= 4) await send('col_first_drive', mails.collegeFirstDrive(c.tpoUser, c)); continue; }
+    if (ageDays >= 7 && !(await CollegeStudent.exists({ college: c._id }))) await send('col_first_students', mails.collegeFirstStudents(c.tpoUser, c));
+  }
+};
+
 const collegeMails = async (state) => {
   const colleges = await College.find({}).populate('tpoUser', 'name email emailPrefs').limit(BATCH);
   const month = new Date().toISOString().slice(0, 7);
@@ -145,7 +181,7 @@ const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, employerMails, collegeMails]) {
+  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

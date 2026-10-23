@@ -16,8 +16,8 @@ const PlacementHighlights = () => {
       .catch(() => {});
   }, [API_BASE_URL]);
 
-  const rawCount = stats?.studentsPlacedCount || 0;
-  const count = rawCount < 500 ? rawCount + 543 : rawCount;
+  // Real number only. (An earlier version added 543 to small counts, which overstated placements.)
+  const count = stats?.studentsPlacedCount || 0;
   const highlights = stats?.placementHighlights || [];
 
   return (
@@ -41,7 +41,7 @@ const PlacementHighlights = () => {
               <GraduationCap size={22} />
             </div>
             <p className="text-4xl font-black text-white leading-none">
-              {count > 0 ? <AnimatedStat value={`${count}+`} /> : '0'}
+              {count > 0 ? <AnimatedStat value={String(count)} /> : '0'}
             </p>
             <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mt-2">Students Placed via Campus Drives</p>
           </motion.div>

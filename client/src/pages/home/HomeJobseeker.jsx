@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import OnboardingStrip from '@/components/onboarding/OnboardingStrip';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -114,6 +115,7 @@ const HomeJobseeker = () => {
   return (
     <div className="w-full overflow-x-hidden bg-white">
       <ScrollProgressBar />
+      <OnboardingStrip />
 
       <HeroShell>
           <div className="grid lg:grid-cols-12 gap-10 items-center">

@@ -9,7 +9,7 @@ Apply the code: `git checkout 7ba33a5 && git am launch-fixes.patch`. Full detail
 4. Create plans in the admin screen (pricing below). Confirm where free-plan limits (2 jobs, 10 searches/day, 3 free hires) live.
 5. Run `node --test server/tests/payments/*.test.js` (not runnable in my sandbox; one assertion in webhook.test.js changed).
 6. Open items, in order: move FreeAssessment.jsx to the new test endpoint; random passwords for CSV-imported students; protect /uploads; "Request refund" button; bounce handling and TLS rejectUnauthorized fix in sendEmail.
-7. Run the smoke test in DEV_BRIEF section 8 before announcing.
+7. Run the smoke test in DEV_BRIEF section 8 before announcing, plus the onboarding test in section 9 (new student, company and college each see the tour once, then the checklist).
 
 ## Accounts, keys and external setup checklist (dev ticks each; owner shown)
 | # | Item | Who creates | Dev sets / tests |
