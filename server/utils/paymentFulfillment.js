@@ -7,7 +7,7 @@ const Payment = require('../models/Payment');
 const College = require('../models/College');
 const Company = require('../models/Company');
 const User = require('../models/User');
-const sendEmail = require('./sendEmail');
+const { sendReceiptEmail } = require('./lifecycleEmails');
 const { emailWrapper } = require('./emailTemplates');
 const { generateMouPdf } = require('./pdfGenerator');
 const { saveBufferToUploads } = require('./fileStorage');
@@ -156,17 +156,13 @@ const fulfillPlanPayment = async ({ user, plan, quantity = 1, couponCode = '', p
 
   if (isFree) {
     await Payment.create(paymentFields).catch(err => console.error('Error saving payment record:', err.message));
-  } else if (user.email) {
-    sendEmail({
-      email: user.email,
-      subject: `Payment Receipt — ${plan.name}`,
-      html: emailWrapper('Payment Successful', `
-        <p>Hi ${user.name || 'there'},</p>
-        <p>Your payment for <strong>${plan.name}</strong> was successful.</p>
-        <p>Amount Paid: <strong>Rs ${paidAmount.toLocaleString('en-IN')}</strong></p>
-        <p>Valid Until: <strong>${plan.duration === 'Lifetime' ? 'Lifetime' : expiryDate.toLocaleDateString('en-IN')}</strong></p>
-        <p>Payment ID: ${paymentId || '—'}</p>
-      `)
+  } else {
+    sendReceiptEmail({
+      user,
+      itemName: plan.name,
+      payment: paymentFields,
+      validUntil: plan.duration === 'Lifetime' ? 'Lifetime' : expiryDate.toLocaleDateString('en-IN'),
+      paymentId,
     }).catch(() => {});
   }
 
@@ -277,6 +273,14 @@ const fulfillRecurringPayment = async ({ user, plan, couponCode = '', subscripti
     metadata: { planId: plan._id, subscriberId: record?._id || user._id }
   });
 
+  sendReceiptEmail({
+    user,
+    itemName: plan.name,
+    payment: result.payment,
+    validUntil: nextRenewalDate ? new Date(nextRenewalDate).toLocaleDateString('en-IN') : '',
+    paymentId,
+  }).catch(() => {});
+
   return { duplicate: false, record, nextRenewalDate };
 };
 
@@ -324,6 +328,14 @@ const fulfillPayPerPayment = async ({ user, feature, quantity = 1, paidAmount, o
     await releaseClaim(claim, 'Pay-per purchase');
     throw grantErr;
   }
+
+  sendReceiptEmail({
+    user,
+    itemName: `${feature.name || 'Feature'}${quantity > 1 ? ` x ${quantity}` : ''}`,
+    payment: claim,
+    validUntil: expiresAt.toLocaleDateString('en-IN'),
+    paymentId,
+  }).catch(() => {});
 
   return { duplicate: false, purchasedFeature: user.purchasedFeatures[user.purchasedFeatures.length - 1] };
 };

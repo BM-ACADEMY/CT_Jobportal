@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
+const { rateLimit } = require('../middlewares/rateLimit');
+
+// Campus events put many students behind one college Wi-Fi IP, so these limits are generous.
+const publicRegisterLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 400, message: 'Too many registrations from this network. Please wait a few minutes.' });
+const publicSubmitLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 600, message: 'Too many submissions from this network. Please wait a few minutes.' });
 const upload = require('../middleware/upload');
 const CampusDrive = require('../models/CampusDrive');
 const College = require('../models/College');
@@ -39,6 +44,7 @@ const {
   getVerificationQueue,
   getPublicDrive,
   publicRegister,
+  getPublicAssessment,
   submitAssessment,
   getCompanyMatchStatus,
   exportCredentialsSheet,
@@ -131,8 +137,9 @@ const requireDriveAccess = async (req, res, next) => {
 
 // ── Public routes (no auth) ─────────────────────────────────────────────────
 router.get('/public/drive/:driveCode', getPublicDrive);
-router.post('/public/drive/:driveCode/register', publicRegister);
-router.post('/public/submit-assessment', submitAssessment);
+router.post('/public/drive/:driveCode/register', publicRegisterLimiter, publicRegister);
+router.get('/public/assessment', publicSubmitLimiter, getPublicAssessment);
+router.post('/public/submit-assessment', publicSubmitLimiter, submitAssessment);
 router.post('/public/principal-report/:passkey', getPrincipalExecutiveReport);
 router.get('/drives/incharge/verify/:driveId/:token', verifyInchargeInvite);
 router.post('/drives/incharge/accept-existing/:driveId/:token', acceptInchargeInviteExisting);

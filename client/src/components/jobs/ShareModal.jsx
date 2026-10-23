@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
+import { trackEvent } from '../../utils/analytics';
 
 const ShareModal = ({ isOpen, onClose, jobTitle, companyName, shareUrl }) => {
   const [copied, setCopied] = useState(false);
@@ -169,7 +170,7 @@ const ShareModal = ({ isOpen, onClose, jobTitle, companyName, shareUrl }) => {
               {shareOptions.map((option) => {
                 const ItemTag = option.url ? 'a' : 'button';
                 const extraProps = option.url 
-                  ? { href: option.url, target: "_blank", rel: "noopener noreferrer" } 
+                  ? { href: option.url, target: "_blank", rel: "noopener noreferrer", onClick: () => trackEvent('share_job', { channel: option.name }) } 
                   : { onClick: option.action };
 
                 return (

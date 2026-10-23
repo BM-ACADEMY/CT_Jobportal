@@ -1,5 +1,6 @@
+import SocialLoginButtons from '../../components/auth/SocialLoginButtons';
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, CircleCheck, Briefcase, Building2, ShieldCheck, ArrowLeft, Phone } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -58,7 +59,9 @@ const registerSchema = z.object({
 const RegisterPage = () => {
   const { register, verifyOtp, resendOtp } = useAuth();
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState('jobseeker');
+  const [searchParams] = useSearchParams();
+  const requestedRole = searchParams.get('role');
+  const [selectedRole, setSelectedRole] = useState(['jobseeker', 'recruiter', 'company', 'college'].includes(requestedRole) ? requestedRole : 'jobseeker');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
@@ -496,7 +499,7 @@ const RegisterPage = () => {
                   <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
                     By creating an account, you agree to our{' '}
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
+                    <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
                   </p>
 
                   <Button
@@ -508,6 +511,7 @@ const RegisterPage = () => {
                   </Button>
                 </form>
               </Form>
+              {selectedRole !== 'college' && <SocialLoginButtons role={selectedRole} />}
 
               <p className="text-center text-sm text-slate-500 mt-6">
                 Already have an account?{' '}

@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { fuzzySearch, matchesForKey, tokenize } from '../utils/fuzzySearch';
 import HighlightText from '../components/shared/HighlightText';
 import SEOHead from '../components/seo/SEOHead';
+import { jobPath } from '../utils/jobUrl';
 
 const SEARCH_FIELD_LABELS = {
   title: 'Job Title',
@@ -530,7 +531,7 @@ const Jobs = () => {
                       transition={{ delay: i * 0.04 }}
                     >
                       <Link
-                        to={`/job/${job._id}`}
+                        to={jobPath(job)}
                         className={`group relative block bg-white rounded-2xl border shadow-sm hover:shadow-xl hover:shadow-slate-900/5 transition-all duration-300 p-6 pl-7 overflow-hidden ${
                           job.isPriority ? 'border-amber-200' : 'border-slate-100 hover:border-emerald-200'
                         }`}

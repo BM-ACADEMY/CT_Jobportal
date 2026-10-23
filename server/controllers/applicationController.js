@@ -325,7 +325,7 @@ exports.updateApplicationStatus = async (req, res) => {
           ${status === 'accepted' ? '<p>Congratulations! The recruiter will be in touch with next steps.</p>' : ''}
           ${status === 'shortlisted' ? '<p>Good news — you have been shortlisted. The recruiter may contact you about the next round.</p>' : ''}
           ${status === 'rejected' ? '<p>Thank you for your interest. The employer has decided not to move forward with your application this time. Keep applying — there are more roles waiting for you.</p>' : ''}
-          <p><a href="${FRONTEND_URL}/jobseeker/applications" style="color:#059669;">View your applications</a></p>
+          <p><a href="${FRONTEND_URL}/candidate/applications" style="color:#059669;">View your applications</a></p>
         `)
       }).catch(() => {});
     }
@@ -358,7 +358,7 @@ exports.updateApplicationStatus = async (req, res) => {
     if (statusChanged && status !== 'withdrawn' && applicantPhone) {
       const label = STATUS_LABELS[status] || status;
       const companyName = application.job?.company?.name || 'the company';
-      const link = `${FRONTEND_URL}/jobseeker/applications`;
+      const link = `${FRONTEND_URL}/candidate/applications`;
       if (status === 'accepted') {
         sendWhatsAppTemplate({
           to: applicantPhone,

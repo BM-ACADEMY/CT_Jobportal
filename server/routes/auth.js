@@ -13,16 +13,24 @@ const {
   completeSocialProfile
 } = require('../controllers/authController');
 const { verifyToken } = require('../middlewares/authMiddleware');
+const { rateLimit } = require('../middlewares/rateLimit');
+const { startLinkedinLogin, linkedinCallback } = require('../controllers/linkedinAuth');
+const { isSelfServeRole } = require('../utils/selfServeRoles');
 const passport = require('passport');
 
-router.post('/register', registerUser);
-router.post('/verify-otp', verifyOtp);
-router.post('/login', loginUser);
+// Brute-force / abuse protection on anything that checks or sends a credential or OTP.
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many attempts. Please try again in a few minutes.' });
+const otpLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many OTP requests. Please try again in a few minutes.' });
+const registerLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 20, message: 'Too many sign-up attempts. Please try again later.' });
+
+router.post('/register', registerLimiter, registerUser);
+router.post('/verify-otp', otpLimiter, verifyOtp);
+router.post('/login', loginLimiter, loginUser);
 router.post('/logout', verifyToken, logoutUser);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
-router.post('/resend-otp', resendOtp);
-router.post('/complete-social-profile', completeSocialProfile);
+router.post('/forgot-password', otpLimiter, forgotPassword);
+router.post('/reset-password', otpLimiter, resetPassword);
+router.post('/resend-otp', otpLimiter, resendOtp);
+router.post('/complete-social-profile', verifyToken, completeSocialProfile);
 router.get('/resend-otp', (req, res) => {
   res.status(405).json({ msg: 'This endpoint only accepts POST requests. If you reached this via a page refresh, please go back and try again.' });
 });
@@ -31,7 +39,7 @@ router.get('/resend-otp', (req, res) => {
 
 // Google
 router.get('/google', (req, res, next) => {
-  const role = req.query.role || 'jobseeker';
+  const role = isSelfServeRole(req.query.role) ? req.query.role : 'jobseeker';
   passport.authenticate('google', { 
     scope: ['profile', 'email'],
     state: JSON.stringify({ role })
@@ -39,15 +47,9 @@ router.get('/google', (req, res, next) => {
 });
 router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), socialAuthCallback);
 
-// GitHub
-router.get('/github', (req, res, next) => {
-  const role = req.query.role || 'jobseeker';
-  passport.authenticate('github', { 
-    scope: ['user:email'],
-    state: JSON.stringify({ role })
-  })(req, res, next);
-});
-router.get('/github/callback', passport.authenticate('github', { failureRedirect: '/login' }), socialAuthCallback);
+// LinkedIn (OpenID Connect)
+router.get('/linkedin', startLinkedinLogin);
+router.get('/linkedin/callback', linkedinCallback);
 
 
 router.get('/me', verifyToken, getUserProfile);

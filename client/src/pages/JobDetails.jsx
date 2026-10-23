@@ -32,9 +32,12 @@ import { toast } from 'sonner';
 import JobApplicationModal from '../components/jobs/JobApplicationModal';
 import ShareModal from '../components/jobs/ShareModal';
 import SEOHead from '../components/seo/SEOHead';
+import { jobIdFromParam, jobPath } from '../utils/jobUrl';
+import { trackEvent } from '../utils/analytics';
 
 const JobDetails = () => {
-  const { id } = useParams();
+  const { id: routeParam } = useParams();
+  const id = jobIdFromParam(routeParam);
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,6 +58,7 @@ const JobDetails = () => {
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
         const response = await axios.get(`${API_BASE_URL}/jobs/${id}`, config);
         setJob(response.data);
+        if (!response.data.closed) trackEvent('view_job', { content_name: response.data.title, content_ids: [response.data._id] });
       } catch (error) {
         console.error('Error fetching job details:', error);
         if (error.response?.status === 404) {
@@ -215,6 +219,24 @@ const JobDetails = () => {
 
   if (!job) return null;
 
+  // Closed / filled jobs keep a live page instead of bouncing the visitor to a 404.
+  if (job.closed) {
+    return (
+      <div className="min-h-screen bg-white">
+        <SEOHead title={`${job.title || 'Job'} — position filled | Velaivaaipu`} description="This position has been filled. Browse the latest jobs on Velaivaaipu." path={jobPath(job)} robots="noindex, follow" />
+        <div className="max-w-2xl mx-auto px-6 pt-40 pb-24 text-center">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">This position has been filled</h1>
+          <p className="text-slate-500 mt-3">
+            {job.title ? `${job.title}${job.company?.name ? ` at ${job.company.name}` : ''} is no longer accepting applications.` : 'This job is no longer accepting applications.'}
+          </p>
+          <Link to="/jobs" className="inline-block mt-8 px-8 h-12 leading-[3rem] rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
+            Browse similar jobs
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const companyName = job.company?.name || 'Velaivaaipu';
   const city = job.location || 'Tamil Nadu';
   const seoDescription = `${companyName} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}. Apply free on Velaivaaipu.`;
@@ -233,7 +255,7 @@ const JobDetails = () => {
 
   return (
     <div className="min-h-screen bg-white pb-32">
-      <SEOHead title={`${job.title} Job in ${city} — ${companyName} | Velaivaaipu`} description={seoDescription} path={`/job/${job._id}`} schema={jobSchema} />
+      <SEOHead title={`${job.title} Job in ${city} — ${companyName} | Velaivaaipu`} description={seoDescription} path={jobPath(job)} schema={jobSchema} />
       {/* ─── HEADER / BREADCRUMB ─── */}
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-12">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-primary transition-colors mb-4 group">

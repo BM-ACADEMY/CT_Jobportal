@@ -3,11 +3,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 
-const defaultTestimonials = [
-  { user: { name: 'Priya Sharma', role: { name: 'jobseeker' } }, comment: 'Found my dream job in just 2 weeks. The AI-powered recommendations were incredibly accurate for my skill set!', rating: 5, avatar: 'PS' },
-  { user: { name: 'Rahul Mehta', role: { name: 'recruiter' } }, comment: 'The platform\'s reach is unmatched. I received 20+ interview calls within days of uploading my resume.', rating: 5, avatar: 'RM' },
-  { user: { name: 'Sneha Patel', role: { name: 'jobseeker' } }, comment: 'Super easy to use. The detailed job filters helped me find exactly what I was looking for in just days.', rating: 5, avatar: 'SP' },
-];
+// Only real, admin-approved reviews are shown. With none yet, the section is hidden (no placeholder reviews).
 
 // roleFilter: 'jobseeker' | 'recruiter' | 'company' | 'college' | null.
 // Falls back to the unfiltered list when fewer than 3 reviews match the filter.
@@ -15,11 +11,11 @@ const TestimonialCarousel = ({
   roleFilter = null,
   eyebrow = 'Real Stories',
   title = 'Success Stories',
-  subtitle = 'Join thousands of professionals who found their path through us.',
+  subtitle = 'What people say about Velaivaaipu.',
 }) => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
-  const [reviews, setReviews] = useState(defaultTestimonials);
+  const [reviews, setReviews] = useState([]);
   const [activeSlide, setActiveSlide] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -47,6 +43,8 @@ const TestimonialCarousel = ({
   const next = () => setActiveSlide(prev => (prev + 1) % list.length);
   const prev = () => setActiveSlide(prev => (prev - 1 + list.length) % list.length);
   const active = list[activeIndex];
+
+  if (!list.length) return null;
 
   return (
     <section className="py-24 bg-slate-950 relative overflow-hidden">
