@@ -1,11 +1,9 @@
-node_modules/
-.env
-.env.local
 server/.env
 client/.env
-dist/
-build/
-.DS_Store
-.claude/
 server/uploads/*
 !server/uploads/.gitkeep
+node_modules/
+client/dist/
+launch-fixes.patch
+.DS_Store
+Thumbs.db
