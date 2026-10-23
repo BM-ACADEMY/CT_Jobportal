@@ -41,7 +41,7 @@ const FreeAssessment = () => {
       setQuestions(res.data.questions);
       setStep('test');
     } catch (err) {
-      toast.error('Failed to generate assessment. Try a different skill.');
+      toast.error(err.response?.status === 503 ? (err.response.data?.msg || 'The test is not available right now. Please try again later.') : 'Failed to generate assessment. Try a different skill.');
     } finally {
       setLoading(false);
     }
