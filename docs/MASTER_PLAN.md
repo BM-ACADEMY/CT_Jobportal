@@ -13,7 +13,8 @@ Refund rules, legal pages, GST receipts, campus QR test with server-side scoring
 5. Soft launch with one friendly college (50 to 100 students) for one week.
 Needs Kamar only for: footer phone, sender names, festival dates and price, CA answer on GST invoice, payment card / KYC / OTP where required.
 
-## Phase 2. PWA (installable app), about 3 days
+## Phase 2. PWA (installable app): BUILT, see DEV_BRIEF section 10; real-device tests still to do
+Original findings and scope, kept for reference:
 Today: `manifest.webmanifest` exists but is not linked in `index.html`; its only icon is 512x263 (not square), so the browser will not offer install; there is no service worker, no theme-color or Apple touch icon, no install button, no offline page.
 Build:
 - Square icons 192 and 512, plus a maskable 512; fix the manifest (`id`, `scope`, `start_url=/?source=pwa`, `display=standalone`, `theme_color`, `lang`, shortcuts to Jobs, Skill tests, My applications); link it and add `theme-color`, `apple-touch-icon` and Apple web-app meta tags.

@@ -8,6 +8,7 @@ import { OnboardingProvider } from '../context/OnboardingContext';
 import WelcomeTour from '../components/onboarding/WelcomeTour';
 import OnboardingChecklistCard from '../components/onboarding/OnboardingChecklistCard';
 import IncompleteProfileBanner from '../components/onboarding/IncompleteProfileBanner';
+import InstallPrompt from '../components/pwa/InstallPrompt';
 
 // Each portal's home screen shows the full checklist card; every other page shows the slim banner.
 const DASHBOARD_PATH = /^\/(candidate\/?|company\/dashboard\/?|college\/dashboard\/?|employee\/?)$/;
@@ -83,6 +84,7 @@ const DashboardLayoutInner = () => {
             : 'max-w-[1440px] gap-8 px-4 sm:px-6 py-8'
         }`}>
           <main className="flex-1 min-w-0">
+            {isDashboardHome && <InstallPrompt />}
             {showOnboarding && (isDashboardHome ? <OnboardingChecklistCard /> : <IncompleteProfileBanner />)}
             <Outlet />
             {showBlogRecommendations && (

@@ -2,6 +2,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import { initPwa } from './utils/pwa'
+
+initPwa()
 
 // A route chunk hash-named from a previous deploy can 404 (or get served as index.html
 // by the SPA rewrite) once a new build removes it. Vite fires this event when a lazy

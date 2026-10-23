@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { trackEvent, getUtm } from '../../utils/analytics';
 import SEOHead from '../../components/seo/SEOHead';
 import { SKILL_CATEGORIES } from '@/data/skillCategories';
+import InstallPrompt from '../../components/pwa/InstallPrompt';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -298,6 +299,8 @@ const CampusRegistration = () => {
               }
             </p>
           </div>
+
+          <InstallPrompt variant="inline" />
 
           {result?.certificateCode && (
             <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
