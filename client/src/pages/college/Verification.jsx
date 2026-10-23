@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
@@ -44,6 +45,7 @@ const Verification = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <PageSOPBanner pageKey="collegeVerification" />
       <div>
         <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
           <ShieldCheck size={18} className="text-[#39c884]" /> ID Verification Queue

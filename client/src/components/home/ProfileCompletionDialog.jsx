@@ -31,7 +31,7 @@ const ProfileCompletionDialog = ({ open, onDismiss, completion = 0 }) => {
             <span className="absolute inset-0 flex items-center justify-center text-white font-black text-xl">{completion}%</span>
           </div>
           <h2 className="text-white font-bold text-xl">Your profile isn't complete yet</h2>
-          <p className="text-slate-400 text-sm mt-2">Complete profiles get up to 3x more recruiter views.</p>
+          <p className="text-slate-400 text-sm mt-2">A complete profile is easier for recruiters to find.</p>
         </div>
 
         <div className="p-6 space-y-3">

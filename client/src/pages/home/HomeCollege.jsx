@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import OnboardingStrip from '@/components/onboarding/OnboardingStrip';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -55,6 +56,7 @@ const HomeCollege = () => {
 
   return (
     <div className="w-full overflow-x-hidden bg-white">
+      <OnboardingStrip />
 
       <HeroShell>
         <div className="grid lg:grid-cols-12 gap-16 items-center">

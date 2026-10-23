@@ -74,3 +74,14 @@ Decisions made on Kamar's behalf (footer, senders, festival dates, pricing propo
 ## 8. Smoke test before launch
 
 Signup with email OTP, Google login, LinkedIn login, forgot password; post a job and open its public URL; apply; subscribe with a real small payment and request a refund inside 24 hours; QR campus join with only name + WhatsApp, take the test, download the certificate; check that a closed job URL shows "position filled"; check `/for-colleges`, `/privacy-policy`, `/refund-policy`, `/terms`.
+
+## 9. Onboarding system (new, all portals)
+
+- **API:** `GET /api/onboarding` returns the signed-in person's checklist (steps, percent, next step, `tourSeen`); `POST /api/onboarding/tour-seen` stores that the welcome tour was finished or skipped (`user.onboarding.tourSeenAt`). Rules live in `server/utils/onboarding.js` (pure functions, tested in `tests/auth/onboarding.test.js`). No new env variables.
+- **Roles:** job seeker (9 steps: photo, headline+bio, phone+location, skills, education, resume, job preferences, skill test, first application), company and recruiter (details, logo, company description, first job, invite teammate for company only), college (details, verification, first drive, first students, 50 students), org employee (profile steps). Admin, subadmin and drive_incharge see nothing.
+- **Client:** `OnboardingContext` (one fetch, refreshed on tab focus), `WelcomeTour` (first login, skippable, replay with "Take the tour"), `OnboardingChecklistCard` (each portal home inside `DashboardLayout`), `IncompleteProfileBanner` (every other dashboard page; hide for a day), `OnboardingStrip` (the logged-in home pages outside the layout). Tour text is in `client/src/data/onboardingTour.js`.
+- **Students:** applying with a profile under 60% opens a soft prompt ("Complete profile" or "Apply anyway"); it never blocks. The existing home-page completion pop-up stays.
+- **Colleges:** the "how this page works" banners are now on all six college pages (they existed in `pageSOP.js` but were not placed).
+- **Emails (all through the lifecycle engine, off until `LIFECYCLE_EMAILS_ENABLED=true`):** job seeker profile nudges at day 2, day 7 and monthly while under 70%; company page nudge (missing logo or description, day 3 to 30); college verify (day 3), create first drive (day 4), share the QR when a drive has no students (day 7). Still one mail per person per day.
+- **Claims removed in this pass:** "up to 3x more recruiter views" (profile pop-up and sidebar) and the homepage placed-students counter that added 543 to small real counts.
+- **Test:** sign up as a new student, company and college. Each should see the tour once, then the checklist card on its home page, then the banner on other pages; finishing the steps removes them.

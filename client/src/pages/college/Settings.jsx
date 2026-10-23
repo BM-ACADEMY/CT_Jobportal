@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
@@ -140,6 +141,7 @@ const CollegeSettings = () => {
 
   return (
     <div className="space-y-8 max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <PageSOPBanner pageKey="collegeSettings" />
       <div>
         <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
           <Building2 size={18} className="text-[#39c884]" /> College Profile & Verification Settings

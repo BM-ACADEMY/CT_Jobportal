@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PageSOPBanner from '@/components/common/PageSOPBanner';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
@@ -210,6 +211,7 @@ const CollegeReports = () => {
 
   return (
     <div className="space-y-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <PageSOPBanner pageKey="collegeReports" />
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">

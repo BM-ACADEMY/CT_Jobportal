@@ -11,14 +11,37 @@ const first = (user) => esc(String(user?.name || 'there').split(' ')[0]);
 const utm = (url, campaign) => `${url}${url.includes('?') ? '&' : '?'}utm_source=email&utm_medium=lifecycle&utm_campaign=${campaign}`;
 const link = (path, campaign) => utm(`${frontend()}${path}`, campaign);
 
-const profileIncomplete = (user, pct) => ({
-  subject: `${String(user.name || '').split(' ')[0] || 'Hi'}, recruiters skip incomplete profiles`,
-  title: 'Your profile is almost there',
-  html: `<p>Hi ${first(user)},</p>
-    <p>Your Velaivaaipu profile is ${Math.round(pct)}% complete. Recruiters filter out profiles with missing skills or no resume.</p>
-    <p>Add your skills and resume (about 5 minutes) so you show up when companies search.</p>
-    ${button(link('/candidate/settings', 'profile_incomplete'), 'Finish my profile')}`,
-});
+// stage: 'first' (day 2), 'second' (day 7), 'monthly' (after 30 days). Same ask, different angle each time.
+const PROFILE_COPY = {
+  first: (pct) => ({
+    subject: null,
+    title: 'Your profile is almost there',
+    body: `<p>Your Velaivaaipu profile is ${pct}% complete. Recruiters filter out profiles with missing skills or no resume.</p>
+    <p>Add your skills and resume (about 5 minutes) so you show up when companies search.</p>`,
+  }),
+  second: (pct) => ({
+    subject: 'Your profile is still at ' + pct + '%. 5 minutes to fix it',
+    title: 'A complete profile gets seen',
+    body: `<p>Your profile is ${pct}% complete. The fastest wins: a photo, your skills, and a resume. No resume? Our AI Resume Builder makes one for you.</p>`,
+  }),
+  monthly: (pct) => ({
+    subject: 'Is your profile ready for the next job?',
+    title: 'Get your profile job-ready',
+    body: `<p>Companies post jobs on Velaivaaipu, and your profile is ${pct}% complete. Finish it so you are ready when the right job appears.</p>`,
+  }),
+};
+
+const profileIncomplete = (user, pct, stage = 'first') => {
+  const p = Math.round(pct);
+  const c = (PROFILE_COPY[stage] || PROFILE_COPY.first)(p);
+  return {
+    subject: c.subject || `${String(user.name || '').split(' ')[0] || 'Hi'}, recruiters skip incomplete profiles`,
+    title: c.title,
+    html: `<p>Hi ${first(user)},</p>
+    ${c.body}
+    ${button(link('/candidate/settings', `profile_incomplete_${stage}`), 'Finish my profile')}`,
+  };
+};
 
 const skillTestInvite = (user) => ({
   subject: 'Take your free skill test and stand out',
@@ -75,6 +98,39 @@ const batchReadiness = (user, college, s) => ({
     ${button(link('/college/reports', 'batch_readiness'), 'Open full reports')}`,
 });
 
+const companyProfileIncomplete = (user) => ({
+  subject: 'Finish your company page before candidates look',
+  title: 'Finish your company page',
+  html: `<p>Hi ${first(user)},</p>
+    <p>Your company page is missing a logo or a description. Candidates look at the company before they apply.</p>
+    <p>It takes about 3 minutes.</p>
+    ${button(link('/company/profile-management', 'company_profile_incomplete'), 'Complete my company page')}`,
+});
+
+const collegeVerify = (user, college) => ({
+  subject: `Get ${college.name} verified on Velaivaaipu`,
+  title: 'Verify your college',
+  html: `<p>Hi ${first(user)},</p>
+    <p>${esc(college.name)} is not verified yet. Upload your proof once, and students and companies will see a verified college.</p>
+    ${button(link('/college/verification', 'college_verify'), 'Verify my college')}`,
+});
+
+const collegeFirstDrive = (user, college) => ({
+  subject: `Create your first campus drive for ${college.name}`,
+  title: 'Start your first campus drive',
+  html: `<p>Hi ${first(user)},</p>
+    <p>A campus drive gives you a QR code. Students scan it, register with their name and WhatsApp number, and take a free skill test. No app to install.</p>
+    ${button(link('/college/drives/new', 'college_first_drive'), 'Create a drive')}`,
+});
+
+const collegeFirstStudents = (user, college) => ({
+  subject: 'Your drive is ready. Share the QR code with your students',
+  title: 'Get your first students on board',
+  html: `<p>Hi ${first(user)},</p>
+    <p>Your drive for ${esc(college.name)} is created, but no students have joined yet. Share the QR code in your class groups or on the notice board.</p>
+    ${button(link('/college/drives', 'college_first_students'), 'Open my drives')}`,
+});
+
 const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
-module.exports = { profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, batchReadiness, wrap, jobUrl };
+module.exports = { companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, batchReadiness, wrap, jobUrl };

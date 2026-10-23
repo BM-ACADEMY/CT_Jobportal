@@ -440,7 +440,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
               <p className="text-[10px] font-medium text-slate-300/90 leading-relaxed relative z-10">
                 {profileCompletion === 100
                   ? "Excellent! Your profile is fully optimized for top recruiters."
-                  : "Reach 100% to boost your visibility to recruiters by up to 3x."}
+                  : "Reach 100% to make your profile easier for recruiters to find."}
               </p>
               {profileCompletion < 100 && (
                 <button onClick={() => navigate('/candidate/settings')} className="mt-3 w-full py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-emerald-200 text-[10px] font-bold transition-all border border-emerald-500/30 hover:border-emerald-500/50 relative z-10 shadow-sm backdrop-blur-sm">
