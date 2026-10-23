@@ -11,6 +11,21 @@ Apply the code: `git checkout 7ba33a5 && git am launch-fixes.patch`. Full detail
 6. Open items, in order: move FreeAssessment.jsx to the new test endpoint; random passwords for CSV-imported students; protect /uploads; "Request refund" button; bounce handling and TLS rejectUnauthorized fix in sendEmail.
 7. Run the smoke test in DEV_BRIEF section 8 before announcing.
 
+## Accounts, keys and external setup checklist (dev ticks each; owner shown)
+| # | Item | Who creates | Dev sets / tests |
+|---|---|---|---|
+| 1 | OpenRouter account with credit (all AI features, question bank seeding) | Kamar | `OPENROUTER_API_KEY`; seed bank; test resume review, resume builder, matching |
+| 2 | Razorpay LIVE keys and webhook | Kamar | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, client `VITE_RAZORPAY_KEY_ID`; webhook URL in Razorpay dashboard; real small payment + refund test |
+| 3 | Google sign-in (OAuth client) | Kamar | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`; test login and signup |
+| 4 | **LinkedIn sign-in/sign-up** (button is on Login and Register) | Kamar creates LinkedIn developer app, enables "Sign in with LinkedIn using OpenID Connect", redirect `https://<api-domain>/api/auth/linkedin/callback` | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `LINKEDIN_CALLBACK_URL`; test with a real account. Until set, the button leads nowhere |
+| 5 | Mail sending service (SES or Brevo), hello@ stays on Hostinger | Kamar | see Mail service block; `MAIL_FROM`, `MAIL_REPLY_TO`, SMTP values |
+| 6 | Meta WhatsApp: new template approved; app secret; webhook | Kamar submits template | confirm existing WhatsApp token/phone-number env already set; `WA_APP_SECRET`; subscribe webhook to `messages`; `WHATSAPP_FOLLOWUP_ENABLED` last |
+| 7 | GA4 and Meta Pixel | SEO team | client `VITE_GA_MEASUREMENT_ID`, `VITE_META_PIXEL_ID`; mark key events |
+| 8 | Google Search Console and Bing Webmaster | SEO team | submit `sitemap.xml` |
+| 9 | Footer and invoice details | Kamar gives phone and GSTIN | `FOOTER_PHONE`, `GSTIN`, `FOOTER_ENTITY`, `FOOTER_ADDRESS`, `API_PUBLIC_URL` |
+| 10 | Core secrets | Dev | `JWT_SECRET` (32+), `MONGODB_URI`, `FRONTEND_URL`, `ALLOWED_ORIGINS`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` (12+) |
+| 11 | CA answer on GST tax invoice (invoice number, SAC code) | Kamar | decide receipt vs tax invoice |
+
 ## Mail service (decided: keep hello@ on Hostinger, send through a service)
 - `hello@velaivaaipu.in` already exists on Hostinger. Keep it as the visible From and Reply-To (`MAIL_FROM="Velaivaaipu" <hello@velaivaaipu.in>`, `MAIL_REPLY_TO=hello@velaivaaipu.in`). No new address needed. Do not send bulk mail through the Hostinger login (low limits, suspension risk); it only receives replies.
 - Sending service for all app mail (OTP, receipts, refunds, lifecycle): Amazon SES Mumbai (recommended, needs production access request) or Brevo (free about 300 a day, shared by all mail; fine for the first weeks). No code change, only env: `EMAIL_HOST`, `EMAIL_PORT`, `USER_EMAIL`, `USER_PASS`.
