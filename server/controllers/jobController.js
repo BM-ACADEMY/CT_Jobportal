@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const { notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved, notifyJobPublished } = require('../utils/jobNotifications');
 const { enforceJobLimits } = require('../utils/enforceJobLimits');
+const { getRankedMatches, engineEnabled } = require('../utils/matchingJobs');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -473,6 +474,16 @@ const getMatchingJobs = async (req, res) => {
     const { profile } = user;
     if (!profile) {
       return res.json([]); // Return empty if no profile
+    }
+
+    // New relevance engine (utils/relevance.js). Off unless RELEVANCE_ENGINE_ENABLED=true; if it fails we fall back
+    // to the original matching below so the page never breaks.
+    if (engineEnabled()) {
+      try {
+        return res.json(await getRankedMatches(user, { Job, User, Application }));
+      } catch (engineErr) {
+        console.error('Relevance engine failed, using classic matching:', engineErr.message);
+      }
     }
 
     const { jobPreferences, skills, location, preferredRole } = profile;

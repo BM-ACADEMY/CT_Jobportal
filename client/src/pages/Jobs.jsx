@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Search, MapPin, Briefcase, IndianRupee, Clock, Loader2,
-  SlidersHorizontal, X, ArrowRight, Building2, ChevronDown, ChevronUp, ChevronRight, Star
+  SlidersHorizontal, X, ArrowRight, Building2, ChevronDown, ChevronUp, ChevronRight, Star, Sparkles
 } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,6 +39,8 @@ const EXPERIENCE_RANGES = [
   { label: '5–10 Years', min: 5, max: 10 },
   { label: '10+ Years', min: 10, max: Infinity },
 ];
+// Only offered on the "Matched for you" tab, where the server already ranks by relevance.
+const BEST_MATCH_OPTION = { label: 'Best match', value: 'relevance' };
 const SORT_OPTIONS = [
   { label: 'Newest First', value: 'newest' },
   { label: 'Oldest First', value: 'oldest' },
@@ -137,7 +139,12 @@ const Jobs = () => {
     const headers = activeTab === 'matched' ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {};
 
     axios.get(endpoint, { headers })
-      .then(res => setJobs(res.data))
+      .then(res => {
+        setJobs(res.data);
+        // Keep the server's relevance order on the matched tab; the explicit sort control still overrides it.
+        if (activeTab === 'matched' && res.data?.[0]?.relevance) setSortBy('relevance');
+        else setSortBy(prev => (prev === 'relevance' ? 'newest' : prev));
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [API_BASE_URL, activeTab, user]);
@@ -190,6 +197,7 @@ const Jobs = () => {
     // otherwise fall back to the explicit sort control.
     if (!searchTerm.trim()) {
       result = [...result].sort((a, b) => {
+        if (sortBy === 'relevance') return 0; // keep the server's order (stable sort)
         if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
         if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
         if (sortBy === 'salary_desc') return (b.salary?.min || 0) - (a.salary?.min || 0);
@@ -498,7 +506,7 @@ const Jobs = () => {
                   onChange={e => setSortBy(e.target.value)}
                   className="h-9 px-4 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold outline-none cursor-pointer hover:border-emerald-300 transition-colors"
                 >
-                  {SORT_OPTIONS.map(o => (
+                  {(activeTab === 'matched' && jobs[0]?.relevance ? [BEST_MATCH_OPTION, ...SORT_OPTIONS] : SORT_OPTIONS).map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
@@ -568,6 +576,11 @@ const Jobs = () => {
                                   <Building2 size={13} className="text-slate-400" />
                                   <HighlightText text={job.company?.name} ranges={matchesForKey(job._fuzzyMatches, 'company.name')} />
                                 </p>
+                                {job.relevance?.reasons?.length > 0 && (
+                                  <p className="text-emerald-700 text-xs font-semibold mt-1.5 flex items-center gap-1">
+                                    <Sparkles size={11} className="shrink-0" /> Why this job: {job.relevance.reasons.slice(0, 3).join(' · ')}
+                                  </p>
+                                )}
                               </div>
                               <div className="shrink-0 flex items-center gap-2">
                                 <span className="inline-flex items-center gap-1 text-emerald-700 font-bold text-sm bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl">
