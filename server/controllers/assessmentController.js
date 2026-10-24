@@ -1,23 +1,9 @@
 const Assessment = require('../models/Assessment');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
+const { normalizeSet, publicQuestions, scoreAttempt, QUESTIONS_PER_SET } = require('../utils/campusTest');
+const { cleanSkill, cleanDifficulty, signStart, verifyStart, signResult, verifyResult, PASS_RATIO } = require('../utils/freeAssessment');
 
-// @desc    Generate or fetch a skill assessment
-// @route   GET /api/assessments/public?skill=X&difficulty=Y
-// @access  Public
-const getAssessment = async (req, res) => {
-  try {
-    let { skill, difficulty } = req.query;
-    if (!skill || !difficulty) {
-      return res.status(400).json({ msg: 'Skill and difficulty are required.' });
-    }
-
-    skill = skill.toLowerCase().trim();
-    difficulty = difficulty.toLowerCase().trim();
-
-    // Removed cache check to ensure unique questions are generated every time.
-
-    // Generate via Gemini
-    const prompt = `
+const buildPrompt = (skill, difficulty) => `
 You are an expert technical interviewer and examination engine. Your task is to generate a multiple-choice skill assessment test based on the following parameters:
 - Skill: ${skill}
 - Difficulty: ${difficulty}
@@ -55,55 +41,79 @@ You are an expert technical interviewer and examination engine. Your task is to 
 ]
 `;
 
-    let questions;
-    try {
-      if (!process.env.OPENROUTER_API_KEY) {
-        throw new Error("OPENROUTER_API_KEY is not set in environment");
-      }
-      
-      const genAI = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY);
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7
-        }
-      });
-  
-      const resultObj = await model.generateContent(prompt);
-      let responseText = resultObj.response.text();
-      
-      // Strip markdown formatting if present
-      responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      
-      questions = JSON.parse(responseText);
-      
-      // Save newly generated questions to cache
-      const newAssessment = new Assessment({
-        skill,
-        difficulty,
-        questions
-      });
-      await newAssessment.save();
-  
-      return res.json({ msg: 'Generated new assessment', questions });
+// Questions for the free assessment: a fresh AI set, or a cached one if the AI is unavailable. Either way the set is
+// normalised (options shuffled, answer validated) and stored as its own document, so one attempt = one document.
+const buildSet = async (skill, difficulty) => {
+  try {
+    if (!process.env.OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY is not set in environment');
+    const model = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY).getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+    });
+    const resultObj = await model.generateContent(buildPrompt(skill, difficulty));
+    const text = resultObj.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+    const questions = normalizeSet(JSON.parse(text));
+    if (!questions) throw new Error('AI returned an unusable question set');
+    return await Assessment.create({ skill, difficulty, questions });
+  } catch (genErr) {
+    console.warn('AI Assessment Generation failed (falling back to cache):', genErr.message);
+    const cached = await Assessment.findOne({ skill, difficulty, 'questions.9': { $exists: true } });
+    const plain = cached ? (cached.questions || []).map((q) => (q.toObject ? q.toObject() : q)) : [];
+    const questions = normalizeSet(plain);
+    if (!questions) return null;
+    return Assessment.create({ skill, difficulty, questions });
+  }
+};
 
-    } catch (genErr) {
-      console.warn('AI Assessment Generation failed (falling back to cache/mock):', genErr.message);
-      
-      // Fallback 1: Try to get from cache
-      const cachedAssessment = await Assessment.findOne({ skill, difficulty });
-      if (cachedAssessment && cachedAssessment.questions?.length > 0) {
-        return res.json({ msg: 'Fetched from cache', questions: cachedAssessment.questions });
-      } 
-      
-      // Never show placeholder questions to real users.
-      return res.status(503).json({ msg: 'The test is not available right now. Please try again later.' });
+// @desc    Generate a skill assessment. The browser gets the questions WITHOUT answers plus a signed attempt token.
+// @route   GET /api/assessments/public?skill=X&difficulty=Y
+// @access  Public (rate limited)
+const getAssessment = async (req, res) => {
+  try {
+    const skill = cleanSkill(req.query.skill);
+    const difficulty = cleanDifficulty(req.query.difficulty);
+    if (!skill || !difficulty) {
+      return res.status(400).json({ msg: 'A skill and a difficulty (easy, medium or hard) are required.' });
     }
-
+    const set = await buildSet(skill, difficulty);
+    // Never show placeholder questions to real users.
+    if (!set) return res.status(503).json({ msg: 'The test is not available right now. Please try again later.' });
+    return res.json({
+      msg: 'Assessment ready',
+      questions: publicQuestions(set),
+      attemptToken: signStart({ setId: set._id, skill, difficulty }),
+    });
   } catch (err) {
     console.error('Assessment Generation Error:', err);
-    res.status(500).json({ msg: 'Server error generating assessment', error: err.message });
+    res.status(500).json({ msg: 'Server error generating assessment' });
+  }
+};
+
+// @desc    Score a free assessment on the server. One submission per attempt.
+// @route   POST /api/assessments/public/submit   Body: { attemptToken, answers: { "<questionId>": "a" } }
+// @access  Public (rate limited)
+const submitPublicAssessment = async (req, res) => {
+  try {
+    const attempt = verifyStart(req.body?.attemptToken, { questionCount: QUESTIONS_PER_SET });
+    if (attempt.error === 'too_fast') return res.status(400).json({ msg: 'That was too quick. Please read the questions and try again.' });
+    if (attempt.error) return res.status(400).json({ msg: 'This test session is not valid. Please start the test again.' });
+
+    // Claim the attempt atomically so the same questions cannot be re-scored with different guesses.
+    const set = await Assessment.findOneAndUpdate({ _id: attempt.claims.set, submittedAt: null }, { $set: { submittedAt: new Date() } }, { new: true });
+    if (!set) return res.status(409).json({ msg: 'This test was already submitted. Please start a new one.' });
+
+    const { score, total } = scoreAttempt(set, req.body.answers);
+    const percentage = total ? Math.round((score / total) * 100) : 0;
+    res.json({
+      score,
+      total,
+      percentage,
+      passed: total > 0 && score / total >= PASS_RATIO,
+      resultToken: signResult({ setId: set._id, skill: attempt.claims.skill, difficulty: attempt.claims.difficulty, score, total }),
+    });
+  } catch (err) {
+    console.error('Submit Public Assessment Error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
 };
 
@@ -243,35 +253,43 @@ const claimCertificate = async (req, res) => {
   }
 };
 
+// @desc    Save a free-assessment result on the logged-in job seeker's profile.
+// The score is NOT taken from the request: it comes from the signed resultToken the server issued at submit.
 const saveResult = async (req, res) => {
   try {
-    const { skill, difficulty, score, total, percentage, passed, questions, answers } = req.body;
-    
-    // Save or update the result
+    const claims = verifyResult(req.body?.resultToken);
+    if (!claims) return res.status(400).json({ msg: 'This result could not be verified. Please take the test again.' });
+    const set = await Assessment.findById(claims.set);
+    const { skill, difficulty, score, total } = claims;
+    const percentage = total ? Math.round((score / total) * 100) : 0;
+    const answers = req.body.answers && typeof req.body.answers === 'object' && !Array.isArray(req.body.answers) ? req.body.answers : {};
+
     const result = await SkillTestResult.findOneAndUpdate(
-      { user: req.user.id, skill: skill.toLowerCase().trim() },
-      { 
-        user: req.user.id, 
-        skill: skill.toLowerCase().trim(), 
-        difficulty, 
-        score, 
-        total, 
-        percentage, 
-        passed,
-        questions,
-        answers 
+      { user: req.user.id, skill },
+      {
+        user: req.user.id,
+        skill,
+        difficulty,
+        score,
+        total,
+        percentage,
+        passed: total > 0 && score / total >= PASS_RATIO,
+        questions: set ? set.questions : [],
+        answers
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    
+
     res.json(result);
   } catch (err) {
-    res.status(500).json({ msg: 'Server error saving result', error: err.message });
+    console.error('Save Result Error:', err.message);
+    res.status(500).json({ msg: 'Server error saving result' });
   }
 };
 
 module.exports = {
   getAssessment,
+  submitPublicAssessment,
   getCategories,
   startTest,
   submitTest,

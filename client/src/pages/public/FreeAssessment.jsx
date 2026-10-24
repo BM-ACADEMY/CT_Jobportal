@@ -19,6 +19,9 @@ const FreeAssessment = () => {
   const [difficulty, setDifficulty] = useState('medium');
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
+  const [attemptToken, setAttemptToken] = useState(''); // signed by the server; the answers never reach the browser
+  const [resultToken, setResultToken] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   
   // Test state
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -39,9 +42,10 @@ const FreeAssessment = () => {
         params: { skill, difficulty }
       });
       setQuestions(res.data.questions);
+      setAttemptToken(res.data.attemptToken);
       setStep('test');
     } catch (err) {
-      toast.error('Failed to generate assessment. Try a different skill.');
+      toast.error(err.response?.data?.msg || 'Failed to generate assessment. Try a different skill.');
     } finally {
       setLoading(false);
     }
@@ -55,27 +59,26 @@ const FreeAssessment = () => {
     if (currentQIndex < questions.length - 1) {
       setCurrentQIndex(prev => prev + 1);
     } else {
-      // Calculate score before moving to lead step
-      let calculatedScore = 0;
-      questions.forEach((q, idx) => {
-        if (answers[idx] === q.correct_option) {
-          calculatedScore++;
-        }
-      });
-      setScore(calculatedScore);
-      
+      // The server scores the test; the browser never sees the correct answers.
+      if (submitting) return;
+      setSubmitting(true);
+      let result;
+      try {
+        const byId = Object.fromEntries(questions.map((q, idx) => [q.id, answers[idx]]));
+        const res = await axios.post(`${API}/assessments/public/submit`, { attemptToken, answers: byId });
+        result = res.data;
+      } catch (err) {
+        toast.error(err.response?.data?.msg || 'Could not score your test. Please try again.');
+        setSubmitting(false);
+        return;
+      }
+      setSubmitting(false);
+      setScore(result.score);
+      setResultToken(result.resultToken);
+
       if (user?.role === 'jobseeker') {
         try {
-          await axios.post(`${API}/skill-tests/save`, {
-            skill,
-            difficulty,
-            score: calculatedScore,
-            total: questions.length,
-            percentage: Math.round((calculatedScore / questions.length) * 100),
-            passed: (calculatedScore / questions.length) >= 0.6,
-            questions,
-            answers
-          }); // Removed withCredentials: true as we use Bearer tokens
+          await axios.post(`${API}/skill-tests/save`, { resultToken: result.resultToken, answers });
           navigate('/candidate/skill-tests');
         } catch (err) {
           toast.error("Failed to save score, but redirecting.");
@@ -212,7 +215,7 @@ const FreeAssessment = () => {
             </Button>
             <Button 
               onClick={nextQuestion}
-              disabled={!answers[currentQIndex]}
+              disabled={!answers[currentQIndex] || submitting}
               className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 px-8 gap-2"
             >
               {currentQIndex === questions.length - 1 ? 'Finish Assessment' : 'Next Question'}
@@ -243,7 +246,7 @@ const FreeAssessment = () => {
                   skill, difficulty, score, total: questions.length, 
                   percentage: Math.round((score / questions.length) * 100),
                   passed: (score / questions.length) >= 0.6,
-                  questions, answers
+                  resultToken, answers
                 }));
                 navigate(`/register?fromAssessment=true`);
               }}
@@ -263,7 +266,7 @@ const FreeAssessment = () => {
                     skill, difficulty, score, total: questions.length,
                     percentage: Math.round((score / questions.length) * 100),
                     passed: (score / questions.length) >= 0.6,
-                    questions, answers
+                    resultToken, answers
                   }));
                   navigate('/login');
                 }}
