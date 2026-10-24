@@ -35,6 +35,7 @@ const payPerRoutes = require('./routes/payPerRoutes');
 const collegeRoutes = require('./routes/collegeRoutes');
 const skillTestRoutes = require('./routes/skillTestRoutes');
 const whatsappRoutes = require('./routes/whatsapp');
+const emailWebhookRoutes = require('./routes/emailWebhook');
 const couponRoutes = require('./routes/couponRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const seedRoles = require('./config/seedRoles');
@@ -235,6 +236,7 @@ app.use('/api/pay-per', payPerRoutes);
 app.use('/api/college', collegeRoutes);
 app.use('/api/skill-tests', skillTestRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/webhooks/email', emailWebhookRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/notifications', notificationRoutes);
 
