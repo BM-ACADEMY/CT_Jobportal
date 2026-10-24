@@ -1,6 +1,7 @@
 // "Jobs for you": loads a pool of open jobs, drops what the person must not see, and ranks it with the relevance engine.
 // Output is an array of plain job objects (same shape the clients already read) plus `relevance: { score, reasons, priority }`.
-const { rankJobsForSeeker, isThinProfile } = require('./relevance');
+const { rankJobsForSeeker, isThinProfile, rankCandidatesForJob } = require('./relevance');
+const checkPriorityBadge = require('./checkPriorityBadge');
 
 const POOL_SIZE = 500; // newest open jobs considered per request
 const MIN_SCORE = 15; // below this a job does not match the person's profile and is not shown as "for you"
@@ -47,4 +48,21 @@ const getRankedMatches = async (user, { Job, User, Application }, { limit = 20, 
   }));
 };
 
-module.exports = { getRankedMatches, engineEnabled, POOL_SIZE, MIN_SCORE };
+// Recruiter side: orders candidates by fit to the recruiter's most recent open job (their own jobs, or their company's),
+// then by profile completeness. Returns [{ candidate, score, reasons, priority }]. With no open job it is completeness only.
+const rankCandidatesByRelevance = async (candidates, recruiter, { Job, User, SkillTestResult }) => {
+  const ids = candidates.map((c) => c._id);
+  const owner = [{ recruiter: recruiter._id }, ...(recruiter.company ? [{ company: recruiter.company }] : [])];
+  const job = await Job.findOne({ status: 'active', $or: owner }).sort({ createdAt: -1 }).lean();
+
+  const [certified, subs] = await Promise.all([
+    SkillTestResult.distinct('user', { passed: true, user: { $in: ids } }),
+    User.find({ _id: { $in: ids } }).select('subscription subscriptionDetails subscriptionExpiry purchasedFeatures priorityApplicationsUsed').populate('subscription').lean(),
+  ]);
+  const subById = new Map(subs.map((u) => [String(u._id), u]));
+  const withBadge = candidates.map((c) => ({ ...c, isPriority: checkPriorityBadge({ ...c, ...subById.get(String(c._id)) }) }));
+
+  return rankCandidatesForJob(withBadge, job, { certifiedIds: new Set(certified.map(String)) });
+};
+
+module.exports = { getRankedMatches, rankCandidatesByRelevance, engineEnabled, POOL_SIZE, MIN_SCORE };

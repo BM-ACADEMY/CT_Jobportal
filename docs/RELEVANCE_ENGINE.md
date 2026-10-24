@@ -36,8 +36,27 @@ Status: built behind a switch, **off by default**. Nothing changes for users unt
 ## Emails (Day 14)
 With RELEVANCE_ENGINE_ENABLED=true the paid job-alert mail and the win-back mail rank with the same engine as the website (`rankForMail` in `utils/lifecycle/jobMatch.js`): same order, jobs the person already applied to are left out, a thin profile gets no job mail, and each job shows a "Why this job" line. With the switch off the original ranker is used. Mail itself still needs LIFECYCLE_EMAILS_ENABLED=true. Tests: `tests/auth/mailRelevance.test.js`.
 
+## Recruiter candidate search (Day 15-16)
+With RELEVANCE_ENGINE_ENABLED=true and NO search text, candidate search is ordered by fit to the recruiter's most recent open job (their own, or their company's), then profile completeness, then id. It was A to Z before. Typing a search keeps the existing text-relevance order. If the recruiter has no open job, only completeness decides. If ranking throws, it falls back to A to Z.
+
+| Part | Weight |
+|---|---|
+| Skills overlap (share of the job's required skills) | 40 |
+| Role words 12 + experience years 8 (experience alone never counts as relevance) | 20 |
+| Location (same city; any city for a remote job) | 15 |
+| Qualification present | 10 |
+| Profile completeness, photo points removed | 10 |
+| Verified passed skill-test certificate | 5 |
+| Paid priority badge | at most +5, only if already 20 or more, shown as a "Priority" label |
+
+- Name is never used, not even as a tie-break (ties go to the id). Photo is taken out of completeness (the stored completion gives 5 points for a photo).
+- Each result carries relevance.reasons; the search page shows "Why this candidate: Has Excel, Tally · Lives in Pondicherry".
+- The search still counts against the plan's daily limit exactly as before.
+- Cost: with the switch on, one extra read of the matching users plus one certificate query per search. Fine at a few hundred job seekers; revisit if the pool reaches tens of thousands.
+- Tests: tests/auth/candidateRelevance.test.js (11), tests/auth/candidateSearchRanking.test.js (5).
+
 ## Not wired yet (next steps in the plan)
 - The home page and dashboard use the same endpoint, so they pick up the new order automatically but do not yet show the why-line.
 - WhatsApp job alerts (none exist today).
-- Recruiter candidate search, "Top 5 candidates", college lists and event logging.
+- "Top 5 candidates for this job" after posting (with its email), AI re-rank of the top 20, college lists and event logging.
 - The public job list (`GET /api/jobs`) is unchanged: priority recruiters first, then newest.

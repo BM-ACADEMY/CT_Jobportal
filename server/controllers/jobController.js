@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const { notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved, notifyJobPublished } = require('../utils/jobNotifications');
 const { enforceJobLimits } = require('../utils/enforceJobLimits');
-const { getRankedMatches, engineEnabled } = require('../utils/matchingJobs');
+const { getRankedMatches, engineEnabled, rankCandidatesByRelevance } = require('../utils/matchingJobs');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -735,7 +735,7 @@ const searchCandidates = async (req, res) => {
     // skill tags rather than freely typed, so there's no typo to tolerate there.
     const { fuzzyRank } = require('../utils/fuzzySearch');
     const allCandidates = await User.find(baseQuery)
-      .select('name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification subscription purchasedFeatures priorityApplicationsUsed')
+      .select('name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification profile.profileCompletion subscription purchasedFeatures priorityApplicationsUsed')
       .lean();
 
     const skillList = skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -787,6 +787,16 @@ const searchCandidates = async (req, res) => {
         'profile.qualification.degree', 'profile.qualification.institution',
       ]).map(c => [String(c._id), c._fuzzyScore]));
       filtered = [...filtered].sort((a, b) => (scoreById.get(String(a._id)) ?? 1) - (scoreById.get(String(b._id)) ?? 1));
+    } else if (engineEnabled()) {
+      // No search text: order by fit to the recruiter's most recent open job, then profile completeness
+      // (utils/relevance.js). Falls back to A-Z if anything fails, so the page never breaks.
+      try {
+        const ranked = await rankCandidatesByRelevance(filtered, user, { Job, User, SkillTestResult: require('../models/SkillTestResult') });
+        filtered = ranked.map((r) => ({ ...r.candidate, relevance: { score: r.score, reasons: r.reasons, priority: r.priority } }));
+      } catch (engineErr) {
+        console.error('Candidate relevance failed, using A-Z:', engineErr.message);
+        filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      }
     } else {
       filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }

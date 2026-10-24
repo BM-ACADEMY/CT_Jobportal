@@ -172,4 +172,104 @@ const rankJobsForSeeker = (user, jobs, { limit = 20, minScore = 0, appliedJobIds
     .map(({ job, score, reasons, priority }) => ({ job, score, reasons, priority }));
 };
 
-module.exports = { WEIGHTS, scoreJobForSeeker, rankJobsForSeeker, isExcluded, isThinProfile, experienceYears, userSignals };
+// ---------------------------------------------------------------------------------------------------------------
+// Recruiter side: how well a candidate fits one job.
+//   skills overlap 40 | role and experience 20 | location 15 | qualification 10 | profile completeness 10 |
+//   verified skill-test certificate 5 | paid "priority" badge: at most +5, only for a candidate who already fits,
+//   always shown as a label. Same fairness rule: no name, gender, age, religion, caste, photo or marital status.
+const CANDIDATE_WEIGHTS = { skills: 40, role: 20, location: 15, qualification: 10, completeness: 10, certificate: 5, priorityBonus: 5 };
+
+// The stored profile completion includes 5 points for having a photo. A photo must never lift a score, so those
+// points are taken back out and the rest is rescaled to 0-100.
+const candidateCompleteness = (candidate) => {
+  const stored = Number(candidate?.profile?.profileCompletion) || 0;
+  const withoutPhoto = Math.max(0, stored - (candidate?.avatar ? 5 : 0));
+  return Math.min(100, (withoutPhoto / 95) * 100);
+};
+
+const candidateRoleWords = (profile = {}) => new Set([profile.preferredRole, profile.headline, ...(profile.experience || []).map((e) => e?.role)].filter(Boolean).flatMap(words));
+
+/**
+ * @param {object} candidate  job seeker (plain object): profile.skills, preferredRole, headline, experience, qualification,
+ *                            location, profileCompletion, avatar (only used to remove the photo from completeness), isPriority
+ * @param {object} job        the job being filled
+ * @param {{hasCertificate?:boolean}} opts
+ */
+const scoreCandidateForJob = (candidate, job, { hasCertificate = false } = {}) => {
+  const profile = candidate?.profile || {};
+  const reasons = [];
+  const parts = { skills: 0, role: 0, experience: 0, location: 0, qualification: 0, completeness: 0, certificate: 0 };
+  let possible = CANDIDATE_WEIGHTS.qualification + CANDIDATE_WEIGHTS.completeness + CANDIDATE_WEIGHTS.certificate;
+
+  // skills (40)
+  const jobSkillsRaw = (job.skillsRequired || []).filter(Boolean);
+  const jobSkills = [...new Set(jobSkillsRaw.map(canonicalSkill).filter(Boolean))];
+  const have = canonicalSet(profile.skills);
+  const matched = jobSkills.filter((s) => have.has(s));
+  if (jobSkills.length) {
+    possible += CANDIDATE_WEIGHTS.skills;
+    parts.skills = CANDIDATE_WEIGHTS.skills * (matched.length / jobSkills.length);
+    if (matched.length) reasons.push(`Has ${jobSkillsRaw.filter((r) => have.has(canonicalSkill(r))).slice(0, 4).join(', ')}`);
+  }
+
+  // role and experience (20): role words 12 (relevance), experience years 8 (context only, never relevance on its own)
+  possible += CANDIDATE_WEIGHTS.role;
+  const jobTitleWords = [...new Set(words(job.title))];
+  const roleWords = candidateRoleWords(profile);
+  if (jobTitleWords.length && roleWords.size) {
+    const hit = jobTitleWords.filter((w) => roleWords.has(w));
+    parts.role += 12 * (hit.length / jobTitleWords.length);
+    if (hit.length) reasons.push('Role fits');
+  }
+  const years = experienceYears(profile);
+  const minExp = Number(job.experience?.min) || 0;
+  const maxExp = Number(job.experience?.max) || 0;
+  if (minExp <= years && (!maxExp || years <= maxExp + 1)) { parts.experience += 8; if (minExp > 0) reasons.push(`${Math.round(years * 10) / 10} years experience`); }
+  else if (years >= minExp - 1) parts.experience += 4;
+  if (minExp === 0 && years < 1) reasons.push('Fresher, suits an entry-level job');
+
+  // location (15): same city, or any city for a remote job
+  const candidateCity = norm(profile.location);
+  if (candidateCity && (job.location || isRemote(job))) {
+    possible += CANDIDATE_WEIGHTS.location;
+    const loc = norm(job.location);
+    if (isRemote(job) || (loc && (loc.includes(candidateCity) || candidateCity.includes(loc)))) {
+      parts.location = CANDIDATE_WEIGHTS.location;
+      reasons.push(isRemote(job) ? 'Remote job' : `Lives in ${profile.location}`);
+    }
+  }
+
+  // qualification (10), completeness (10), verified certificate (5)
+  if ((profile.qualification || []).length) parts.qualification = CANDIDATE_WEIGHTS.qualification;
+  parts.completeness = CANDIDATE_WEIGHTS.completeness * (candidateCompleteness(candidate) / 100);
+  if (hasCertificate) { parts.certificate = CANDIDATE_WEIGHTS.certificate; reasons.push('Passed a verified skill test'); }
+
+  const earned = Object.values(parts).reduce((a, b) => a + b, 0);
+  const content = parts.skills + parts.role + parts.location;
+  const raw = Math.round((earned / possible) * 100);
+  const base = content === 0 ? Math.min(raw, 12) : raw;
+
+  const priority = Boolean(candidate?.isPriority);
+  const bonus = priority && base >= PRIORITY_MIN_BASE ? CANDIDATE_WEIGHTS.priorityBonus : 0;
+  return { score: Math.min(100, base + bonus), base, reasons, priority, matchedSkills: matched, parts };
+};
+
+/**
+ * Orders candidates for a job: best fit first, then more complete profile, then a stable id order (never by name).
+ * @param {object[]} candidates
+ * @param {object|null} job  the reference job; null means "no job to compare with", so only completeness decides
+ * @param {{certifiedIds?:Set<string>}} opts
+ */
+const rankCandidatesForJob = (candidates, job, { certifiedIds = new Set() } = {}) => {
+  const scored = (candidates || []).map((candidate) => {
+    const hasCertificate = certifiedIds.has(String(candidate._id));
+    const r = job ? scoreCandidateForJob(candidate, job, { hasCertificate }) : { score: 0, reasons: [], priority: Boolean(candidate.isPriority) };
+    return { candidate, score: r.score, reasons: r.reasons, priority: r.priority, completeness: candidateCompleteness(candidate) };
+  });
+  return scored.sort((a, b) => b.score - a.score || b.completeness - a.completeness || String(a.candidate._id).localeCompare(String(b.candidate._id)));
+};
+
+module.exports = {
+  WEIGHTS, CANDIDATE_WEIGHTS, scoreJobForSeeker, rankJobsForSeeker, isExcluded, isThinProfile, experienceYears, userSignals,
+  scoreCandidateForJob, rankCandidatesForJob, candidateCompleteness,
+};
