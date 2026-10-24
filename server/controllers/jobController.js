@@ -2,7 +2,7 @@ const Job = require('../models/Job');
 const User = require('../models/User');
 const Application = require('../models/Application');
 const Role = require('../models/Role');
-const { getEffectivePlanLimit } = require('../utils/getEffectivePlanLimit');
+const { getEffectivePlanLimit, getEffectiveSearchLimit } = require('../utils/getEffectivePlanLimit');
 const { logTeamActivity } = require('../utils/teamActivityLog');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { parse } = require('csv-parse/sync');
@@ -288,7 +288,8 @@ const updateJob = async (req, res) => {
       }
       const activeCount = await Job.countDocuments(activeCountQuery);
 
-      if (activeCount >= totalAllowed) {
+      // planLimit 0 means unlimited (same rule as createJob); without this, reactivating a job on an unlimited plan was blocked.
+      if (planLimit !== 0 && activeCount >= totalAllowed) {
         return res.status(403).json({
           msg: `Job posting limit reached. Your allowed limit is ${totalAllowed} job postings. Please upgrade your plan or purchase an add-on to post more.`,
           requiresUpgrade: true,
@@ -677,7 +678,7 @@ const searchCandidates = async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     const plan = user.subscription;
-    const limit = plan?.candidateSearchPerDay || 0;
+    const limit = getEffectiveSearchLimit(plan);
 
     // Reset daily counter if date has changed
     const today = new Date();
@@ -816,7 +817,7 @@ const viewCandidateProfile = async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     const plan = user.subscription;
-    const limit = plan?.candidateSearchPerDay || 0;
+    const limit = getEffectiveSearchLimit(plan);
 
     // Reset daily counter if date has changed
     const today = new Date();
