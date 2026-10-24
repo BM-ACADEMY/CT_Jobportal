@@ -130,71 +130,7 @@ const getCategories = (req, res) => {
   res.json(categories);
 };
 
-const startTest = async (req, res) => {
-  try {
-    const { category } = req.params;
-    
-    // Attempt to fetch cached for medium difficulty
-    const skill = category.toLowerCase().trim();
-    let cachedAssessment = await Assessment.findOne({ skill, difficulty: 'medium' });
-    
-    if (cachedAssessment && cachedAssessment.questions.length > 0) {
-      // Strip correct_option and explanation for public start
-      const sanitizedQuestions = cachedAssessment.questions.map(q => {
-        const { correct_option, explanation, ...rest } = (q.toObject ? q.toObject() : q);
-        return rest;
-      });
-      return res.json({ category, questions: sanitizedQuestions });
-    }
-    
-    // Otherwise fallback to generation logic here or return a generic message to generate first
-    // For simplicity of funnel, return 404 and instruct to generate via /public
-    res.status(404).json({ msg: 'Test not found for this category yet. Please generate via public assessment API first.' });
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error', error: err.message });
-  }
-};
-
 const SkillTestResult = require('../models/SkillTestResult');
-
-const submitTest = async (req, res) => {
-  try {
-    const { category } = req.params;
-    const { answers } = req.body; // { "1": "a", "2": "c" }
-
-    const skill = category.toLowerCase().trim();
-    const cachedAssessment = await Assessment.findOne({ skill, difficulty: 'medium' });
-    if (!cachedAssessment) return res.status(404).json({ msg: 'Test not found' });
-
-    let score = 0;
-    const total = cachedAssessment.questions.length;
-
-    cachedAssessment.questions.forEach(q => {
-      if (answers[q.id] === q.correct_option) score++;
-    });
-
-    const passed = (score / total) >= 0.7; // 70%+ required
-    const percentage = Math.round((score / total) * 100);
-
-    // Persist the result for logged-in jobseekers only (req.user is set by
-    // optionalVerifyToken when a valid token is present; guests still get scored).
-    if (req.user?.id && req.user.role === 'jobseeker') {
-      try {
-        await SkillTestResult.findOneAndUpdate(
-          { user: req.user.id, skill },
-          { user: req.user.id, skill, difficulty: 'medium', score, total, percentage, passed },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-      } catch (persistErr) {
-        console.error('SkillTestResult persist error:', persistErr.message);
-      }
-    }
-
-    res.json({ score, total, passed, percentage });
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error', error: err.message });
-  }
-};
 
 // @desc    Get the logged-in jobseeker's latest result per skill
 // @route   GET /api/skill-tests/my-results
@@ -210,44 +146,6 @@ const getMyResults = async (req, res) => {
     }
 
     res.json([...latestBySkill.values()]);
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error', error: err.message });
-  }
-};
-
-const crypto = require('crypto');
-const User = require('../models/User');
-
-const claimCertificate = async (req, res) => {
-  try {
-    const { category } = req.params;
-    const { name, phone, score, total } = req.body;
-
-    if (!name || !phone) return res.status(400).json({ msg: 'Name and phone required' });
-
-    const passed = (score / total) >= 0.7;
-    if (!passed) return res.status(400).json({ msg: 'Score too low for certificate' });
-
-    // Minimal registration
-    let user = await User.findOne({ 'profile.phone': phone });
-    if (!user) {
-      user = new User({
-        name,
-        email: `${phone}@temp.velaivaaipu.in`,
-        password: crypto.randomBytes(8).toString('hex'), // temp random
-        role: await require('../models/Role').findOne({ name: 'jobseeker' }).then(r => r._id),
-        profile: { phone }
-      });
-      await user.save();
-    }
-
-    const certCode = `CERT-SKILL-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-    
-    res.json({
-      msg: 'Certificate claimed',
-      certificateCode: certCode,
-      user: { id: user._id, name: user.name }
-    });
   } catch (err) {
     res.status(500).json({ msg: 'Server error', error: err.message });
   }
@@ -291,9 +189,6 @@ module.exports = {
   getAssessment,
   submitPublicAssessment,
   getCategories,
-  startTest,
-  submitTest,
   getMyResults,
-  claimCertificate,
   saveResult
 };
