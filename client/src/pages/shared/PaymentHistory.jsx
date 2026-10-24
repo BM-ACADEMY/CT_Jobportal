@@ -3,11 +3,13 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import {
   CreditCard, CheckCircle2, XCircle, Clock, Receipt,
-  Search, Download, Filter
+  Search, Download, Filter, RotateCcw, Loader2
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/context/AuthContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
@@ -18,6 +20,8 @@ const STATUS_CONFIG = {
   failed:     { label: 'Failed',       badge: 'bg-rose-50 text-rose-600',       icon: XCircle },
   pending:    { label: 'Pending',      badge: 'bg-amber-50 text-amber-600',     icon: Clock },
   cancelled:  { label: 'Cancelled',    badge: 'bg-rose-50 text-rose-400',       icon: XCircle },
+  refund_pending: { label: 'Refund requested', badge: 'bg-amber-50 text-amber-600', icon: Clock },
+  refunded:   { label: 'Refunded',     badge: 'bg-emerald-50 text-emerald-600', icon: CheckCircle2 },
 };
 
 const FILTER_OPTIONS = [
@@ -27,7 +31,20 @@ const FILTER_OPTIONS = [
   { key: 'failed',    label: 'Failed' },
   { key: 'pending',   label: 'Pending' },
   { key: 'cancelled', label: 'Cancelled' },
+  { key: 'refund_pending', label: 'Refund requested' },
+  { key: 'refunded',  label: 'Refunded' },
 ];
+
+// The server decides every refund (24 hours, once per account/email/phone, college plans by our team, duplicates always).
+// This only decides whether to show the button: paid, completed, inside 24 hours, or a likely duplicate charge.
+const DAY_MS = 24 * 60 * 60 * 1000;
+const canOfferRefund = (p, all) => {
+  if (p.status !== 'completed' || !(Number(p.amount) > 0) || p.isRenewal) return false;
+  const created = new Date(p.createdAt).getTime();
+  if (Date.now() - created <= DAY_MS) return true;
+  const itemId = (x) => String(x.plan?._id || x.plan || x.payPerFeature?._id || x.payPerFeature || '');
+  return all.some((o) => o._id !== p._id && o.status !== 'failed' && o.status !== 'pending' && itemId(o) && itemId(o) === itemId(p) && Math.abs(new Date(o.createdAt).getTime() - created) <= DAY_MS);
+};
 
 const generateInvoiceHTML = (payment, user) => {
   const invoiceNo   = payment.razorpay_payment_id || payment._id?.slice(-8).toUpperCase();
@@ -197,6 +214,9 @@ const PaymentHistory = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage]   = useState(1);
   const itemsPerPage = 10;
+  const [refundTarget, setRefundTarget] = useState(null);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundBusy, setRefundBusy] = useState(false);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -213,6 +233,26 @@ const PaymentHistory = () => {
       toast.error('Failed to load payment history');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitRefund = async () => {
+    if (!refundTarget || refundBusy) return;
+    setRefundBusy(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/payments/${refundTarget._id}/request-refund`, { reason: refundReason.trim() }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success('Refund request sent. Our team reviews it within 3 working days and will email you.');
+      setRefundTarget(null);
+      setRefundReason('');
+      await fetchPayments();
+    } catch (err) {
+      // The server's message names the exact rule (24-hour window, one per account, college plans, ...).
+      toast.error(err.response?.data?.msg || 'Could not send the refund request. Please try again.');
+    } finally {
+      setRefundBusy(false);
     }
   };
 
@@ -295,7 +335,7 @@ const PaymentHistory = () => {
                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</th>
                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
                 <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Invoice</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e8e8e8]">
@@ -359,6 +399,16 @@ const PaymentHistory = () => {
                         >
                           <Download size={13} /> Invoice
                         </Button>
+                        {canOfferRefund(payment, payments) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setRefundTarget(payment); setRefundReason(''); }}
+                            className="rounded text-amber-700 hover:bg-amber-50 text-xs font-medium gap-1.5 h-8 px-3 cursor-pointer"
+                          >
+                            <RotateCcw size={13} /> Request refund
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -409,6 +459,36 @@ const PaymentHistory = () => {
           </Button>
         </div>
       </div>
+
+      <Dialog open={!!refundTarget} onOpenChange={(open) => { if (!open && !refundBusy) setRefundTarget(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request a refund</DialogTitle>
+            <DialogDescription>
+              Refunds are accepted within 24 hours of payment, once per account, email and phone number. A duplicate charge is always refundable.
+              Our team confirms nothing was used and replies within 3 working days. If approved, your plan moves to Free and the money returns to your original payment method in 5 to 7 working days.
+              <a href="/refund-policy" target="_blank" rel="noreferrer" className="text-blue-600 underline ml-1">Read the refund policy</a>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="refund-reason" className="text-xs font-semibold text-slate-600">Reason (optional)</label>
+            <Textarea
+              id="refund-reason"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value.slice(0, 500))}
+              placeholder="Tell us what went wrong"
+              rows={4}
+            />
+            <p className="text-[10px] text-slate-400">{refundReason.length}/500</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRefundTarget(null)} disabled={refundBusy} className="cursor-pointer">Cancel</Button>
+            <Button onClick={submitRefund} disabled={refundBusy} className="bg-amber-600 hover:bg-amber-700 text-white gap-2 cursor-pointer">
+              {refundBusy && <Loader2 size={14} className="animate-spin" />} Send request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

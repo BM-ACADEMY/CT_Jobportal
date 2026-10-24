@@ -44,3 +44,6 @@ Use `docs/QR_TEST_SHEET.md` (14 steps). Minimum here: join with only name + What
 
 ## F. Finish
 Any Fail: note the URL, role, time and the browser console / server log line, and send it to me. Do not announce until every row passes.
+
+## Refund button (added Day 9 to 10)
+Payment history pages (`/candidate/payment-history`, `/company/payment-history`, `/college/payment-history`) now show a "Request refund" button on a paid, completed payment made in the last 24 hours (and on a likely duplicate charge). Test: make a small payment, open payment history, click it, add a reason, send. Expected: success message, status badge changes to "Refund requested", admin sees it in Manage Refunds. A second request on the same account, a payment older than 24 hours (not a duplicate), and a college plan each show the server's own message. Approving a refund in Manage Refunds only updates our records; return the money from the Razorpay dashboard.
