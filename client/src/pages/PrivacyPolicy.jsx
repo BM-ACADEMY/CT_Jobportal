@@ -51,6 +51,7 @@ const PrivacyPolicy = () => (
         <li>To send offers, such as courses or scholarships, only if you agreed to receive them.</li>
         <li>To process payments, prevent fraud and misuse, and give support.</li>
         <li>To measure and improve the platform and our marketing, using analytics.</li>
+        <li>To check that our job and candidate suggestions are useful, we record which suggestions were shown, opened, applied to or shortlisted. This record holds user and job identifiers, where the suggestion appeared and its match score, not names or contact details, and is deleted after 180 days. Suggestions come from your skills, roles, location and experience; we do not use gender, age, religion, caste, marital status, name or photo to rank anyone.</li>
       </ul>
     </Section>
 

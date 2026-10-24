@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/ui/button";
+import { trackShown, trackClick } from '../utils/recommendationEvents';
 import { Badge } from "@/components/ui/badge";
 import {
   Search, MapPin, Briefcase, IndianRupee, Clock, Loader2,
@@ -142,7 +143,10 @@ const Jobs = () => {
       .then(res => {
         setJobs(res.data);
         // Keep the server's relevance order on the matched tab; the explicit sort control still overrides it.
-        if (activeTab === 'matched' && res.data?.[0]?.relevance) setSortBy('relevance');
+        if (activeTab === 'matched' && res.data?.[0]?.relevance) {
+          setSortBy('relevance');
+          trackShown('jobs_matched', res.data.filter((j) => j.relevance).map((j) => ({ jobId: j._id, score: j.relevance.score })));
+        }
         else setSortBy(prev => (prev === 'relevance' ? 'newest' : prev));
       })
       .catch(() => {})
@@ -540,6 +544,7 @@ const Jobs = () => {
                     >
                       <Link
                         to={jobPath(job)}
+                        onClick={() => { if (job.relevance) trackClick('jobs_matched', { jobId: job._id, score: job.relevance.score }); }}
                         className={`group relative block bg-white rounded-2xl border shadow-sm hover:shadow-xl hover:shadow-slate-900/5 transition-all duration-300 p-6 pl-7 overflow-hidden ${
                           job.isPriority ? 'border-amber-200' : 'border-slate-100 hover:border-emerald-200'
                         }`}

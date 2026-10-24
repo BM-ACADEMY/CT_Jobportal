@@ -63,8 +63,18 @@ All behind RELEVANCE_ENGINE_ENABLED.
 - **Tests:** tests/auth/topCandidates.test.js (6), tests/auth/topCandidatesEndpoint.test.js (3).
 - **Cost:** each uncached request or mail reads all job seekers once; fine for a few hundred, revisit at tens of thousands.
 
+## Event logging (Day 17)
+Behind RELEVANCE_ENGINE_ENABLED: while it is off nothing is stored.
+- **Collection** RecommendationEvent: user, side (seeker or recruiter), event (shown, clicked, applied, shortlisted), surface (jobs_matched, home_feed, email, top_candidates, candidate_search), job, candidate (recruiter side), score, day. Ids and numbers only: no names, contact data or profile text. Rows delete themselves after 180 days. A repeat view counts once per person, item and day (India date).
+- **Browser to server:** POST /api/recommendations/events (login required, 300 per 15 minutes). Only shown and clicked are accepted from the browser, max 50 per request; ids are validated and the score is clamped to 0-100. Used today by the Matched-for-you tab (shown when the list loads, clicked on a job card) and the Top candidates panel (shown when opened, clicked on Open candidate search).
+- **Server-side outcomes:** applied (when an application is created) and shortlisted (when a recruiter sets that status) are recorded by the server, and only if the person was shown or opened that job in the last 30 days, either as a job for them or as a candidate suggested to a recruiter. The browser cannot report outcomes.
+- **Admin summary:** GET /api/admin/recommendations/summary?days=30 (admin only, 1 to 180 days) returns, per side and surface: shown, clicked, applied, shortlisted, click rate, apply rate (applied / shown) and shortlist rate (shortlisted / applied), in percent. Review it monthly and tune the weights in utils/relevance.js.
+- **Privacy Policy** (section 3) has a new line describing this record and the no-gender/age/religion/caste/photo rule. Effective date was not changed; have the lawyer confirm the wording and the date.
+- **Limits to know:** shown means delivered in the list, not scrolled into view; the home page feed and email clicks are not tracked yet (the surfaces exist in the schema); the recruiter side measures the top-candidates panel only, not the search list.
+- **Tests:** tests/auth/recommendationEvents.test.js (9), tests/auth/recommendationEndpoint.test.js (4).
+
 ## Not wired yet (next steps in the plan)
 - The home page and dashboard use the same endpoint, so they pick up the new order automatically but do not yet show the why-line.
 - WhatsApp job alerts (none exist today).
-- AI re-rank of the top 20, college lists and event logging.
+- AI re-rank of the top 20 and college lists. Home-page feed and email click tracking.
 - The public job list (`GET /api/jobs`) is unchanged: priority recruiters first, then newest.

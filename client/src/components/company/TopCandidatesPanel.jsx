@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { trackShown, trackClick } from '../../utils/recommendationEvents';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -25,7 +26,11 @@ const TopCandidatesPanel = ({ jobId }) => {
     <div className="mt-4 border-t border-slate-100 pt-3">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          // The suggestions count as "shown" when the recruiter actually opens the panel.
+          if (!open) trackShown('top_candidates', candidates.map((c) => ({ jobId, candidateId: c._id, score: c.relevance?.score })));
+          setOpen((v) => !v);
+        }}
         className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-transparent border-none cursor-pointer p-0"
         aria-expanded={open}
       >
@@ -48,7 +53,13 @@ const TopCandidatesPanel = ({ jobId }) => {
             </div>
           ))}
           <p className="text-[10px] text-slate-400">A suggestion, not a guarantee. Review each profile before you decide.</p>
-          <Link to="/company/candidates" className="text-xs font-bold text-emerald-700 hover:underline">Open candidate search</Link>
+          <Link
+            to="/company/candidates"
+            onClick={() => candidates.forEach((c) => trackClick('top_candidates', { jobId, candidateId: c._id, score: c.relevance?.score }))}
+            className="text-xs font-bold text-emerald-700 hover:underline"
+          >
+            Open candidate search
+          </Link>
         </div>
       )}
     </div>

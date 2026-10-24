@@ -33,6 +33,7 @@ router.use(verifyToken);
 router.use(authorizeRoles('admin'));
 
 router.get('/dashboard-stats', getDashboardStats);
+router.get('/recommendations/summary', require('../controllers/recommendationController').getSummary);
 
 // Admin Settings
 router.put('/profile', updateAdminProfile);
