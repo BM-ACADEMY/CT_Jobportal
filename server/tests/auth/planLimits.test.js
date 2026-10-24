@@ -17,16 +17,16 @@ test('no plan and a seeded Free plan: uses the Free plan value', async () => {
 test('no plan and NO Free plan row: falls back to a limit, never unlimited', async () => {
   freePlanRow = null;
   delete process.env.DEFAULT_FREE_JOB_LIMIT;
-  assert.equal(await getEffectivePlanLimit(freeUser, 'company'), 3);
-  process.env.DEFAULT_FREE_JOB_LIMIT = '2';
-  assert.equal(await getEffectivePlanLimit(freeUser, 'recruiter'), 2);
+  assert.equal(await getEffectivePlanLimit(freeUser, 'company'), 2);
+  process.env.DEFAULT_FREE_JOB_LIMIT = '5';
+  assert.equal(await getEffectivePlanLimit(freeUser, 'recruiter'), 5);
   delete process.env.DEFAULT_FREE_JOB_LIMIT;
 });
 
 test('expired paid plan and no Free plan row: also falls back, not unlimited', async () => {
   freePlanRow = null;
   const user = { subscription: { price: 999, duration: 'Monthly', activeJobPostings: 10 }, subscriptionExpiry: new Date(Date.now() - 86400000) };
-  assert.equal(await getEffectivePlanLimit(user, 'company'), 3);
+  assert.equal(await getEffectivePlanLimit(user, 'company'), 2);
 });
 
 test('a real plan with 0 jobs still means unlimited', async () => {

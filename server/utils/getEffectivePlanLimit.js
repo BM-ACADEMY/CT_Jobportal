@@ -3,7 +3,7 @@ const Subscription = require('../models/Subscription');
 // In plans, 0 means unlimited. If the Free plan row is missing from the database (never seeded, deactivated or
 // deleted) we must NOT fall through to 0, or every free account would become unlimited. These defaults match the
 // seeded Free plan (config/seedSubscriptions.js) and can be overridden in env.
-const FALLBACK_FREE_JOB_LIMIT = () => Number(process.env.DEFAULT_FREE_JOB_LIMIT) || 3;
+const FALLBACK_FREE_JOB_LIMIT = () => Number(process.env.DEFAULT_FREE_JOB_LIMIT) || 2;
 const FALLBACK_FREE_SEARCH_LIMIT = () => Number(process.env.DEFAULT_FREE_SEARCH_LIMIT) || 10;
 
 /**

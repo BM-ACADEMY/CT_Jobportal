@@ -18,7 +18,7 @@ const FIELDS = ['activeJobPostings', 'candidateSearchPerDay'];
   console.log(`Free (price 0) plans: ${plans.length}`);
   for (const role of ['jobseeker', 'recruiter', 'company', 'college']) {
     const rows = plans.filter((p) => p.role === role);
-    if (!rows.length) { console.log(`  ${role}: NO FREE PLAN ROW  <-- code falls back to defaults (jobs ${process.env.DEFAULT_FREE_JOB_LIMIT || 3}, searches ${process.env.DEFAULT_FREE_SEARCH_LIMIT || 10})`); continue; }
+    if (!rows.length) { console.log(`  ${role}: NO FREE PLAN ROW  <-- code falls back to defaults (jobs ${process.env.DEFAULT_FREE_JOB_LIMIT || 2}, searches ${process.env.DEFAULT_FREE_SEARCH_LIMIT || 10})`); continue; }
     rows.forEach((p) => console.log(`  ${role}: "${p.name}" active=${p.isActive} jobs=${p.activeJobPostings} (0 = unlimited) searches/day=${p.candidateSearchPerDay} (0 = unlimited)`));
     if (rows.filter((p) => p.isActive).length > 1) console.log(`    WARNING: more than one active Free plan for ${role}`);
   }

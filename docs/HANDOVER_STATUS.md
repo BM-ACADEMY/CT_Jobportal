@@ -32,7 +32,7 @@ Base: main `7ba33a5` + the 18-commit launch patch + the work below. Server tests
 1. Deploy; OpenRouter credit; seed the question bank; run the QR, smoke, onboarding, LinkedIn and PWA device sheets on the live site.
 2. Accounts and keys: Brevo (card, DNS), Meta template, LinkedIn app, GA4, Pixel, Search Console, Razorpay live webhook, OpenAI key.
 3. Run the three production scripts (audit privileged accounts, print free plan limits, dry-run the CSV password reset) and act on the output.
-4. Decisions: free plan 2 or 3 jobs (code and seed say 3, the brief says 2); whether to refresh stored plan copies on existing free users; the assistant's three decisions and token budget.
+4. Decisions: free plan 2 or 3 jobs (decided: 2; the seed, fallback and updateLimit.js now say 2); whether to refresh stored plan copies on existing free users; the assistant's three decisions and token budget.
 5. Legal: lawyer review of the Privacy Policy and Terms (assistant, event logging, refunds), OpenAI data terms, effective dates.
 6. Open hardening items: protect `/uploads` (about 61 client links need signed URLs); CSV import still matches an existing user by phone number; the session token travels in the URL after Google/LinkedIn login; the whole branch has not been load-tested at 50 to 100 students.
 7. Optional, not built: AI re-rank of the top 20 candidates, college lists in the relevance engine, home-page feed and email click tracking, an admin screen for the recommendation summary.
