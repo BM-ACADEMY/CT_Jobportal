@@ -1,31 +1,27 @@
 const nodemailer = require('nodemailer');
 
-const isGmail = (process.env.EMAIL_HOST || "").includes('gmail.com');
+// Certificate checking is ON. SMTP_TLS_INSECURE=true is an emergency switch for a relay whose certificate
+// cannot be verified; do not leave it set in production.
+const buildTransportConfig = (env = process.env) => {
+  const isGmail = (env.EMAIL_HOST || "").includes('gmail.com');
+  if (isGmail) {
+    return {
+      service: 'gmail',
+      logger: true,
+      debug: true,
+      auth: { user: env.USER_EMAIL, pass: env.USER_PASS },
+    };
+  }
+  return {
+    host: env.EMAIL_HOST || "smtp.hostinger.com",
+    secure: env.EMAIL_PORT == 465,
+    port: Number(env.EMAIL_PORT) || 465,
+    auth: { user: env.USER_EMAIL, pass: env.USER_PASS },
+    tls: { rejectUnauthorized: env.SMTP_TLS_INSECURE !== 'true' },
+  };
+};
 
-const transporter = nodemailer.createTransport(
-  isGmail 
-    ? {
-        service: 'gmail',
-        logger: true,
-        debug: true,
-        auth: {
-          user: process.env.USER_EMAIL,
-          pass: process.env.USER_PASS,
-        }
-      }
-    : {
-        host: process.env.EMAIL_HOST || "smtp.hostinger.com",
-        secure: process.env.EMAIL_PORT == 465,
-        port: Number(process.env.EMAIL_PORT) || 465,
-        auth: {
-          user: process.env.USER_EMAIL,
-          pass: process.env.USER_PASS,
-        },
-        tls: {
-          rejectUnauthorized: false
-        }
-      }
-);
+const transporter = nodemailer.createTransport(buildTransportConfig());
 
 const sendEmail = async (options) => {
   // Students who joined with only a WhatsApp number get a placeholder <phone>@<college>.portal address; never mail it
@@ -59,3 +55,4 @@ const sendEmail = async (options) => {
 };
 
 module.exports = sendEmail;
+module.exports.buildTransportConfig = buildTransportConfig;
