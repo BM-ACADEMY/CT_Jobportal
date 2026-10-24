@@ -1,6 +1,6 @@
 # AI assistant for job seekers (OpenAI): what is built
 
-Status: backend built, **off by default** (`ASSISTANT_ENABLED` unset). Not tested against the real OpenAI API: that needs your key. There is no chat widget in the app yet (planned for the next step).
+Status: backend built, **off by default** (`ASSISTANT_ENABLED` unset). Not tested against the real OpenAI API: that needs your key. The chat widget and draft legal wording are in (Day 19), also hidden or inert until the assistant is switched on.
 
 ## Decisions used (the plan's defaults, not yet confirmed by Kamar)
 1. OpenAI for the assistant only. Skill tests, resume review, resume builder and candidate matching stay on OpenRouter, unchanged.
@@ -30,8 +30,11 @@ Not sent: name, email, phone, address, photo, password, payment data, resume tex
 - The rules tell the model to ignore instructions found in the person's message or data, never ask for or repeat passwords, OTPs, card or ID numbers, never promise a job, interview, salary or refund, stay on job search and Velaivaaipu help, and not compare people by gender, age, religion, caste or marital status.
 - This reduces the risk; it cannot remove it. Review real conversations in a test account before launch.
 
+## Chat widget and legal wording (Day 19)
+- **Widget:** client/src/components/assistant/AssistantWidget.jsx, mounted in the dashboard layout. It shows only for job seekers, and only when GET /api/assistant/status says the switch, key and model are all set. Floating "Ask assistant" button; chat panel with an English and Tamil hint, the "AI can make mistakes" notice, a warning not to share passwords, OTPs or card details, a 500-character limit, and the messages left today. Replies are shown as plain text (never HTML); paths to known pages (jobs, candidate pages, refund policy) become links. Nothing is saved; closing the page ends the chat. Enter sends, but not while a Tamil or other IME word is being confirmed.
+- **Privacy Policy** section 6 and **Terms** section 12 now name OpenAI, list what is sent and what is not, say the conversation text is not kept, and say answers can be wrong and guarantee nothing. These are DRAFT wording (marked in the code). They do not quote OpenAI's data terms, because those must be checked against OpenAI's current published terms by someone who can read them. The effective dates were not changed. A lawyer must approve both before the assistant is switched on.
+
 ## Still to do before it is live
-- Chat widget for job seekers with the "AI can make mistakes" notice, plus a link to it from the dashboard.
-- Privacy Policy and Terms must name OpenAI and say what is sent (above). Check OpenAI's current API data terms before publishing the wording. Both pages currently mention AI providers only through OpenRouter.
+- Lawyer review of the Privacy Policy and Terms wording, and a check of OpenAI's current API data terms (retention, training use, data location) before publishing. Update the policy effective date.
 - Test with a real key: English, Tamil, empty profile, an injection attempt in a profile and in a message, the daily cap and the budget stop.
 - Kamar to confirm the three decisions above, and the monthly budget in rupees you are willing to spend (convert it into tokens for your chosen model).

@@ -71,7 +71,9 @@ const PrivacyPolicy = () => (
     </Section>
 
     <Section id="processors" title="6. Services we use">
+      {/* DRAFT wording for the AI assistant. A lawyer must review it, and OpenAI's current API data terms must be checked, before the assistant is switched on (see docs/AI_ASSISTANT.md). */}
       <p>We use trusted providers to run the platform: Razorpay (payments), Meta WhatsApp Business (messages), Google and LinkedIn (sign-in), Google Analytics and Meta Pixel (analytics and advertising measurement), AI model providers accessed through OpenRouter (for AI features such as skill tests, resume review and candidate matching; the text you submit for those features, such as your resume, is sent to them to produce the result), email delivery services, and cloud hosting. They process data on our behalf or under their own privacy terms. Some of them store data on servers outside India.</p>
+      <p><strong>Velaivaaipu assistant (job seekers).</strong> If you use the assistant, your question and a short summary of your own career profile are sent to OpenAI to produce the answer: your headline, preferred role, location, skills, degree names, past job titles, how complete your profile is, and the jobs we suggested to you. We do not send your name, email, phone number, photo, password, payment details or resume text, and we do not keep the text of your conversation; we only count how many messages you send. OpenAI handles that data under its own terms and privacy policy. Do not type passwords, OTPs, card details or ID numbers into the assistant. Its answers can be wrong; check important details yourself.</p>
     </Section>
 
     <Section id="retention" title="7. How long we keep data">

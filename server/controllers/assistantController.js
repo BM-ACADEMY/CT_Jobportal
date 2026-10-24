@@ -100,4 +100,10 @@ const chat = async (req, res) => {
   }
 };
 
-module.exports = { chat, assistantEnabled, takeDailyMessage, overBudget, addTokens, dayKey, monthKey };
+// @route GET /api/assistant/status  -> { enabled, dailyLimit }. The widget only shows when this says enabled.
+const status = (req, res) => {
+  const ready = assistantEnabled() && !resolveProvider('ASSISTANT').error;
+  res.json({ enabled: ready, dailyLimit: ready ? DAILY_LIMIT() : 0 });
+};
+
+module.exports = { chat, status, assistantEnabled, takeDailyMessage, overBudget, addTokens, dayKey, monthKey };

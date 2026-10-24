@@ -5,6 +5,7 @@ import Sidebar from '../components/common/Sidebar';
 import RecentBlogs from '../components/blog/RecentBlogs';
 import SEOHead from '../components/seo/SEOHead';
 import { OnboardingProvider } from '../context/OnboardingContext';
+import AssistantWidget from '../components/assistant/AssistantWidget';
 import WelcomeTour from '../components/onboarding/WelcomeTour';
 import OnboardingChecklistCard from '../components/onboarding/OnboardingChecklistCard';
 import IncompleteProfileBanner from '../components/onboarding/IncompleteProfileBanner';
@@ -105,6 +106,7 @@ const DashboardLayoutInner = () => {
       </div>
       
       <WelcomeTour />
+      <AssistantWidget />
     </div>
   );
 };

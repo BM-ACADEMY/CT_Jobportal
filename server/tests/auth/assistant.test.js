@@ -199,3 +199,16 @@ test('history is capped to 6 short plain turns', () => {
   assert.deepEqual(cleanHistory('nope'), []);
   assert.equal(buildMessages(seeker(), [], long, 'hi').length, 9); // system + data + 6 history + question
 });
+
+test('status says enabled only when the switch, key and model are all set', () => {
+  const { status } = require('../../controllers/assistantController');
+  const ask = () => { const r = res(); status({}, r); return r.body; };
+  reset();
+  assert.deepEqual(ask(), { enabled: false, dailyLimit: 0 });
+  process.env.ASSISTANT_ENABLED = 'true';
+  assert.equal(ask().enabled, false);
+  process.env.OPENAI_API_KEY = 'sk-test'; process.env.OPENAI_ASSISTANT_MODEL = 'm';
+  assert.deepEqual(ask(), { enabled: true, dailyLimit: 30 });
+  process.env.ASSISTANT_DAILY_LIMIT = '12';
+  assert.equal(ask().dailyLimit, 12);
+});
