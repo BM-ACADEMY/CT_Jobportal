@@ -80,6 +80,18 @@ const firstJobTips = (user) => ({
     ${button(link('/company/ats-pipeline', 'first_job_tips'), 'Review my applicants')}`,
 });
 
+// Sent once per job: the 5 best-fitting job seekers for a job the person just posted. Names and skills only; contact details
+// stay behind the candidate search (which counts against the daily limit).
+const topCandidates = (user, job, candidates) => ({
+  subject: `${candidates.length} candidate${candidates.length > 1 ? 's' : ''} that fit your ${job.title} job`,
+  title: 'Top candidates for your job',
+  html: `<p>Hi ${first(user)},</p>
+    <p>Based on skills, role, location and experience, these job seekers fit <strong>${esc(job.title)}</strong> best:</p>
+    <ul style="padding-left:18px;">${candidates.map((c) => `<li style="margin:8px 0;"><strong>${esc(c.name)}</strong>${c.profile?.headline ? `, ${esc(c.profile.headline)}` : ''}${c.relevance?.reasons?.length ? `<br><span style="font-size:12px;color:#475569;">Why: ${c.relevance.reasons.slice(0, 3).map(esc).join(' &middot; ')}</span>` : ''}</li>`).join('')}</ul>
+    <p style="font-size:13px;color:#475569;">This is a suggestion, not a guarantee. Review each profile before you decide.</p>
+    ${button(link('/company/candidates', 'top_candidates'), 'Open candidate search')}`,
+});
+
 const postJobTemplates = (user) => ({
   subject: 'Ready-made job posts, copy and publish in 2 minutes',
   title: 'Post your first job faster',
@@ -133,4 +145,4 @@ const collegeFirstStudents = (user, college) => ({
 
 const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
-module.exports = { companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, batchReadiness, wrap, jobUrl };
+module.exports = { companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };

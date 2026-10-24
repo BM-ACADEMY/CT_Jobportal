@@ -12,6 +12,7 @@ const SkillTestResult = require('../models/SkillTestResult');
 const EmailLog = require('../models/EmailLog');
 const sendEmail = require('../utils/sendEmail');
 const mails = require('../utils/lifecycle/mails');
+const { getTopCandidatesForJob, engineEnabled } = require('../utils/matchingJobs');
 const { rankForMail, alertFrequency, ALERT_PERIOD_DAYS } = require('../utils/lifecycle/jobMatch');
 const Application = require('../models/Application');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
@@ -130,6 +131,25 @@ const jobMails = async (state) => {
   }
 };
 
+// Once per job, 1 hour to 3 days after posting: the 5 best-fitting candidates, mailed to whoever posted it.
+// Only with the relevance engine on, and only when at least one candidate really fits.
+const topCandidatesMail = async (state) => {
+  if (!engineEnabled()) return;
+  const roles = await Role.find({ name: { $in: ['recruiter', 'company'] } }).select('_id');
+  const jobs = await Job.find({ status: 'active', validThrough: { $gt: new Date() }, createdAt: { $gte: ago(3), $lte: ago(1 / 24) } })
+    .populate('company', 'name').sort({ createdAt: -1 }).limit(BATCH).lean();
+  for (const job of jobs) {
+    if (state.sent >= MAX_PER_RUN) break;
+    const poster = await User.findOne({ ...baseUserFilter, _id: job.recruiter, role: { $in: roles.map((r) => r._id) } });
+    if (!poster) continue;
+    const key = `co_top_candidates-${job._id}`;
+    if (await EmailLog.exists({ user: poster._id, key })) continue; // skip the expensive ranking when already sent
+    const candidates = await getTopCandidatesForJob(job, { User, Role, SkillTestResult });
+    if (!candidates.length) continue;
+    await deliver(state, poster, key, mails.wrap(mails.topCandidates(poster, job, candidates), poster._id), 'company');
+  }
+};
+
 const employerMails = async (state) => {
   const roles = await Role.find({ name: { $in: ['recruiter', 'company'] } }).select('_id');
   const roleIds = roles.map((r) => r._id);
@@ -187,7 +207,7 @@ const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

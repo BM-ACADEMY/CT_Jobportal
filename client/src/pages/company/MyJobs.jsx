@@ -13,6 +13,7 @@ import {
   Briefcase, MapPin, Clock, Search, ToggleLeft, ToggleRight, Users, CheckSquare, XSquare
 } from 'lucide-react';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
+import TopCandidatesPanel from '@/components/company/TopCandidatesPanel';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
@@ -403,6 +404,7 @@ const MyJobs = () => {
                     </Dropdown>
                   </div>
                 </div>
+                {job.status === 'active' && <TopCandidatesPanel jobId={job._id} />}
               </Card>
             ))}
           </div>

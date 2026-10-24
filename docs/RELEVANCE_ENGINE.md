@@ -55,8 +55,16 @@ With RELEVANCE_ENGINE_ENABLED=true and NO search text, candidate search is order
 - Cost: with the switch on, one extra read of the matching users plus one certificate query per search. Fine at a few hundred job seekers; revisit if the pool reaches tens of thousands.
 - Tests: tests/auth/candidateRelevance.test.js (11), tests/auth/candidateSearchRanking.test.js (5).
 
+## Top candidates for a job (Day 16)
+All behind RELEVANCE_ENGINE_ENABLED.
+- **API:** GET /api/jobs/:jobId/top-candidates (recruiter, company, org employee; only the job's owner or a company user with access). Returns up to 5 job seekers scoring 25 or more, with why-lines. Public fields only: name, avatar, headline, role, city, up to 5 skills, priority flag, relevance. No email, phone or block list. Candidates who blocked the company or the recruiter are never suggested. Answers are cached for 5 minutes per job (the jobs page asks once per active job).
+- **Jobs page:** each active job card in My Jobs shows an expandable "N top candidates for this job" panel; it stays hidden while the engine is off or nobody fits.
+- **Email:** lifecycle rule topCandidatesMail. One mail per job (key co_top_candidates-<jobId>), sent 1 hour to 3 days after posting, to whoever posted it, only if at least one candidate fits. Names, headline and why-lines only, with a link to candidate search. It goes through the same engine as every lifecycle mail: needs LIFECYCLE_EMAILS_ENABLED=true, counts toward LIFECYCLE_MAX_PER_RUN, one mail per person per day, opt-out and bounce rules apply. The ranking is skipped when that job was already mailed.
+- **Tests:** tests/auth/topCandidates.test.js (6), tests/auth/topCandidatesEndpoint.test.js (3).
+- **Cost:** each uncached request or mail reads all job seekers once; fine for a few hundred, revisit at tens of thousands.
+
 ## Not wired yet (next steps in the plan)
 - The home page and dashboard use the same endpoint, so they pick up the new order automatically but do not yet show the why-line.
 - WhatsApp job alerts (none exist today).
-- "Top 5 candidates for this job" after posting (with its email), AI re-rank of the top 20, college lists and event logging.
+- AI re-rank of the top 20, college lists and event logging.
 - The public job list (`GET /api/jobs`) is unchanged: priority recruiters first, then newest.

@@ -48,21 +48,54 @@ const getRankedMatches = async (user, { Job, User, Application }, { limit = 20, 
   }));
 };
 
-// Recruiter side: orders candidates by fit to the recruiter's most recent open job (their own jobs, or their company's),
-// then by profile completeness. Returns [{ candidate, score, reasons, priority }]. With no open job it is completeness only.
-const rankCandidatesByRelevance = async (candidates, recruiter, { Job, User, SkillTestResult }) => {
+// Ranks candidates for one job: loads certificates and priority badges for the pool, then scores.
+const rankPoolForJob = async (candidates, job, { User, SkillTestResult }) => {
   const ids = candidates.map((c) => c._id);
-  const owner = [{ recruiter: recruiter._id }, ...(recruiter.company ? [{ company: recruiter.company }] : [])];
-  const job = await Job.findOne({ status: 'active', $or: owner }).sort({ createdAt: -1 }).lean();
-
   const [certified, subs] = await Promise.all([
     SkillTestResult.distinct('user', { passed: true, user: { $in: ids } }),
     User.find({ _id: { $in: ids } }).select('subscription subscriptionDetails subscriptionExpiry purchasedFeatures priorityApplicationsUsed').populate('subscription').lean(),
   ]);
   const subById = new Map(subs.map((u) => [String(u._id), u]));
   const withBadge = candidates.map((c) => ({ ...c, isPriority: checkPriorityBadge({ ...c, ...subById.get(String(c._id)) }) }));
-
   return rankCandidatesForJob(withBadge, job, { certifiedIds: new Set(certified.map(String)) });
 };
 
-module.exports = { getRankedMatches, rankCandidatesByRelevance, engineEnabled, POOL_SIZE, MIN_SCORE };
+// Recruiter side: orders candidates by fit to the recruiter's most recent open job (their own jobs, or their company's),
+// then by profile completeness. Returns [{ candidate, score, reasons, priority }]. With no open job it is completeness only.
+const rankCandidatesByRelevance = async (candidates, recruiter, { Job, User, SkillTestResult }) => {
+  const owner = [{ recruiter: recruiter._id }, ...(recruiter.company ? [{ company: recruiter.company }] : [])];
+  const job = await Job.findOne({ status: 'active', $or: owner }).sort({ createdAt: -1 }).lean();
+  return rankPoolForJob(candidates, job, { User, SkillTestResult });
+};
+
+const TOP_MIN_SCORE = 25; // a "top candidate" must actually fit the job
+const CANDIDATE_FIELDS = 'name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification profile.profileCompletion blockedEntities';
+
+// "Top candidates for this job". Public shape only: name, headline, role, city, up to 5 skills, why-lines. No email or phone.
+const getTopCandidatesForJob = async (job, { User, Role, SkillTestResult }, { limit = 5 } = {}) => {
+  const seekerRole = await Role.findOne({ name: 'jobseeker' });
+  if (!seekerRole) return [];
+  const pool = await User.find({ role: seekerRole._id, isAdminBlocked: { $ne: true } }).select(CANDIDATE_FIELDS).lean();
+  const owners = [job.company?._id || job.company, job.recruiter?._id || job.recruiter].filter(Boolean).map(String);
+  const eligible = pool.filter((c) => !(c.blockedEntities || []).some((b) => owners.includes(String(b))));
+
+  const ranked = await rankPoolForJob(eligible, job, { User, SkillTestResult });
+  return ranked
+    .filter((r) => r.score >= TOP_MIN_SCORE)
+    .slice(0, limit)
+    .map(({ candidate, score, reasons, priority }) => ({
+      _id: candidate._id,
+      name: candidate.name,
+      avatar: candidate.avatar || '',
+      profile: {
+        headline: candidate.profile?.headline || '',
+        preferredRole: candidate.profile?.preferredRole || '',
+        location: candidate.profile?.location || '',
+        skills: (candidate.profile?.skills || []).slice(0, 5),
+      },
+      isPriority: priority,
+      relevance: { score, reasons, priority },
+    }));
+};
+
+module.exports = { getRankedMatches, rankCandidatesByRelevance, getTopCandidatesForJob, engineEnabled, POOL_SIZE, MIN_SCORE, TOP_MIN_SCORE };

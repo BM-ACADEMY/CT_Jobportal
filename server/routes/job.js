@@ -4,7 +4,7 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 // Trigger nodemon restart
-const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getJobById, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getAICandidateMatches, getJobQuota, cloneJob, importPipeline, bulkAiMatch, markJobApplicantsViewed } = require('../controllers/jobController');
+const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getJobById, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getTopCandidates, getAICandidateMatches, getJobQuota, cloneJob, importPipeline, bulkAiMatch, markJobApplicantsViewed } = require('../controllers/jobController');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
 
 // --- Jobseeker Routes ---
@@ -19,6 +19,7 @@ router.get('/company-jobs-stats', verifyToken, authorizeRoles('recruiter', 'comp
 router.get('/analytics', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getRecruiterAnalytics);
 router.get('/quota', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getJobQuota);
 router.get('/candidates/search', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), searchCandidates);
+router.get('/:jobId/top-candidates', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getTopCandidates);
 router.get('/candidates/:candidateId/profile', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), viewCandidateProfile);
 router.get('/:jobId/matched-candidates', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getAICandidateMatches);
 router.post('/:jobId/bulk-ai-match', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), bulkAiMatch);

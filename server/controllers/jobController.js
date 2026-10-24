@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const { notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved, notifyJobPublished } = require('../utils/jobNotifications');
 const { enforceJobLimits } = require('../utils/enforceJobLimits');
-const { getRankedMatches, engineEnabled, rankCandidatesByRelevance } = require('../utils/matchingJobs');
+const { getRankedMatches, engineEnabled, rankCandidatesByRelevance, getTopCandidatesForJob } = require('../utils/matchingJobs');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -828,6 +828,37 @@ const searchCandidates = async (req, res) => {
   }
 };
 
+// @desc    Top candidates for one of my jobs (relevance engine). Same public fields as the candidate search list.
+// @route   GET /api/jobs/:jobId/top-candidates
+// @access  Private (Recruiter/Company), owner of the job only
+// The jobs page asks once per active job, and each answer reads the whole candidate pool, so answers are kept for 5 minutes.
+const TOP_CACHE = new Map();
+const TOP_CACHE_MS = 5 * 60 * 1000;
+const TOP_CACHE_MAX = 300;
+
+const getTopCandidates = async (req, res) => {
+  try {
+    if (!engineEnabled()) return res.json({ enabled: false, candidates: [] });
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    const job = await Job.findById(req.params.jobId);
+    if (!user || !job) return res.status(404).json({ msg: 'Job not found' });
+    if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString() || !hasCompanyAccess(user))) {
+      return res.status(403).json({ msg: 'Not authorized for this job' });
+    }
+    const key = String(job._id);
+    const hit = TOP_CACHE.get(key);
+    if (hit && hit.expires > Date.now()) return res.json({ enabled: true, candidates: hit.candidates });
+    const candidates = await getTopCandidatesForJob(job.toObject(), { User, Role, SkillTestResult: require('../models/SkillTestResult') });
+    if (TOP_CACHE.size >= TOP_CACHE_MAX) TOP_CACHE.delete(TOP_CACHE.keys().next().value);
+    TOP_CACHE.set(key, { candidates, expires: Date.now() + TOP_CACHE_MS });
+    res.json({ enabled: true, candidates });
+  } catch (err) {
+    console.error('Top Candidates Error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 // @desc    View a candidate profile (counts as one search)
 // @route   GET /api/jobs/candidates/:candidateId/profile
 // @access  Private (Recruiter/Company)
@@ -1364,6 +1395,7 @@ const bulkAiMatch = async (req, res) => {
 };
 
 module.exports = {
+  getTopCandidates,
   createJob,
   getCompanyJobs,
   getCompanyJobsWithStats,
