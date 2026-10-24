@@ -14,7 +14,7 @@ Lifecycle mail already skips anyone with `marketingOptOut`, so a bounce or compl
 ## Setup (dev)
 1. Server env: `BREVO_WEBHOOK_SECRET=<a long random string>` (for example `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`). Restart.
 2. Brevo > Transactional > Settings > Webhook > Add: URL `https://<api-domain>/api/webhooks/email/brevo?secret=<the same value>`. Tick: Hard bounce, Invalid email, Spam (complaint), Unsubscribed.
-3. Test: send a mail to `bounce@simulator.amazonses.com` is SES-only; for Brevo use Brevo's "Send a test" on the webhook if offered, or send to a made-up address on a real domain, wait for the hard bounce event, then check the user record has `emailPrefs.bounced: true`.
+3. Test: send a mail to a made-up address on a real domain (for example nobody-xyz123@gmail.com), wait for Brevo to report the hard bounce, then check the user record (if one exists with that email) has emailPrefs.bounced: true. Also check Brevo shows the webhook delivered with status 200.
 4. Weekly in week 1: compare Brevo's bounce and complaint counts with the number of users with `emailPrefs.bounced` or `bounceReason: complaint`. Pause rule stays: complaints above 0.1% or hard bounces above 2%.
 
 ## Known gaps
