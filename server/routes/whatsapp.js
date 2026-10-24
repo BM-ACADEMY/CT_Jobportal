@@ -9,7 +9,8 @@ router.get('/webhook', (req, res) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  if (mode === 'subscribe' && token === process.env.WA_VERIFY_TOKEN) {
+  // An unset WA_VERIFY_TOKEN must never match a missing token.
+  if (process.env.WA_VERIFY_TOKEN && mode === 'subscribe' && token === process.env.WA_VERIFY_TOKEN) {
     return res.status(200).send(challenge);
   }
   return res.sendStatus(403);
@@ -25,6 +26,8 @@ const validSignature = (raw, header) => {
 };
 
 const STOP_WORDS = new Set(['stop', 'unsubscribe', 'cancel', 'optout', 'opt out']);
+// "STOP.", "Stop!" and " stop " all count; punctuation is ignored.
+const isStopMessage = (body) => STOP_WORDS.has(String(body || '').toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim());
 
 // Inbound messages: a "STOP" reply switches off promotional messages for that number.
 // Requires WA_APP_SECRET so only Meta can trigger it. Payloads are not logged (personal data).
@@ -36,9 +39,8 @@ router.post('/webhook', express.json({ verify: (req, _res, buf) => { req.rawBody
       .flatMap((e) => e.changes || [])
       .flatMap((c) => c.value?.messages || []);
     for (const m of messages) {
-      const text = String(m.text?.body || '').trim().toLowerCase();
       const digits = String(m.from || '').replace(/\D/g, '').slice(-10);
-      if (STOP_WORDS.has(text) && digits.length === 10) {
+      if (isStopMessage(m.text?.body) && digits.length === 10) {
         await CollegeStudent.updateMany({ whatsappNumber: new RegExp(`${digits}$`) }, { $set: { whatsappOptOut: true } });
       }
     }
@@ -48,3 +50,4 @@ router.post('/webhook', express.json({ verify: (req, _res, buf) => { req.rawBody
 });
 
 module.exports = router;
+module.exports.isStopMessage = isStopMessage;
