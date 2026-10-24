@@ -34,6 +34,12 @@ Not sent: name, email, phone, address, photo, password, payment data, resume tex
 - **Widget:** client/src/components/assistant/AssistantWidget.jsx, mounted in the dashboard layout. It shows only for job seekers, and only when GET /api/assistant/status says the switch, key and model are all set. Floating "Ask assistant" button; chat panel with an English and Tamil hint, the "AI can make mistakes" notice, a warning not to share passwords, OTPs or card details, a 500-character limit, and the messages left today. Replies are shown as plain text (never HTML); paths to known pages (jobs, candidate pages, refund policy) become links. Nothing is saved; closing the page ends the chat. Enter sends, but not while a Tamil or other IME word is being confirmed.
 - **Privacy Policy** section 6 and **Terms** section 12 now name OpenAI, list what is sent and what is not, say the conversation text is not kept, and say answers can be wrong and guarantee nothing. These are DRAFT wording (marked in the code). They do not quote OpenAI's data terms, because those must be checked against OpenAI's current published terms by someone who can read them. The effective dates were not changed. A lawyer must approve both before the assistant is switched on.
 
+## Legal wording is hidden until switch-on (decision)
+The assistant paragraphs in the Privacy Policy and Terms render only when the client is built with VITE_ASSISTANT_ENABLED=true (Vercel env). Set it together with ASSISTANT_ENABLED on the server, and only after the lawyer approves the text. The production build was checked: with the flag off, the paragraphs are not in the shipped files.
+
+## Budget
+Monthly ceiling decided: Rs 2,000. Convert to tokens once the model is chosen: ASSISTANT_MONTHLY_TOKEN_BUDGET = 2000 / (blended rupees per 1 million tokens) x 1,000,000. Until then the 2,000,000-token default applies.
+
 ## Still to do before it is live
 - Lawyer review of the Privacy Policy and Terms wording, and a check of OpenAI's current API data terms (retention, training use, data location) before publishing. Update the policy effective date.
 - Test with a real key: English, Tamil, empty profile, an injection attempt in a profile and in a message, the daily cap and the budget stop.

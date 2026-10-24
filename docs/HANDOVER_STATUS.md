@@ -23,7 +23,7 @@ Base: main `7ba33a5` + the 18-commit launch patch + the work below. Server tests
 `LIFECYCLE_EMAILS_ENABLED`, `WHATSAPP_FOLLOWUP_ENABLED`, `RELEVANCE_ENGINE_ENABLED`, `ASSISTANT_ENABLED`, `PROTECT_DOCUMENT_UPLOADS`. Turn on one at a time, in that order of readiness: lifecycle mail after the mail switch and DNS pass; WhatsApp after Meta approves the template; relevance after the soft-launch week; assistant only after legal review and the real-key check.
 
 ## New environment variables
-`SMTP_TLS_INSECURE` (leave unset), `BREVO_WEBHOOK_SECRET`, `DEFAULT_FREE_JOB_LIMIT`, `DEFAULT_FREE_SEARCH_LIMIT`, `RELEVANCE_ENGINE_ENABLED`, `ASSISTANT_ENABLED`, `AI_PROVIDER_ASSISTANT`, `OPENAI_API_KEY`, `OPENAI_ASSISTANT_MODEL`, `OPENROUTER_ASSISTANT_MODEL`, `ASSISTANT_DAILY_LIMIT`, `ASSISTANT_MONTHLY_TOKEN_BUDGET`. Also read by the code but missing from the old `.env.example`: `EMAIL_HOST`, `EMAIL_PORT`, `USER_EMAIL`, `USER_PASS`, `WA_PHONE_NUMBER_ID`, `WA_VERIFY_TOKEN`, `META_PAGE_ACCESS_TOKEN`, `N8N_BASE_URL`.
+`SMTP_TLS_INSECURE` (leave unset), `BREVO_WEBHOOK_SECRET`, `DEFAULT_FREE_JOB_LIMIT`, `DEFAULT_FREE_SEARCH_LIMIT`, `RELEVANCE_ENGINE_ENABLED`, `ASSISTANT_ENABLED`, `AI_PROVIDER_ASSISTANT`, `OPENAI_API_KEY`, `OPENAI_ASSISTANT_MODEL`, `OPENROUTER_ASSISTANT_MODEL`, `ASSISTANT_DAILY_LIMIT`, `ASSISTANT_MONTHLY_TOKEN_BUDGET`, client `VITE_ASSISTANT_ENABLED`. Also read by the code but missing from the old `.env.example`: `EMAIL_HOST`, `EMAIL_PORT`, `USER_EMAIL`, `USER_PASS`, `WA_PHONE_NUMBER_ID`, `WA_VERIFY_TOKEN`, `META_PAGE_ACCESS_TOKEN`, `N8N_BASE_URL`.
 
 ## New database collections
 `RecommendationEvent` (180-day auto-delete), `AssistantUsage` (counters only). New User fields: `emailPrefs.bounced`, `bouncedAt`, `bounceReason`. New Assessment field: `submittedAt`.
@@ -32,7 +32,7 @@ Base: main `7ba33a5` + the 18-commit launch patch + the work below. Server tests
 1. Deploy; OpenRouter credit; seed the question bank; run the QR, smoke, onboarding, LinkedIn and PWA device sheets on the live site.
 2. Accounts and keys: Brevo (card, DNS), Meta template, LinkedIn app, GA4, Pixel, Search Console, Razorpay live webhook, OpenAI key.
 3. Run the three production scripts (audit privileged accounts, print free plan limits, dry-run the CSV password reset) and act on the output.
-4. Decisions made: free plan = 2 jobs (existing free users keep their stored limits; no refresh script, by decision); assistant defaults confirmed (OpenAI for the assistant only, job seeker help first, English and Tamil). Still open: the assistant monthly token budget.
+4. Decisions made: free plan = 2 jobs (existing free users keep their stored limits; no refresh script, by decision); assistant defaults confirmed (OpenAI for the assistant only, job seeker help first, English and Tamil). Assistant budget: Rs 2,000 a month (convert to tokens when the model is chosen). Assistant legal wording is hidden until VITE_ASSISTANT_ENABLED=true.
 5. Legal: lawyer review of the Privacy Policy and Terms (assistant, event logging, refunds), OpenAI data terms, effective dates.
 6. Open hardening items: protect `/uploads` (about 61 client links need signed URLs); CSV import still matches an existing user by phone number; the session token travels in the URL after Google/LinkedIn login; the whole branch has not been load-tested at 50 to 100 students.
 7. Optional, not built: AI re-rank of the top 20 candidates, college lists in the relevance engine, home-page feed and email click tracking, an admin screen for the recommendation summary.
