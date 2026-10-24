@@ -2,7 +2,7 @@
 
 Status: backend built, **off by default** (`ASSISTANT_ENABLED` unset). Not tested against the real OpenAI API: that needs your key. The chat widget and draft legal wording are in (Day 19), also hidden or inert until the assistant is switched on.
 
-## Decisions used (the plan's defaults, not yet confirmed by Kamar)
+## Decisions (confirmed)
 1. OpenAI for the assistant only. Skill tests, resume review, resume builder and candidate matching stay on OpenRouter, unchanged.
 2. First job: job seeker help: find jobs, improve the profile, answer "how do I..." questions. Company and college helpers come later.
 3. Languages: English and Tamil (it answers in the language the person writes in).
