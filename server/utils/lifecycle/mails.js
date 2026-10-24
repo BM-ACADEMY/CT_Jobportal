@@ -66,7 +66,7 @@ const jobsForYou = (user, jobs, { paid, frequency }) => ({
   title: paid ? 'Your job alert' : 'Jobs that match your profile',
   html: `<p>Hi ${first(user)},</p>
     <p>${paid ? `Here are your ${String(frequency).toLowerCase()} matches:` : 'Since you last visited, these jobs match your profile:'}</p>
-    <ul style="padding-left:18px;">${jobs.map((j) => `<li style="margin:6px 0;"><a href="${esc(utm(jobUrl(j), paid ? 'job_alert' : 'winback'))}" style="color:#059669;font-weight:bold;">${esc(j.title)}</a>${j.company?.name ? ` at ${esc(j.company.name)}` : ''}${j.location ? `, ${esc(j.location)}` : ''}</li>`).join('')}</ul>
+    <ul style="padding-left:18px;">${jobs.map((j) => `<li style="margin:6px 0;"><a href="${esc(utm(jobUrl(j), paid ? 'job_alert' : 'winback'))}" style="color:#059669;font-weight:bold;">${esc(j.title)}</a>${j.company?.name ? ` at ${esc(j.company.name)}` : ''}${j.location ? `, ${esc(j.location)}` : ''}${Array.isArray(j.why) && j.why.length ? `<br><span style="font-size:12px;color:#475569;">Why this job: ${j.why.slice(0, 3).map(esc).join(' &middot; ')}</span>` : ''}</li>`).join('')}</ul>
     ${paid ? '' : '<p style="font-size:13px;color:#475569;">Want these in your inbox regularly? Job Alerts is available on our plans.</p>'}
     ${button(utm(`${frontend()}/jobs`, paid ? 'job_alert' : 'winback'), 'See all jobs')}`,
 });

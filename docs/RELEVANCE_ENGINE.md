@@ -33,8 +33,11 @@ Status: built behind a switch, **off by default**. Nothing changes for users unt
 5. Roll back by setting the variable to `false`.
 6. Compare click and apply rates before and after (event logging arrives in a later step).
 
+## Emails (Day 14)
+With RELEVANCE_ENGINE_ENABLED=true the paid job-alert mail and the win-back mail rank with the same engine as the website (`rankForMail` in `utils/lifecycle/jobMatch.js`): same order, jobs the person already applied to are left out, a thin profile gets no job mail, and each job shows a "Why this job" line. With the switch off the original ranker is used. Mail itself still needs LIFECYCLE_EMAILS_ENABLED=true. Tests: `tests/auth/mailRelevance.test.js`.
+
 ## Not wired yet (next steps in the plan)
 - The home page and dashboard use the same endpoint, so they pick up the new order automatically but do not yet show the why-line.
-- Emails, job alerts and WhatsApp alerts still use `utils/lifecycle/jobMatch.js`.
+- WhatsApp job alerts (none exist today).
 - Recruiter candidate search, "Top 5 candidates", college lists and event logging.
 - The public job list (`GET /api/jobs`) is unchanged: priority recruiters first, then newest.

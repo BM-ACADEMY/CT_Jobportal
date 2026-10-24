@@ -12,7 +12,8 @@ const SkillTestResult = require('../models/SkillTestResult');
 const EmailLog = require('../models/EmailLog');
 const sendEmail = require('../utils/sendEmail');
 const mails = require('../utils/lifecycle/mails');
-const { rankJobsForUser, alertFrequency, ALERT_PERIOD_DAYS } = require('../utils/lifecycle/jobMatch');
+const { rankForMail, alertFrequency, ALERT_PERIOD_DAYS } = require('../utils/lifecycle/jobMatch');
+const Application = require('../models/Application');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
 const { getCategory, PASS_RATIO } = require('../config/courseMap');
 
@@ -94,6 +95,11 @@ const skillGap = async (state) => {
   }
 };
 
+// Jobs the person already applied to, so the engine never mails them again. Only looked up when the engine is on.
+const appliedJobIds = async (u) => (process.env.RELEVANCE_ENGINE_ENABLED === 'true'
+  ? (await Application.find({ applicant: u._id }).select('job').lean()).map((a) => String(a.job))
+  : []);
+
 // Paid Job Alerts (plan tier or pay-per) and the free win-back for people who stopped visiting.
 const jobMails = async (state) => {
   const role = await Role.findOne({ name: 'jobseeker' }).select('_id');
@@ -112,14 +118,14 @@ const jobMails = async (state) => {
     if (!freq) continue;
     paidIds.add(String(u._id));
     const days = ALERT_PERIOD_DAYS[freq];
-    const jobs = rankJobsForUser(u, fresh.filter((j) => new Date(j.createdAt) >= ago(days)), 5);
+    const jobs = rankForMail(u, fresh.filter((j) => new Date(j.createdAt) >= ago(days)), 5, { appliedJobIds: await appliedJobIds(u) });
     if (jobs.length) await deliver(state, u, `alert-${freq}-${periodId(days, now)}`, mails.wrap(mails.jobsForYou(u, jobs, { paid: true, frequency: freq }), u._id));
   }
 
   const lapsed = await User.find({ ...baseUserFilter, role: role._id, lastLoginAt: { $gte: ago(60), $lte: ago(7) } }).limit(BATCH);
   for (const u of lapsed) {
     if (paidIds.has(String(u._id))) continue;
-    const jobs = rankJobsForUser(u, fresh.filter((j) => new Date(j.createdAt) >= ago(14)), 3);
+    const jobs = rankForMail(u, fresh.filter((j) => new Date(j.createdAt) >= ago(14)), 3, { appliedJobIds: await appliedJobIds(u) });
     if (jobs.length) await deliver(state, u, `winback-${periodId(14, now)}`, mails.wrap(mails.jobsForYou(u, jobs, { paid: false }), u._id));
   }
 };
