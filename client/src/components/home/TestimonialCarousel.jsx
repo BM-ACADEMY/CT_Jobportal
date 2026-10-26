@@ -65,7 +65,7 @@ const TestimonialCarousel = ({
   roleFilter = null,
   eyebrow = 'Real Stories',
   title = 'Success Stories',
-  subtitle = 'Join thousands of professionals who found their path through us.',
+  subtitle = 'What people say about Velaivaaipu.',
 }) => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
@@ -90,6 +90,8 @@ const TestimonialCarousel = ({
   const rowA = list.slice(0, half);
   const twoRows = list.length >= 4;
   const rowB = list.slice(half);
+
+  if (!list.length) return null;
 
   return (
     <section className="relative overflow-hidden py-24" style={{ backgroundImage: `linear-gradient(to bottom, #fafafa 0%, ${BG} 18%, ${BG} 78%, #ffffff 100%)` }}>

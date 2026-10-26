@@ -48,6 +48,152 @@ const BLOG_UI_OVERRIDES = `
   table tbody tr:nth-child(even) { background: #ecfdf5 !important; }
   table tbody tr:hover { background: #dbeafe !important; }
 
+  /* Differentiation Accordion Component */
+  .diff-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: .85rem;
+    margin: 1.5rem 0 2rem;
+  }
+  details.diff-item {
+    overflow: hidden;
+    border: 1px solid #dbeafe;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, .05);
+  }
+  details.diff-item[open] { border-color: #93c5fd; }
+  details.diff-item summary {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    color: #0f172a;
+    font-weight: 750;
+    line-height: 1.45;
+    cursor: pointer;
+    list-style: none;
+    background: #f8fafc;
+    user-select: none;
+  }
+  details.diff-item summary::-webkit-details-marker { display: none; }
+  details.diff-item summary:hover { background: #f1f5f9; }
+  details.diff-item summary::after {
+    content: '+';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background: #e0f2fe;
+    color: #0284c7;
+    font-size: 1.2rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-left: .85rem;
+  }
+  details.diff-item[open] summary::after {
+    content: '−';
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+  .diff-header-left {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    flex-wrap: wrap;
+  }
+  .diff-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .diff-badge {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: .25rem .65rem;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+  }
+  .diff-badge-danger { background: #fee2e2; color: #b91c1c; }
+  .diff-badge-success { background: #dcfce7; color: #15803d; }
+  .diff-badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .diff-badge-purple { background: #ede9fe; color: #6d28d9; }
+  .diff-badge-amber { background: #fef3c7; color: #b45309; }
+  .diff-body {
+    padding: 1.25rem;
+    border-top: 1px solid #f1f5f9;
+    background: #ffffff;
+  }
+  .diff-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 640px) {
+    .diff-grid { grid-template-columns: 1fr; }
+  }
+  .diff-card {
+    padding: 1rem;
+    border-radius: 12px;
+    font-size: .92rem;
+    line-height: 1.6;
+  }
+  .diff-card p { margin: 0; font-size: .92rem; line-height: 1.6; }
+  .diff-card-danger {
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    color: #991b1b;
+  }
+  .diff-card-success {
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    color: #166534;
+  }
+  .diff-card-header {
+    font-weight: 800;
+    font-size: .82rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: .5rem;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+  }
+  .diff-card-danger .diff-card-header { color: #dc2626; }
+  .diff-card-success .diff-card-header { color: #16a34a; }
+  .diff-specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: .75rem;
+  }
+  .diff-spec-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: .75rem .9rem;
+  }
+  .diff-spec-label {
+    font-size: .7rem;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #64748b;
+    margin-bottom: .25rem;
+  }
+  .diff-spec-value {
+    font-size: .88rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.45;
+  }
+
   .faq-list {
     display: grid;
     gap: .8rem;
@@ -332,11 +478,12 @@ const HtmlBlog = ({ blog }) => {
   return <div ref={hostRef} className="block min-h-screen bg-slate-50" />;
 };
 
-const BlogDetails = () => {
-  const { slug } = useParams();
+const BlogDetails = ({ staticSlug }) => {
+  const { slug: paramSlug } = useParams();
+  const slug = staticSlug || paramSlug;
   const blog = BLOGS.find((item) => item.slug === slug);
   if (!blog) return <Navigate to="/blog" replace />;
-  return <><SEOHead title={`${blog.title} | Velaivaaipu`} description={blog.excerpt} path={`/blog/${blog.slug}`} schema={{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: blog.title, image: blog.image, datePublished: blog.date, author: { '@type': 'Organization', name: 'Velaivaaipu' } }} /><HtmlBlog blog={blog} /></>;
+  return <><SEOHead title={`${blog.title} | Velaivaaipu`} description={blog.excerpt} path={staticSlug ? `/${staticSlug}` : `/blog/${blog.slug}`} schema={{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: blog.title, image: blog.image, datePublished: blog.date, author: { '@type': 'Organization', name: 'Velaivaaipu' } }} /><HtmlBlog blog={blog} /></>;
 };
 
 export default BlogDetails;

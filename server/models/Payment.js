@@ -70,6 +70,9 @@ const paymentSchema = new mongoose.Schema({
     ref: 'Coupon',
     default: null
   },
+  refundReason: { type: String, default: '' },
+  refundRequestedAt: { type: Date, default: null },
+  refundDuplicate: { type: Boolean, default: false },
   // True for an automatic charge of an existing recurring subscription (as opposed to a purchase).
   isRenewal: {
     type: Boolean,

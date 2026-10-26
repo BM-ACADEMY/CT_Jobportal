@@ -120,8 +120,9 @@ const Footer = () => (
       <div className="border-t border-emerald-100 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <p className="text-zinc-500 text-xs font-semibold">© {new Date().getFullYear()} Velaivaaipu. All Rights Reserved.</p>
         <div className="flex gap-6">
-          <Link to="#" className="text-zinc-500 text-xs font-semibold hover:text-[#34B678] transition-colors">Privacy Policy</Link>
-          <Link to="/terms" className="text-zinc-500 text-xs font-semibold hover:text-[#34B678] transition-colors">Terms of Service</Link>
+          <Link to="/privacy-policy" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Privacy Policy</Link>
+          <Link to="/refund-policy" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Refund Policy</Link>
+          <Link to="/terms" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Terms of Service</Link>
         </div>
       </div>
     </div>

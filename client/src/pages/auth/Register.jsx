@@ -1,5 +1,6 @@
+import SocialLoginButtons from '../../components/auth/SocialLoginButtons';
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User, CircleCheck, Briefcase, Building2, ShieldCheck, ArrowLeft, Phone } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -58,7 +59,9 @@ const registerSchema = z.object({
 const RegisterPage = () => {
   const { register, verifyOtp, resendOtp } = useAuth();
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState('jobseeker');
+  const [searchParams] = useSearchParams();
+  const requestedRole = searchParams.get('role');
+  const [selectedRole, setSelectedRole] = useState(['jobseeker', 'recruiter', 'company', 'college'].includes(requestedRole) ? requestedRole : 'jobseeker');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
@@ -496,7 +499,7 @@ const RegisterPage = () => {
                   <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
                     By creating an account, you agree to our{' '}
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
+                    <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
                   </p>
 
                   <Button
@@ -508,6 +511,7 @@ const RegisterPage = () => {
                   </Button>
                 </form>
               </Form>
+              {selectedRole !== 'college' && <SocialLoginButtons role={selectedRole} />}
 
               <p className="text-center text-sm text-slate-500 mt-6">
                 Already have an account?{' '}
@@ -515,29 +519,6 @@ const RegisterPage = () => {
                   Sign in
                 </Link>
               </p>
-
-              {/* Social Logins */}
-              <div className="flex items-center gap-3 my-6">
-                <div className="flex-1 h-px bg-slate-200" />
-                <span className="text-xs text-slate-400 font-medium">or continue with</span>
-                <div className="flex-1 h-px bg-slate-200" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <button 
-                  onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google?role=${selectedRole}`}
-                  className="flex items-center justify-center h-12 rounded-xl border border-border bg-slate-50 hover:bg-muted transition-all"
-                >
-                  <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/github?role=${selectedRole}`}
-                  className="flex items-center justify-center gap-2 h-11 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-sm font-medium text-slate-700"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#334155"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.416-4.041-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                </button>
-              </div>
             </div>
           ) : (
             <div className="animate-in slide-in-from-right-4 duration-500 flex flex-col py-5">

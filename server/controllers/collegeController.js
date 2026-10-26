@@ -1,3 +1,8 @@
+const mongoose = require('mongoose');
+const { getCategory, PASS_RATIO } = require('../config/courseMap');
+const CampusQuestionSet = require('../models/CampusQuestionSet');
+const { pickSet } = require('../utils/questionBank');
+const { publicQuestions, signAttempt, verifyAttempt, scoreAttempt } = require('../utils/campusTest');
 const College = require('../models/College');
 const CampusDrive = require('../models/CampusDrive');
 const CollegeStudent = require('../models/CollegeStudent');
@@ -12,6 +17,7 @@ const CollegeActivityLog = require('../models/CollegeActivityLog');
 const CollegeEmployer = require('../models/CollegeEmployer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
 const QRCode = require('qrcode');
 const { parse } = require('csv-parse/sync');
 const crypto = require('crypto');
@@ -997,7 +1003,7 @@ const acceptInchargeInviteExisting = async (req, res) => {
     await drive.save();
 
     const roleName = user.role.name;
-    const token = jwt.sign({ id: user._id, role: roleName }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '365d' });
+    const token = jwt.sign({ id: user._id, role: roleName }, getJwtSecret(), { expiresIn: TOKEN_TTL });
 
     res.json({
       msg: 'Invite accepted — Manage Drive access added to your account',
@@ -1047,7 +1053,7 @@ const acceptInchargeInviteNew = async (req, res) => {
     invite.acceptedAt = new Date();
     await drive.save();
 
-    const token = jwt.sign({ id: user._id, role: 'drive_incharge' }, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '365d' });
+    const token = jwt.sign({ id: user._id, role: 'drive_incharge' }, getJwtSecret(), { expiresIn: TOKEN_TTL });
 
     res.json({
       msg: 'Invite accepted — Drive access granted',
@@ -1647,7 +1653,7 @@ const verifyStudent = async (req, res) => {
           'ID Verification',
           approved ? 'Approved' : 'Rejected',
           approved ? 'Verification successful! You now have full access to campus placement drives.' : (reason || 'Please re-upload a valid document'),
-          `${FRONTEND_URL}/jobseeker/campus-drives`
+          `${FRONTEND_URL}/candidate/campus-drives`
         ]
       }).catch(() => {});
     }
@@ -1688,7 +1694,22 @@ const getPublicDrive = async (req, res) => {
     if (drive.college?.verificationStatus !== 'verified') {
       return res.status(403).json({ msg: 'This institution is pending platform verification' });
     }
-    res.json(drive);
+    // Public QR page: expose only what registration needs. The raw drive document holds company
+    // access tokens and in-charge invite tokens, which grant access to student data / the drive.
+    res.json({
+      _id: drive._id,
+      title: drive.title,
+      driveCode: drive.driveCode,
+      batchYear: drive.batchYear,
+      departments: drive.departments,
+      college: drive.college && {
+        name: drive.college.name,
+        code: drive.college.code,
+        logo: drive.college.logo,
+        location: drive.college.location,
+        departments: drive.college.departments,
+      },
+    });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error' });
   }
@@ -1775,38 +1796,69 @@ const exportCompanyDriveStudents = async (req, res) => {
   }
 };
 
+// Indian mobile numbers: accepts 9876543210, 09876543210, 919876543210, +91 98765 43210.
+const normalizeIndianMobile = (value) => {
+  let digits = String(value || '').replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  return /^[6-9]\d{9}$/.test(digits) ? digits : '';
+};
+const cleanText = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+
 // @route   POST /api/college/public/drive/:driveCode/register
+// Campus QR registration: name + WhatsApp number is all a student has to give. Email is optional.
+// UTM parameters and the drive are stored on the student record for campaign attribution.
 const publicRegister = async (req, res) => {
   try {
-    const drive = await CampusDrive.findOne({ driveCode: req.params.driveCode, isActive: true })
+    const drive = await CampusDrive.findOne({ driveCode: String(req.params.driveCode || ''), isActive: true })
       .populate('college');
     if (!drive) return res.status(404).json({ msg: 'Drive not found or inactive' });
     if (drive.college?.verificationStatus !== 'verified') {
       return res.status(403).json({ msg: 'This institution is pending platform verification' });
     }
 
-    const { name, email, whatsapp, department, rollNumber, source } = req.body;
-    if (!name || !email) return res.status(400).json({ msg: 'Name and email are required' });
+    const name = cleanText(req.body.name, 100);
+    const whatsapp = normalizeIndianMobile(req.body.whatsapp);
+    const rawEmail = cleanText(req.body.email, 200).toLowerCase();
+    const department = cleanText(req.body.department, 60);
+    const rollNumber = cleanText(req.body.rollNumber, 40);
+    const source = req.body.source === 'qr' ? 'qr' : 'self';
 
-    const normalizedEmail = email.toLowerCase().trim();
+    if (!name) return res.status(400).json({ msg: 'Please enter your name' });
+    if (!whatsapp) return res.status(400).json({ msg: 'Please enter a valid 10-digit WhatsApp number' });
+    if (rawEmail && !/^\S+@\S+\.\S+$/.test(rawEmail)) {
+      return res.status(400).json({ msg: 'Please enter a valid email address or leave it blank' });
+    }
+
+    // Students who skip email get a non-deliverable placeholder login id, unique per college + number.
+    const cleanCode = String(drive.college.code || 'campus').toLowerCase().replace(/[^a-z0-9]/g, '') || 'campus';
+    const email = rawEmail || `${whatsapp}@${cleanCode}.portal`;
+
+    const utm = {};
+    ['source', 'medium', 'campaign'].forEach((key) => {
+      const value = cleanText(req.body.utm?.[key], 80);
+      if (value) utm[key] = value;
+    });
+
     const jobseekerRole = await Role.findOne({ name: 'jobseeker' });
 
     // Find or create user account
-    let user = await User.findOne({ email: normalizedEmail });
+    let user = await User.findOne({ email });
     let isNewUser = false;
 
     if (!user) {
-      const tempPassword = crypto.randomBytes(8).toString('hex');
+      // No password is ever handed out; the account is claimed later through the OTP / reset flow.
+      const randomPassword = crypto.randomBytes(16).toString('hex');
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(tempPassword, salt);
+      const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
       user = new User({
         name,
-        email: normalizedEmail,
+        email,
         password: hashedPassword,
         role: jobseekerRole._id,
         isVerified: true,
-        profile: { phone: whatsapp || '' }
+        profile: { phone: whatsapp }
       });
       await user.save();
       isNewUser = true;
@@ -1835,12 +1887,17 @@ const publicRegister = async (req, res) => {
       user: user._id,
       college: drive.college._id,
       campusDrive: drive._id,
+      campusDriveCode: drive.driveCode,
       driveApplications: [{ drive: drive._id, status: 'registered' }],
-      department: department || '',
+      department,
       batchYear: drive.batchYear,
-      rollNumber: rollNumber || '',
-      registrationSource: source === 'qr' ? 'qr' : 'self',
-      whatsappNumber: whatsapp || '',
+      rollNumber,
+      registrationSource: source,
+      utm,
+      whatsappNumber: whatsapp,
+      whatsappConsent: req.body.whatsappConsent === true
+        ? { given: true, at: new Date(), text: 'Send me course offers and updates on WhatsApp. Reply STOP to unsubscribe.' }
+        : { given: false },
       placementStatus: 'registered'
     });
     await collegeStudent.save();
@@ -1856,24 +1913,76 @@ const publicRegister = async (req, res) => {
   } catch (err) {
     console.error('Public Registration Error:', err.message);
     if (err.code === 11000) return res.json({ msg: 'Already registered', alreadyRegistered: true });
-    res.status(500).json({ msg: 'Server Error', error: err.message });
+    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
+  }
+};
+
+// @route   GET /api/college/public/assessment?category=ms-excel&studentId=...
+// Gives the student a ready-made question set WITHOUT the answers, plus a signed attempt token.
+const getPublicAssessment = async (req, res) => {
+  try {
+    const cat = getCategory(req.query.category);
+    const { studentId } = req.query;
+    if (!cat || !studentId || !mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({ msg: 'A valid category and studentId are required' });
+    }
+    const student = await CollegeStudent.findById(studentId).select('assessmentScores');
+    if (!student) return res.status(404).json({ msg: 'Student not found' });
+    if ((student.assessmentScores || []).some((a) => a.skill === cat.label)) {
+      return res.status(409).json({ msg: 'You have already completed this assessment', alreadyCompleted: true });
+    }
+
+    let set;
+    try {
+      set = await pickSet(cat.key);
+    } catch (err) {
+      console.error('Question bank unavailable:', err.message);
+      return res.status(503).json({ msg: 'The test is being prepared. Please try again in a few minutes.' });
+    }
+    res.json({
+      questions: publicQuestions(set),
+      total: set.questions.length,
+      attemptToken: signAttempt({ studentId, category: cat.key, setId: set._id }),
+    });
+  } catch (err) {
+    console.error('Get Public Assessment Error:', err.message);
+    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
   }
 };
 
 // @route   POST /api/college/public/submit-assessment
+// Body: { studentId, category, attemptToken, answers: { "<questionId>": "a" } }. The score is computed here, never taken from the browser.
 const submitAssessment = async (req, res) => {
   try {
-    const { studentId, skill, score, total, category } = req.body;
-    if (!studentId || !skill) return res.status(400).json({ msg: 'studentId and skill required' });
+    const { studentId } = req.body;
+    const cat = getCategory(req.body.category);
+    if (!cat || !studentId || !mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({ msg: 'studentId and a valid category are required' });
+    }
+    const category = cat.key;
+    const skill = cat.label;
+
+    const attempt = verifyAttempt(req.body.attemptToken, { studentId, category });
+    if (attempt.error === 'too_fast') return res.status(400).json({ msg: 'That was too quick. Please read the questions and try again.' });
+    if (attempt.error) return res.status(400).json({ msg: 'This test session is not valid. Please start the test again.' });
+
+    const set = mongoose.isValidObjectId(attempt.claims.set) ? await CampusQuestionSet.findById(attempt.claims.set) : null;
+    if (!set) return res.status(400).json({ msg: 'This test session has expired. Please start the test again.' });
+    const { score, total } = scoreAttempt(set, req.body.answers);
 
     const student = await CollegeStudent.findById(studentId).populate('college').populate('user', 'name email');
     if (!student) return res.status(404).json({ msg: 'Student not found' });
+
+    // One certificate attempt per skill per student on this public, unauthenticated endpoint.
+    if ((student.assessmentScores || []).some((a) => a.skill === skill)) {
+      return res.status(409).json({ msg: 'You have already completed this assessment' });
+    }
 
     student.assessmentScores.push({
       skill,
       score: score || 0,
       total: total || 10,
-      category: category || 'general',
+      category,
       completedAt: new Date()
     });
 
@@ -1882,7 +1991,12 @@ const submitAssessment = async (req, res) => {
       student.placementStatus = 'active';
     }
 
-    const passed = (score / total) >= 0.6;
+    const passed = (score / total) >= PASS_RATIO;
+
+    // Below the pass mark, an opted-in student gets one course suggestion (queued; sent only when enabled).
+    if (!passed && cat && student.whatsappConsent?.given && !student.whatsappOptOut && !student.followUp?.status) {
+      student.followUp = { category: cat.key, scorePercent: Math.round((score / total) * 100), status: 'queued', queuedAt: new Date() };
+    }
 
     // Generate certificate code + PDF (co-branded with the college on any paid Campus plan)
     const certCode = `CERT-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
@@ -2313,7 +2427,7 @@ const updateDriveRoundStatus = async (req, res) => {
             student.user?.name || 'there',
             roundName || drive.title,
             label,
-            `${FRONTEND_URL}/jobseeker/campus-drives`
+            `${FRONTEND_URL}/candidate/campus-drives`
           ]
         }).catch(() => {});
       }
@@ -2365,7 +2479,7 @@ const postAnnouncement = async (req, res) => {
             student.college?.name || 'registered',
             title,
             message ? message.slice(0, 60) : 'See announcement for details',
-            link || `${FRONTEND_URL}/jobseeker/campus-drives`
+            link || `${FRONTEND_URL}/candidate/campus-drives`
           ]
         }).catch(() => {});
       }
@@ -2956,6 +3070,7 @@ module.exports = {
   getVerificationQueue,
   getPublicDrive,
   publicRegister,
+  getPublicAssessment,
   submitAssessment,
   getCompanyMatchStatus,
   uploadProofDocument,

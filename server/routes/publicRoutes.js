@@ -13,6 +13,46 @@ const CollegeStudent = require('../models/CollegeStudent');
 const PayPerFeature = require('../models/PayPerFeature');
 const ContactMessage = require('../models/ContactMessage');
 const sendEmail = require('../utils/sendEmail');
+const { rateLimit } = require('../middlewares/rateLimit');
+const { verifyAlertToken, lifecycleWrapper, button, esc, frontend } = require('../utils/lifecycleEmails');
+
+// @desc  GET /api/public/unsubscribe?token=...
+//        One-click unsubscribe from marketing / lifecycle mail (receipts and security mail still arrive).
+const handleUnsubscribe = async (req, res) => {
+  const page = (msg) => res.status(200).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Velaivaaipu</title><body style="font-family:Arial,sans-serif;max-width:480px;margin:15vh auto;padding:0 20px;color:#1e293b;text-align:center"><h2>${msg}</h2><p style="color:#64748b">You can still get payment receipts and account security mail.</p></body>`);
+  const payload = verifyAlertToken(req.query.token);
+  if (!payload || !mongoose.isValidObjectId(payload.uid)) return page('This link has expired or is not valid.');
+  try {
+    await User.updateOne({ _id: payload.uid }, { $set: { 'emailPrefs.marketingOptOut': true, 'emailPrefs.optOutAt': new Date() } });
+    return page('You have been unsubscribed.');
+  } catch (err) {
+    console.error('Unsubscribe error:', err.message);
+    return page('Something went wrong. Please write to support@velaivaaipu.in.');
+  }
+};
+// GET = the link in the mail footer; POST = the one-click button in Gmail / Yahoo (RFC 8058).
+router.get('/unsubscribe', handleUnsubscribe);
+router.post('/unsubscribe', handleUnsubscribe);
+
+// @desc  GET /api/public/sitemap-feed
+//        Lightweight list of public URLs' data for the dynamic sitemap (jobs + companies).
+router.get('/sitemap-feed', async (req, res) => {
+  try {
+    const now = new Date();
+    const [jobs, companies] = await Promise.all([
+      Job.find({ status: 'active', $or: [{ validThrough: { $gte: now } }, { validThrough: null }] })
+        .select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
+      Company.find({}).select('name updatedAt').sort({ updatedAt: -1 }).limit(2000).lean()
+    ]);
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({
+      jobs: jobs.map((j) => ({ id: j._id, title: j.title, location: j.location, updatedAt: j.updatedAt })),
+      companies: companies.map((c) => ({ id: c._id, updatedAt: c.updatedAt }))
+    });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
 
 // @desc  GET /api/public/stats
 //        Real, aggregate platform counts for the public home page.
@@ -205,12 +245,18 @@ router.get('/companies/:id', async (req, res) => {
     const company = await Company.findById(id);
     if (!company) return res.status(404).json({ msg: 'Company not found' });
 
-    const openJobs = await Job.find({ company: id, status: { $ne: 'Closed' } })
+    const openJobs = await Job.find({ company: id, status: 'active' })
       .select('title location jobType salary experienceLevel createdAt')
       .sort({ createdAt: -1 })
       .limit(10);
 
-    res.json({ ...company.toObject(), openJobs, profileType: 'company' });
+    // Never publish billing / tax / internal fields on a public profile.
+    const publicCompany = company.toObject();
+    ['tax_id_ein', 'admin_email', 'legal_name', 'razorpaySubscriptionId', 'renewalFailureCount',
+      'nextRenewalDate', 'autoRenewEnabled', 'subscriptionExpiry', 'pendingJoinRequests'
+    ].forEach((field) => delete publicCompany[field]);
+
+    res.json({ ...publicCompany, openJobs, profileType: 'company' });
   } catch (err) {
     console.error('Company Detail Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });
@@ -233,7 +279,7 @@ router.get('/recruiters/:id', async (req, res) => {
 
     // Fetch jobs posted by this recruiter's company
     const openJobs = user.company
-      ? await Job.find({ company: user.company._id, status: { $ne: 'Closed' } })
+      ? await Job.find({ company: user.company._id, status: 'active' })
           .select('title location jobType salary experienceLevel createdAt')
           .sort({ createdAt: -1 })
           .limit(10)
@@ -243,7 +289,11 @@ router.get('/recruiters/:id', async (req, res) => {
       _id: user._id,
       name: user.name,
       avatar: user.avatar,
-      recruiterProfile: user.recruiterProfile,
+      recruiterProfile: (() => {
+        const profile = user.recruiterProfile ? user.recruiterProfile.toObject() : {};
+        delete profile.phone; // contact details are unlocked through the platform, never published
+        return profile;
+      })(),
       company: user.company,
       openJobs,
       profileType: 'recruiter',
@@ -294,7 +344,7 @@ router.get('/pay-per-features', async (req, res) => {
 
 // @desc  POST /api/public/contact
 //        Saves a contact form submission and sends an email notification.
-router.post('/contact', async (req, res) => {
+router.post('/contact', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many messages. Please try again later.' }), async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
 
@@ -322,10 +372,11 @@ router.post('/contact', async (req, res) => {
       <div style="font-family:sans-serif;max-width:600px;padding:20px;color:#333">
         <h2>New Contact Form Submission</h2>
         <p><strong>Website Enquiry:</strong> velaivaaipu.in</p>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject || 'No Subject'}</p>
-        <p><strong>Message:</strong> ${message}</p>
+        <p><strong>I am a:</strong> ${esc(String(req.body.segment || 'not said'))}</p>
+        <p><strong>Name:</strong> ${esc(name)}</p>
+        <p><strong>Email:</strong> ${esc(email)}</p>
+        <p><strong>Subject:</strong> ${esc(subject || 'No Subject')}</p>
+        <p><strong>Message:</strong> ${esc(message)}</p>
       </div>
     `;
 
@@ -338,6 +389,25 @@ router.post('/contact', async (req, res) => {
     if (!emailSent) {
       console.warn('Contact email notification failed.');
     }
+
+    // Instant reply: mirror what they asked and point to the right sign-up (Smart Reply Mail Plan, Day 0).
+    const SEGMENTS = {
+      jobseeker: { label: 'job seeker', path: '/register?role=jobseeker', cta: 'Create my free profile' },
+      company: { label: 'company', path: '/register?role=company', cta: 'Post my first job free' },
+      college: { label: 'college', path: '/for-colleges', cta: 'See how campus placement works' },
+    };
+    const seg = SEGMENTS[req.body.segment] || null;
+    const first = esc(String(name).split(' ')[0]);
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) sendEmail({
+      email: String(email).trim(),
+      subject: 'We got your message',
+      html: lifecycleWrapper('Thanks for contacting Velaivaaipu', `
+        <p>Hi ${first},</p>
+        <p>We got your message${seg ? ` as a ${seg.label}` : ''} and our team will reply soon.</p>
+        <p>${seg ? 'You can get started right now:' : 'While you wait, you can create a free account:'}</p>
+        ${frontend() ? button(`${frontend()}${seg ? seg.path : '/register'}`, seg ? seg.cta : 'Create my free account') : ''}
+      `, null),
+    }).catch(() => {});
 
     // Send enquiry to n8n
     try {

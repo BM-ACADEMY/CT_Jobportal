@@ -46,13 +46,7 @@ const HomeCollege = () => {
     axios.get(`${API_BASE_URL}/public/stats`).then(res => setPlatformStats(res.data)).catch(() => {});
   }, [API_BASE_URL]);
 
-  const useFallback = !platformStats || (platformStats.collegesOnboardedCount < 1000 && platformStats.companiesCount < 1000);
-  const statCards = useFallback ? [
-    { label: 'Colleges Onboard', value: '500+', icon: GraduationCap, invert: true },
-    { label: 'Students Placed', value: '10K+', icon: Users },
-    { label: 'Hiring Companies', value: '10K+', icon: Building2 },
-    { label: 'Active Jobs', value: '2L+', icon: Briefcase },
-  ] : [
+  const statCards = !platformStats ? [] : [
     { label: 'Colleges Onboard', value: formatCount(platformStats.collegesOnboardedCount), icon: GraduationCap, invert: true },
     { label: 'Students Placed', value: formatCount(platformStats.studentsPlacedCount), icon: Users },
     { label: 'Hiring Companies', value: formatCount(platformStats.companiesCount), icon: Building2 },
@@ -134,7 +128,7 @@ const HomeCollege = () => {
         </div>
       </HeroShell>
 
-      <StatBento cards={statCards} />
+      {statCards.length > 0 && <StatBento cards={statCards} />}
 
       <TestimonialCarousel roleFilter="college" eyebrow="From TPOs Like You" title="What Colleges Say" subtitle="Institutions running their placements with us." />
 

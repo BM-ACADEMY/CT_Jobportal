@@ -9,6 +9,9 @@ Disallow: /candidate/
 Disallow: /company/
 Disallow: /college/
 Disallow: /admin/
+Disallow: /campus/
+Disallow: /join/
+Disallow: /api/
 Disallow: /*?utm_
 Disallow: /*?ref=
 Sitemap: https://velaivaaipu.in/sitemap.xml

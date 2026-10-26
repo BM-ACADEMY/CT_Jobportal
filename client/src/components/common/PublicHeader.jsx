@@ -20,6 +20,7 @@ const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/jobs', label: 'Find Jobs', icon: Briefcase },
   { to: '/companies', label: 'Companies', icon: Building2 },
+  { to: '/for-colleges', label: 'For Colleges', icon: GraduationCap },
   { to: '/blog', label: 'Blog', icon: Newspaper },
   { to: '/contact', label: 'Contact', icon: Mail },
 ];

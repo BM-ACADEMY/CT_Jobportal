@@ -12,7 +12,7 @@ const baseSchema = {
 };
 
 const META = {
-  '/': [`Jobs in Tamil Nadu ${year} — Apply Free | Velaivaaipu`, 'Find verified jobs across Tamil Nadu. Free resume builder, skill tests and 1-minute apply. Trusted by companies and colleges statewide.'],
+  '/': [`AI-Powered Job Portal in Tamil Nadu ${year} | Velaivaaipu`, 'Find verified jobs across Tamil Nadu and Pondicherry. AI skill tests, AI resume review and smart job matching. Free resume builder and quick apply.'],
   '/companies': ['Top Companies Hiring in Tamil Nadu | Velaivaaipu', 'Browse verified companies hiring across Tamil Nadu. See openings, company profiles and apply directly. Updated daily.'],
   '/contact': ['Contact Velaivaaipu — Jobs & Hiring Support', 'Contact Velaivaaipu for job posting, hiring support, campus drives and account assistance. Get 24/7 support via WhatsApp or email in Tamil and English.'],
   '/how-it-works': ['How Velaivaaipu Works — Apply, Hire, Place', 'See how job seekers apply free, companies unlock verified candidates and colleges run campus drives — explained step by step.'],
@@ -24,6 +24,7 @@ const PublicSEO = () => {
   const location = useLocation();
   const value = useMemo(() => {
     if (location.pathname.startsWith('/blog/')) return null;
+    if (location.pathname === '/recruitment-agency-fees-india') return null;
     if (location.pathname.startsWith('/job/')) return null;
     // Jobs owns its metadata because the live result count is only available there.
     if (location.pathname === '/jobs' || location.pathname.startsWith('/jobs/')) return null;

@@ -110,13 +110,10 @@ const HomeGuest = () => {
     [jobs]
   );
 
-  const useFallbackStats = !platformStats || (
-    platformStats.activeJobsCount < 1000 &&
-    platformStats.companiesCount < 1000 &&
-    platformStats.jobseekersCount < 1000
-  );
+  // Only real numbers are ever shown; until they load (or if the API is down) the stats band is hidden.
+  const useFallbackStats = !platformStats;
 
-  const statCards = useFallbackStats ? fallbackStats : [
+  const statCards = useFallbackStats ? [] : [
     { label: 'Active Jobs', value: formatCount(platformStats.activeJobsCount), icon: Briefcase },
     { label: 'Companies', value: formatCount(platformStats.companiesCount), icon: Building2, invert: true },
     { label: 'Job Seekers', value: formatCount(platformStats.jobseekersCount), icon: Users },
