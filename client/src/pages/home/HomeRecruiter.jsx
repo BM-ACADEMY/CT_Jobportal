@@ -14,7 +14,7 @@ import BackToTop from '@/components/home/BackToTop';
 import Footer from '@/components/home/Footer';
 import HeroShell from '@/components/home/HeroShell';
 import StatBento from '@/components/home/StatBento';
-import StepFlow from '@/components/home/StepFlow';
+import StepStory from '@/components/home/StepStory';
 import TestimonialCarousel from '@/components/home/TestimonialCarousel';
 import PlacementHighlights from '@/components/home/PlacementHighlights';
 import PayPerCarousel from '@/components/home/PayPerCarousel';
@@ -66,7 +66,7 @@ const HomeRecruiter = () => {
   ];
 
   return (
-    <div className="w-full overflow-x-hidden bg-white">
+    <div className="w-full overflow-x-clip bg-white">
       <ScrollProgressBar />
 
       <HeroShell>
@@ -176,7 +176,7 @@ const HomeRecruiter = () => {
         </div>
       </section>
 
-      <StepFlow eyebrow="Get Started" title="Get Access in 3 Simple Steps" steps={steps} />
+      <StepStory eyebrow="Get Started" title="Get Access in 3 Simple Steps" steps={steps} audience="recruiter" />
 
       <TestimonialCarousel roleFilter="jobseeker" eyebrow="Candidates Love Us" title="Why Candidates Choose Us" subtitle="The talent pool you'll be hiring from." />
       <PlacementHighlights />
