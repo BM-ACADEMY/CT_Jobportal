@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell, BellOff, User, Settings, LogOut, ChevronDown, CheckCheck,
-  Menu, X, Briefcase, Building2, Mail, Home, Newspaper, Trash2, ArrowRight
+  Menu, X, Briefcase, Building2, Mail, Home, Newspaper, Trash2, ArrowRight, GraduationCap
 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';

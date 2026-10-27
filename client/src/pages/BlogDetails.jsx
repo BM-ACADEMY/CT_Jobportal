@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { BLOGS } from '../data/blogs';
 import SEOHead from '../components/seo/SEOHead';
@@ -478,12 +478,77 @@ const HtmlBlog = ({ blog }) => {
   return <div ref={hostRef} className="block min-h-screen bg-slate-50" />;
 };
 
+const SITE_URL = 'https://velaivaaipu.in';
+
+// Accepts "2026-10-10" or "Oct 10, 2026" and returns an ISO date for schema.org.
+const toIsoDate = (value) => {
+  if (!value) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = new Date(`${value} 12:00:00 UTC`);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString().slice(0, 10);
+};
+
+const buildBlogSchema = (blog, url) => {
+  const organization = { '@type': 'Organization', '@id': `${SITE_URL}/#organization`, name: 'Velaivaaipu', url: SITE_URL, logo: { '@type': 'ImageObject', url: `${SITE_URL}/velaivaaipu-logo.png` } };
+  const published = toIsoDate(blog.datePublished || blog.date);
+  const schema = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: blog.title,
+      description: blog.metaDescription || blog.excerpt,
+      image: blog.image ? [blog.image] : undefined,
+      datePublished: published,
+      dateModified: toIsoDate(blog.dateModified) || published,
+      author: { '@type': 'Organization', name: 'Velaivaaipu', url: SITE_URL },
+      publisher: organization,
+      mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+      articleSection: blog.category,
+      keywords: blog.keywords?.join(', '),
+      inLanguage: 'en-IN',
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_URL}/blog` },
+        { '@type': 'ListItem', position: 3, name: blog.title, item: url },
+      ],
+    },
+  ];
+  if (blog.faqs?.length) {
+    schema.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: blog.faqs.map(({ question, answer }) => ({ '@type': 'Question', name: question, acceptedAnswer: { '@type': 'Answer', text: answer } })),
+    });
+  }
+  return schema;
+};
+
 const BlogDetails = ({ staticSlug }) => {
   const { slug: paramSlug } = useParams();
   const slug = staticSlug || paramSlug;
   const blog = BLOGS.find((item) => item.slug === slug);
+  const path = blog ? (staticSlug ? `/${staticSlug}` : `/blog/${blog.slug}`) : '';
+  const schema = useMemo(() => (blog ? buildBlogSchema(blog, `${SITE_URL}${path}`) : null), [blog, path]);
   if (!blog) return <Navigate to="/blog" replace />;
-  return <><SEOHead title={`${blog.title} | Velaivaaipu`} description={blog.excerpt} path={staticSlug ? `/${staticSlug}` : `/blog/${blog.slug}`} schema={{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: blog.title, image: blog.image, datePublished: blog.date, author: { '@type': 'Organization', name: 'Velaivaaipu' } }} /><HtmlBlog blog={blog} /></>;
+  return (
+    <>
+      <SEOHead
+        title={blog.metaTitle || `${blog.title} | Velaivaaipu`}
+        description={blog.metaDescription || blog.excerpt}
+        path={path}
+        type="article"
+        image={blog.image}
+        imageAlt={blog.imageAlt}
+        keywords={blog.keywords}
+        schema={schema}
+      />
+      <HtmlBlog blog={blog} />
+    </>
+  );
 };
 
 export default BlogDetails;
