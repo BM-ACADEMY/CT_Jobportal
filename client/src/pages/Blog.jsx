@@ -25,7 +25,7 @@ const Blog = () => (
     <main className="max-w-7xl mx-auto px-6 py-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
       {BLOGS.map((blog) => (
         <article key={blog.slug} className="flex flex-col rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all">
-          <img src={blog.image} alt="" className="h-48 w-full object-cover" />
+          <img src={blog.image} alt={blog.imageAlt || ""} loading="lazy" decoding="async" className="h-48 w-full object-cover" />
           <div className="flex flex-1 flex-col p-6">
             <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-3">{blog.category} · {blog.readTime}</p>
             <h2 className="text-xl font-bold text-slate-900 leading-snug mb-3">{blog.title}</h2>

@@ -6,15 +6,18 @@
 <title>How to Spot a Fake Job Offer in Tamil Nadu: 9 Warning Signs Every Job Seeker Should Know</title>
 <style>
   :root{
-    --indigo:#3730a3;
-    --blue:#1d4ed8;
-    --blue-bg:#dbeafe;
-    --green:#16a34a;
-    --green-bg:#eafaf0;
-    --navy:#161629;
-    --ink:#111318;
+    --primary:#2563EB;
+    --primary-bg:#dbeafe;
+    --secondary:#0F172A;
+    --tertiary:#059669;
+    --tertiary-bg:#d1fae5;
+
+    --btn:var(--secondary);
+    --blue:var(--primary);
+    --blue-bg:var(--primary-bg);
+    --ink:var(--secondary);
     --body-text:#374151;
-    --gray:#6b7280;
+    --muted:#6b7280;
     --page-bg:#f7f8fa;
     --card-border:#e5e7eb;
   }
@@ -28,587 +31,567 @@
   .container{
     max-width:1180px;
     margin:0 auto;
-    padding:40px 24px 64px;
-    display:grid;
-    grid-template-columns:minmax(0,680px) 320px;
-    gap:48px;
-    align-items:start;
+    padding:40px 20px 0;
+    display:flex;
+    gap:40px;
+    align-items:flex-start;
   }
-  main{min-width:0;}
-  .pill{
+  .main-col{
+    flex:1 1 660px;
+    max-width:700px;
+    min-width:0;
+  }
+  .sidebar{
+    flex:0 0 320px;
+    width:320px;
+    position:sticky;
+    top:24px;
+  }
+
+  /* ---- Article header (no top nav / breadcrumb) ---- */
+  .category-pill{
     display:inline-block;
     background:var(--blue-bg);
     color:var(--blue);
-    font-size:12px;
     font-weight:700;
     text-transform:uppercase;
+    font-size:12px;
     letter-spacing:.04em;
     padding:6px 14px;
     border-radius:999px;
     margin-bottom:16px;
   }
-  h1{
+  h1.title{
     font-size:34px;
     font-weight:800;
     line-height:1.2;
-    color:var(--ink);
+    color:var(--secondary);
     margin:0 0 16px;
   }
   .byline{
     display:flex;
     gap:20px;
-    flex-wrap:wrap;
-    color:var(--gray);
+    align-items:center;
+    color:var(--muted);
     font-size:14px;
     padding-bottom:20px;
-    border-bottom:1px solid #e5e7eb;
+    border-bottom:1px solid var(--card-border);
     margin-bottom:24px;
   }
+  .byline span{display:flex;align-items:center;gap:6px;}
+
   .hero-img{
     width:100%;
     border-radius:16px;
     display:block;
     object-fit:cover;
     aspect-ratio:16/9;
-    max-height:380px;
   }
   .caption{
     font-size:13px;
     font-style:italic;
-    color:var(--gray);
+    color:var(--muted);
+    text-align:center;
     margin:10px 0 32px;
   }
+
+  /* ---- Body typography ---- */
   h2{
     font-size:23px;
     font-weight:800;
-    color:var(--ink);
-    margin:40px 0 16px;
+    color:var(--secondary);
+    margin:40px 0 14px;
   }
   h3{
     font-size:19px;
     font-weight:700;
-    color:var(--ink);
-    margin:28px 0 12px;
+    color:var(--secondary);
+    margin:26px 0 10px;
   }
-  p{font-size:16px;line-height:1.7;margin:0 0 16px;}
-  ul, ol{
+  p{
+    font-size:16px;
+    line-height:1.7;
+    margin:0 0 16px;
+  }
+  ul{
     margin:0 0 18px;
-    padding-left:28px;
+    padding-left:22px;
   }
   li{
     font-size:16px;
+    line-height:1.7;
+    margin-bottom:6px;
+  }
+  .lead{
+    font-size:17px;
     line-height:1.75;
-    margin-bottom:8px;
-    padding-left:4px;
+    background:#fff;
+    border:1px solid var(--card-border);
+    border-left:4px solid var(--primary);
+    border-radius:12px;
+    padding:18px 20px;
+    margin-bottom:28px;
   }
-  li > ul,
-  li > ol{
-    margin-top:8px;
-    margin-bottom:8px;
-    padding-left:28px;
-  }
-  li::marker{
-    color:var(--green);
-    font-weight:700;
-  }
-  .indent-list{
+  .lead strong{color:var(--secondary);}
+
+  .tanglish{
+    font-style:italic;
+    background:var(--primary-bg);
+    border-radius:12px;
+    padding:14px 18px;
     margin:0 0 20px;
-    padding-left:28px;
+    color:var(--secondary);
   }
-  .indent-list li{
-    margin-bottom:10px;
+
+  .flow-inline{
+    font-weight:700;
+    color:var(--secondary);
+    background:#fff;
+    border:1px dashed var(--card-border);
+    border-radius:12px;
+    padding:14px 18px;
+    margin:0 0 20px;
   }
+
+  .note-card{
+    background:var(--primary-bg);
+    border-radius:12px;
+    padding:14px 18px;
+    margin:0 0 20px;
+    font-size:15px;
+    color:var(--secondary);
+  }
+
   .section-img{
     width:100%;
     border-radius:16px;
     display:block;
-    margin:24px 0 8px;
-    max-height:320px;
     object-fit:cover;
     aspect-ratio:16/9;
+    margin:20px 0 8px;
   }
-  .img-caption{
+  .section-caption{
     font-size:13px;
     font-style:italic;
-    color:var(--gray);
+    color:var(--muted);
     margin:0 0 24px;
   }
+
   table{
     width:100%;
     border-collapse:collapse;
-    margin:20px 0 28px;
-    font-size:14.5px;
+    margin:12px 0 28px;
+    font-size:14px;
   }
-  th,td{
-    border:1px solid #e5e7eb;
-    padding:12px 14px;
-    text-align:left;
-  }
-  th{
+  thead th{
     background:#f3f4f6;
+    text-align:left;
+    padding:12px 14px;
     font-weight:700;
-    color:var(--ink);
+    color:var(--secondary);
+    border:1px solid var(--card-border);
+  }
+  tbody td{
+    padding:12px 14px;
+    border:1px solid var(--card-border);
+    line-height:1.5;
   }
   .table-scroll{
     overflow-x:auto;
-    margin:20px 0 28px;
-    border-radius:14px;
-    border:1px solid #e5e7eb;
+    margin:12px 0 28px;
   }
-  .table-scroll table{margin:0;border:none;}
+  .table-scroll table{margin:0;min-width:600px;}
 
-  /* Accordion for Differentiation / Comparison */
-  .diff-accordion{
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-    margin:24px 0 32px;
-  }
-  details.diff-item{
-    border:1px solid #dbeafe;
-    border-radius:14px;
-    background:#ffffff;
-    box-shadow:0 5px 18px rgba(15,23,42,.05);
-    overflow:hidden;
-    transition:all .2s ease;
-  }
-  details.diff-item[open]{
-    border-color:#93c5fd;
-    box-shadow:0 8px 24px rgba(37,99,235,.08);
-  }
-  details.diff-item summary{
-    position:relative;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:16px 20px;
-    color:var(--ink);
-    font-weight:750;
-    font-size:16px;
-    line-height:1.45;
-    cursor:pointer;
-    list-style:none;
-    background:#f8fafc;
-    user-select:none;
-    transition:background .15s ease;
-  }
-  details.diff-item summary::-webkit-details-marker{display:none;}
-  details.diff-item summary:hover{background:#f1f5f9;}
-  details.diff-item summary::after{
-    content:'+';
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:28px;
-    height:28px;
-    border-radius:50%;
-    background:#e0f2fe;
-    color:#0284c7;
-    font-size:18px;
-    font-weight:700;
-    flex-shrink:0;
-    margin-left:14px;
-    transition:transform .2s ease;
-  }
-  details.diff-item[open] summary::after{
-    content:'−';
-    background:#dbeafe;
-    color:#1d4ed8;
-  }
-  .diff-header-left{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .diff-title{
-    font-size:16px;
-    font-weight:800;
-    color:var(--ink);
-  }
-  .diff-badge{
-    display:inline-block;
-    font-size:11px;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.04em;
-    padding:4px 10px;
-    border-radius:999px;
-    background:#e2e8f0;
-    color:#475569;
-  }
-  .diff-badge-danger{background:#fee2e2;color:#b91c1c;}
-  .diff-badge-success{background:#dcfce7;color:#15803d;}
-  .diff-badge-blue{background:#dbeafe;color:#1d4ed8;}
-  .diff-badge-purple{background:#ede9fe;color:#6d28d9;}
-  .diff-body{
-    padding:20px;
-    border-top:1px solid #f1f5f9;
-    background:#ffffff;
-  }
-  .diff-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:16px;
-  }
-  @media (max-width:680px){
-    .diff-grid{grid-template-columns:1fr;}
-  }
-  .diff-card{
-    padding:16px;
-    border-radius:12px;
-    font-size:14.5px;
-    line-height:1.6;
-  }
-  .diff-card p{margin:0;font-size:14.5px;line-height:1.6;}
-  .diff-card-danger{
-    background:#fef2f2;
-    border:1px solid #fee2e2;
-    color:#991b1b;
-  }
-  .diff-card-success{
-    background:#f0fdf4;
-    border:1px solid #dcfce7;
-    color:#166534;
-  }
-  .diff-card-header{
-    font-weight:800;
-    font-size:13px;
-    text-transform:uppercase;
-    letter-spacing:.04em;
-    margin-bottom:8px;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .diff-card-danger .diff-card-header{color:#dc2626;}
-  .diff-card-success .diff-card-header{color:#16a34a;}
-
-  .callout{
-    background:var(--blue-bg);
-    border-left:4px solid var(--blue);
-    border-radius:10px;
-    padding:16px 20px;
-    font-size:15.5px;
-    font-style:italic;
-    color:#1e3a8a;
-    margin:24px 0;
-  }
-  .cta-btn{
-    display:block;
-    text-align:center;
-    text-decoration:none;
-    color:#fff;
-    font-weight:700;
-    font-size:16px;
-    padding:16px 24px;
-    border-radius:999px;
-    margin:32px auto;
-    max-width:420px;
-    transition:transform .2s ease,background .2s ease,box-shadow .2s ease;
-  }
-  .cta-indigo{background:var(--indigo);}
-  .cta-indigo:hover{background:#312e81;transform:translateY(-2px);box-shadow:0 8px 20px rgba(55,48,163,.25);}
-  .cta-green{background:var(--green);}
-  .cta-green:hover{background:#15803d;transform:translateY(-2px);box-shadow:0 8px 20px rgba(22,163,74,.25);}
-
-  .checklist-card{
-    background:#f9fafb;
-    border:1px solid #e5e7eb;
-    border-radius:14px;
-    padding:20px 24px;
-    margin:24px 0;
-  }
-  .checklist-card p{margin:0 0 10px;font-weight:700;color:var(--ink);}
-  .checklist-card ol, .checklist-card ul{margin:0;padding-left:24px;}
-  .checklist-card li{margin-bottom:8px;font-size:15px;line-height:1.6;}
-
-  .final-cta{
-    background:linear-gradient(135deg,#3730a3,#4f46e5);
-    border-radius:20px;
-    padding:40px 32px;
-    text-align:center;
-    margin:48px 0;
-    color:#fff;
-  }
-  .final-cta h2{color:#fff;margin-top:0;font-size:26px;}
-  .final-cta p{color:#ddd6fe;margin-bottom:18px;}
-  .final-cta ul{
-    list-style:none;
-    padding:0;
-    display:inline-block;
-    text-align:left;
-    margin:16px auto 24px;
-  }
-  .final-cta li{color:#ede9fe;font-size:15.5px;margin-bottom:8px;}
-  .final-btn{
-    display:inline-block;
+  .steps-card{
     background:#fff;
-    color:var(--indigo);
-    font-weight:800;
-    text-decoration:none;
-    padding:16px 32px;
-    border-radius:999px;
-    font-size:16px;
-    transition:transform .2s ease,box-shadow .2s ease;
-  }
-  .final-btn:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(0,0,0,.2);}
-
-  aside{position:sticky;top:24px;display:flex;flex-direction:column;gap:20px;}
-  .card{
-    background:#fff;
-    border:1px solid #e5e7eb;
+    border:1px solid var(--card-border);
     border-radius:16px;
     padding:22px;
+    margin:0 0 24px;
+  }
+  .steps-card ol{
+    margin:0;
+    padding-left:20px;
+  }
+  .steps-card li{
+    font-weight:600;
+    color:var(--secondary);
+    margin-bottom:10px;
+  }
+
+  /* ---- CTA buttons (navy) ---- */
+  .cta-wrap{
+    text-align:center;
+    margin:32px 0;
+  }
+  .cta-btn{
+    display:inline-block;
+    text-decoration:none;
+    color:#fff;
+    font-weight:700;
+    font-size:15px;
+    padding:14px 28px;
+    border-radius:999px;
+    background:var(--btn);
+  }
+
+  /* ---- Final CTA block ---- */
+  .final-cta{
+    border-radius:20px;
+    padding:40px 32px;
+    margin:44px 0 8px;
+    background:linear-gradient(135deg,var(--secondary),var(--primary));
+    color:#fff;
+    text-align:center;
+  }
+  .final-cta h2{
+    color:#fff;
+    margin-top:0;
+    font-size:26px;
+  }
+  .final-cta p{
+    color:#cbd5e1;
+    max-width:520px;
+    margin:0 auto 20px;
+  }
+  .checklist{
+    list-style:none;
+    padding:0;
+    margin:0 auto 26px;
+    display:inline-block;
+    text-align:left;
+  }
+  .checklist li{
+    color:#e2e8f0;
+    font-size:15px;
+    margin-bottom:10px;
+  }
+  .final-cta .cta-btn{
+    background:var(--btn);
+    color:#fff;
+    box-shadow:0 0 0 2px rgba(255,255,255,.25) inset;
+  }
+
+  /* ---- FAQ ---- */
+  .faq-item{margin-bottom:20px;}
+  .faq-item h3{margin-top:0;margin-bottom:8px;font-size:17px;}
+
+  /* ---- Sidebar cards ---- */
+  .card{
+    background:#fff;
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    padding:22px;
+    margin-bottom:20px;
   }
   .card-label{
     font-size:11px;
     text-transform:uppercase;
     letter-spacing:.05em;
-    color:var(--gray);
+    color:var(--muted);
     font-weight:700;
-    margin-bottom:12px;
+    margin-bottom:14px;
   }
-  .brand-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
-  .logo-circle{
-    width:40px;height:40px;border-radius:50%;
-    background:#facc15;
-    display:flex;align-items:center;justify-content:center;
-    font-weight:800;color:#78350f;font-size:16px;flex-shrink:0;
+  .brand-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:14px;
   }
-  .brand-name{font-weight:800;color:var(--ink);font-size:15px;}
-  .card p{font-size:14px;line-height:1.6;color:var(--body-text);margin:0 0 14px;}
-  .divider{border:none;border-top:1px solid #e5e7eb;margin:14px 0;}
-  .tags{display:flex;flex-wrap:wrap;gap:8px;}
+  .brand-logo{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:var(--primary);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-size:14px;
+    flex-shrink:0;
+  }
+  .brand-name{
+    font-weight:800;
+    font-size:16px;
+    color:var(--secondary);
+  }
+  .card p{
+    font-size:14px;
+    line-height:1.6;
+    color:var(--body-text);
+    margin-bottom:0;
+  }
+  .divider{
+    border:none;
+    border-top:1px solid var(--card-border);
+    margin:16px 0;
+  }
+  .tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
   .tag{
-    background:#f3f4f6;
-    color:#4b5563;
+    background:var(--primary-bg);
+    color:var(--secondary);
     font-size:12px;
-    padding:5px 12px;
+    padding:6px 12px;
     border-radius:999px;
   }
-  .card-green{background:var(--green-bg);border:1px solid #d1fae5;}
-  .card-green h3{margin:0 0 6px;color:var(--green);font-size:17px;}
-  .card-green p{margin:0 0 16px;color:#166534;}
+
+  .card-green{
+    background:var(--tertiary-bg);
+    border:1px solid #a7f3d0;
+    border-radius:16px;
+    padding:22px;
+  }
+  .card-green h3{
+    color:var(--tertiary);
+    margin:0 0 8px;
+    font-size:17px;
+  }
+  .card-green p{
+    font-size:14px;
+    color:#065f46;
+    margin-bottom:16px;
+  }
   .wa-btn{
     display:block;
-    width:100%;
     text-align:center;
-    background:var(--green);
+    background:var(--btn);
     color:#fff;
-    text-decoration:none;
     font-weight:700;
-    padding:13px;
+    text-decoration:none;
+    padding:13px 0;
     border-radius:999px;
-    font-size:14.5px;
-    transition:background .2s ease,transform .2s ease;
+    font-size:14px;
   }
-  .wa-btn:hover{background:#15803d;transform:translateY(-1px);}
 
+  /* ---- Footer ---- */
   footer{
-    background:var(--navy);
-    color:#cbd5e1;
-    margin-top:56px;
-    padding:44px 24px 24px;
+    background:var(--secondary);
+    color:#c9c9d6;
+    margin-top:48px;
+    padding:44px 20px 24px;
   }
-  .footer-inner{max-width:1180px;margin:0 auto;}
-  .footer-brand{color:#fff;font-weight:800;font-size:20px;margin-bottom:6px;}
-  .footer-tag{color:#94a3b8;font-size:14px;margin-bottom:24px;}
-  .footer-contact{font-size:14px;line-height:1.8;margin-bottom:24px;}
-  .footer-divider{border:none;border-top:1px solid #2e2e45;margin:20px 0;}
-  .copyright{font-size:12.5px;color:#6b7280;text-align:center;}
+  .footer-inner{
+    max-width:1180px;
+    margin:0 auto;
+  }
+  .footer-brand{
+    color:#fff;
+    font-size:20px;
+    font-weight:800;
+    margin-bottom:4px;
+  }
+  .footer-tagline{
+    color:#9a9ab0;
+    font-size:14px;
+    margin-bottom:24px;
+  }
+  .footer-contact h4{
+    color:#fff;
+    font-size:14px;
+    margin:0 0 8px;
+  }
+  .footer-contact p{
+    color:#c9c9d6;
+    font-size:14px;
+    margin:0 0 4px;
+    line-height:1.6;
+  }
+  .footer-divider{
+    border:none;
+    border-top:1px solid #1e293b;
+    margin:28px 0 18px;
+  }
+  .copyright{
+    color:#7d7d92;
+    font-size:12px;
+    text-align:center;
+  }
+
+  /* ---- Responsive ---- */
   @media (max-width:900px){
-    .container{grid-template-columns:1fr;}
-    aside{position:static;}
+    .container{flex-direction:column;padding:24px 16px 0;}
+    .main-col{max-width:100%;}
+    .sidebar{position:static;width:100%;}
+    h1.title{font-size:27px;}
   }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <main>
-    <span class="pill">Job Safety &amp; Fraud Alerts</span>
-    <h1>How to Spot a Fake Job Offer in Tamil Nadu: 9 Warning Signs Every Job Seeker Should Know</h1>
+  <!-- MAIN COLUMN -->
+  <div class="main-col">
+
+    <span class="category-pill">Job Safety &amp; Fraud Alerts</span>
+    <h1 class="title">How to Spot a Fake Job Offer in Tamil Nadu: 9 Warning Signs Every Job Seeker Should Know</h1>
     <div class="byline">
       <span>👤 Velai Vaaipu Team</span>
-      <span>📅 Oct 10, 2026</span>
+      <span>📅 2026</span>
     </div>
 
-    <img loading="eager" decoding="async" fetchpriority="high" class="hero-img" src="https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1400&q=82" alt="Digital security and verified hiring document verification">
-    <p class="caption">Stay alert. Verify every opportunity. Never pay for a job offer.</p>
+    <img class="hero-img" src="https://images.unsplash.com/photo-1611095785020-1ba3dd228ea7?auto=format&fit=crop&w=1400&q=80" alt="A person reviewing an offer document on a phone before signing">
+    <p class="caption">A professional-looking offer isn't proof it's genuine — verification is what actually protects you.</p>
+
+    <div class="lead">
+      <strong>Quick Answer:</strong> To spot a fake job offer in Tamil Nadu, check the company's identity, official email address, job description, salary details, and interview process. Be cautious if someone demands money for a guaranteed job, pressures you to pay immediately, or asks for sensitive personal information. Always verify the employer before sharing documents or accepting an offer.
+    </div>
 
     <h2>Introduction</h2>
-    <p>Finding a job in Tamil Nadu can be exciting, but it also comes with risks. With increasing numbers of job seekers searching for vacancies across Pondicherry, Cuddalore, Villupuram, Tindivanam, Chennai and across the state, fake job offers and recruitment scams have unfortunately become widespread. Scammers exploit the hope and urgency of job seekers, targeting freshers, career switchers, and professionals eager for employment.</p>
-
-    <div class="callout">Oru genuine company eppovume candidate kitta irundhu selection-kaga panam kekka maattanga. Verify pannitu mattum apply pannunga.</div>
-
-    <p>Understanding how to identify red flags before sharing your personal information or making any payment can protect your hard-earned money and peace of mind. Here is a practical guide outlining 9 critical warning signs, an interactive comparison breakdown, real-life examples, and actionable steps to keep your job search safe.</p>
+    <p>Searching for a job can be exciting, especially when you receive a call saying you have been selected. But what if the offer is fake?</p>
+    <p>Job seekers across Pondicherry, Cuddalore, Villupuram, Tindivanam, Chennai, and other parts of Tamil Nadu may come across suspicious job advertisements through WhatsApp, social media, job portals, and phone calls.</p>
+    <p>Some fake recruiters use professional-looking offer letters, company logos, and attractive salary packages to make their offers appear genuine. Others promise immediate joining without a proper interview or demand money in the name of registration, training, or document verification.</p>
+    <p>For freshers, college students, and experienced professionals, identifying these warning signs is important.</p>
+    <p>In this guide, Velai Vaaipu explains how to spot a fake job offer in Tamil Nadu through nine warning signs, practical verification steps, and examples that job seekers can understand easily.</p>
+    <p class="tanglish">Oru job offer vandhuchu-na, immediately trust pannida vendam. First verify the details!</p>
 
     <h2>Why Do Fake Job Offers Happen?</h2>
-    <p>Recruitment scams thrive because job seekers often feel pressured to secure employment quickly. Fraudulent agents and individuals create realistic-looking offer letters, conduct rushed telephonic "interviews," and masquerade as reputable companies or government employment bodies. Their primary objective is simple: extract money under various pretexts such as registration fees, interview security tokens, training charges, or document processing fees.</p>
+    <p>Fake job offers may be designed to collect money, steal personal information, or misuse identity documents.</p>
+    <p>Scammers may pretend to represent well-known companies, recruitment agencies, consultancies, or placement services. They might contact candidates directly or ask them to apply through unfamiliar links.</p>
+    <p>Not every unusual recruitment process is fraudulent. However, if several warning signs appear together, stop and verify before proceeding.</p>
 
-    <h2>9 Warning Signs of a Fake Job Offer in Tamil Nadu</h2>
-    <p>Watch out for these nine distinct warning signs when evaluating any job posting, recruitment call, or offer letter:</p>
-
-    <h3>1. They Ask You to Pay Money to Get the Job</h3>
-    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1400&q=82" alt="Person reviewing monetary transactions and payment requests with caution">
-    <p class="img-caption">Demands for advance fees under any name are the single biggest indicator of a job scam.</p>
-    <p>This is the most common and dangerous red flag. A genuine employer or reputable recruitment agency in India will <strong>never ask you to pay money</strong> for an interview, registration, uniform, application processing, background check, or laptop deposit. If someone demands payment promising that selection is guaranteed upon payment, stop communicating immediately.</p>
-    <ul class="indent-list">
-      <li><strong>Common fake fee names:</strong> "Document verification fee", "Uniform advance", "Security deposit", "Offer letter dispatch fee", "Gate pass token".</li>
-      <li><strong>The reality:</strong> Legitimate recruitment costs are borne entirely by employers, never by candidates.</li>
-    </ul>
-
-    <h3>2. The Salary Sounds Unrealistic for the Role</h3>
-    <p>If an advertisement offers ₹45,000 to ₹70,000 per month for entry-level data entry, basic typing, or an unqualified fresher position requiring no prior experience, it is almost certainly fraudulent. Scammers deliberately display inflated figures to tempt candidates into responding without verifying details.</p>
-
-    <a rel="noopener noreferrer" class="cta-btn cta-indigo" href="https://wa.me/919944509441?text=Hi%2C%20I%20want%20verified%20job%20alerts%20in%20Tamil%20Nadu">🚀 Get Verified WhatsApp Job Alerts</a>
-
-    <h3>3. The Recruiter Uses an Unofficial Email Address</h3>
-    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1400&q=82" alt="Candidate carefully examining job offer paperwork and sender details">
-    <p class="img-caption">Always check the sender domain. Legitimate corporate HRs use company domains, not free webmail accounts.</p>
-    <p>Reputable companies communicate using professional corporate domain emails (e.g., <code>careers@companyname.com</code> or <code>hr@company.in</code>). Be extremely cautious if communication arrives from generic email services like Gmail, Yahoo, Hotmail, or Outlook claiming to represent a large corporate brand or government department.</p>
-
-    <h3>4. You Receive an Offer Without a Proper Selection Process</h3>
-    <p>Did you receive an official-looking offer letter without attending an in-depth interview, technical assessment, or meeting the hiring manager? Genuine organizations invest significant time evaluating whether a candidate has the requisite skills and cultural fit. "Instant appointment" or "Direct selection without interview" is an unmistakable trap designed to extract quick registration funds.</p>
-
-    <h3>5. The Job Description Is Unclear</h3>
-    <p>A authentic job posting specifies the job title, key daily responsibilities, working hours, shift timings, mandatory technical skills, and physical work location. In contrast, fraudulent job alerts keep the role vague—using ambiguous phrases like "general office work", "simple back-office duties", or "flexible online task assignment" to lure people with varied qualifications.</p>
-
-    <h3>6. They Pressure You to Act Immediately</h3>
-    <p>Scammers intentionally create artificial urgency to prevent you from researching their background or consulting experienced mentors. Phrases like "Only 2 seats remaining", "Pay before 5:00 PM today or your offer will be cancelled", or "Urgent appointment token expires in 1 hour" are classic manipulative tactics.</p>
-
-    <h3>7. The Offer Letter Contains Suspicious Details</h3>
-    <p>Carefully inspect any offer letter you receive. Fake offer letters frequently feature:</p>
-    <ul class="indent-list">
-      <li>Poor grammar, spelling mistakes, and awkward phrasing.</li>
-      <li>Low-resolution, pixelated company logos copied from Google Images.</li>
-      <li>Missing official company registration numbers (CIN/GST) or incorrect corporate addresses.</li>
-      <li>Generic contact numbers rather than verified corporate landlines or official HR extensions.</li>
-    </ul>
-
-    <h3>8. They Ask for Sensitive Information Too Early</h3>
-    <p>Before conducting an interview or confirming employment, fraudulent entities often ask for bank account details, UPI PINs, Aadhaar OTPs, net banking passwords, or signed blank cheques under the guise of "salary account opening." Never disclose financial credentials or OTPs during an application phase.</p>
-
-    <h3>9. They Communicate Only Through Suspicious WhatsApp Messages</h3>
-    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1577563908411-5077b6dc7624?auto=format&fit=crop&w=1400&q=82" alt="Close-up of smartphone with recruitment messages on display">
-    <p class="img-caption">Ensure WhatsApp job channels link back to verified platforms and direct employer portals.</p>
-    <p>While legitimate job alert channels like Velai Vaaipu share verified openings on WhatsApp to keep candidates updated, scammers frequently use burner SIM cards, international country codes (such as +1, +44, +234, or +62), or impersonal automated bots offering work-from-home tasks for easy money. Always check the official website of the employer to verify whether that job actually exists.</p>
-
-    <a rel="noopener noreferrer" class="cta-btn cta-green" href="https://wa.me/919944509441?text=Hi%2C%20I%20want%20to%20verify%20a%20job%20offer">💬 Verify Job Openings on WhatsApp</a>
-
-    <h2>Fake Job Offer vs Genuine Job Offer: Interactive Comparison</h2>
-    <p>Use the interactive accordion below to quickly differentiate between suspicious job claims and trustworthy recruitment practices across key checkpoints:</p>
-
-    <!-- Interactive Differentiation Accordion -->
-    <div class="diff-accordion">
-      <details class="diff-item" open>
-        <summary>
-          <div class="diff-header-left">
-            <span class="diff-title">1. Payment &amp; Upfront Fees</span>
-            <span class="diff-badge diff-badge-danger">High Risk Checkpoint</span>
-          </div>
-        </summary>
-        <div class="diff-body">
-          <div class="diff-grid">
-            <div class="diff-card diff-card-danger">
-              <div class="diff-card-header">⚠️ Suspicious Job Offer (Red Flag)</div>
-              <p>Demands money upfront for "registration fees", "interview tokens", "laptop security deposits", "training bonds", or "uniform kits". They claim your selection is 100% guaranteed once payment is made.</p>
-            </div>
-            <div class="diff-card diff-card-success">
-              <div class="diff-card-header">✅ More Trustworthy Sign (Genuine)</div>
-              <p>Zero payment requested at any stage. Transparent hiring process where all recruitment costs, training, and equipment are covered directly by the employer.</p>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <details class="diff-item">
-        <summary>
-          <div class="diff-header-left">
-            <span class="diff-title">2. Employer Identity &amp; Contact Domain</span>
-            <span class="diff-badge diff-badge-blue">Verification Checkpoint</span>
-          </div>
-        </summary>
-        <div class="diff-body">
-          <div class="diff-grid">
-            <div class="diff-card diff-card-danger">
-              <div class="diff-card-header">⚠️ Suspicious Job Offer (Red Flag)</div>
-              <p>Recruiter communicates only through free email addresses (e.g. <code>@gmail.com</code>, <code>@yahoo.com</code>) or temporary WhatsApp numbers. No verifiable physical office, company website, or official landline.</p>
-            </div>
-            <div class="diff-card diff-card-success">
-              <div class="diff-card-header">✅ More Trustworthy Sign (Genuine)</div>
-              <p>Communicates via official corporate domain email (e.g. <code>@companyname.com</code>). Registered business address, active corporate website, valid MCA/GST records, and verifiable LinkedIn presence.</p>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <details class="diff-item">
-        <summary>
-          <div class="diff-header-left">
-            <span class="diff-title">3. Interview &amp; Evaluation Process</span>
-            <span class="diff-badge diff-badge-purple">Assessment Checkpoint</span>
-          </div>
-        </summary>
-        <div class="diff-body">
-          <div class="diff-grid">
-            <div class="diff-card diff-card-danger">
-              <div class="diff-card-header">⚠️ Suspicious Job Offer (Red Flag)</div>
-              <p>Direct offer issued with no formal interview, or after a superficial 2-minute phone call without evaluating your actual qualifications or technical abilities.</p>
-            </div>
-            <div class="diff-card diff-card-success">
-              <div class="diff-card-header">✅ More Trustworthy Sign (Genuine)</div>
-              <p>Clearly structured recruitment stages: resume screening, technical/practical evaluation, HR interaction, and formal offer discussion with transparent timelines.</p>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <details class="diff-item">
-        <summary>
-          <div class="diff-header-left">
-            <span class="diff-title">4. Compensation Package &amp; Role Clarity</span>
-            <span class="diff-badge diff-badge-blue">Salary Checkpoint</span>
-          </div>
-        </summary>
-        <div class="diff-body">
-          <div class="diff-grid">
-            <div class="diff-card diff-card-danger">
-              <div class="diff-card-header">⚠️ Suspicious Job Offer (Red Flag)</div>
-              <p>Unrealistically high remuneration promised for entry-level work with zero responsibilities explained. Vague titles like "Online Data Executive" with no clear KPI.</p>
-            </div>
-            <div class="diff-card diff-card-success">
-              <div class="diff-card-header">✅ More Trustworthy Sign (Genuine)</div>
-              <p>Standard market CTC breakdown itemizing Basic pay, HRA, PF, allowances, and deductions. Clear job description outlining daily tasks and reporting structure.</p>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <details class="diff-item">
-        <summary>
-          <div class="diff-header-left">
-            <span class="diff-title">5. Pressure Tactics &amp; Sensitive Data Requests</span>
-            <span class="diff-badge diff-badge-danger">Urgency Checkpoint</span>
-          </div>
-        </summary>
-        <div class="diff-body">
-          <div class="diff-grid">
-            <div class="diff-card diff-card-danger">
-              <div class="diff-card-header">⚠️ Suspicious Job Offer (Red Flag)</div>
-              <p>Demands urgent decision within hours; aggressive threats that you will miss out. Requests bank passwords, OTPs, or credit card information upfront.</p>
-            </div>
-            <div class="diff-card diff-card-success">
-              <div class="diff-card-header">✅ More Trustworthy Sign (Genuine)</div>
-              <p>Provides reasonable time to review the formal offer letter, clarify compensation terms, consult family, and complete formal document verification.</p>
-            </div>
-          </div>
-        </div>
-      </details>
+    <div class="cta-wrap">
+      <a class="cta-btn" href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I%27d%20like%20help%20verifying%20a%20job%20offer" target="_blank" rel="noopener">🚀 Get Free Job Alerts on WhatsApp</a>
     </div>
 
-    <!-- Table fallback for complete accessibility -->
+    <h2>9 Warning Signs of a Fake Job Offer in Tamil Nadu</h2>
+
+    <h3>1. They Ask You to Pay Money to Get the Job</h3>
+    <img class="section-img" src="https://images.unsplash.com/photo-1565514158882-617325fbd873?auto=format&fit=crop&w=1400&q=80" alt="Indian rupee banknotes being handed over">
+    <p class="section-caption">A demand for personal payment in exchange for a guaranteed job is a serious red flag.</p>
+    <p>This is one of the most important warning signs.</p>
+    <p>A suspicious recruiter may ask you to pay for:</p>
+    <ul>
+      <li>Job registration</li>
+      <li>Interview confirmation</li>
+      <li>Offer letter processing</li>
+      <li>Security deposits</li>
+      <li>Mandatory document verification</li>
+      <li>Guaranteed placement</li>
+    </ul>
+    <p>They may claim that the payment is refundable after joining.</p>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Do not pay immediately. Ask for the employer's official details and written clarification about the payment. Verify the opportunity independently through the company's official website or HR contact.</p>
+
+    <h3>2. The Salary Sounds Unrealistic for the Role</h3>
+    <p>Imagine applying for an entry-level office assistant position and receiving an offer promising an unusually high salary without checking your skills or experience.</p>
+    <p>It may sound attractive, but you should investigate further.</p>
+    <p>Suspicious offers may promise:</p>
+    <ul>
+      <li>High salaries with almost no qualifications</li>
+      <li>Immediate promotions without experience</li>
+      <li>Very high earnings for simple tasks</li>
+      <li>Guaranteed income without clear responsibilities</li>
+    </ul>
+    <p>A high salary alone does not prove that a job is fake. Some genuine roles pay well. The concern is when the salary seems disconnected from the responsibilities and the recruiter refuses to explain the role.</p>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Ask for the job description, working hours, required skills, salary structure, and company details. Compare the information with official company vacancies where possible.</p>
+
+    <h3>3. The Recruiter Uses an Unofficial Email Address</h3>
+    <img class="section-img" src="https://images.unsplash.com/photo-1758876019043-cedb0b6f56ea?auto=format&fit=crop&w=1400&q=80" alt="A person looking concerned while checking something on a laptop">
+    <p class="section-caption">An unverifiable email address is a reason to check the company's official channels directly — not a reason to panic on its own.</p>
+    <p>A genuine recruiter should be able to explain whom they represent.</p>
+    <p>Be cautious if someone claims to recruit for a large company but contacts you through a personal email address that cannot be verified.</p>
+    <p>Other warning signs include:</p>
+    <ul>
+      <li>Misspelled company names in email addresses</li>
+      <li>Email domains that imitate official domains</li>
+      <li>Poorly explained recruiter identities</li>
+      <li>Links to websites that do not match the company name</li>
+    </ul>
+    <p>However, some smaller businesses and legitimate recruiters use different email arrangements. Verify the complete context rather than judging from the email address alone.</p>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Visit the company's official website independently and check its careers page or contact details. Do not rely only on a phone number or link supplied by the person who contacted you.</p>
+
+    <h3>4. You Receive an Offer Without a Proper Selection Process</h3>
+    <p>You apply for a job and receive a message saying, "Congratulations! You are selected."</p>
+    <p>But nobody has discussed your experience, checked your skills, or explained the responsibilities.</p>
+    <p>This deserves careful verification.</p>
+    <p>Some legitimate jobs have short selection processes, and certain employers hire quickly. Still, an offer with no meaningful assessment, no clear employer identity, and a demand for payment is suspicious.</p>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Ask about the selection stages, reporting manager, work location, responsibilities, and joining procedure. Verify that the vacancy exists through an official company channel.</p>
+    <p>Do not assume that a message containing the word "selected" is a genuine employment offer.</p>
+
+    <div class="cta-wrap">
+      <a class="cta-btn" href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I%20want%20to%20verify%20a%20job%20offer%20I%20received" target="_blank" rel="noopener">💬 Verify an Offer on WhatsApp</a>
+    </div>
+
+    <h3>5. The Job Description Is Unclear</h3>
+    <p>A genuine vacancy should provide enough information for you to understand what you will do.</p>
+    <p>A suspicious advertisement may use vague descriptions such as:</p>
+    <ul>
+      <li>Online work with unlimited income</li>
+      <li>Easy office job with a high salary</li>
+      <li>Work from home without any details</li>
+      <li>Immediate joining for all applicants</li>
+      <li>No skills required, but high earnings guaranteed</li>
+    </ul>
+    <p>If the recruiter avoids answering basic questions, be careful.</p>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Ask for the exact designation, responsibilities, work location, working hours, salary structure, reporting manager, and employment type.</p>
+    <p>For example, a Digital Marketing Executive role should explain whether the work involves social media, SEO, advertising, content creation, or other responsibilities.</p>
+    <p>Clear job details help you make an informed decision.</p>
+
+    <h3>6. They Pressure You to Act Immediately</h3>
+    <p>Scammers may create urgency to stop you from checking the offer.</p>
+    <p>You may receive messages such as:</p>
+    <ul>
+      <li>"Pay within 30 minutes to confirm your job."</li>
+      <li>"This offer expires today."</li>
+      <li>"Send your documents immediately or lose the position."</li>
+      <li>"Do not contact the company directly."</li>
+    </ul>
+    <p>Urgency is not proof of fraud, because genuine employers can have deadlines. However, pressure combined with payment demands or refusal to verify details is a strong warning sign.</p>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Take time to check the company and recruiter. Do not let the fear of missing an opportunity force you into sending money or sensitive information.</p>
+    <p>A genuine opportunity should withstand reasonable verification.</p>
+
+    <h3>7. The Offer Letter Contains Suspicious Details</h3>
+    <p>An offer letter may look professional because it includes a company logo, signature, salary information, and a joining date.</p>
+    <p>But these details can be copied or fabricated.</p>
+    <p>Look for warning signs such as:</p>
+    <ul>
+      <li>Incorrect company names or addresses</li>
+      <li>Misspelled names and inconsistent designations</li>
+      <li>Unclear salary and employment conditions</li>
+      <li>Email addresses that do not match verified company contacts</li>
+      <li>Payment instructions unrelated to normal recruitment communication</li>
+    </ul>
+    <p>A professional-looking document is not sufficient proof of authenticity.</p>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Contact the employer using contact information obtained independently from its official website. Ask the HR department to confirm the offer letter and recruiter's identity.</p>
+    <p>Avoid using only the phone number printed on a suspicious letter to verify its authenticity.</p>
+
+    <h3>8. They Ask for Sensitive Information Too Early</h3>
+    <img class="section-img" src="https://images.unsplash.com/photo-1544717305-f9c88f2897bc?auto=format&fit=crop&w=1400&q=80" alt="A person using a laptop, being cautious about sharing personal information">
+    <p class="section-caption">Never share an OTP, password, or UPI PIN with a recruiter — you should not need to disclose these to receive a job offer.</p>
+    <p>Recruitment processes may require identity and banking details at appropriate stages. However, sharing such information before verifying the employer can put you at risk.</p>
+    <p>Be careful if someone requests:</p>
+    <ul>
+      <li>OTPs or account passwords</li>
+      <li>UPI PINs</li>
+      <li>Bank login credentials</li>
+      <li>Unnecessary identity documents</li>
+      <li>Card details or other financial information</li>
+    </ul>
+    <p>Never share an OTP, password, or UPI PIN with a recruiter. You should not need to disclose these to receive a job offer.</p>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Verify the employer first and ask why any requested document is necessary. Share only the information required for a legitimate recruitment or onboarding purpose through an appropriate channel.</p>
+    <p>Never install an unknown application or follow instructions that give a stranger access to your phone or bank account.</p>
+
+    <h3>9. They Communicate Only Through Suspicious WhatsApp Messages</h3>
+    <img class="section-img" src="https://images.unsplash.com/photo-1643917567366-5afb8cf4bac9?auto=format&fit=crop&w=1400&q=80" alt="A close-up of a phone screen with a WhatsApp chat open">
+    <p class="section-caption">A WhatsApp message alone doesn't mean a job offer is fake — but unverifiable details and payment pressure together are a warning sign.</p>
+    <p>WhatsApp is widely used for recruitment communication. A WhatsApp message alone does not mean a job offer is fake.</p>
+    <p>However, be cautious when the recruiter refuses to identify the company, provides no verifiable vacancy details, and insists on payment or sensitive information.</p>
+    <p>Additional warning signs include:</p>
+    <ul>
+      <li>Forwarded job messages without a source</li>
+      <li>Unverified recruiter identities</li>
+      <li>Suspicious application links</li>
+      <li>Requests to move conversations to unknown platforms</li>
+      <li>Instructions to keep the offer secret from the employer</li>
+    </ul>
+    <p><strong style="color:var(--secondary);">What should you do?</strong> Verify the vacancy through the company's official website or independently obtained HR contact details. Check whether the recruiter is authorised to represent the employer.</p>
+    <p>Do not click unfamiliar links or download files simply because they arrive with a job offer.</p>
+
+    <h2>Fake Job Offer vs Genuine Job Offer: Comparison Table</h2>
     <div class="table-scroll">
       <table>
         <thead>
@@ -623,153 +606,160 @@
         </tbody>
       </table>
     </div>
+    <p><strong style="color:var(--secondary);">Important:</strong> A genuine-looking offer can still be fraudulent. Always verify the employer and the offer independently.</p>
 
     <h2>5 Practical Examples for Job Seekers in Pondicherry and Tamil Nadu</h2>
-    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1400&q=82" alt="Young job seeker reviewing verified job listings on a laptop">
-    <p class="img-caption">Context matters. Here is how genuine versus fake scenarios play out across local districts.</p>
 
     <h3>Example 1: Fresher Job in Pondicherry</h3>
-    <ul class="indent-list">
-      <li><strong>Suspicious scenario:</strong> A graduate receives an unsolicited SMS saying, "Selected for Pondicherry Tourism Hotel Manager, ₹45,000 salary. Pay ₹1,200 for badge registration."</li>
-      <li><strong>Genuine approach:</strong> The hotel posts vacancies on recognized portals or their official careers page, invites the candidate for an in-person interview at their property, and asks for zero application charges.</li>
-    </ul>
+    <p>A fresher receives a message offering an office job with a high salary. The recruiter says the candidate must pay a registration fee before the interview.</p>
+    <p><strong style="color:var(--secondary);">What to do:</strong> Ask for the employer's identity and verify the vacancy. Do not pay simply to secure an interview or promised job.</p>
 
     <h3>Example 2: Sales Executive Vacancy in Cuddalore</h3>
-    <ul class="indent-list">
-      <li><strong>Suspicious scenario:</strong> A recruiter asks for a ₹2,500 "security bond" via GPay before releasing the appointment letter.</li>
-      <li><strong>Genuine approach:</strong> The distributor or company conducts an interview at their branch office in Cuddalore, explains field targets and fuel allowances, and gives you a signed contract with no deposit.</li>
-    </ul>
+    <p>A candidate applies for a Sales Executive role. The recruiter sends an offer letter but refuses to share the company's official address.</p>
+    <p><strong style="color:var(--secondary);">What to do:</strong> Verify the business independently and confirm that the recruiter is authorised to hire.</p>
 
     <h3>Example 3: Work-from-Home Job in Villupuram</h3>
-    <ul class="indent-list">
-      <li><strong>Suspicious scenario:</strong> A Telegram/WhatsApp group offers ₹2,000 per day for liking YouTube videos or typing pages, but insists on an initial ₹500 "activation recharge."</li>
-      <li><strong>Genuine approach:</strong> Legitimate remote roles involve real skills (e.g. telecalling, customer support, transcription), formal onboarding through employee portals, and never ask for activation money.</li>
-    </ul>
+    <p>A job message promises easy online work and high income but gives no clear duties. The candidate is asked to pay for a starter kit.</p>
+    <p><strong style="color:var(--secondary);">What to do:</strong> Check the actual work, payment conditions, and company identity before proceeding.</p>
 
     <h3>Example 4: IT Job in Chennai</h3>
-    <ul class="indent-list">
-      <li><strong>Suspicious scenario:</strong> Candidate receives a glossy PDF offer letter from an MNC from a Gmail address (e.g., <code>tcs.hiring.desk@gmail.com</code>) demanding laptop courier charges.</li>
-      <li><strong>Genuine approach:</strong> Top tech companies require online coding assessments, multiple interview panels, and only send communication through verified domain emails (e.g. <code>@tcs.com</code>).</li>
-    </ul>
+    <p>A candidate receives an IT job offer without a technical discussion. The recruiter then asks for an immediate payment to release the appointment letter.</p>
+    <p><strong style="color:var(--secondary);">What to do:</strong> Contact the company's HR team through independently verified contact details and confirm whether the offer is genuine.</p>
 
     <h3>Example 5: Customer Support Job in Tindivanam</h3>
-    <ul class="indent-list">
-      <li><strong>Suspicious scenario:</strong> You are asked to visit a temporary lodge room or unauthorized location for "immediate spot joining" with an instant cash fee.</li>
-      <li><strong>Genuine approach:</strong> Interviews take place at registered business offices or authorized commercial premises with clearly displayed signage and traceable staff.</li>
-    </ul>
+    <p>A candidate receives a WhatsApp message asking for an Aadhaar copy, bank details, and an OTP before an interview.</p>
+    <p><strong style="color:var(--secondary);">What to do:</strong> Never share an OTP or banking credentials. Verify the employer and provide necessary documents only through a legitimate process.</p>
 
-    <h2>What to Do If You Have Already Paid Money</h2>
-    <div class="checklist-card">
-      <p>If you suspect you have fallen victim to a recruitment scam, take these immediate steps:</p>
-      <ol class="indent-list">
-        <li><strong>Contact Your Bank / UPI Service Immediately:</strong> Call your bank's 24/7 fraud helpline and request a transaction freeze or dispute chargeback.</li>
-        <li><strong>Dial Cybercrime Helpline 1930:</strong> Report the financial fraud immediately to the National Cybercrime Reporting helpline (1930) or lodge a complaint at <a href="https://cybercrime.gov.in" target="_blank" rel="noopener noreferrer">cybercrime.gov.in</a>.</li>
-        <li><strong>File a Police Complaint:</strong> Visit your local police station or Cyber Crime Cell with all evidence (screenshots of chats, bank receipts, transaction IDs, offer letters, and phone numbers).</li>
-        <li><strong>Cease All Contact:</strong> Do not pay any additional "clearance fees" or "refund processing fees" promised by the scammer.</li>
-      </ol>
+    <div class="cta-wrap">
+      <a class="cta-btn" href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I%27d%20like%20help%20checking%20a%20job%20offer" target="_blank" rel="noopener">🚀 Get Hiring Advice on WhatsApp</a>
     </div>
 
+    <h2>What to Do If You Have Already Paid Money</h2>
+    <p>If you suspect that a job offer is fake and have already paid, act quickly.</p>
+    <div class="steps-card">
+      <ol>
+        <li>Contact your bank or payment provider. Report the transaction and ask what immediate steps are available.</li>
+        <li>Report suspected cybercrime. In India, you can report financial cyber fraud through the official National Cyber Crime Reporting Portal at cybercrime.gov.in or call the national cybercrime helpline at 1930 for financial cyber fraud. Act as quickly as possible.</li>
+        <li>Save evidence. Keep screenshots, phone numbers, emails, offer letters, payment receipts, and chat history.</li>
+        <li>Secure your accounts. If you shared passwords or account access, change credentials and contact the relevant provider.</li>
+        <li>Report impersonation. If someone falsely claims to represent a real company, inform the company's official HR or security team.</li>
+      </ol>
+    </div>
+    <p>Reporting does not guarantee that money will be recovered, but quick action may help authorities and financial institutions respond.</p>
+
     <h2>How Recruiters Can Help Candidates Avoid Fake Job Offers</h2>
-    <img loading="lazy" decoding="async" class="section-img" src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1400&q=82" alt="Two business professionals engaged in an authentic corporate interview">
-    <p class="img-caption">Legitimate employers build candidate trust through transparent hiring and official contact channels.</p>
-    <p>Honest recruiters and hiring managers in Pondicherry and Tamil Nadu can actively combat job fraud by:</p>
-    <ul class="indent-list">
-      <li>Publishing a prominent "No Fee Recruitment" policy on their official careers portal.</li>
-      <li>Exclusively using official domain email IDs for candidate correspondence.</li>
-      <li>Listing the official interview venue, landline contact, and HR coordinator name in all interview invitations.</li>
-      <li>Partnering with trusted local job platforms like Velai Vaaipu that screen and verify employer credentials.</li>
+    <img class="section-img" src="https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1400&q=80" alt="Two professionals shaking hands after a transparent hiring conversation">
+    <p class="section-caption">Clear, transparent communication from recruiters helps candidates feel confident and reduces confusion during hiring.</p>
+    <p>Recruiters and employers also have a role in building trust.</p>
+    <p>To make genuine hiring more transparent:</p>
+    <ul>
+      <li>Publish clear job descriptions.</li>
+      <li>Identify the hiring company and recruitment agency.</li>
+      <li>Explain salary, location, and responsibilities accurately.</li>
+      <li>Use verifiable contact information.</li>
+      <li>Avoid misleading salary promises.</li>
+      <li>Explain the selection and onboarding process.</li>
+      <li>Never request OTPs, passwords, or UPI PINs.</li>
+      <li>Give candidates reasonable time to verify an offer.</li>
     </ul>
+    <p>Recruiters who communicate clearly can help candidates feel more confident and reduce confusion during hiring.</p>
 
     <h2>Final Checklist Before Accepting Any Job Offer</h2>
-    <div class="checklist-card">
-      <p>Run through this quick verification checklist before accepting any job offer or signing agreements:</p>
-      <ul class="indent-list">
-        <li>Did you verify the company's registered address and active corporate website?</li>
-        <li>Is the communication coming from an official domain rather than a free email account?</li>
-        <li>Was there a thorough, professional interview where your actual skills were tested?</li>
-        <li>Is the offer 100% free with absolutely no hidden registration or processing charges?</li>
-        <li>Does the offer letter clearly state job title, working hours, salary breakdown, and reporting location?</li>
-      </ul>
+    <p>Before accepting a job in Tamil Nadu, ask yourself:</p>
+    <div class="steps-card">
+      <ol>
+        <li>Have I verified the company?</li>
+        <li>Can I confirm that the vacancy exists?</li>
+        <li>Do I understand the job responsibilities?</li>
+        <li>Are the salary and working conditions clear?</li>
+        <li>Have I verified the recruiter's identity?</li>
+        <li>Am I being pressured to pay money?</li>
+        <li>Am I being asked for an OTP, password, or UPI PIN?</li>
+      </ol>
+    </div>
+    <p>If something feels suspicious, pause and investigate. Job searching can take time, but protecting your money and personal information is more important than accepting an offer in a hurry.</p>
+
+    <div class="cta-wrap">
+      <a class="cta-btn" href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I%27d%20like%20to%20verify%20a%20job%20offer%20before%20accepting" target="_blank" rel="noopener">💬 Verify an Offer on WhatsApp</a>
     </div>
 
     <h2>Frequently Asked Questions</h2>
-    <h3>1. How can I check whether a job offer in Tamil Nadu is genuine?</h3>
-    <p>Check the company's official website, verify their corporate email domain, confirm their registered office address on the Ministry of Corporate Affairs (MCA) portal, and ensure no money is requested for interviews or joining.</p>
 
-    <h3>2. Do genuine companies ask candidates to pay for a job?</h3>
-    <p>No. Under Indian law and established corporate recruitment ethics, legitimate employers and recruitment agencies never ask job seekers to pay for domestic job placements or interview selection.</p>
-
-    <h3>3. Are WhatsApp job offers fake?</h3>
-    <p>Not all WhatsApp messages are fake, but many scams originate there. Legitimate job platforms use WhatsApp strictly to alert candidates to verified openings with links to official portals, while scammers ask for personal fees or OTPs via chat.</p>
-
-    <h3>4. What should I do if I receive a fake offer letter?</h3>
-    <p>Do not pay any money. Save all communication records (PDFs, screenshots, sender phone numbers), report the fraudulent sender to cybercrime authorities (1930 / cybercrime.gov.in), and warn fellow job seekers.</p>
-
-    <h3>5. Where can I find verified job updates in Pondicherry and Tamil Nadu?</h3>
-    <p>You can subscribe to Velai Vaaipu's verified job alert channels, check the Tamil Nadu Employment Exchange (tnvelaivaaippu.gov.in), National Career Service (ncs.gov.in), and official corporate career pages.</p>
+    <div class="faq-item">
+      <h3>1. How can I check whether a job offer in Tamil Nadu is genuine?</h3>
+      <p>Verify the company through its official website, independently obtained HR contact details, and official careers page. Confirm the recruiter's identity, job description, selection process, and offer letter before accepting.</p>
+    </div>
+    <div class="faq-item">
+      <h3>2. Do genuine companies ask candidates to pay for a job?</h3>
+      <p>A request for money in exchange for guaranteed selection is a serious warning sign. Before making any recruitment-related payment, verify the service, employer, and written terms independently.</p>
+    </div>
+    <div class="faq-item">
+      <h3>3. Are WhatsApp job offers fake?</h3>
+      <p>Not all WhatsApp job offers are fake. However, verify the recruiter and employer, especially when the message contains unfamiliar links, vague job details, urgent payment demands, or requests for sensitive information.</p>
+    </div>
+    <div class="faq-item">
+      <h3>4. What should I do if I receive a fake offer letter?</h3>
+      <p>Do not pay money or share additional information. Contact the company through independently verified details, save the evidence, and report suspected fraud through the appropriate official channels.</p>
+    </div>
+    <div class="faq-item">
+      <h3>5. Where can I find job updates in Pondicherry and Tamil Nadu?</h3>
+      <p>Follow Velai Vaaipu for job updates and opportunities across Pondicherry, Cuddalore, Villupuram, Tindivanam, Chennai, and other parts of Tamil Nadu. Verify each vacancy and its employer before sharing documents or accepting an offer.</p>
+    </div>
 
     <h2>Final Takeaway</h2>
-    <p>Your skills, education, and hard work are what make you valuable to employers. A genuine opportunity will recognize and reward your talent without ever demanding payment. Stay vigilant, verify every step, and protect your career journey.</p>
+    <p>Fake job offers can look convincing — a polished offer letter, a confident caller, a company logo that seems right. But the warning signs are consistent: pressure to pay, reluctance to verify, vague job details, and requests for sensitive information too early.</p>
+    <p style="font-weight:700;color:var(--secondary);">Your next opportunity matters. Find it carefully, verify it confidently, and apply safely!</p>
 
     <div class="final-cta">
       <h2>Get Genuine Job Updates with Velai Vaaipu</h2>
-      <p>Never fall for scams again. Get 100% free, verified job notifications across Pondicherry, Villupuram, Cuddalore, Tindivanam, and Chennai delivered directly to your WhatsApp.</p>
-      <ul>
-        <li>✅ 100% Free candidate job alerts—Zero charges always</li>
-        <li>✅ Pre-verified employers and legitimate company vacancies</li>
-        <li>✅ Direct interview updates and local career opportunities</li>
+      <p>Searching for your first job or planning your next career move? Stay informed, verify opportunities, and never let an attractive salary promise rush your decision. Join Velai Vaaipu's Free WhatsApp Job Alerts opt-in to receive job updates across Pondicherry and Tamil Nadu.</p>
+      <ul class="checklist">
+        <li>✅ Free to join, no cost to opt in</li>
+        <li>✅ Genuine openings, verified where possible</li>
+        <li>✅ Updates sent straight to WhatsApp</li>
       </ul>
-      <br>
-      <a rel="noopener noreferrer" class="final-btn" href="https://wa.me/919944509441?text=Hi%2C%20I%20want%20verified%20job%20alerts%20in%20Tamil%20Nadu">💬 Join Free WhatsApp Alerts</a>
+      <div>
+        <a class="cta-btn" href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I%27d%20like%20to%20join%20the%20Free%20WhatsApp%20Job%20Alerts" target="_blank" rel="noopener">👉 Join the Free WhatsApp Job Alerts</a>
+      </div>
     </div>
 
-  </main>
+  </div>
 
-  <aside>
-    <div class="card">
-      <div class="card-label">Quick Summary</div>
-      <p style="font-weight:700;color:var(--ink);margin-bottom:8px;">5 Core Safety Rules:</p>
-      <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.6;color:var(--body-text)">
-        <li>Genuine employers never ask for payment.</li>
-        <li>Verify email domains and official websites.</li>
-        <li>Avoid offers without structured interviews.</li>
-        <li>Beware of high salaries for simple tasks.</li>
-        <li>Never share OTPs or banking credentials.</li>
-      </ul>
-    </div>
-
+  <!-- SIDEBAR -->
+  <div class="sidebar">
     <div class="card">
       <div class="card-label">About</div>
       <div class="brand-row">
-        <div class="logo-circle">VV</div>
+        <div class="brand-logo">VV</div>
         <div class="brand-name">Velai Vaaipu</div>
       </div>
-      <p>Your trusted local job search companion, connecting candidates across Tamil Nadu and Pondicherry with verified career opportunities.</p>
+      <p>Connecting jobs with people — helping job seekers and recruiters across Pondicherry and Tamil Nadu navigate hiring with clear, verified information.</p>
       <hr class="divider">
       <div class="tags">
-        <span class="tag">Job Safety</span>
-        <span class="tag">Fraud Alerts</span>
-        <span class="tag">Pondicherry Jobs</span>
-        <span class="tag">Career Advice</span>
+        <span class="tag">#FakeJobAlert</span>
+        <span class="tag">#JobSafety</span>
+        <span class="tag">#PondicherryJobs</span>
+        <span class="tag">#TamilNaduJobs</span>
+        <span class="tag">#WhatsAppJobAlerts</span>
       </div>
     </div>
 
-    <div class="card card-green">
-      <h3>Need Job Alerts?</h3>
-      <p>Get free, verified job alerts for Pondicherry, Tamil Nadu, and nearby areas sent straight to your WhatsApp.</p>
-      <a rel="noopener noreferrer" class="wa-btn" href="https://wa.me/919944509441?text=Hi%2C%20I%20want%20verified%20job%20alerts%20in%20Tamil%20Nadu">💬 Connect on WhatsApp</a>
+    <div class="card-green">
+      <h3>Not Sure About an Offer?</h3>
+      <p>Share the details with us and we'll help you check the warning signs before you proceed.</p>
+      <a class="wa-btn" href="https://wa.me/91XXXXXXXXXX?text=Hi%2C%20I%27d%20like%20help%20verifying%20a%20job%20offer%20I%20received" target="_blank" rel="noopener">💬 Connect on WhatsApp</a>
     </div>
-  </aside>
+  </div>
 </div>
 
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">Velai Vaaipu</div>
-    <div class="footer-tag">Your local job search companion</div>
+    <div class="footer-tagline">Connecting jobs with people.</div>
     <div class="footer-contact">
-      Contact Us<br>
-      📞 +91 99445 09441<br>
-      📍 Puducherry, Tamil Nadu, India
+      <h4>Contact Us</h4>
+      <p>📞 +91-XXXXXXXXXX</p>
+      <p>📍 Puducherry, Tamil Nadu, India</p>
     </div>
     <hr class="footer-divider">
     <div class="copyright">© 2026 Velai Vaaipu. All rights reserved.</div>

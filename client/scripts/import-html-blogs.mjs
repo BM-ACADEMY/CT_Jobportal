@@ -1,10 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// Source HTML files live at the repository root; output goes to client/src/data.
+const clientDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.resolve(clientDir, '..');
+const fromRoot = (name) => path.join(repoRoot, name);
 
 const sources = [
-  { file: path.resolve('where-to-advertise-job-vacancy-pondicherry (1).html'), slug: 'where-to-advertise-job-vacancy-pondicherry', date: 'Oct 14, 2026' },
-  { file: path.resolve('recruitment-agency-charges-india.html'), slug: 'recruitment-agency-charges-india', date: 'Oct 12, 2026' },
-  { file: path.resolve('how-to-spot-fake-job-offer-tamil-nadu.html'), slug: 'how-to-spot-fake-job-offer-tamil-nadu', date: 'Oct 10, 2026' },
+  { file: fromRoot('where-to-advertise-job-vacancy-pondicherry (1).html'), slug: 'where-to-advertise-job-vacancy-pondicherry', date: 'Oct 14, 2026' },
+  { file: fromRoot('recruitment-agency-charges-india.html'), slug: 'recruitment-agency-charges-india', date: 'Oct 12, 2026' },
+  { file: fromRoot('how-to-spot-fake-job-offer-tamil-nadu.html'), slug: 'how-to-spot-fake-job-offer-tamil-nadu', date: 'Oct 10, 2026' },
   { file: 'C:/Users/Administrator/Downloads/Blog 10  (2).html', slug: 'jobs-in-tindivanam', date: 'Sep 5, 2026' },
   { file: 'C:/Users/Administrator/Downloads/blog 9  (1).html', slug: 'jobs-in-villupuram', date: 'Sep 3, 2026' },
   { file: 'C:/Users/Administrator/Downloads/Blog 8  (1).html', slug: 'jobs-in-cuddalore', date: 'Sep 1, 2026' },
@@ -20,6 +26,10 @@ const sources = [
 // Keep every editorial image unique across the blog collection. Replacements are
 // applied during import so supplied article markup and heading order stay intact.
 const imageReplacements = {
+  'how-to-spot-fake-job-offer-tamil-nadu': {
+    // Handshake photo is already used by private-jobs-in-pondicherry.
+    'https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1400&q=80': 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1400&q=82',
+  },
   'jobs-in-tindivanam': {
     'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=80': 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1400&q=82',
   },
@@ -45,6 +55,17 @@ const imageReplacements = {
   },
 };
 
+// Hand-written search metadata (title 50-60 chars, description 140-155 chars).
+const seo = {
+  'how-to-spot-fake-job-offer-tamil-nadu': {
+    metaTitle: 'How to Spot a Fake Job Offer in Tamil Nadu | Velaivaaipu',
+    metaDescription: 'Learn 9 warning signs of a fake job offer in Tamil Nadu and Pondicherry, and how to verify an employer before you pay. Read the guide and apply safely.',
+    datePublished: '2026-10-10',
+    dateModified: '2026-10-27',
+    keywords: ['fake job offer Tamil Nadu', 'job scam warning signs', 'fake offer letter', 'jobs in Pondicherry', 'job search in Tamil Nadu'],
+  },
+};
+
 const stripTags = (value = '') => value.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
 const match = (html, expression) => html.match(expression)?.[1]?.trim() || '';
 
@@ -62,7 +83,18 @@ const repairEncoding = (value) => {
   return Buffer.from(bytes).toString('utf8');
 };
 
+const target = path.join(clientDir, 'src/data/importedBlogs.js');
+const existing = fs.existsSync(target)
+  ? (await import(pathToFileURL(target).href)).IMPORTED_BLOGS || []
+  : [];
+const onlySlugs = process.argv.slice(2);
+
 const blogs = sources.map(({ file, slug, date }) => {
+  const previous = existing.find((item) => item.slug === slug);
+  if ((onlySlugs.length && !onlySlugs.includes(slug)) || !fs.existsSync(file)) {
+    if (previous) return { ...previous, ...(seo[slug] || {}) };
+    throw new Error(`Missing source for ${slug}: ${file}`);
+  }
   let html = repairEncoding(fs.readFileSync(file, 'utf8'))
     .replace(/https:\/\/wa\.me\/91X{10}/g, 'https://wa.me/919944509441')
     .replace(/\+?91[- ]?X{10}/g, '+91 99445 09441')
@@ -87,11 +119,14 @@ const blogs = sources.map(({ file, slug, date }) => {
     .map((item) => stripTags(item[1])).filter((item) => item.length > 80);
   const excerpt = paragraphs[0] || 'Practical career guidance for job seekers in Pondicherry and Tamil Nadu.';
   const wordCount = stripTags(markup).split(/\s+/).length;
+  const imageAlt = match(markup, /<img[^>]+class=["'][^"']*(?:hero-img|hero-image)[^"']*["'][^>]*alt=["']([^"']*)["']/i);
+  // FAQ question/answer pairs for FAQPage structured data.
+  const faqs = [...markup.matchAll(/<div class="faq-item">\s*<h3>([\s\S]*?)<\/h3>\s*<p>([\s\S]*?)<\/p>/gi)]
+    .map((item) => ({ question: stripTags(item[1]).replace(/^\d+\.\s*/, ''), answer: stripTags(item[2]) }));
 
-  return { slug, title, excerpt, category, date, author: 'Velai Vaaipu', readTime: `${Math.max(5, Math.ceil(wordCount / 220))} min read`, image, style, markup };
+  return { slug, title, excerpt, category, date, author: 'Velai Vaaipu', readTime: `${Math.max(5, Math.ceil(wordCount / 220))} min read`, image, ...(imageAlt ? { imageAlt } : {}), ...(faqs.length ? { faqs } : {}), ...(seo[slug] || {}), style, markup };
 });
 
-const target = path.resolve('src/data/importedBlogs.js');
 fs.mkdirSync(path.dirname(target), { recursive: true });
 fs.writeFileSync(target, `// Generated from the supplied HTML blog files.\nexport const IMPORTED_BLOGS = ${JSON.stringify(blogs, null, 2)};\n`, 'utf8');
 console.log(`Imported ${blogs.length} blogs into ${target}`);

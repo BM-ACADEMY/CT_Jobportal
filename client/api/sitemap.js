@@ -6,6 +6,7 @@ const STATIC_PAGES = [
   '/blog/it-jobs-in-pondicherry-for-freshers',
   '/blog/work-from-home-jobs-in-tamil-nadu',
   '/blog/private-jobs-in-pondicherry',
+  '/blog/how-to-spot-fake-job-offer-tamil-nadu',
 ];
 
 const urlEntry = (loc, lastmod, priority) =>
