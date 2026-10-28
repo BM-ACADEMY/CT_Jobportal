@@ -1435,7 +1435,9 @@ const csvImport = async (req, res) => {
 
       try {
         // Find or create user
-        let user = await User.findOne({ $or: [{ email }, { 'profile.phone': phone, email: { $exists: true } }] });
+        // Match on email only. A phone number is not proof of identity (and an empty phone would match any account
+        // without one), so it must never decide which existing account a CSV row is attached to.
+        let user = await User.findOne({ email });
         if (!user) {
           // Random password: the phone or roll number must never work as a login. The student claims the account
           // through the email OTP / forgot-password flow.
@@ -1570,18 +1572,17 @@ const exportCredentialsSheet = async (req, res) => {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=${college.code || 'campus'}_student_credentials.csv`);
 
-    let csv = 'Roll Number,Student Name,Login Email/ID,Default Password (Phone),Department,Batch Year,CGPA,Arrears,Status\n';
+    let csv = 'Roll Number,Student Name,Login Email/ID,Department,Batch Year,CGPA,Arrears,Status\n';
     students.forEach(s => {
       const roll = s.rollNumber || '—';
       const name = (s.user?.name || '').replace(/,/g, ' ');
       const email = s.user?.email || '—';
-      const defaultPass = s.phone || s.user?.profile?.phone || roll;
       const dept = s.department || '—';
       const batch = s.batchYear || '—';
       const cgpa = s.cgpa || 0;
       const arrears = s.activeArrears || 0;
       const status = s.placementStatus || 'registered';
-      csv += `${roll},${name},${email},${defaultPass},${dept},${batch},${cgpa},${arrears},${status}\n`;
+      csv += `${roll},${name},${email},${dept},${batch},${cgpa},${arrears},${status}\n`;
     });
 
     res.send(csv);

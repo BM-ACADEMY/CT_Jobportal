@@ -25,3 +25,14 @@ test('the unsafe legacy skill-test routes are gone', () => {
   const paths = router.stack.filter((l) => l.route).map((l) => `${Object.keys(l.route.methods)[0]} ${l.route.path}`);
   assert.deepEqual(paths.sort(), ['get /categories', 'get /my-results', 'post /save']);
 });
+
+test('the CSV import matches an existing account by email only, never by phone', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../controllers/collegeController.js'), 'utf8');
+  assert.ok(!/'profile\.phone': phone/.test(src), 'matching a user by phone must not come back');
+  assert.ok(/let user = await User\.findOne\(\{ email \}\);/.test(src));
+});
+
+test('the credentials CSV no longer lists a default password', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../controllers/collegeController.js'), 'utf8');
+  assert.ok(!/Default Password/.test(src));
+});
