@@ -13,7 +13,7 @@ const setMeta = (name, content, attribute = 'name') => {
   tag.setAttribute('content', content);
 };
 
-const SEOHead = ({ title, description, path, robots = 'index, follow', schema }) => {
+const SEOHead = ({ title, description, path, robots = 'index, follow', schema, image, imageAlt, type = 'website', keywords }) => {
   useEffect(() => {
     const canonicalUrl = `${SITE_URL}${path || window.location.pathname}`;
     document.title = title.length > 60 ? `${title.slice(0, 57).trim()}…` : title;
@@ -22,10 +22,18 @@ const SEOHead = ({ title, description, path, robots = 'index, follow', schema })
     setMeta('og:title', title, 'property');
     setMeta('og:description', description, 'property');
     setMeta('og:url', canonicalUrl, 'property');
-    setMeta('og:type', 'website', 'property');
-    setMeta('og:image', `${SITE_URL}/og-default.png`, 'property');
+    const ogImage = image || `${SITE_URL}/og-default.png`;
+    setMeta('og:type', type, 'property');
+    setMeta('og:site_name', 'Velaivaaipu', 'property');
+    setMeta('og:image', ogImage, 'property');
+    setMeta('og:image:alt', imageAlt || title, 'property');
     setMeta('twitter:card', 'summary_large_image');
-    setMeta('twitter:image', `${SITE_URL}/og-default.png`);
+    setMeta('twitter:title', title);
+    setMeta('twitter:description', description);
+    setMeta('twitter:image', ogImage);
+    const keywordsTag = document.head.querySelector('meta[name="keywords"]');
+    if (keywords?.length) setMeta('keywords', keywords.join(', '));
+    else keywordsTag?.remove();
 
     let canonical = document.head.querySelector('link[rel="canonical"]');
     if (!canonical) {
@@ -43,7 +51,7 @@ const SEOHead = ({ title, description, path, robots = 'index, follow', schema })
       script.text = JSON.stringify(entry);
       document.head.appendChild(script);
     });
-  }, [title, description, path, robots, schema]);
+  }, [title, description, path, robots, schema, image, imageAlt, type, keywords]);
 
   return null;
 };

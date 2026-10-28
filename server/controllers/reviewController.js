@@ -64,9 +64,9 @@ const getAllReviews = async (req, res) => {
 
     const [reviews, total] = await Promise.all([
       Review.find(query)
-        .populate('user', 'name avatar role display_id')
         .populate({
           path: 'user',
+          select: 'name avatar role display_id',
           populate: { path: 'role', select: 'name' }
         })
         .sort({ createdAt: -1 })
@@ -122,10 +122,13 @@ const updateReviewStatus = async (req, res) => {
 // @route GET /api/reviews/approved
 const getApprovedReviews = async (req, res) => {
   try {
+    // Public endpoint: expose only the reviewer's name, avatar and role name. One populate
+    // call, so the field selection is not overridden by a second populate of `user`.
     const reviews = await Review.find({ status: 'approved' })
-      .populate('user', 'name avatar role')
+      .select('user rating comment createdAt updatedAt')
       .populate({
         path: 'user',
+        select: 'name avatar role',
         populate: { path: 'role', select: 'name' }
       })
       .sort({ updatedAt: -1 })

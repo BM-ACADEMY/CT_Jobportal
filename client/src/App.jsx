@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import AppRoutes from './routes/AppRoutes';
 import ScrollToTop from './components/common/ScrollToTop';
+import IntroLoader from './components/common/IntroLoader';
 import RouteTracker from './components/common/RouteTracker';
 import { Toaster } from 'sonner';
 import './index.css';
@@ -13,6 +14,7 @@ function App() {
     <AuthProvider>
       <SocketProvider>
         <Toaster position="top-center" richColors />
+        <IntroLoader />
         <Router>
           <ScrollToTop />
           <RouteTracker />

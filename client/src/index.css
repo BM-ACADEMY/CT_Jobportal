@@ -202,3 +202,138 @@ main section {
 /* Hide scrollbar */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---------- Home page motion ----------
+   Everything below animates only transform/opacity so it stays on the GPU compositor:
+   no animated blur filters, no backdrop-filter on moving layers, no background-position loops. */
+@keyframes home-float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -10px, 0); } }
+@keyframes home-float-sm { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -6px, 0); } }
+@keyframes home-marquee { to { transform: translate3d(-50%, 0, 0); } }
+@keyframes home-shine {
+  from { transform: translateX(-120%) skewX(-20deg); }
+  to { transform: translateX(320%) skewX(-20deg); }
+}
+
+.home-float { animation: home-float 6s ease-in-out infinite; }
+.home-float-sm { animation: home-float-sm 5s ease-in-out infinite; }
+.home-marquee { animation: home-marquee 32s linear infinite; }
+.home-marquee-reverse { animation: home-marquee 36s linear infinite reverse; }
+.home-marquee-pause:hover .home-marquee,
+.home-marquee-pause:hover .home-marquee-reverse { animation-play-state: paused; }
+
+.home-gradient-text {
+  background-image: linear-gradient(100deg, #047857 0%, #00D492 55%, #10b981 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Light sweep across a CTA on hover. Element needs `relative overflow-hidden`. */
+.home-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: translateX(-120%) skewX(-20deg);
+  pointer-events: none;
+}
+.home-shine:hover::after { animation: home-shine 0.8s ease-out; }
+
+/* MotionIcon presets: `mi-<name>` loops, `mi-hover-<name>` plays while a parent `.group` is hovered. */
+@keyframes mi-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes mi-wiggle { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(10deg); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(3deg); } }
+@keyframes mi-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+@keyframes mi-bounce { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } 50% { transform: translateY(0); } 65% { transform: translateY(-2px); } }
+@keyframes mi-spin { to { transform: rotate(360deg); } }
+@keyframes mi-tilt { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-12deg) scale(1.08); } }
+@keyframes mi-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+@keyframes mi-pop { 0% { transform: scale(1); } 40% { transform: scale(1.25) rotate(-6deg); } 100% { transform: scale(1); } }
+
+.mi { display: inline-flex; transform-origin: center; }
+.mi-float { animation: mi-float 3s ease-in-out infinite; }
+.mi-wiggle { animation: mi-wiggle 2.6s ease-in-out infinite; }
+.mi-pulse { animation: mi-pulse 2.4s ease-in-out infinite; }
+.mi-bounce { animation: mi-bounce 2.2s ease-in-out infinite; }
+.mi-spin { animation: mi-spin 8s linear infinite; }
+.mi-tilt { animation: mi-tilt 3s ease-in-out infinite; }
+.mi-nudge { animation: mi-nudge 1.6s ease-in-out infinite; }
+.mi-pop { animation: mi-pop 2.8s ease-in-out infinite; }
+
+.group:hover .mi-hover-float { animation: mi-float 1s ease-in-out infinite; }
+.group:hover .mi-hover-wiggle { animation: mi-wiggle 0.7s ease-in-out; }
+.group:hover .mi-hover-pulse { animation: mi-pulse 0.8s ease-in-out infinite; }
+.group:hover .mi-hover-bounce { animation: mi-bounce 0.8s ease-in-out infinite; }
+.group:hover .mi-hover-spin { animation: mi-spin 1.2s linear infinite; }
+.group:hover .mi-hover-tilt { animation: mi-tilt 0.8s ease-in-out; }
+.group:hover .mi-hover-nudge { animation: mi-nudge 0.8s ease-in-out infinite; }
+.group:hover .mi-hover-pop { animation: mi-pop 0.5s ease-out; }
+
+/* "How it works" journeys: tab progress drives auto-advance, rail fills, nodes light up in turn. */
+@keyframes journey-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes journey-rail { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes journey-node { to { background-color: var(--node); border-color: var(--node); color: #fff; } }
+.journey-progress { transform: scaleX(0); animation: journey-progress linear forwards; }
+.journey-rail { transform: scaleY(0); animation: journey-rail ease-in-out forwards; }
+.journey-node { animation: journey-node 0.45s ease-out forwards; }
+
+/* ExplainerTabs journey timer: fills from --from to --to over --dur. */
+@keyframes journey-fill { from { transform: scaleX(var(--from)); } to { transform: scaleX(var(--to)); } }
+.journey-timer {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 3px;
+  background: rgba(255, 255, 255, 0.55);
+  transform-origin: left;
+  transform: scaleX(var(--from));
+  animation: journey-fill var(--dur) linear forwards;
+}
+.journey-timer-paused { animation: none; }
+
+/* Trending searches: the phone screen scrolls the homepage; chips rise out of it. */
+/* Background-position percentages scroll the screenshot through the screen at any size. */
+@keyframes phone-screen-scroll {
+  0%, 10% { background-position: 50% 0%; }
+  50%, 60% { background-position: 50% 100%; }
+  100% { background-position: 50% 0%; }
+}
+.phone-screen-scroll { animation: phone-screen-scroll 18s ease-in-out infinite; }
+
+@keyframes flow-chip {
+  0% { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+  14% { transform: translate(calc(-50% + var(--dx) * var(--k, 1) * 0.18), calc(var(--dy) * var(--k, 1) * 0.14)) scale(1); opacity: 1; }
+  78% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx) * var(--k, 1)), calc(var(--dy) * var(--k, 1))) scale(0.92); opacity: 0; }
+}
+.flow-chip { animation: flow-chip 6.6s cubic-bezier(0.22, 0.8, 0.36, 1) infinite both; will-change: transform, opacity; }
+
+/* Ripple on the phone glass as each chip launches; same 6.6s cycle as .flow-chip. */
+@keyframes share-ripple {
+  0% { transform: scale(0.3); opacity: 0; }
+  2% { transform: scale(0.3); opacity: 0.7; }
+  20% { transform: scale(1.7); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+.share-ripple { animation: share-ripple 6.6s ease-out infinite both; }
+
+/* Brand logo: parts hop on hover, the dot bounces now and then. */
+@keyframes brand-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-14%); } 70% { transform: translateY(3%); } }
+@keyframes brand-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.55) rotate(15deg); } }
+@keyframes brand-dot-idle { 0%, 82%, 100% { transform: translateY(0); } 87% { transform: translateY(-70%); } 92% { transform: translateY(0); } 96% { transform: translateY(-25%); } }
+.brand-part { transform-origin: 50% 100%; }
+.brand-dot-idle { animation: brand-dot-idle 4.5s ease-in-out infinite; }
+.group:hover .brand-hop { animation: brand-hop 0.55s ease-out; }
+.group:hover .brand-hop-late { animation-delay: 0.08s; }
+.group:hover .brand-pop { animation: brand-pop 0.5s ease-out 0.16s; }
+
+/* Header logo stays hidden while the intro loader's copy flies into its place. */
+:root[data-intro="playing"] [data-brand-logo] { visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-chip, .share-ripple { display: none; }
+  .phone-screen-scroll,
+  .brand-part,
+  .home-float, .home-float-sm, .home-marquee, .home-marquee-reverse,
+  .home-shine:hover::after, .mi, .journey-timer { animation: none !important; }
+  /* Show the finished state and stop auto-advancing. */
+  .journey-progress, .journey-rail { animation: none !important; transform: none; }
+  .journey-node { animation: none !important; background-color: var(--node); border-color: var(--node); color: #fff; }
+}

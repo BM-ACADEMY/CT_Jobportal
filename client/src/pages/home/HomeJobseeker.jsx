@@ -18,7 +18,7 @@ import HeroShell from '@/components/home/HeroShell';
 import StatBento from '@/components/home/StatBento';
 import JobCarousel from '@/components/home/JobCarousel';
 import TestimonialCarousel from '@/components/home/TestimonialCarousel';
-import StepFlow from '@/components/home/StepFlow';
+import StepStory from '@/components/home/StepStory';
 import CompanyRecruiterList from '@/components/home/CompanyRecruiterList';
 import SkillScoreBento from '@/components/home/SkillScoreBento';
 import PlacementHighlights from '@/components/home/PlacementHighlights';
@@ -113,7 +113,7 @@ const HomeJobseeker = () => {
   ];
 
   return (
-    <div className="w-full overflow-x-hidden bg-white">
+    <div className="w-full overflow-x-clip bg-white">
       <ScrollProgressBar />
       <OnboardingStrip />
 
@@ -215,7 +215,7 @@ const HomeJobseeker = () => {
       <CompanyRecruiterList type="company" eyebrow="Top Employers" title="Companies Hiring Now" subtitle="Explore verified companies actively posting roles." />
       <CompanyRecruiterList type="recruiter" eyebrow="Meet Your Recruiters" title="Recruiters On The Platform" subtitle="Connect with the people reviewing applications." />
 
-      <StepFlow title="Get Hired in 3 Simple Steps" steps={howItWorks} />
+      <StepStory title="Get Hired in 3 Simple Steps" steps={howItWorks} />
 
       <SkillScoreBento />
 

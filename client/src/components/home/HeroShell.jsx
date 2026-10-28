@@ -1,35 +1,32 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
-// Dark bento hero wrapper: dot-grid texture, cursor spotlight, ambient blobs,
-// bottom wave. `children` may be a render-prop `({ tiltX, tiltY }) => node`
-// so a variant can tilt a photo/visual card in sync with the cursor.
+// Static mesh painted once (radial gradients, no blur filter), so scrolling and the
+// floating hero elements never force the background to re-rasterise.
+const MESH = [
+  'radial-gradient(60% 55% at 85% 20%, rgba(56, 189, 248, 0.16) 0%, transparent 70%)',
+  'radial-gradient(50% 50% at 10% 15%, rgba(0, 212, 146, 0.16) 0%, transparent 70%)',
+  'radial-gradient(45% 40% at 55% 100%, rgba(251, 191, 36, 0.10) 0%, transparent 70%)',
+  'linear-gradient(180deg, #f8fffc 0%, #ffffff 100%)',
+].join(', ');
+
+// Light hero wrapper: static mesh gradient and a masked dot grid.
 const HeroShell = ({ children }) => {
   return (
-    <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-gradient-to-br from-[#f1eefd] via-[#f7f5ff] to-[#e9e5ff]">
-      {/* Precision Square Grid Background Pattern */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-40" 
+    <section className="relative min-h-[88vh] flex items-center overflow-hidden" style={{ backgroundImage: MESH }}>
+      {/* Dot grid, faded toward the edges */}
+      <div
+        className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: '40px 40px',
+          backgroundImage: 'radial-gradient(rgba(15, 118, 110, 0.18) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+          WebkitMaskImage: 'radial-gradient(ellipse 75% 65% at 50% 45%, black 20%, transparent 85%)',
+          maskImage: 'radial-gradient(ellipse 75% 65% at 50% 45%, black 20%, transparent 85%)',
         }}
       />
-      
-      {/* Mesh Gradients (Soft glow) */}
-      <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-rose-200/30 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-5%] w-[550px] h-[550px] bg-indigo-200/30 rounded-full blur-[120px] pointer-events-none" />
-      
-      {/* Clean elegant orbit tracks (Visible) */}
-      <div className="absolute right-[-12%] top-[3%] w-[850px] h-[850px] pointer-events-none hidden lg:flex items-center justify-center opacity-40">
-        <div className="absolute w-[360px] h-[360px] rounded-full border border-dashed border-indigo-300/40" />
-        <div className="absolute w-[530px] h-[530px] rounded-full border border-dashed border-indigo-200/30" />
-        <div className="absolute w-[710px] h-[710px] rounded-full border border-dashed border-indigo-200/20" />
-      </div>
-      
+
+      {/* Fade into the following white section */}
+      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-white pointer-events-none" />
+
       <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 pt-24 pb-16 relative z-10">
         {children}
       </div>
