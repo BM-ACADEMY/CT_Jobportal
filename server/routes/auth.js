@@ -10,6 +10,7 @@ const {
   getUserProfile,
   resendOtp,
   socialAuthCallback,
+  socialExchange,
   completeSocialProfile
 } = require('../controllers/authController');
 const { verifyToken } = require('../middlewares/authMiddleware');
@@ -30,6 +31,7 @@ router.post('/logout', verifyToken, logoutUser);
 router.post('/forgot-password', otpLimiter, forgotPassword);
 router.post('/reset-password', otpLimiter, resetPassword);
 router.post('/resend-otp', otpLimiter, resendOtp);
+router.post('/social-exchange', loginLimiter, socialExchange);
 router.post('/complete-social-profile', verifyToken, completeSocialProfile);
 router.get('/resend-otp', (req, res) => {
   res.status(405).json({ msg: 'This endpoint only accepts POST requests. If you reached this via a page refresh, please go back and try again.' });

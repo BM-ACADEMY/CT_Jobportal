@@ -8,8 +8,7 @@ const CompleteSocialProfile = () => {
   const { completeSocialLogin, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const token = queryParams.get('token') || localStorage.getItem('token');
+  const token = location.state?.token || localStorage.getItem('token');
 
   const [role, setRole] = useState('jobseeker');
   const [password, setPassword] = useState('');

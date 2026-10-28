@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -9,35 +10,26 @@ const SocialAuthSuccess = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const token = params.get('token');
-    const userStr = params.get('user');
-
-    if (token && userStr) {
-      (async () => {
-        try {
-          const userData = JSON.parse(decodeURIComponent(userStr));
-
-          if (userData.isSocialIncomplete) {
-            // Redirect to complete profile page instead of logging in
-            navigate(`/complete-social-profile?token=${token}&userId=${userData.id}`);
-            return;
-          }
-
-          const result = await completeSocialLogin(token, userData);
-          if (result.success) {
-            navigate(result.redirect);
-          } else {
-            navigate('/login');
-          }
-        } catch (err) {
-          console.error('Social Login Success Component Error:', err);
-          navigate('/login');
+    // The one-time code is in the URL fragment; it is swapped for the session token here.
+    const code = new URLSearchParams(location.hash.replace(/^#/, '')).get('code');
+    window.history.replaceState(null, '', location.pathname);
+    if (!code) { navigate('/login'); return; }
+    (async () => {
+      try {
+        const { data } = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/social-exchange`, { code });
+        const { token, user: userData } = data;
+        if (userData.isSocialIncomplete) {
+          // Finish the profile first; the token is handed over in router state, not in the URL.
+          navigate('/complete-social-profile', { state: { token } });
+          return;
         }
-      })();
-    } else {
-      navigate('/login');
-    }
+        const result = await completeSocialLogin(token, userData);
+        navigate(result.success ? result.redirect : '/login');
+      } catch (err) {
+        console.error('Social Login Success Component Error:', err);
+        navigate('/login');
+      }
+    })();
   }, [location, completeSocialLogin, navigate]);
 
   return (

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { issueSocialLoginCode, consumeSocialLoginCode } = require('../utils/socialLoginCode');
 const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
 const User = require('../models/User');
 const Role = require('../models/Role');
@@ -676,28 +677,44 @@ const socialAuthCallback = async (req, res) => {
   // (including recruiters and colleges) would get a jobseeker token.
   if (!user.role || !user.role.name) await user.populate('role');
   const roleName = user.role?.name || 'jobseeker';
-  const token = generateToken(user._id, roleName);
-  
-  // Create user object to send as JSON in query (simplified for demo)
-  const userData = encodeURIComponent(JSON.stringify({
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: roleName,
-    avatar: user.avatar,
-    coverPic: user.coverPic,
-    savedJobs: user.savedJobs || [],
-    subscription: user.subscription,
-    subscriptionExpiry: user.subscriptionExpiry,
-    downloadsUsed: user.downloadsUsed || 0,
-    isSocialIncomplete: user.isSocialIncomplete,
-    display_id: user.display_id
-  }));
-
-  // Redirect to frontend with token and user data
-  // Using a query param is common for simple SPA social auth
+  // The browser gets a one-time code in the URL fragment (never sent to a server or logged) and swaps it for
+  // the token and user at POST /api/auth/social-exchange.
+  const code = issueSocialLoginCode(user._id);
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  res.redirect(`${frontendUrl}/social-auth-success?token=${token}&user=${userData}`);
+  res.redirect(`${frontendUrl}/social-auth-success#code=${code}`);
+};
+
+// @desc    Swap a one-time social login code for the session token and user
+const socialExchange = async (req, res) => {
+  try {
+    const userId = consumeSocialLoginCode(req.body && req.body.code);
+    if (!userId) return res.status(400).json({ msg: 'Login link expired. Please sign in again.' });
+    const user = await User.findById(userId).populate('role');
+    if (!user || user.isAdminBlocked) return res.status(400).json({ msg: 'Login link expired. Please sign in again.' });
+    const roleName = user.role?.name || 'jobseeker';
+    const token = generateToken(user._id, roleName);
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: roleName,
+        avatar: user.avatar,
+        coverPic: user.coverPic,
+        savedJobs: user.savedJobs || [],
+        subscription: user.subscription,
+        subscriptionExpiry: user.subscriptionExpiry,
+        downloadsUsed: user.downloadsUsed || 0,
+        isSocialIncomplete: user.isSocialIncomplete,
+        display_id: user.display_id,
+      },
+    });
+  } catch (err) {
+    console.error('Social exchange error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
 };
 
 // @desc    Complete social profile (set role and password)
@@ -790,5 +807,6 @@ module.exports = {
   getUserProfile,
   resendOtp,
   socialAuthCallback,
+  socialExchange,
   completeSocialProfile,
 };
