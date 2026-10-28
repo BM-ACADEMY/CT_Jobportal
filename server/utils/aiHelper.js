@@ -1,18 +1,19 @@
 class GoogleGenerativeAI {
   constructor(apiKey) {
-    // Prefer OPENROUTER_API_KEY, fallback to provided key for compatibility
-    this.apiKey = process.env.OPENROUTER_API_KEY || apiKey;
+    // AI_API_KEY / AI_BASE_URL / AI_MODEL (when set) win; OPENROUTER_API_KEY and the built-in model mapping are the fallback
+    this.apiKey = process.env.AI_API_KEY || process.env.OPENROUTER_API_KEY || apiKey;
+    this.baseUrl = (process.env.AI_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
   }
   
   getGenerativeModel({ model, generationConfig }) {
     // OpenRouter models require the provider prefix (e.g. google/gemini-2.5-flash)
-    const orModel = model.startsWith("google/") ? model : `google/${model}`;
+    const orModel = process.env.AI_MODEL || (model.startsWith("google/") ? model : `google/${model}`);
     const temperature = generationConfig?.temperature || 0.7;
     
     return {
       generateContent: async (prompt) => {
         if (!this.apiKey) {
-          throw new Error("OPENROUTER_API_KEY is not set in environment");
+          throw new Error("AI_API_KEY (or OPENROUTER_API_KEY) is not set in environment");
         }
 
         const payload = {
@@ -26,7 +27,7 @@ class GoogleGenerativeAI {
             payload.response_format = { type: "json_object" };
         }
 
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${this.apiKey}`,
