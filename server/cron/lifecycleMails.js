@@ -5,12 +5,16 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const Job = require('../models/Job');
 const College = require('../models/College');
+const Company = require('../models/Company');
+const CampusDrive = require('../models/CampusDrive');
 const CollegeStudent = require('../models/CollegeStudent');
 const SkillTestResult = require('../models/SkillTestResult');
 const EmailLog = require('../models/EmailLog');
 const sendEmail = require('../utils/sendEmail');
 const mails = require('../utils/lifecycle/mails');
-const { rankJobsForUser, alertFrequency, ALERT_PERIOD_DAYS } = require('../utils/lifecycle/jobMatch');
+const { getTopCandidatesForJob, engineEnabled } = require('../utils/matchingJobs');
+const { rankForMail, alertFrequency, ALERT_PERIOD_DAYS } = require('../utils/lifecycle/jobMatch');
+const Application = require('../models/Application');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
 const { getCategory, PASS_RATIO } = require('../config/courseMap');
 
@@ -54,10 +58,19 @@ const deliver = async (state, user, key, mail, audience = 'seeker') => {
 
 const baseUserFilter = { isVerified: true, isAdminBlocked: { $ne: true }, 'emailPrefs.marketingOptOut': { $ne: true }, email: { $not: /\.portal$/i } };
 
+// Three nudges while the profile stays under 70%: day 2, day 7, then once a month. Each is sent at most once (the monthly one once per month).
 const profileIncomplete = async (state) => {
   const role = await Role.findOne({ name: 'jobseeker' }).select('_id');
-  const users = await User.find({ ...baseUserFilter, role: role._id, createdAt: { $gte: ago(30), $lte: ago(2) }, 'profile.profileCompletion': { $lt: 70 } }).limit(BATCH);
-  for (const u of users) await deliver(state, u, 'js_profile_incomplete', mails.wrap(mails.profileIncomplete(u, u.profile?.profileCompletion || 0), u._id));
+  const month = new Date().toISOString().slice(0, 7);
+  const stages = [
+    { stage: 'first', key: 'js_profile_incomplete', min: 2, max: 30 },
+    { stage: 'second', key: 'js_profile_incomplete_d7', min: 7, max: 30 },
+    { stage: 'monthly', key: `js_profile_monthly-${month}`, min: 30, max: 180 },
+  ];
+  for (const st of stages) {
+    const users = await User.find({ ...baseUserFilter, role: role._id, createdAt: { $gte: ago(st.max), $lte: ago(st.min) }, 'profile.profileCompletion': { $lt: 70 } }).limit(BATCH);
+    for (const u of users) await deliver(state, u, st.key, mails.wrap(mails.profileIncomplete(u, u.profile?.profileCompletion || 0, st.stage), u._id));
+  }
 };
 
 const skillTestInvite = async (state) => {
@@ -83,6 +96,11 @@ const skillGap = async (state) => {
   }
 };
 
+// Jobs the person already applied to, so the engine never mails them again. Only looked up when the engine is on.
+const appliedJobIds = async (u) => (process.env.RELEVANCE_ENGINE_ENABLED === 'true'
+  ? (await Application.find({ applicant: u._id }).select('job').lean()).map((a) => String(a.job))
+  : []);
+
 // Paid Job Alerts (plan tier or pay-per) and the free win-back for people who stopped visiting.
 const jobMails = async (state) => {
   const role = await Role.findOne({ name: 'jobseeker' }).select('_id');
@@ -101,15 +119,34 @@ const jobMails = async (state) => {
     if (!freq) continue;
     paidIds.add(String(u._id));
     const days = ALERT_PERIOD_DAYS[freq];
-    const jobs = rankJobsForUser(u, fresh.filter((j) => new Date(j.createdAt) >= ago(days)), 5);
+    const jobs = rankForMail(u, fresh.filter((j) => new Date(j.createdAt) >= ago(days)), 5, { appliedJobIds: await appliedJobIds(u) });
     if (jobs.length) await deliver(state, u, `alert-${freq}-${periodId(days, now)}`, mails.wrap(mails.jobsForYou(u, jobs, { paid: true, frequency: freq }), u._id));
   }
 
   const lapsed = await User.find({ ...baseUserFilter, role: role._id, lastLoginAt: { $gte: ago(60), $lte: ago(7) } }).limit(BATCH);
   for (const u of lapsed) {
     if (paidIds.has(String(u._id))) continue;
-    const jobs = rankJobsForUser(u, fresh.filter((j) => new Date(j.createdAt) >= ago(14)), 3);
+    const jobs = rankForMail(u, fresh.filter((j) => new Date(j.createdAt) >= ago(14)), 3, { appliedJobIds: await appliedJobIds(u) });
     if (jobs.length) await deliver(state, u, `winback-${periodId(14, now)}`, mails.wrap(mails.jobsForYou(u, jobs, { paid: false }), u._id));
+  }
+};
+
+// Once per job, 1 hour to 3 days after posting: the 5 best-fitting candidates, mailed to whoever posted it.
+// Only with the relevance engine on, and only when at least one candidate really fits.
+const topCandidatesMail = async (state) => {
+  if (!engineEnabled()) return;
+  const roles = await Role.find({ name: { $in: ['recruiter', 'company'] } }).select('_id');
+  const jobs = await Job.find({ status: 'active', validThrough: { $gt: new Date() }, createdAt: { $gte: ago(3), $lte: ago(1 / 24) } })
+    .populate('company', 'name').sort({ createdAt: -1 }).limit(BATCH).lean();
+  for (const job of jobs) {
+    if (state.sent >= MAX_PER_RUN) break;
+    const poster = await User.findOne({ ...baseUserFilter, _id: job.recruiter, role: { $in: roles.map((r) => r._id) } });
+    if (!poster) continue;
+    const key = `co_top_candidates-${job._id}`;
+    if (await EmailLog.exists({ user: poster._id, key })) continue; // skip the expensive ranking when already sent
+    const candidates = await getTopCandidatesForJob(job, { User, Role, SkillTestResult });
+    if (!candidates.length) continue;
+    await deliver(state, poster, key, mails.wrap(mails.topCandidates(poster, job, candidates), poster._id), 'company');
   }
 };
 
@@ -125,6 +162,31 @@ const employerMails = async (state) => {
   for (const u of idle) {
     if (await Job.exists({ recruiter: u._id })) continue;
     await deliver(state, u, 'co_post_job_templates', mails.wrap(mails.postJobTemplates(u), u._id), 'company');
+  }
+};
+
+// Company page missing a logo or description, 3 to 30 days after sign-up.
+const companyProfileNudge = async (state) => {
+  const roles = await Role.find({ name: { $in: ['recruiter', 'company'] } }).select('_id');
+  const users = await User.find({ ...baseUserFilter, role: { $in: roles.map((r) => r._id) }, company: { $ne: null }, createdAt: { $gte: ago(30), $lte: ago(3) } }).limit(BATCH);
+  for (const u of users) {
+    const co = await Company.findById(u.company).select('logo logo_url description').lean();
+    if (!co || ((co.logo || co.logo_url) && co.description)) continue;
+    await deliver(state, u, 'co_complete_company_profile', mails.wrap(mails.companyProfileIncomplete(u), u._id), 'company');
+  }
+};
+
+// New colleges: verify (day 3), create a first drive (day 4), share the QR when a drive has no students (day 7).
+const collegeOnboarding = async (state) => {
+  const colleges = await College.find({ createdAt: { $gte: ago(45), $lte: ago(3) } }).populate('tpoUser', 'name email emailPrefs').limit(BATCH);
+  for (const c of colleges) {
+    if (!c.tpoUser) continue;
+    const ageDays = (Date.now() - new Date(c.createdAt).getTime()) / DAY;
+    const send = (key, mail) => deliver(state, c.tpoUser, key, mails.wrap(mail, c.tpoUser._id), 'college');
+    if (c.verificationStatus !== 'verified' && await send('col_verify', mails.collegeVerify(c.tpoUser, c))) continue;
+    const drives = await CampusDrive.countDocuments({ college: c._id });
+    if (!drives) { if (ageDays >= 4) await send('col_first_drive', mails.collegeFirstDrive(c.tpoUser, c)); continue; }
+    if (ageDays >= 7 && !(await CollegeStudent.exists({ college: c._id }))) await send('col_first_students', mails.collegeFirstStudents(c.tpoUser, c));
   }
 };
 
@@ -145,7 +207,7 @@ const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, employerMails, collegeMails]) {
+  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

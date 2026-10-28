@@ -18,6 +18,9 @@ const SECTIONS = [
   { id: 'contact', title: '12. Contact and grievances' },
 ];
 
+// The assistant wording stays hidden until VITE_ASSISTANT_ENABLED=true (set it together with ASSISTANT_ENABLED on the server).
+const ASSISTANT_LIVE = import.meta.env.VITE_ASSISTANT_ENABLED === 'true';
+
 const PrivacyPolicy = () => (
   <LegalPage
     title="Privacy Policy"
@@ -51,6 +54,7 @@ const PrivacyPolicy = () => (
         <li>To send offers, such as courses or scholarships, only if you agreed to receive them.</li>
         <li>To process payments, prevent fraud and misuse, and give support.</li>
         <li>To measure and improve the platform and our marketing, using analytics.</li>
+        <li>To check that our job and candidate suggestions are useful, we record which suggestions were shown, opened, applied to or shortlisted. This record holds user and job identifiers, where the suggestion appeared and its match score, not names or contact details, and is deleted after 180 days. Suggestions come from your skills, roles, location and experience; we do not use gender, age, religion, caste, marital status, name or photo to rank anyone.</li>
       </ul>
     </Section>
 
@@ -70,7 +74,9 @@ const PrivacyPolicy = () => (
     </Section>
 
     <Section id="processors" title="6. Services we use">
+      {/* DRAFT wording for the AI assistant. A lawyer must review it, and OpenAI's current API data terms must be checked, before the assistant is switched on (see docs/AI_ASSISTANT.md). */}
       <p>We use trusted providers to run the platform: Razorpay (payments), Meta WhatsApp Business (messages), Google and LinkedIn (sign-in), Google Analytics and Meta Pixel (analytics and advertising measurement), AI model providers accessed through OpenRouter (for AI features such as skill tests, resume review and candidate matching; the text you submit for those features, such as your resume, is sent to them to produce the result), email delivery services, and cloud hosting. They process data on our behalf or under their own privacy terms. Some of them store data on servers outside India.</p>
+      {ASSISTANT_LIVE && <p><strong>Velaivaaipu assistant (job seekers).</strong> If you use the assistant, your question and a short summary of your own career profile are sent to OpenAI to produce the answer: your headline, preferred role, location, skills, degree names, past job titles, how complete your profile is, and the jobs we suggested to you. We do not send your name, email, phone number, photo, password, payment details or resume text, and we do not keep the text of your conversation; we only count how many messages you send. OpenAI handles that data under its own terms and privacy policy. Do not type passwords, OTPs, card details or ID numbers into the assistant. Its answers can be wrong; check important details yourself.</p>}
     </Section>
 
     <Section id="retention" title="7. How long we keep data">

@@ -7,6 +7,16 @@ const { sendWhatsAppTemplate, getUserPhone } = require('../utils/whatsapp');
 const { logTeamActivity } = require('../utils/teamActivityLog');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { notifyUser, notifyUsers } = require('../utils/inAppNotifications');
+const RecommendationEvent = require('../models/RecommendationEvent');
+const { recordOutcome } = require('../utils/recommendationEvents');
+const { engineEnabled } = require('../utils/matchingJobs');
+
+// Counts an application or shortlisting as a result of a suggestion, if one was shown. Never allowed to break the request.
+const trackOutcome = (event, applicantId, jobId) => {
+  if (!engineEnabled()) return;
+  recordOutcome(RecommendationEvent, { event, applicantId: String(applicantId), jobId: String(jobId) })
+    .catch((err) => console.error('Recommendation outcome failed:', err.message));
+};
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -208,6 +218,7 @@ exports.applyJob = async (req, res) => {
     });
 
     await application.save();
+    trackOutcome('applied', applicantId, jobId);
 
     if (isPriority) {
       if (source === 'plan' && limit > 0) {
@@ -312,6 +323,10 @@ exports.updateApplicationStatus = async (req, res) => {
     ).populate('applicant', 'name email profileImage profile').populate({ path: 'job', select: 'title company recruiter', populate: { path: 'company', select: 'name' } });
 
     if (!application) return res.status(404).json({ msg: 'Application not found' });
+
+    if (statusChanged && status === 'shortlisted' && application.applicant?._id && application.job?._id) {
+      trackOutcome('shortlisted', application.applicant._id, application.job._id);
+    }
 
     if (statusChanged && status !== 'withdrawn' && application.applicant?.email) {
       const label = STATUS_LABELS[status] || status;

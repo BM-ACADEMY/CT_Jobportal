@@ -2,7 +2,7 @@ const Job = require('../models/Job');
 const User = require('../models/User');
 const Application = require('../models/Application');
 const Role = require('../models/Role');
-const { getEffectivePlanLimit } = require('../utils/getEffectivePlanLimit');
+const { getEffectivePlanLimit, getEffectiveSearchLimit } = require('../utils/getEffectivePlanLimit');
 const { logTeamActivity } = require('../utils/teamActivityLog');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { parse } = require('csv-parse/sync');
@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const { notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved, notifyJobPublished } = require('../utils/jobNotifications');
 const { enforceJobLimits } = require('../utils/enforceJobLimits');
+const { getRankedMatches, engineEnabled, rankCandidatesByRelevance, getTopCandidatesForJob } = require('../utils/matchingJobs');
 
 // @desc    Create a new job
 // @route   POST /api/jobs
@@ -288,7 +289,8 @@ const updateJob = async (req, res) => {
       }
       const activeCount = await Job.countDocuments(activeCountQuery);
 
-      if (activeCount >= totalAllowed) {
+      // planLimit 0 means unlimited (same rule as createJob); without this, reactivating a job on an unlimited plan was blocked.
+      if (planLimit !== 0 && activeCount >= totalAllowed) {
         return res.status(403).json({
           msg: `Job posting limit reached. Your allowed limit is ${totalAllowed} job postings. Please upgrade your plan or purchase an add-on to post more.`,
           requiresUpgrade: true,
@@ -472,6 +474,16 @@ const getMatchingJobs = async (req, res) => {
     const { profile } = user;
     if (!profile) {
       return res.json([]); // Return empty if no profile
+    }
+
+    // New relevance engine (utils/relevance.js). Off unless RELEVANCE_ENGINE_ENABLED=true; if it fails we fall back
+    // to the original matching below so the page never breaks.
+    if (engineEnabled()) {
+      try {
+        return res.json(await getRankedMatches(user, { Job, User, Application }));
+      } catch (engineErr) {
+        console.error('Relevance engine failed, using classic matching:', engineErr.message);
+      }
     }
 
     const { jobPreferences, skills, location, preferredRole } = profile;
@@ -677,7 +689,7 @@ const searchCandidates = async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     const plan = user.subscription;
-    const limit = plan?.candidateSearchPerDay || 0;
+    const limit = getEffectiveSearchLimit(plan);
 
     // Reset daily counter if date has changed
     const today = new Date();
@@ -723,7 +735,7 @@ const searchCandidates = async (req, res) => {
     // skill tags rather than freely typed, so there's no typo to tolerate there.
     const { fuzzyRank } = require('../utils/fuzzySearch');
     const allCandidates = await User.find(baseQuery)
-      .select('name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification subscription purchasedFeatures priorityApplicationsUsed')
+      .select('name avatar profile.headline profile.skills profile.location profile.preferredRole profile.experience profile.qualification profile.profileCompletion subscription purchasedFeatures priorityApplicationsUsed')
       .lean();
 
     const skillList = skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -775,6 +787,16 @@ const searchCandidates = async (req, res) => {
         'profile.qualification.degree', 'profile.qualification.institution',
       ]).map(c => [String(c._id), c._fuzzyScore]));
       filtered = [...filtered].sort((a, b) => (scoreById.get(String(a._id)) ?? 1) - (scoreById.get(String(b._id)) ?? 1));
+    } else if (engineEnabled()) {
+      // No search text: order by fit to the recruiter's most recent open job, then profile completeness
+      // (utils/relevance.js). Falls back to A-Z if anything fails, so the page never breaks.
+      try {
+        const ranked = await rankCandidatesByRelevance(filtered, user, { Job, User, SkillTestResult: require('../models/SkillTestResult') });
+        filtered = ranked.map((r) => ({ ...r.candidate, relevance: { score: r.score, reasons: r.reasons, priority: r.priority } }));
+      } catch (engineErr) {
+        console.error('Candidate relevance failed, using A-Z:', engineErr.message);
+        filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      }
     } else {
       filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
@@ -806,6 +828,37 @@ const searchCandidates = async (req, res) => {
   }
 };
 
+// @desc    Top candidates for one of my jobs (relevance engine). Same public fields as the candidate search list.
+// @route   GET /api/jobs/:jobId/top-candidates
+// @access  Private (Recruiter/Company), owner of the job only
+// The jobs page asks once per active job, and each answer reads the whole candidate pool, so answers are kept for 5 minutes.
+const TOP_CACHE = new Map();
+const TOP_CACHE_MS = 5 * 60 * 1000;
+const TOP_CACHE_MAX = 300;
+
+const getTopCandidates = async (req, res) => {
+  try {
+    if (!engineEnabled()) return res.json({ enabled: false, candidates: [] });
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    const job = await Job.findById(req.params.jobId);
+    if (!user || !job) return res.status(404).json({ msg: 'Job not found' });
+    if (job.recruiter.toString() !== userId && (!user.company || !job.company || job.company.toString() !== user.company.toString() || !hasCompanyAccess(user))) {
+      return res.status(403).json({ msg: 'Not authorized for this job' });
+    }
+    const key = String(job._id);
+    const hit = TOP_CACHE.get(key);
+    if (hit && hit.expires > Date.now()) return res.json({ enabled: true, candidates: hit.candidates });
+    const candidates = await getTopCandidatesForJob(job.toObject(), { User, Role, SkillTestResult: require('../models/SkillTestResult') });
+    if (TOP_CACHE.size >= TOP_CACHE_MAX) TOP_CACHE.delete(TOP_CACHE.keys().next().value);
+    TOP_CACHE.set(key, { candidates, expires: Date.now() + TOP_CACHE_MS });
+    res.json({ enabled: true, candidates });
+  } catch (err) {
+    console.error('Top Candidates Error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 // @desc    View a candidate profile (counts as one search)
 // @route   GET /api/jobs/candidates/:candidateId/profile
 // @access  Private (Recruiter/Company)
@@ -816,7 +869,7 @@ const viewCandidateProfile = async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     const plan = user.subscription;
-    const limit = plan?.candidateSearchPerDay || 0;
+    const limit = getEffectiveSearchLimit(plan);
 
     // Reset daily counter if date has changed
     const today = new Date();
@@ -1342,6 +1395,7 @@ const bulkAiMatch = async (req, res) => {
 };
 
 module.exports = {
+  getTopCandidates,
   createJob,
   getCompanyJobs,
   getCompanyJobsWithStats,

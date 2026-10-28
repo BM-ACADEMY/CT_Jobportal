@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, ShieldAlert } from 'lucide-react';
 
 const EFFECTIVE_DATE = 'October 22, 2026';
+// The assistant wording stays hidden until VITE_ASSISTANT_ENABLED=true (set it together with ASSISTANT_ENABLED on the server).
+const ASSISTANT_LIVE = import.meta.env.VITE_ASSISTANT_ENABLED === 'true';
 
 const SECTIONS = [
   { id: 'acceptance', title: '1. Acceptance of Terms' },
@@ -191,8 +193,12 @@ const TermsAndConditions = () => {
 
           <Section id="third-party" title="12. Third-Party Services">
             <p>
-              The Platform integrates third-party services including Razorpay (payments), Google/LinkedIn (social login), AI model providers, accessed through OpenRouter (AI-assisted features such as skill tests, resume review and candidate matching), and Meta WhatsApp Business (messaging). Your use of these integrations is also subject to those providers' own terms and privacy policies. We are not responsible for outages, errors, or policy changes originating from third-party providers.
+              The Platform integrates third-party services including Razorpay (payments), Google/LinkedIn (social login), AI model providers, accessed through OpenRouter (AI-assisted features such as skill tests, resume review and candidate matching), {ASSISTANT_LIVE ? 'OpenAI (the Velaivaaipu assistant for job seekers), ' : ''}and Meta WhatsApp Business (messaging). Your use of these integrations is also subject to those providers' own terms and privacy policies. We are not responsible for outages, errors, or policy changes originating from third-party providers.
             </p>
+            {/* DRAFT wording for the AI assistant; lawyer to review before the assistant is switched on (docs/AI_ASSISTANT.md). */}
+            {ASSISTANT_LIVE && <p>
+              The Velaivaaipu assistant gives automated suggestions about jobs, profiles and using the Platform. Its answers can be incomplete or wrong, are not career, legal or financial advice, and do not guarantee a job, an interview or any result. Daily message limits apply, and we may change or withdraw the assistant at any time. Do not enter passwords, OTPs, card details or ID numbers into it.
+            </p>}
           </Section>
 
           <Section id="privacy" title="13. Data & Privacy">

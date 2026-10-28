@@ -4,9 +4,20 @@ import Header from '../components/common/Header';
 import Sidebar from '../components/common/Sidebar';
 import RecentBlogs from '../components/blog/RecentBlogs';
 import SEOHead from '../components/seo/SEOHead';
+import { OnboardingProvider } from '../context/OnboardingContext';
+import AssistantWidget from '../components/assistant/AssistantWidget';
+import WelcomeTour from '../components/onboarding/WelcomeTour';
+import OnboardingChecklistCard from '../components/onboarding/OnboardingChecklistCard';
+import IncompleteProfileBanner from '../components/onboarding/IncompleteProfileBanner';
+import InstallPrompt from '../components/pwa/InstallPrompt';
 
-const DashboardLayout = () => {
+// Each portal's home screen shows the full checklist card; every other page shows the slim banner.
+const DASHBOARD_PATH = /^\/(candidate\/?|company\/dashboard\/?|college\/dashboard\/?|employee\/?)$/;
+
+const DashboardLayoutInner = () => {
   const { pathname } = useLocation();
+  const isDashboardHome = DASHBOARD_PATH.test(pathname);
+  const showOnboarding = !pathname.startsWith('/admin') && !pathname.startsWith('/subadmin') && !pathname.includes('/messages');
   const showBlogRecommendations = !pathname.startsWith('/admin') && !pathname.includes('/messages');
 
   const [isCollapsed, setIsCollapsed] = React.useState(() => {
@@ -74,6 +85,8 @@ const DashboardLayout = () => {
             : 'max-w-[1440px] gap-8 px-4 sm:px-6 py-8'
         }`}>
           <main className="flex-1 min-w-0">
+            {isDashboardHome && <InstallPrompt />}
+            {showOnboarding && (isDashboardHome ? <OnboardingChecklistCard /> : <IncompleteProfileBanner />)}
             <Outlet />
             {showBlogRecommendations && (
               <div className="2xl:hidden mt-8 rounded-none border border-slate-200 bg-white p-5 shadow-sm">
@@ -92,9 +105,16 @@ const DashboardLayout = () => {
         </div>
       </div>
       
-      {/* Mobile Sidebar Trigger / Quick Actions could go here */}
+      <WelcomeTour />
+      <AssistantWidget />
     </div>
   );
 };
+
+const DashboardLayout = () => (
+  <OnboardingProvider>
+    <DashboardLayoutInner />
+  </OnboardingProvider>
+);
 
 export default DashboardLayout;

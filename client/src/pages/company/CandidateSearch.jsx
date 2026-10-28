@@ -299,12 +299,20 @@ const CandidateSearch = () => {
                         <BadgeCheck size={18} className="text-blue-500" />
                       )}
                       {candidate.isPriority && (
-                        <BadgeCheck size={18} className="text-blue-500 fill-blue-50" />
+                        <span title="Priority candidate (paid badge). It never changes how well they fit this job." className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full">
+                          <BadgeCheck size={12} className="text-blue-500" /> Priority
+                        </span>
                       )}
                     </div>
                     
                     {candidate.profile?.headline && (
                       <Text type="secondary" className="block mb-2 text-sm">{candidate.profile.headline}</Text>
+                    )}
+
+                    {candidate.relevance?.reasons?.length > 0 && (
+                      <p className="text-xs font-semibold text-emerald-700 mb-2">
+                        Why this candidate: {candidate.relevance.reasons.slice(0, 3).join(' · ')}
+                      </p>
                     )}
                     
                     <Space size="middle" className="mb-2 flex-wrap">

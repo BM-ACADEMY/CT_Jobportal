@@ -21,13 +21,14 @@ const TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken';
 const USERINFO_URL = 'https://api.linkedin.com/v2/userinfo';
 const NONCE_COOKIE = 'li_oauth_nonce';
 
-const isConfigured = () => Boolean(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET);
-
 const callbackUrl = () => (
   process.env.NODE_ENV === 'production'
     ? process.env.LINKEDIN_CALLBACK_URL
     : (process.env.LINKEDIN_CALLBACK_URL_LOCAL || process.env.LINKEDIN_CALLBACK_URL)
 );
+
+// The callback URL is required too: without it LinkedIn would be sent redirect_uri="undefined" and every login fails.
+const isConfigured = () => Boolean(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET && callbackUrl());
 
 const frontendUrl = () => (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 const failRedirect = (res, reason) => res.redirect(`${frontendUrl()}/login?error=${encodeURIComponent(reason)}`);
@@ -139,4 +140,4 @@ const linkedinCallback = async (req, res) => {
   }
 };
 
-module.exports = { startLinkedinLogin, linkedinCallback };
+module.exports = { startLinkedinLogin, linkedinCallback, isConfigured };

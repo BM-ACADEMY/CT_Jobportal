@@ -13,33 +13,18 @@ Return ONLY a JSON array, no markdown. Schema:
 [{"id":1,"question":"...","options":{"a":"...","b":"...","c":"...","d":"..."},"correct_option":"a","explanation":"one short sentence"}]
 Random seed: ${Math.random()}`;
 
-const { getCuratedSet } = require('../data/curatedQuestionBank');
-
 const generateSet = async (categoryKey) => {
   const cat = getCategory(categoryKey);
   if (!cat) throw new Error('Unknown category');
-
-  let questions = null;
-  if (process.env.OPENROUTER_API_KEY) {
-    try {
-      const model = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY).getGenerativeModel({
-        model: 'gemini-2.5-flash',
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.8 },
-      });
-      const result = await model.generateContent(buildPrompt(cat.label));
-      const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-      questions = normalizeSet(JSON.parse(text));
-    } catch (err) {
-      console.warn(`[QuestionBank] AI call failed for ${cat.label} (${err.message}), using curated bank`);
-    }
-  }
-
-  if (!questions) {
-    const existingCount = await CampusQuestionSet.countDocuments({ category: categoryKey });
-    questions = getCuratedSet(categoryKey, existingCount);
-  }
-
-  if (!questions) throw new Error('AI returned an unusable question set and no curated set available');
+  if (!process.env.OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY is not set');
+  const model = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY).getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.8 },
+  });
+  const result = await model.generateContent(buildPrompt(cat.label));
+  const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+  const questions = normalizeSet(JSON.parse(text));
+  if (!questions) throw new Error('AI returned an unusable question set');
   return CampusQuestionSet.create({ category: categoryKey, questions });
 };
 

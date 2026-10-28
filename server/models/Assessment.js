@@ -33,7 +33,9 @@ const assessmentSchema = new mongoose.Schema({
     default: 'general',
     index: true
   },
-  questions: [questionSchema]
+  questions: [questionSchema],
+  // Set when a free-assessment attempt is scored, so one question set is scored once.
+  submittedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Assessment', assessmentSchema);

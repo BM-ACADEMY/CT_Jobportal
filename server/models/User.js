@@ -311,10 +311,18 @@ const userSchema = new mongoose.Schema({
   lastLoginAt: {
     type: Date
   },
+  // First-login tour state. tourSeenAt is set when the person finishes or skips the welcome tour.
+  onboarding: {
+    tourSeenAt: { type: Date, default: null }
+  },
   // Marketing / lifecycle mail preference. Receipts and security mails are never affected.
   emailPrefs: {
     marketingOptOut: { type: Boolean, default: false },
-    optOutAt: { type: Date, default: null }
+    optOutAt: { type: Date, default: null },
+    // Set by the mail-service webhook (routes/emailWebhook.js).
+    bounced: { type: Boolean, default: false },
+    bouncedAt: { type: Date, default: null },
+    bounceReason: { type: String, default: '' }
   },
   lastLogoutAt: {
     type: Date

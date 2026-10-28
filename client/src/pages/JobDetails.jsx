@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { hasFeature } from '../components/subscription/FeatureGate';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import JobApplicationModal from '../components/jobs/JobApplicationModal';
 import ShareModal from '../components/jobs/ShareModal';
@@ -75,6 +76,8 @@ const JobDetails = () => {
     window.scrollTo(0, 0);
   }, [id, API_BASE_URL, navigate]);
 
+  const [showProfileNudge, setShowProfileNudge] = useState(false);
+
   const handleApply = () => {
     if (!user) {
       toast.error("Please login to apply for this job");
@@ -89,6 +92,12 @@ const JobDetails = () => {
 
     if (user.id === job.recruiter) {
       toast.error("You cannot apply for a job you have posted");
+      return;
+    }
+
+    // Gentle nudge, never a block: a thin profile lowers the chance of being shortlisted.
+    if (user.role === 'jobseeker' && (user.profile?.profileCompletion ?? 100) < 60) {
+      setShowProfileNudge(true);
       return;
     }
 
@@ -585,6 +594,19 @@ const JobDetails = () => {
         </div>
 
       </div>
+
+      <Dialog open={showProfileNudge} onOpenChange={setShowProfileNudge}>
+        <DialogContent className="max-w-sm rounded-2xl p-6">
+          <DialogTitle className="text-lg font-bold text-slate-900">Strengthen your profile first?</DialogTitle>
+          <DialogDescription className="text-sm text-slate-600 mt-1">
+            Your profile is {user?.profile?.profileCompletion ?? 0}% complete. A complete profile is easier for employers to assess. It takes a few minutes.
+          </DialogDescription>
+          <div className="flex gap-3 mt-4">
+            <Button variant="outline" className="flex-1" onClick={() => { setShowProfileNudge(false); setIsApplyModalOpen(true); }}>Apply anyway</Button>
+            <Button className="flex-1" onClick={() => { setShowProfileNudge(false); navigate('/candidate/settings'); }}>Complete profile</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <JobApplicationModal 
         isOpen={isApplyModalOpen} 

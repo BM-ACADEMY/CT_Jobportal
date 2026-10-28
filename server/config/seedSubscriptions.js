@@ -41,7 +41,7 @@ const FREE_PLANS = [
     isActive: true,
 
     // Job postings
-    activeJobPostings: 3,        // 3 active job posts
+    activeJobPostings: 2,        // 2 active job posts
 
     // Candidate search
     candidateSearchPerDay: 10,
@@ -69,7 +69,7 @@ const FREE_PLANS = [
     role: 'company',
     isActive: true,
 
-    activeJobPostings: 3,
+    activeJobPostings: 2,
     candidateSearchPerDay: 10,
 
     hasATSPipeline: false,

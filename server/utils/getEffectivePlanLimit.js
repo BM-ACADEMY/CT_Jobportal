@@ -1,5 +1,11 @@
 const Subscription = require('../models/Subscription');
 
+// In plans, 0 means unlimited. If the Free plan row is missing from the database (never seeded, deactivated or
+// deleted) we must NOT fall through to 0, or every free account would become unlimited. These defaults match the
+// seeded Free plan (config/seedSubscriptions.js) and can be overridden in env.
+const FALLBACK_FREE_JOB_LIMIT = () => Number(process.env.DEFAULT_FREE_JOB_LIMIT) || 2;
+const FALLBACK_FREE_SEARCH_LIMIT = () => Number(process.env.DEFAULT_FREE_SEARCH_LIMIT) || 10;
+
 /**
  * Resolves the effective job posting plan limit for a user.
  * If the user's current paid plan is expired, falls back to the Free plan for their role.
@@ -25,7 +31,7 @@ const getEffectivePlanLimit = async (user, roleName) => {
   if (!plan) {
     // No plan at all — fall back to Free plan
     const freePlan = await Subscription.findOne({ price: 0, role: planRole, isActive: true });
-    return freePlan?.activeJobPostings || 0;
+    return freePlan ? (freePlan.activeJobPostings || 0) : FALLBACK_FREE_JOB_LIMIT();
   }
 
   // Check if current plan is still valid
@@ -41,7 +47,10 @@ const getEffectivePlanLimit = async (user, roleName) => {
 
   // Paid plan is expired — fall back to free plan for this role
   const freePlan = await Subscription.findOne({ price: 0, role: planRole, isActive: true });
-  return freePlan?.activeJobPostings || 0;
+  return freePlan ? (freePlan.activeJobPostings || 0) : FALLBACK_FREE_JOB_LIMIT();
 };
 
-module.exports = { getEffectivePlanLimit };
+// Candidate profile views per day (0 = unlimited on a real plan). A user with no plan at all gets the Free default.
+const getEffectiveSearchLimit = (plan) => (plan ? (plan.candidateSearchPerDay || 0) : FALLBACK_FREE_SEARCH_LIMIT());
+
+module.exports = { getEffectivePlanLimit, getEffectiveSearchLimit };

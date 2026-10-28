@@ -16,6 +16,7 @@ const CollegePlacementReport = require('../models/CollegePlacementReport');
 const CollegeActivityLog = require('../models/CollegeActivityLog');
 const CollegeEmployer = require('../models/CollegeEmployer');
 const bcrypt = require('bcryptjs');
+const { randomPasswordHash } = require('../utils/studentPassword');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
 const QRCode = require('qrcode');
@@ -1433,14 +1434,12 @@ const csvImport = async (req, res) => {
       }
 
       try {
-        // Default password is phone number (if phone is empty, fallback to rollNumber)
-        const defaultPassword = phone || rollNumber;
-
         // Find or create user
         let user = await User.findOne({ $or: [{ email }, { 'profile.phone': phone, email: { $exists: true } }] });
         if (!user) {
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+          // Random password: the phone or roll number must never work as a login. The student claims the account
+          // through the email OTP / forgot-password flow.
+          const hashedPassword = await randomPasswordHash();
 
           user = new User({
             name,
