@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Tag as AntTag, Avatar as AntAvatar, Divider as Separator, Tooltip } from 'antd';
 import { toast } from "sonner";
+import { signUploadUrl } from "@/utils/signedFiles";
 
 const PublicProfile = () => {
   const { id } = useParams();
@@ -99,7 +100,7 @@ const PublicProfile = () => {
     try {
       const url = p.resumeUrl.startsWith('http') ? p.resumeUrl : `${API_DOMAIN}${p.resumeUrl}`;
       const filename = p.resumeName || `${profile.name || 'resume'}.pdf`;
-      const response = await fetch(url);
+      const response = await fetch(await signUploadUrl(url));
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -118,7 +119,7 @@ const PublicProfile = () => {
     try {
       const url = doc.fileUrl.startsWith('http') ? doc.fileUrl : `${API_DOMAIN}${doc.fileUrl}`;
       const filename = doc.fileName || doc.name || 'document';
-      const response = await fetch(url);
+      const response = await fetch(await signUploadUrl(url));
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');

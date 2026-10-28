@@ -59,6 +59,7 @@ import PhoneNumberInput from "@/components/shared/PhoneNumberInput";
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import { signUploadUrl } from "@/utils/signedFiles";
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
 const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
@@ -538,7 +539,7 @@ const Settings = () => {
             const baseTitle = doc.name || doc.fileName || 'Document';
             const downloadFilename = baseTitle.endsWith(ext) ? baseTitle : `${baseTitle}${ext}`;
             
-            const response = await fetch(url);
+            const response = await fetch(await signUploadUrl(url));
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');

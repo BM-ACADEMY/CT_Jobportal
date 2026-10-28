@@ -54,6 +54,8 @@ require('./config/passport'); // Passport Configuration
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const { toUploadPath, isPublicUpload, verifyUploadSignature } = require('./utils/signedUploads');
+const fileRoutes = require('./routes/fileRoutes');
 const Conversation = require('./models/Conversation');
 const CollaborationGroup = require('./models/CollaborationGroup');
 
@@ -183,17 +185,19 @@ app.use((req, res, next) => {
 });
 
 // Static folder for file uploads
-// Documents (resumes, MoUs, reports, KYC proofs) hold personal data. When PROTECT_DOCUMENT_UPLOADS=true
-// they need a valid token (Authorization header or ?token=); images (avatars, logos, covers) stay public.
-// Leave it off until the client links to documents with ?token= (see LAUNCH_READINESS.md).
-const PUBLIC_UPLOAD_EXT = new Set(['.webp', '.png', '.jpg', '.jpeg', '.gif']);
+// Documents (resumes, MoUs, reports, KYC proofs) hold personal data. When PROTECT_DOCUMENT_UPLOADS=true a document
+// needs either a signed link (?exp=&sig=, from POST /api/files/sign) or an Authorization header. Images (avatars, logos,
+// covers) and skill certificates stay public. The session token is never accepted in the URL.
 app.use('/uploads', (req, res, next) => {
   if (process.env.PROTECT_DOCUMENT_UPLOADS !== 'true') return next();
-  if (PUBLIC_UPLOAD_EXT.has(path.extname(req.path).toLowerCase())) return next();
+  const filePath = toUploadPath(`/uploads${req.path}`);
+  if (!filePath) return res.status(400).json({ msg: 'Bad file path' });
+  if (isPublicUpload(filePath)) return next();
+  if (verifyUploadSignature(filePath, req.query.exp, req.query.sig)) return next();
   const header = req.header('Authorization');
-  const token = header && header.startsWith('Bearer ') ? header.split(' ')[1] : req.query.token;
+  const token = header && header.startsWith('Bearer ') ? header.split(' ')[1] : '';
   try {
-    jwt.verify(String(token || ''), getJwtSecret());
+    jwt.verify(String(token), getJwtSecret());
     return next();
   } catch (err) {
     return res.status(401).json({ msg: 'Authentication required to view this file' });
@@ -243,6 +247,7 @@ app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/files', fileRoutes);
 
 
 // MongoDB Connection

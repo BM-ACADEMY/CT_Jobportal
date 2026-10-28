@@ -40,3 +40,8 @@ Base: main `7ba33a5` + the 18-commit launch patch + the work below. Server tests
 
 ## Order to follow
 Deploy and the live test sheets, then the mail switch, then lifecycle mail at 20 a day, then WhatsApp after approval, then the soft launch with one college for a week. After one clean week: relevance engine on, compare the summary numbers; then the assistant after legal review.
+
+## Update: three hardening items done in code
+- **Uploads:** documents can now be protected with short-lived signed links (`POST /api/files/sign`; company drive links use their own sign endpoint). Images and skill certificates stay public. The client opens every document link through the signer. Switch `PROTECT_DOCUMENT_UPLOADS=true` on the server after testing resume, MoU, KYC and certificate links.
+- **CSV import:** an existing account is matched by email only, never by phone. The credentials CSV no longer lists a default password.
+- **Social login:** the Google/LinkedIn redirect carries a one-time code in the URL fragment; the browser swaps it for the token at `POST /api/auth/social-exchange`. Codes last 60 seconds and are held in memory (single server process).

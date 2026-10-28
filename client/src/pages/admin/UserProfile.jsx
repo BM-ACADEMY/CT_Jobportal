@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { openUploadedFile } from '@/utils/signedFiles';
 
 const Field = ({ icon: Icon, label, value }) => {
   if (!value) return null;
@@ -42,7 +43,7 @@ const resolveUrl = (url) => {
 const openFile = (e, url) => {
   e.preventDefault();
   const resolved = resolveUrl(url);
-  if (resolved) window.open(resolved, '_blank', 'noopener,noreferrer');
+  if (resolved) openUploadedFile(resolved);
 };
 
 const UserProfile = () => {

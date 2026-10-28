@@ -46,6 +46,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from '../../context/AuthContext';
 import { hasFeature } from '@/components/subscription/FeatureGate';
+import { signUploadUrl } from "@/utils/signedFiles";
 
 const Applicants = () => {
   const { jobId } = useParams();
@@ -217,7 +218,7 @@ const Applicants = () => {
         : `${API_DOMAIN}${app.applicant.profile.resumeUrl}`;
       const filename = app.applicant.profile.resumeName || `${app.applicant.name || 'resume'}.pdf`;
 
-      const response = await fetch(url);
+      const response = await fetch(await signUploadUrl(url));
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');

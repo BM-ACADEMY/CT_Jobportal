@@ -29,6 +29,7 @@ const {
   resendCompanyInvite,
   getCompanyDriveView,
   exportCompanyDriveStudents,
+  signCompanyDriveFile,
   deleteDrive,
   regenerateQR,
   getStudents,
@@ -146,6 +147,7 @@ router.post('/drives/incharge/accept-existing/:driveId/:token', acceptInchargeIn
 router.post('/drives/incharge/accept-new/:driveId/:token', acceptInchargeInviteNew);
 router.get('/public/company-drive/:token', getCompanyDriveView);
 router.get('/public/company-drive/:token/export', exportCompanyDriveStudents);
+router.post('/public/company-drive/:token/sign-file', signCompanyDriveFile);
 
 // ── Admin routes ────────────────────────────────────────────────────────────
 router.get('/admin/all-colleges', verifyToken, authorizeRoles('admin'), getAllCollegesForAdmin);

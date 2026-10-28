@@ -18,6 +18,7 @@ const CollegeEmployer = require('../models/CollegeEmployer');
 const bcrypt = require('bcryptjs');
 const { randomPasswordHash } = require('../utils/studentPassword');
 const jwt = require('jsonwebtoken');
+const { toUploadPath, signUploadPath } = require('../utils/signedUploads');
 const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
 const QRCode = require('qrcode');
 const { parse } = require('csv-parse/sync');
@@ -1766,6 +1767,28 @@ const getCompanyDriveView = async (req, res) => {
 };
 
 // @route   GET /api/college/public/company-drive/:token/export
+// @route   POST /api/college/public/company-drive/:token/sign-file   body: { url }
+// A company opens candidate resumes from its drive link without signing in. The link only signs a resume that
+// belongs to a student of that drive.
+const signCompanyDriveFile = async (req, res) => {
+  try {
+    const found = await findDriveByCompanyToken(req.params.token);
+    if (!found) return res.status(404).json({ msg: 'Invalid or expired link' });
+    const filePath = toUploadPath(req.body && req.body.url);
+    if (!filePath) return res.status(400).json({ msg: 'Not an uploaded file' });
+    const students = await CollegeStudent.find({
+      $or: [{ campusDrive: found.drive._id }, { 'driveApplications.drive': found.drive._id }]
+    }).populate('user', 'profile.resumeUrl');
+    const allowed = students.some((s) => toUploadPath(s.user?.profile?.resumeUrl) === filePath);
+    if (!allowed) return res.status(403).json({ msg: 'This file is not part of the drive' });
+    res.set('Cache-Control', 'no-store');
+    res.json({ url: signUploadPath(filePath) });
+  } catch (err) {
+    console.error('signCompanyDriveFile error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
 const exportCompanyDriveStudents = async (req, res) => {
   try {
     const found = await findDriveByCompanyToken(req.params.token);
@@ -3054,6 +3077,7 @@ module.exports = {
   resendCompanyInvite,
   getCompanyDriveView,
   exportCompanyDriveStudents,
+  signCompanyDriveFile,
   deleteDrive,
   regenerateQR,
   getStudents,

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { FileText, Key, Copy, ExternalLink, Download, BarChart2, TrendingUp, CheckCircle2, Users, Award, RefreshCw, ScrollText, ShieldCheck, AlertTriangle, FileSpreadsheet, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { openUploadedFile } from '@/utils/signedFiles';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -128,7 +129,7 @@ const CollegeReports = () => {
       const res = await axios.get(`${API}/college/mou`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      window.open(`${import.meta.env.VITE_API_DOMAIN}${res.data.mouDocument}`, '_blank');
+      openUploadedFile(res.data.mouDocument);
       toast.success('MoU generated');
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Failed to generate MoU');

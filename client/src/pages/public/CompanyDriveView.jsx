@@ -148,6 +148,7 @@ const CompanyDriveView = () => {
                         {s.resumeUrl ? (
                           <a
                             href={s.resumeUrl.startsWith('http') ? s.resumeUrl : `${import.meta.env.VITE_API_DOMAIN}${s.resumeUrl}`}
+                            data-drive-token={token}
                             target="_blank"
                             rel="noreferrer"
                             className="text-xs font-bold text-emerald-600 hover:underline"
