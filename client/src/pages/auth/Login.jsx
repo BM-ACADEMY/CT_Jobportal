@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import SocialLoginButtons from '../../components/auth/SocialLoginButtons';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, Briefcase, Building2, TrendingUp, CircleCheck } from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -214,8 +213,6 @@ const LoginPage = () => {
               </Button>
             </form>
           </Form>
-
-          <SocialLoginButtons role="jobseeker" />
 
           <p className="text-center text-sm text-slate-500 pt-2">
             New to the platform?{' '}

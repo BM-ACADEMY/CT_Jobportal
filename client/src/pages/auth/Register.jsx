@@ -1,4 +1,3 @@
-import SocialLoginButtons from '../../components/auth/SocialLoginButtons';
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -511,7 +510,6 @@ const RegisterPage = () => {
                   </Button>
                 </form>
               </Form>
-              {selectedRole !== 'college' && <SocialLoginButtons role={selectedRole} />}
 
               <p className="text-center text-sm text-slate-500 mt-6">
                 Already have an account?{' '}

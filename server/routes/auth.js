@@ -39,19 +39,8 @@ router.get('/resend-otp', (req, res) => {
 
 // --- Social Auth Routes ---
 
-// Google
-router.get('/google', (req, res, next) => {
-  const role = isSelfServeRole(req.query.role) ? req.query.role : 'jobseeker';
-  passport.authenticate('google', { 
-    scope: ['profile', 'email'],
-    state: JSON.stringify({ role })
-  })(req, res, next);
-});
-router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), socialAuthCallback);
-
-// LinkedIn (OpenID Connect)
-router.get('/linkedin', startLinkedinLogin);
-router.get('/linkedin/callback', linkedinCallback);
+// Google and LinkedIn sign-in are switched off: email and OTP only. The handlers (controllers/linkedinAuth.js,
+// config/passport.js, socialAuthCallback, social-exchange) are kept so the routes can be restored.
 
 
 router.get('/me', verifyToken, getUserProfile);
