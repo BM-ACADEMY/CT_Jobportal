@@ -54,7 +54,7 @@ const ForColleges = () => {
   return (
     <div className="bg-white">
       <SEOHead
-        title="Campus Placement Software for Colleges | Velaivaaipu"
+        title="Campus Placement Software for Colleges in TN | Velaivaaipu"
         description="Run campus drives, track students and share placement reports with your principal. Students join by QR code with just a WhatsApp number. Start free."
         path="/for-colleges"
       />

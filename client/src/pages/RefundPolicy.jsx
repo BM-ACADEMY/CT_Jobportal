@@ -22,7 +22,8 @@ const RefundPolicy = () => (
     intro="Applies to subscriptions and pay-per-feature purchases."
     sections={SECTIONS}
     seoPath="/refund-policy"
-    seoDescription="Velaivaaipu refund and cancellation policy: 24-hour refund window, duplicate charges refunded in full, how to cancel auto-renewal."
+    seoTitle="Refund & Cancellation Policy for Paid Plans | Velaivaaipu"
+    seoDescription="See the Velaivaaipu refund and cancellation policy: the 24-hour refund window, full refunds for duplicate charges and how to stop auto-renewal. Read it."
   >
     <Section id="summary" title="1. In short">
       <ul className="list-disc pl-5 space-y-1.5">

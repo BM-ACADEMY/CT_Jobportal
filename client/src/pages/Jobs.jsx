@@ -233,17 +233,16 @@ const Jobs = () => {
   const searchedLocation = locationTerm.trim()
     .replace(/\s+/g, ' ')
     .replace(/\b\w/g, character => character.toUpperCase());
+  const metaPlace = searchedLocation || 'Tamil Nadu';
   const jobsMetaTitle = loading
-    ? `Latest Jobs in ${searchedLocation || 'Tamil Nadu'} | Velaivaaipu`
-    : searchedLocation
-      ? `${filteredJobs.length} Latest Jobs in ${searchedLocation} | Velaivaaipu`
-      : `${filteredJobs.length} Latest Jobs in Tamil Nadu | Velaivaaipu`;
+    ? `Latest Job Vacancies in ${metaPlace} | Velaivaaipu`
+    : `Latest Job Vacancies in ${metaPlace} – ${filteredJobs.length} Jobs | Velaivaaipu`;
   const jobCoreAreas = getJobCoreAreas(filteredJobs);
-  const metaLocation = searchedLocation ? `in ${searchedLocation}` : 'across Tamil Nadu';
-  const metaTail = 'Fresher and experienced roles from verified companies. Apply free.';
-  let jobsMetaDescription = `${filteredJobs.length}+ jobs ${metaLocation}. Latest private-sector openings. ${metaTail}`;
-  for (let areaCount = jobCoreAreas.length; areaCount > 0; areaCount -= 1) {
-    const candidate = `${filteredJobs.length}+ jobs ${metaLocation}. ${jobCoreAreas.slice(0, areaCount).join(', ')} openings. ${metaTail}`;
+  const metaCount = loading ? 'the' : `${filteredJobs.length}+`;
+  const metaTail = 'for freshers and experienced candidates. Apply online for free today.';
+  let jobsMetaDescription = `Browse ${metaCount} latest job vacancies in ${metaPlace} for freshers and experienced candidates. Filter by role and salary, then apply online for free today.`;
+  for (let areaCount = Math.min(jobCoreAreas.length, 2); areaCount > 0; areaCount -= 1) {
+    const candidate = `Browse ${metaCount} latest job vacancies in ${metaPlace}, including ${jobCoreAreas.slice(0, areaCount).join(' and ')} roles, ${metaTail}`;
     if (candidate.length <= 155) {
       jobsMetaDescription = candidate;
       break;

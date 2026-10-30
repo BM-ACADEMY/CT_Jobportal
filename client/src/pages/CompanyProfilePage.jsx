@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
 import { jobPath } from '../utils/jobUrl';
+import SEOHead from '../components/seo/SEOHead';
 
 const CompanyProfilePage = () => {
   const { id } = useParams();
@@ -72,8 +73,21 @@ const CompanyProfilePage = () => {
     return `${experience.min || experience.max}+ Yrs`;
   };
 
+
+  const companySeoName = company.display_name || company.name;
+  const companySeoPlace = company.location ? ` in ${company.location}` : '';
+  const companySeoTitle = [
+    `${companySeoName} Jobs & Careers${companySeoPlace} – Apply | Velaivaaipu`,
+    `${companySeoName} Jobs & Careers${companySeoPlace} | Velaivaaipu`,
+    `${companySeoName} Jobs & Careers | Velaivaaipu`,
+  ].find((t) => t.length <= 60) || `${companySeoName} Jobs | Velaivaaipu`;
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
+      <SEOHead
+        title={companySeoTitle}
+        description={`See current job openings at ${companySeoName}${companySeoPlace}. Read the company profile, check roles for freshers and experienced, and apply free on Velaivaaipu.`}
+        path={`/companies/${id}`}
+      />
       {/* Hero / Header */}
       <div className="bg-white border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">

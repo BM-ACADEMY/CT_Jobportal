@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     };
 
     const html = lib.injectHead(shell, {
-      title: lib.clip(`${job.title} Job in ${city} — ${company} | Velaivaaipu`, 70),
+      title: lib.clip(`${job.title} Job in ${city} – ${company} | Velaivaaipu`.length <= 60 ? `${job.title} Job in ${city} – ${company} | Velaivaaipu` : `${job.title} Job in ${city} | Velaivaaipu`, 70),
       description,
       canonical,
       image: image2,

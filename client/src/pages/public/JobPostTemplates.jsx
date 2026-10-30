@@ -25,7 +25,7 @@ const JobPostTemplates = () => {
     <div className="bg-white min-h-screen">
       <SEOHead
         title="Free Job Post Templates for 10 Common Roles | Velaivaaipu"
-        description="Copy ready-made job descriptions for sales, accountant, telecaller, designer, developer and more. Change the details and post free on Velaivaaipu."
+        description="Copy ready-made job descriptions for sales, accountant, telecaller, designer, developer and more. Edit the details and post your job free. Try it now."
         path="/job-post-templates"
       />
       <section className="bg-gradient-to-br from-emerald-50 via-white to-teal-50 pt-32 pb-12">

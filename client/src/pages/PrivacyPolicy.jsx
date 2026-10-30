@@ -29,7 +29,8 @@ const PrivacyPolicy = () => (
     intro="Explains what data we collect, why, and the choices you have."
     sections={SECTIONS}
     seoPath="/privacy-policy"
-    seoDescription="How Velaivaaipu collects, uses and protects personal data of job seekers, companies and colleges, and the choices you have."
+    seoTitle="Privacy Policy – How We Protect Your Data | Velaivaaipu"
+    seoDescription="Learn how Velaivaaipu collects, uses and protects the personal data of job seekers, employers and colleges, and the choices you have. Read our policy."
   >
     <Section id="who" title="1. Who we are">
       <p>{LEGAL_ENTITY} ("we", "us"), CIN {LEGAL_CIN}, registered office {LEGAL_ADDRESS}, runs velaivaaipu.in, a platform that connects job seekers, companies and colleges. We decide why and how your personal data is used on the platform. This policy applies to the website and the services on it, including campus QR registration and skill tests.</p>
