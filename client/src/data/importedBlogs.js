@@ -2,6 +2,8 @@
 export const IMPORTED_BLOGS = [
   {
     "slug": "where-to-advertise-job-vacancy-pondicherry",
+    "metaTitle": "How to Advertise a Job Vacancy in Pondicherry | Velaivaaipu",
+    "metaDescription": "Compare 5 ways to advertise a job vacancy in Pondicherry, from job portals to local channels, and pick the right one for your hiring needs. Read now.",
     "title": "Where to Advertise a Job Vacancy in Pondicherry: 5 Options Compared",
     "excerpt": "Finding the right talent in Pondicherry requires more than just publishing a generic job description. Whether you are an established business along MG Road, a growing technology startup in Lawspet, or a manufacturing enterprise in the Sedarapet or Pipdic industrial zones, choosing the right recruitment advertising channel directly determines your time-to-hire, applicant quality, and recruitment cost.",
     "category": "For Recruiters & Employers",
@@ -14,6 +16,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "recruitment-agency-charges-india",
+    "metaTitle": "Recruitment Agency Charges in India Explained | Velaivaaipu",
+    "metaDescription": "Find out what recruitment agencies charge in India, who pays the placement fee and what a job seeker should never pay for. Read the practical guide.",
     "title": "What Recruitment Agencies Actually Charge in India: A Practical Guide for Job Seekers and Recruiters",
     "excerpt": "How much do recruitment agencies actually charge in India? Who pays the placement fee—the employer or the job seeker? These are crucial questions asked every day by business owners, HR managers, and job seekers across Pondicherry, Tamil Nadu, and throughout India. Misunderstandings about recruitment fees can lead to budget overruns for employers or costly scams for job seekers.",
     "category": "Recruitment & HR Guidance",
@@ -72,6 +76,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "jobs-in-tindivanam",
+    "metaTitle": "Jobs in Tindivanam: Where & How to Apply | Velaivaaipu",
+    "metaDescription": "Looking for jobs in Tindivanam? See where to find openings, from the employment exchange to job portals, and how to apply safely. Read the full guide.",
     "title": "Jobs in Tindivanam: A Practical Guide for Job Seekers",
     "excerpt": "Looking for jobs in Tindivanam? Start by checking the Tamil Nadu Employment Exchange, National Career Service, company career pages, recruitment agencies, job portals and trusted local job-alert channels. Depending on your qualification and experience, you can explore sales, administration, accounts, IT, technical, service and other roles. Always verify the latest vacancy before applying.",
     "category": "Careers & Local Jobs",
@@ -84,6 +90,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "jobs-in-villupuram",
+    "metaTitle": "Jobs in Villupuram: Openings & How to Apply | Velaivaaipu",
+    "metaDescription": "Find jobs in Villupuram through the employment exchange, company career pages, job portals and local alerts. Learn how to apply and get hired. Read now.",
     "title": "Jobs in Villupuram: A Practical Guide for Job Seekers",
     "excerpt": "Looking for jobs in Villupuram? Start with the Tamil Nadu Employment Exchange, National Career Service, company career pages, job portals, recruitment agencies and trusted local job-alert channels. Opportunities can vary across sales, administration, accounts, education, healthcare, IT, services and other sectors. Always check the latest vacancy, eligibility, location and application process before applying.",
     "category": "Careers & Local Jobs",
@@ -96,6 +104,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "jobs-in-cuddalore",
+    "metaTitle": "Jobs in Cuddalore: Private & Fresher Openings | Velaivaaipu",
+    "metaDescription": "Searching for jobs in Cuddalore? Learn the best places to look for private and fresher jobs, plus tips to apply and avoid fake offers. Read the guide.",
     "title": "Jobs in Cuddalore: A Practical Guide for Job Seekers",
     "excerpt": "Looking for jobs in Cuddalore? Job seekers can explore opportunities through the Tamil Nadu Employment Exchange, National Career Service, company career pages, recruitment agencies, job portals and local job-alert channels. Cuddalore offers different types of employment opportunities, so choose roles based on your qualification, skills, experience and preferred location. Always verify the vacancy before applying.",
     "category": "Careers & Local Jobs",
@@ -108,6 +118,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "part-time-jobs-for-college-students-in-pondicherry",
+    "metaTitle": "Part-Time Jobs in Pondicherry for Students | Velaivaaipu",
+    "metaDescription": "Explore part-time jobs in Pondicherry for college students, from tutoring and sales to digital work, and learn how to balance work and study. Read now.",
     "title": "Part-Time Jobs for College Students in Pondicherry",
     "excerpt": "Looking for part-time jobs for college students in Pondicherry? Students can explore suitable opportunities in tutoring, customer support, sales, content, digital work and other flexible roles, depending on current vacancies. Before accepting a job, check the working hours, location, responsibilities and compatibility with your college schedule. Always verify the employer before applying.",
     "category": "Students & Part-Time Work",
@@ -120,6 +132,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "it-jobs-in-pondicherry-for-freshers",
+    "metaTitle": "IT Jobs in Pondicherry for Freshers: Guide | Velaivaaipu",
+    "metaDescription": "Starting your IT career in Pondicherry? Learn which skills to build, how to prepare your resume and where to find fresher IT jobs. Read the full guide.",
     "title": "IT Jobs in Pondicherry for Freshers: A Practical Guide",
     "excerpt": "Looking for IT jobs in Pondicherry as a fresher? Start by identifying your technical skills, preparing a focused resume, and checking company career pages, job portals, recruitment channels and trusted local job-alert sources. Freshers can explore software, web development, testing, technical support, data and other entry-level roles based on current employer requirements.",
     "category": "IT Careers & Freshers",
@@ -132,6 +146,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "work-from-home-jobs-in-tamil-nadu",
+    "metaTitle": "Work From Home Jobs in Tamil Nadu: Safe Guide | Velaivaaipu",
+    "metaDescription": "Find genuine work from home jobs in Tamil Nadu. Learn where to search, which roles suit you and how to spot remote job scams before you apply. Read now.",
     "title": "Work From Home Jobs in Tamil Nadu: A Practical Guide for Job Seekers",
     "excerpt": "Looking for work from home jobs in Tamil Nadu? Start by checking verified company career pages, established job portals, recruitment channels and trusted local job-alert sources. Depending on the employer, remote roles may be available in customer support, sales, digital marketing, content, technology and administration. Always verify the company, job description and remote-work terms before applying.",
     "category": "Careers & Remote Work",
@@ -144,6 +160,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "private-jobs-in-pondicherry",
+    "metaTitle": "Private Jobs in Pondicherry: A Complete Guide | Velaivaaipu",
+    "metaDescription": "Explore private jobs in Pondicherry across IT, sales, healthcare and more. Learn where to search, how to apply and what employers expect. Read the guide.",
     "title": "Private Jobs in Pondicherry: A Complete Guide for Job Seekers",
     "excerpt": "For many job seekers, a private-sector job is the first step toward building professional experience and developing practical skills.",
     "category": "Private Sector Careers",
@@ -156,6 +174,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "walk-in-interviews-in-pondicherry",
+    "metaTitle": "Walk-in Interviews in Pondicherry: Prep Guide | Velaivaaipu",
+    "metaDescription": "Attending a walk-in interview in Pondicherry? Learn what to carry, how to prepare and how to stand out on the day of your interview. Read the guide.",
     "title": "Walk-in Interviews in Pondicherry: A Complete Guide for Job Seekers",
     "excerpt": "A walk-in interview is a recruitment process where candidates can attend an interview at a specified location and time, usually without needing a traditional appointment. For job seekers, this can be a convenient way to meet recruiters directly.",
     "category": "Interview Guidance",
@@ -168,6 +188,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "fresher-jobs-in-pondicherry",
+    "metaTitle": "Fresher Jobs in Pondicherry: First Job Guide | Velaivaaipu",
+    "metaDescription": "New graduate? Learn how to find fresher jobs in Pondicherry, build a simple resume and prepare for your first interview. Read the guide and start applying.",
     "title": "Fresher Jobs in Pondicherry: A Practical Guide to Finding Your First Job",
     "excerpt": "Finishing college is exciting, but the next question can be difficult: \"Where can I find my first job?\"",
     "category": "Fresher Careers",
@@ -180,6 +202,8 @@ export const IMPORTED_BLOGS = [
   },
   {
     "slug": "jobs-in-pondicherry-today",
+    "metaTitle": "Jobs in Pondicherry Today: Where to Look | Velaivaaipu",
+    "metaDescription": "Want a job in Pondicherry soon? See where to find today's openings, which industries are hiring and how to apply fast without falling for fake offers.",
     "title": "Jobs in Pondicherry Today: A Practical Guide for Job Seekers",
     "excerpt": "Pondicherry, also known as Puducherry, is a popular place to live and work in Tamil Nadu's neighbouring region. The city has opportunities across different industries, making it relevant for both freshers and experienced professionals.",
     "category": "Jobs & Career Guidance",

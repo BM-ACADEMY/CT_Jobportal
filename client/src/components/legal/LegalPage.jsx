@@ -16,9 +16,9 @@ export const Section = ({ id, title, children }) => (
   </section>
 );
 
-const LegalPage = ({ title, icon: Icon, effective, intro, sections, seoPath, seoDescription, children }) => (
+const LegalPage = ({ title, icon: Icon, effective, intro, sections, seoPath, seoTitle, seoDescription, children }) => (
   <div className="min-h-screen bg-white">
-    <SEOHead title={`${title} | Velaivaaipu`} description={seoDescription} path={seoPath} />
+    <SEOHead title={seoTitle || `${title} | Velaivaaipu`} description={seoDescription} path={seoPath} />
     <div className="bg-slate-950 pt-28 pb-14 px-6">
       <div className="max-w-4xl mx-auto">
         <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 mb-5">Legal</Badge>
