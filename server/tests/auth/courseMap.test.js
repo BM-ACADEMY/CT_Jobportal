@@ -2,8 +2,9 @@ const test = require('node:test');
 const assert = require('node:assert');
 const { SKILL_CATEGORIES, getCategory, offerText, isSendWindow, PASS_RATIO } = require('../../config/courseMap');
 
-test('seven categories, each with a course', () => {
-  assert.equal(SKILL_CATEGORIES.length, 7);
+test('seventeen categories, each with a course and a unique key', () => {
+  assert.equal(SKILL_CATEGORIES.length, 17);
+  assert.equal(new Set(SKILL_CATEGORIES.map((c) => c.key)).size, 17);
   SKILL_CATEGORIES.forEach((c) => assert.ok(c.key && c.label && c.course));
 });
 test('getCategory rejects unknown and non-string keys', () => {

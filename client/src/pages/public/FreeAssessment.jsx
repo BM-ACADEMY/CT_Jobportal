@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Sparkles, ArrowRight, ArrowLeft, Loader2, Target, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 import { useAuth } from '../../context/AuthContext';
@@ -15,8 +14,12 @@ const FreeAssessment = () => {
   const { user } = useAuth();
   
   const [step, setStep] = useState('entry'); // entry, test, lead, results
-  const [skill, setSkill] = useState('');
-  const [difficulty, setDifficulty] = useState('medium');
+  const [skills, setSkills] = useState([]);
+  const [skillsLoaded, setSkillsLoaded] = useState(false);
+  const [skillKey, setSkillKey] = useState('');
+  const [skill, setSkill] = useState('');          // label shown to the student and saved with the result
+  const difficulty = 'medium';                      // the question bank has one level
+  const [attemptToken, setAttemptToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
   
@@ -29,19 +32,29 @@ const FreeAssessment = () => {
   const [leadName, setLeadName] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
 
+  // Skills that have questions ready. A list (not a text box) means no spelling mistakes and no dead ends.
+  useEffect(() => {
+    axios.get(`${API}/assessments/skills`)
+      .then((res) => setSkills(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setSkills([]))
+      .finally(() => setSkillsLoaded(true));
+  }, []);
+
   const startAssessment = async (e) => {
     e.preventDefault();
-    if (!skill.trim()) return toast.error('Please enter a skill');
-    
+    if (!skillKey) return toast.error('Please choose a skill');
+
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/assessments/public`, {
-        params: { skill, difficulty }
-      });
+      const res = await axios.get(`${API}/assessments/bank`, { params: { category: skillKey } });
       setQuestions(res.data.questions);
+      setAttemptToken(res.data.attemptToken);
+      setSkill(res.data.skill);
+      setCurrentQIndex(0);
+      setAnswers({});
       setStep('test');
     } catch (err) {
-      toast.error(err.response?.status === 503 ? (err.response.data?.msg || 'The test is not available right now. Please try again later.') : 'Failed to generate assessment. Try a different skill.');
+      toast.error(err.response?.data?.msg || 'The test is not available right now. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -55,15 +68,22 @@ const FreeAssessment = () => {
     if (currentQIndex < questions.length - 1) {
       setCurrentQIndex(prev => prev + 1);
     } else {
-      // Calculate score before moving to lead step
+      // The server marks the test. The browser never sees the right answers until it has submitted.
       let calculatedScore = 0;
-      questions.forEach((q, idx) => {
-        if (answers[idx] === q.correct_option) {
-          calculatedScore++;
-        }
-      });
+      let reviewed = questions;
+      try {
+        const picked = {};
+        questions.forEach((q, idx) => { picked[q.id] = answers[idx]; });
+        const res = await axios.post(`${API}/assessments/bank/submit`, { category: skillKey, attemptToken, answers: picked });
+        calculatedScore = res.data.score;
+        const byId = new Map(res.data.review.map((r) => [r.id, r]));
+        reviewed = questions.map((q) => ({ ...q, correct_option: byId.get(q.id)?.correct_option, explanation: byId.get(q.id)?.explanation }));
+      } catch (err) {
+        return toast.error(err.response?.data?.msg || 'Could not check your answers. Please try again.');
+      }
+      setQuestions(reviewed);
       setScore(calculatedScore);
-      
+
       if (user?.role === 'jobseeker') {
         try {
           await axios.post(`${API}/skill-tests/save`, {
@@ -73,7 +93,7 @@ const FreeAssessment = () => {
             total: questions.length,
             percentage: Math.round((calculatedScore / questions.length) * 100),
             passed: (calculatedScore / questions.length) >= 0.6,
-            questions,
+            questions: reviewed,
             answers
           }); // Removed withCredentials: true as we use Bearer tokens
           navigate('/candidate/skill-tests');
@@ -121,40 +141,31 @@ const FreeAssessment = () => {
           <form onSubmit={startAssessment} className="space-y-4 text-left">
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Skill to Test</label>
-              <Input 
-                value={skill} 
-                onChange={e => setSkill(e.target.value)} 
-                placeholder="e.g. React Hooks, Python, AWS" 
-                className="mt-1.5 h-12 rounded-xl"
-              />
+              <select
+                value={skillKey}
+                onChange={e => setSkillKey(e.target.value)}
+                disabled={!skillsLoaded || skills.length === 0}
+                className="mt-1.5 h-12 w-full rounded-xl border border-input bg-white px-3 text-sm font-medium text-slate-800"
+              >
+                <option value="">{!skillsLoaded ? 'Loading skills...' : skills.length ? 'Choose a skill' : 'Tests are being prepared'}</option>
+                {skills.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+              </select>
+              {skillsLoaded && skills.length === 0 && (
+                <p className="text-xs text-amber-600 font-semibold mt-2">Tests are being prepared. Please check back soon.</p>
+              )}
             </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Difficulty</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['easy', 'medium', 'hard'].map(level => (
-                  <div 
-                    key={level}
-                    onClick={() => setDifficulty(level)}
-                    className={`cursor-pointer text-center py-2.5 rounded-lg text-sm font-bold border transition-colors ${difficulty === level ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
-                  >
-                    {level.charAt(0).toUpperCase() + level.slice(1)}
-                  </div>
-                ))}
-              </div>
-            </div>
-            
             <Button 
               type="submit" 
-              disabled={loading} 
+              disabled={loading || !skillKey} 
               className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold gap-2 mt-4 transition-all"
             >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : 'Generate Assessment'}
+              {loading ? <Loader2 className="animate-spin" size={18} /> : 'Start Assessment'}
               {!loading && <ArrowRight size={18} />}
             </Button>
             
             {loading && (
               <p className="text-center text-xs text-slate-500 font-semibold animate-pulse mt-3">
-                Our AI is actively generating tailored questions for you. This usually takes 5-10 seconds...
+                Preparing your questions...
               </p>
             )}
           </form>

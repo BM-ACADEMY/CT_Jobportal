@@ -11,6 +11,17 @@ const SKILL_CATEGORIES = [
   { key: 'communication', label: 'Communication / English', course: 'Soft Skills & Interview Prep' },
   { key: 'computer-basics', label: 'Computer Basics', course: 'Web Design (Basic)' },
   { key: 'customer-service', label: 'Customer Service', course: 'Production Support Engineer Program' },
+  // Added for the free skill test (course mapping to be confirmed by Kamar).
+  { key: 'ms-office', label: 'MS Word & PowerPoint', course: 'Data Analytics with Power BI' },
+  { key: 'typing-data-entry', label: 'Typing & Data Entry', course: 'Data Analytics with Power BI' },
+  { key: 'aptitude', label: 'Aptitude & Reasoning', course: 'Soft Skills & Interview Prep' },
+  { key: 'english-grammar', label: 'Basic English Grammar', course: 'Soft Skills & Interview Prep' },
+  { key: 'html-css', label: 'HTML & CSS Basics', course: 'Web Design (Basic)' },
+  { key: 'python-basics', label: 'Python Basics', course: 'Data Analytics with Power BI' },
+  { key: 'sql-basics', label: 'SQL Basics', course: 'Data Analytics with Power BI' },
+  { key: 'sales-basics', label: 'Sales Basics', course: 'AI-powered Digital Marketing' },
+  { key: 'hr-basics', label: 'HR Basics', course: 'Soft Skills & Interview Prep' },
+  { key: 'banking-finance', label: 'Banking & Finance Basics', course: 'Data Analytics with Power BI' },
 ];
 
 const byKey = new Map(SKILL_CATEGORIES.map((c) => [c.key, c]));

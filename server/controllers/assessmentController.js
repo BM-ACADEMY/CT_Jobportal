@@ -1,5 +1,9 @@
 const Assessment = require('../models/Assessment');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
+const CampusQuestionSet = require('../models/CampusQuestionSet');
+const { SKILL_CATEGORIES, getCategory, PASS_RATIO } = require('../config/courseMap');
+const { pickSet } = require('../utils/questionBank');
+const { publicQuestions, signAttempt, verifyAttempt, scoreAttempt } = require('../utils/campusTest');
 
 // @desc    Generate or fetch a skill assessment
 // @route   GET /api/assessments/public?skill=X&difficulty=Y
@@ -270,7 +274,66 @@ const saveResult = async (req, res) => {
   }
 };
 
+// Free skill test from the pre-checked question bank (no live AI call, answers scored on the server).
+// @route GET /api/assessments/skills  -> skills that have questions ready
+const getFreeSkills = async (req, res) => {
+  try {
+    const ready = await CampusQuestionSet.distinct('category', { active: true });
+    const skills = SKILL_CATEGORIES.filter((c) => ready.includes(c.key)).map(({ key, label }) => ({ key, label }));
+    res.json(skills);
+  } catch (err) {
+    console.error('Free skills list error:', err.message);
+    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
+  }
+};
+
+// @route GET /api/assessments/bank?category=<key>
+const getFreeBankTest = async (req, res) => {
+  try {
+    const cat = getCategory(req.query.category);
+    if (!cat) return res.status(400).json({ msg: 'Please choose a skill from the list.' });
+    let set;
+    try { set = await pickSet(cat.key); } catch (err) {
+      console.error('Question bank unavailable:', err.message);
+      return res.status(503).json({ msg: 'This test is being prepared. Please try another skill or come back later.' });
+    }
+    res.json({
+      skill: cat.label,
+      questions: publicQuestions(set),
+      attemptToken: signAttempt({ studentId: 'guest', category: cat.key, setId: set._id }),
+    });
+  } catch (err) {
+    console.error('Free bank test error:', err.message);
+    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
+  }
+};
+
+// @route POST /api/assessments/bank/submit   Body: { category, attemptToken, answers: { "<questionId>": "a" } }
+const submitFreeBankTest = async (req, res) => {
+  try {
+    const cat = getCategory(req.body.category);
+    if (!cat) return res.status(400).json({ msg: 'Please choose a skill from the list.' });
+    const check = verifyAttempt(req.body.attemptToken, { studentId: 'guest', category: cat.key });
+    if (check.error === 'too_fast') return res.status(400).json({ msg: 'That was too fast. Please read each question and try again.' });
+    if (check.error) return res.status(400).json({ msg: 'This test has expired. Please start again.' });
+    const set = await CampusQuestionSet.findById(check.claims.set);
+    if (!set) return res.status(400).json({ msg: 'This test has expired. Please start again.' });
+    const { score, total } = scoreAttempt(set, req.body.answers);
+    const percentage = Math.round((score / total) * 100);
+    res.json({
+      score, total, percentage, passed: score / total >= PASS_RATIO,
+      review: set.questions.map((q) => ({ id: q.id, correct_option: q.correct_option, explanation: q.explanation })),
+    });
+  } catch (err) {
+    console.error('Free bank submit error:', err.message);
+    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
+  }
+};
+
 module.exports = {
+  getFreeSkills,
+  getFreeBankTest,
+  submitFreeBankTest,
   getAssessment,
   getCategories,
   startTest,
