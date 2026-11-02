@@ -72,7 +72,9 @@ Problems found:
 - Announcements to a chosen audience.
 
 ### I. Security and roles
-- Enforce roles: **Root Super Admin** (everything, manages admins), **Finance** (payments, refunds, reports), **Support** (tickets, users read and block), **Moderator** (jobs, reviews, KYC).
+- **Super Admin (Kamar) sees and controls everything.** Only the Super Admin creates other admins and chooses, feature by feature, what each person can see and do. There is no separate Finance role for the CA; accounts access is given like any other role.
+- **Permission matrix:** each admin account gets a role (a ready-made set of permissions) that the Super Admin can adjust per person. Starting roles: Admin / Operations, Sales, Accounts, Support, Moderator. Examples: Sales sees leads, colleges, companies, plans and coupons but not payments detail or user deletion; Accounts sees payments, refunds, invoices and reports but not user data or content; Support sees tickets and users read-only with block; Moderator handles jobs, reviews and KYC.
+- Permissions are checked on the server for every route and also hide the menu items in the panel.
 - 2FA required for every admin. Session timeout. Login history with IP and device.
 - Admin audit log: who did what, when, before and after values, for deletes, edits, refunds, plan changes, pausing automations.
 - Soft delete for users, jobs and companies (hide first, purge later) so a wrong delete can be undone.
@@ -92,8 +94,32 @@ Problems found:
 5. Quality: skill test review, relevance and AI dashboards.
 6. Support tools and content.
 
-## 5. What Kamar decides
-- The list of admin roles and who gets which (names).
-- Who receives automatic alerts (email and WhatsApp number).
-- Whether a Finance role exists separately for the CA.
-- Which reports he wants every week, and where (email or WhatsApp).
+## 5. Decisions made (2 Nov)
+1. **Roles:** Super Admin has everything; the Super Admin gives other admins access by feature (sales, admin, accounts, and so on). Built as the permission matrix in section I.
+2. **Alerts and push notifications:** chosen on budget, see section 6.
+3. **No separate Finance role** for the CA.
+4. **Reports:** recommended set in section 7, for Kamar to approve.
+
+## 6. Push notifications for everyone, on a small budget
+Web push (browser and installed app) has no per-message fee and works with the PWA already built. The cost is development time only. It replaces paid channels for most alerts; WhatsApp stays for the few messages that need it.
+
+**Users (job seekers and students, recruiters and companies, colleges)**
+- Job seekers: new matching jobs (capped), application status changes, interview reminders, skill test result and next step, college drive notices.
+- Companies and recruiters: new applicants, candidate matches for a posted job, interview reminders, plan limit nearly reached.
+- Colleges: new student registrations, drive updates, KYC and report ready.
+- Rules: ask permission only after a moment of value (after the first application or the first test), never on the first visit; at most 1 job push per day; quiet hours 9pm to 8am; every push can be turned off by type in Settings; messages in English and Tamil; no marketing push without opt-in.
+- Limit to know: on iPhone, push works only after the person installs the app to the Home Screen (iOS 16.4 or later). The existing install prompt should explain this. Android and desktop browsers work directly.
+
+**Admin team**
+- Push to the Super Admin and the right role: new college KYC, refund request, failed payment or webhook, ticket with no reply, an automatic job that did not run, mail bounce rate above the limit, daily cap reached.
+- Email as backup for the most important ones (payment failure, site down), because push can be missed.
+- WhatsApp only for 2 or 3 critical alerts (site down, payment webhook failing), because Meta charges per message.
+
+**Build points:** the service worker handles push events; a table stores each device's push subscription; one notification service decides channel, frequency cap and quiet hours; the Notification collection already exists and is reused for the in-app bell; the admin Command Center shows delivery counts.
+
+## 7. Reports (recommended)
+- **Every morning, short digest to the Super Admin (push, with email copy):** new users by audience, real revenue yesterday, pending KYC and refunds, tickets waiting, anything failed overnight.
+- **Every Monday, weekly email:** signup funnel per audience, real revenue and plan changes, college progress (registrations, tests, placements), mail and push health, AI cost, and the five things that need a decision.
+- **Monthly, to the Accounts role:** payments, refunds, GST summary and receipts in a format the CA can use.
+- **Colleges** keep their own scheduled reports (already built).
+- Nothing else by default; more can be added from the panel.
