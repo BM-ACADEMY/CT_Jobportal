@@ -86,12 +86,12 @@ const HomeGuest = () => {
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/jobs`)
-      .then(res => setJobs(res.data))
+      .then(res => setJobs(Array.isArray(res.data) ? res.data : []))
       .catch(() => { })
       .finally(() => setLoading(false));
 
     axios.get(`${API_BASE_URL}/public/stats`)
-      .then(res => setPlatformStats(res.data))
+      .then(res => setPlatformStats(res.data && typeof res.data === "object" ? res.data : null))
       .catch(() => { });
   }, [API_BASE_URL]);
 

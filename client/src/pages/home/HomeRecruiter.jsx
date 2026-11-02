@@ -42,7 +42,7 @@ const HomeRecruiter = () => {
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/public/stats`).then(res => setPlatformStats(res.data)).catch(() => {});
-    axios.get(`${API_BASE_URL}/jobs`).then(res => setJobs(res.data || [])).catch(() => {});
+    axios.get(`${API_BASE_URL}/jobs`).then(res => setJobs(Array.isArray(res.data) ? res.data : [])).catch(() => {});
   }, [API_BASE_URL]);
 
   const recentCompanies = useMemo(() => {
