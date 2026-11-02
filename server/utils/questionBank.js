@@ -15,6 +15,13 @@ Random seed: ${Math.random()}`;
 
 const { getCuratedSet } = require('../data/curatedQuestionBank');
 
+// JSON mode makes some models wrap the list in an object, e.g. {"questions":[...]}. Accept either shape.
+const unwrapQuestions = (parsed) => {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === 'object') return Object.values(parsed).find(Array.isArray) || null;
+  return null;
+};
+
 const generateSet = async (categoryKey) => {
   const cat = getCategory(categoryKey);
   if (!cat) throw new Error('Unknown category');
@@ -28,7 +35,8 @@ const generateSet = async (categoryKey) => {
       });
       const result = await model.generateContent(buildPrompt(cat.label));
       const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-      questions = normalizeSet(JSON.parse(text));
+      questions = normalizeSet(unwrapQuestions(JSON.parse(text)));
+      if (!questions) console.warn(`[QuestionBank] AI output for ${cat.label} failed validation`);
     } catch (err) {
       console.warn(`[QuestionBank] AI call failed for ${cat.label} (${err.message}), using curated bank`);
     }
@@ -58,4 +66,4 @@ const pickSet = async (categoryKey) => {
   return inflight.get(categoryKey);
 };
 
-module.exports = { generateSet, pickSet, buildPrompt };
+module.exports = { generateSet, pickSet, buildPrompt, unwrapQuestions };
