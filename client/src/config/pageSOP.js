@@ -79,7 +79,7 @@ export const PAGE_SOP = {
     ]
   },
   profileInsights: {
-    title: 'Profile Insights',
+    title: 'Who Viewed Me',
     whatItIs: 'See who is viewing your profile and how it performs versus other candidates.',
     howItWorks: [
       'Recruiter/company profile views appear here as they happen.',
@@ -187,7 +187,7 @@ export const PAGE_SOP = {
     ]
   },
   atsPipeline: {
-    title: 'ATS Pipeline',
+    title: 'Hiring Pipeline',
     whatItIs: 'A visual, drag-and-drop board for moving candidates through your hiring stages.',
     howItWorks: [
       'Drag candidate cards between stages (Applied → Interview → Offer, etc.) as they progress.',
@@ -203,7 +203,7 @@ export const PAGE_SOP = {
     ]
   },
   bulkMessaging: {
-    title: 'Bulk Messaging',
+    title: 'Message Candidates',
     whatItIs: 'Send the same message to multiple shortlisted candidates in one action.',
     howItWorks: [
       'Select recipients from your candidate list.',
@@ -327,7 +327,7 @@ export const PAGE_SOP = {
     ]
   },
   collegeReports: {
-    title: 'Reports & Passkey',
+    title: 'Reports',
     whatItIs: 'Generate placement performance reports and a shareable executive summary link for your Principal/Management.',
     howItWorks: [
       'Generate a report to see placement stats (placed/total, package trends).',
@@ -335,7 +335,7 @@ export const PAGE_SOP = {
     ]
   },
   collegeVerification: {
-    title: 'ID Verification',
+    title: 'Student Verification',
     whatItIs: 'Approve or reject student ID/document verification requests.',
     howItWorks: [
       'Review each pending student\'s submitted documents.',
@@ -428,7 +428,7 @@ export const PAGE_SOP = {
     ]
   },
   manageReviews: {
-    title: 'Manage Reviews',
+    title: 'Reviews',
     whatItIs: 'Moderate company/platform reviews submitted by users.',
     howItWorks: ['Approve genuine reviews or remove ones that violate content guidelines.']
   },

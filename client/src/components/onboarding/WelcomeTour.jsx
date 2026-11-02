@@ -31,7 +31,7 @@ const WelcomeTour = () => {
       <DialogContent className="max-w-md rounded-3xl border-2 border-slate-900 p-0 overflow-hidden">
         <div className="bg-slate-950 p-8">
           <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3">
-            {data.firstName ? `Hi ${data.firstName}` : 'Welcome'} · Step {i + 1} of {slides.length}
+            {data.firstName ? `Vanakkam, ${data.firstName}` : 'Welcome'} · Step {i + 1} of {slides.length}
           </p>
           <DialogTitle className="text-white font-bold text-xl">{slide.title}</DialogTitle>
           <DialogDescription className="text-slate-300 text-sm mt-3 leading-relaxed">{slide.body}</DialogDescription>
