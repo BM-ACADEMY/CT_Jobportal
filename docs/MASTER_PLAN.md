@@ -25,10 +25,10 @@ Build:
 Phase 2b (later, optional): web push for job alerts (needs VAPID keys, separate consent, unsubscribe; on iPhone it works only after install).
 Must test (real devices, latest patch): Android Chrome, iPhone Safari 16.4 or newer, desktop Chrome and Edge. Cases: install and launch; Razorpay checkout inside the installed app; Google and LinkedIn login returning to the installed app (iPhone often opens the system browser, so check the session survives); resume upload from camera and files; `wa.me` links; offline page; update after a new deploy; Lighthouse PWA and performance run.
 
-## Phase 3. Relevance engine, about 4 to 5 days
+## Phase 3. Relevance engine (scope: students and job seekers, companies, recruiters, colleges, admin)
 See `RELEVANCE_AND_AI_ASSISTANT_PLAN.md` section 2. Sneha estimates first, Kamar approves.
 
-## Phase 4. AI assistant (OpenAI), about 3 days after Kamar answers 3 questions
+## Phase 4. AI assistant (OpenAI), after Kamar answers 3 questions
 See section 4 of the same file. Includes Privacy Policy and Terms update naming OpenAI.
 
 ## Phase 5. Hardening backlog
