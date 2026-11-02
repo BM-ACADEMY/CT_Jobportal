@@ -8,6 +8,8 @@ const pdfParse = require('pdf-parse');
 const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
 const Company = require('../models/Company');
 const { notifyUser } = require('../utils/inAppNotifications');
+const bcrypt = require('bcryptjs');
+const { canSelfDelete, buildAnonymisePatch, confirmationProblem } = require('../utils/accountDeletion');
 
 // The invite is sent by whoever owns the company account, so that is who hears the answer.
 const notifyInviteResponse = async ({ io, company, invitee, accepted }) => {
@@ -890,7 +892,58 @@ const declineCompanyInvite = async (req, res) => {
   }
 };
 
+
+// @desc    Delete my own account: remove personal data, keep payment and application records anonymised
+// @route   DELETE /api/user/me   Body: { confirm: "DELETE", password? }
+// @access  Private (students, recruiters, team members)
+const deleteMyAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('+password role email profile');
+    if (!user || user.isDeleted) return res.status(404).json({ msg: 'Account not found.' });
+
+    const College = require('../models/College');
+    const [ownsCompany, ownsCollege] = await Promise.all([
+      Company.exists({ admin_email: user.email }),
+      College.exists({ principalEmail: user.email }),
+    ]);
+    const allowed = canSelfDelete({ role: user.role, ownsCompany: !!ownsCompany, ownsCollege: !!ownsCollege });
+    if (!allowed.ok) return res.status(403).json({ msg: allowed.msg });
+
+    const hasPassword = !!user.password;
+    const passwordMatches = hasPassword ? await bcrypt.compare(String(req.body?.password || ''), user.password) : false;
+    const problem = confirmationProblem({ confirm: req.body?.confirm, hasPassword, passwordMatches });
+    if (problem) return res.status(400).json({ msg: problem });
+
+    // Best effort: remove files this person uploaded (only inside the uploads folder).
+    const uploadsRoot = path.resolve(__dirname, '../uploads');
+    const files = [user.profile?.resumeUrl, user.avatar, ...(user.profile?.documents || []).map((d) => d.url || d.fileUrl)].filter(Boolean);
+    for (const f of files) {
+      try {
+        const rel = String(f).replace(/^https?:\/\/[^/]+/, '').replace(/^\/?uploads\//, '');
+        const abs = path.resolve(uploadsRoot, rel);
+        if (abs.startsWith(uploadsRoot + path.sep) && fs.existsSync(abs)) fs.unlinkSync(abs);
+      } catch (e) { /* a missing file must not stop the deletion */ }
+    }
+
+    const Notification = require('../models/Notification');
+    const EmailLog = require('../models/EmailLog');
+    const SkillTestResult = require('../models/SkillTestResult');
+    await Promise.all([
+      Notification.deleteMany({ recipient: user._id }),
+      EmailLog.deleteMany({ user: user._id }),
+      SkillTestResult.deleteMany({ user: user._id }),
+    ]);
+    await User.updateOne({ _id: user._id }, buildAnonymisePatch(user._id));
+    console.log(`Account deleted by owner: ${user._id}`);
+    res.json({ msg: 'Your account has been deleted.' });
+  } catch (err) {
+    console.error('Delete account error:', err.message);
+    res.status(500).json({ msg: 'Something went wrong. Please try again or write to support@velaivaaipu.in.' });
+  }
+};
+
 module.exports = {
+  deleteMyAccount,
   updateProfile,
   uploadResume,
   toggleSaveJob,

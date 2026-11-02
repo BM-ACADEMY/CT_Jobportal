@@ -38,6 +38,7 @@ const Footer = () => (
         <p className="text-slate-600 text-xs font-semibold">© {new Date().getFullYear()} Velaivaaipu. All Rights Reserved.</p>
         <div className="flex gap-6">
           <Link to="/privacy-policy" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Privacy Policy</Link>
+          <Link to="/delete-account" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Delete Account</Link>
           <Link to="/refund-policy" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Refund Policy</Link>
           <Link to="/terms" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Terms of Service</Link>
         </div>

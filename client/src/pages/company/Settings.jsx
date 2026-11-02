@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import DeleteAccountCard from '../../components/settings/DeleteAccountCard';
 import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
@@ -1722,6 +1723,8 @@ const RecruiterSettings = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+            <div className="max-w-3xl"><DeleteAccountCard /></div>
+
             {cropModal.isOpen && (
                 <ImageCropperModal
                     imageSrc={cropModal.imageSrc}

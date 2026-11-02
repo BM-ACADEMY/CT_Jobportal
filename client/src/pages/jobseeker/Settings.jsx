@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import DeleteAccountCard from '../../components/settings/DeleteAccountCard';
 import axios from 'axios';
 import { 
   User, Mail, Phone, MapPin, Briefcase, GraduationCap,
@@ -2485,6 +2486,8 @@ const Settings = () => {
                     </div>
                 </div>
             )}
+
+            <div className="max-w-3xl"><DeleteAccountCard /></div>
 
             {cropModal.isOpen && (
                 <ImageCropperModal
