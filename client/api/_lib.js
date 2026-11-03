@@ -1,6 +1,7 @@
 // Shared helpers for the SEO serverless functions (Vercel, ES modules). Files starting with "_" are not routes.
 const SITE_URL = (process.env.SITE_URL || 'https://velaivaaipu.in').replace(/\/$/, '');
-const API_URL = (process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+// Falls back to the production API so job pages keep their own title, description and JobPosting data even if the env var is missing.
+const API_URL = (process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || 'https://api.velaivaaipu.in/api').replace(/\/$/, '');
 const API_DOMAIN = (process.env.VITE_API_DOMAIN || API_URL.replace(/\/api$/, '')).replace(/\/$/, '');
 const OG_IMAGE = `${SITE_URL}/og-default.png`;
 

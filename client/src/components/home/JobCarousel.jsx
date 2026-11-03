@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, IndianRupee, Briefcase, Loader2, ArrowRight } from 'lucide-react';
 import MotionIcon from './MotionIcon';
+import { jobPath } from '../../utils/jobUrl';
 
 const EASE = [0.22, 1, 0.36, 1];
 // Start as soon as a little of the target is on screen, so nothing feels late.
@@ -103,7 +104,7 @@ const JobCard = ({ job, badgeText, anim }) => {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[17px] font-bold leading-snug text-zinc-900 line-clamp-2">
-            <Link to={`/job/${job._id}`} className="hover:text-[#138060] transition-colors focus-visible:outline-none focus-visible:underline">{job.title}</Link>
+            <Link to={jobPath(job)} className="hover:text-[#138060] transition-colors focus-visible:outline-none focus-visible:underline">{job.title}</Link>
           </h3>
           <div className="mt-0.5 flex items-center justify-between gap-2 text-xs">
             <span className="text-zinc-500 truncate">{job.company?.name}</span>
@@ -149,7 +150,7 @@ const JobCard = ({ job, badgeText, anim }) => {
       {/* Actions */}
       <div className="mt-4">
         <Link
-          to={`/job/${job._id}`}
+          to={jobPath(job)}
           className="home-shine relative overflow-hidden w-full h-12 rounded-full bg-gradient-to-r from-[#179a73] to-[#138060] text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-800/20 transition-all hover:shadow-lg hover:from-[#138060] hover:to-[#0f664d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
         >
           Apply Now <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={16} />

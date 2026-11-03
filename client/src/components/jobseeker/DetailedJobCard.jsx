@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card, Typography, Tag, Button, Space, Divider } from 'antd';
+import { jobPath } from '../../utils/jobUrl';
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -61,7 +62,7 @@ const DetailedJobCard = ({ job, application, onRevoke }) => {
   return (
     <Card 
       bordered={false}
-      onClick={() => navigate(`/job/${job.id}`)}
+      onClick={() => navigate(jobPath(job))}
       bodyStyle={{ padding: '28px' }}
       className="mb-5 bg-white hover:shadow-lg transition-all cursor-pointer group shadow-sm border border-slate-200 rounded-none overflow-hidden"
     >
