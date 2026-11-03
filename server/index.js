@@ -219,6 +219,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Routes
+app.use('/seo', require('./routes/seoRoutes')); // job pages and sitemap for search engines (see docs/SEO_ON_OWN_SERVER.md)
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/onboarding', onboardingRoutes);
