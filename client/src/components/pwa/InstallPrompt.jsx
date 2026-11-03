@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Download, X, Share } from 'lucide-react';
 import { trackEvent } from '../../utils/analytics';
+import { MESSAGES } from '../../data/microcopy';
 import { subscribePwa, canPromptInstall, promptInstall, isStandalone, isIosSafari, visitCount } from '../../utils/pwa';
 
 const DISMISS_KEY = 'vv_install_dismissed_at';
@@ -38,7 +39,7 @@ const InstallPrompt = ({ variant = 'banner' }) => {
         <strong className="font-bold">Install the Velaivaaipu app.</strong>{' '}
         {ios
           ? <>Tap <Share size={13} className="inline -mt-0.5" /> Share, then "Add to Home Screen".</>
-          : 'Open jobs and your profile in one tap from your home screen.'}
+          : MESSAGES.installPrompt}
       </span>
       {!ios && (
         <button type="button" onClick={async () => { await promptInstall(); setHidden(true); }} className="shrink-0 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-2 border-none cursor-pointer">

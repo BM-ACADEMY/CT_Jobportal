@@ -63,7 +63,7 @@ const ManageReviews = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-6 py-6 px-2">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Manage Reviews</h1>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Reviews</h1>
         <p className="text-sm text-slate-500 mt-1">Approve or reject user testimonials for the homepage.</p>
       </div>
 

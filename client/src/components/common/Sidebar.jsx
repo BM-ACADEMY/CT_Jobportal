@@ -11,65 +11,66 @@ import { useAuth } from '../../context/AuthContext';
 import { findPermissionKeyForPath } from '../../config/teamPermissions';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ROLE_LABELS, taglineFor } from '../../data/microcopy';
 import { hasFeature } from '../subscription/FeatureGate';
 
 // ─── Core nav (always visible) ───────────────────────────────────────────────
 const coreMenus = {
   jobseeker: [
-    { icon: Home,        label: 'Overview',      path: '/candidate' },
-    { icon: Briefcase,   label: 'Search Jobs',   path: '/jobs' },
-    { icon: Building2,   label: 'Organizations', path: '/companies' },
-    { icon: FileText,    label: 'Applications',  path: '/candidate/applications' },
+    { icon: Home,        label: 'Dashboard',      path: '/candidate' },
+    { icon: Briefcase,   label: 'Find Jobs',   path: '/jobs' },
+    { icon: Building2,   label: 'Companies', path: '/companies' },
+    { icon: FileText,    label: 'My Applications',  path: '/candidate/applications' },
     { icon: GraduationCap, label: 'Campus Drives', path: '/candidate/campus-drives' },
     { icon: Star,        label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
-    { icon: CreditCard,  label: 'Subscription',  path: '/candidate/subscription' },
-    { icon: ShoppingBag, label: 'Pay-per Features', path: '/candidate/pay-per-features' },
+    { icon: CreditCard,  label: 'My Plan',  path: '/candidate/subscription' },
+    { icon: ShoppingBag, label: 'Buy Extras', path: '/candidate/pay-per-features' },
     { icon: History,     label: 'Payment History', path: '/candidate/payment-history' },
-    { icon: Headphones,  label: 'Tickets & Queries', path: '/tickets/my' },
-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
+    { icon: Headphones,  label: 'Help & Support', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
   ],
   recruiter: [
-    { icon: LayoutDashboard, label: 'Overview',          path: '/company/dashboard' },
+    { icon: LayoutDashboard, label: 'Dashboard',          path: '/company/dashboard' },
     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
     { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
+    { icon: Users,           label: 'Search Candidates',   path: '/company/candidates' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
-    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
+    { icon: CreditCard,      label: 'My Plan',      path: '/company/subscription' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
-    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
+    { icon: Headphones,      label: 'Help & Support', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
   ],
   company: [
-    { icon: LayoutDashboard, label: 'Overview',          path: '/company/dashboard' },
+    { icon: LayoutDashboard, label: 'Dashboard',          path: '/company/dashboard' },
     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
     { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
+    { icon: Users,           label: 'Search Candidates',   path: '/company/candidates' },
     { icon: UserCog,         label: 'My Team',           path: '/company/team' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
-    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
+    { icon: CreditCard,      label: 'My Plan',      path: '/company/subscription' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
-    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
+    { icon: Headphones,      label: 'Help & Support', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
   ],
   college: [
-    { icon: LayoutDashboard, label: 'Overview',          path: '/college/dashboard' },
+    { icon: LayoutDashboard, label: 'Dashboard',          path: '/college/dashboard' },
     { icon: Users,           label: 'Students',          path: '/college/students' },
     { icon: Activity,        label: 'Campus Drives',     path: '/college/drives' },
-    { icon: ShieldCheck,     label: 'ID Verification',   path: '/college/verification' },
-    { icon: Users,           label: 'Placement Tools',    path: '/college/placement-tools' },
-    { icon: CalendarDays,    label: 'College Operations', path: '/college/operations' },
-    { icon: FileText,        label: 'Reports & Passkey', path: '/college/reports' },
-    { icon: CreditCard,      label: 'Subscription',      path: '/college/subscription' },
+    { icon: ShieldCheck,     label: 'Student Verification',   path: '/college/verification' },
+    { icon: Layers,          label: 'Placement Tools',    path: '/college/placement-tools' },
+    { icon: CalendarDays,    label: 'Calendar & Employers', path: '/college/operations' },
+    { icon: FileText,        label: 'Reports', path: '/college/reports' },
+    { icon: CreditCard,      label: 'My Plan',      path: '/college/subscription' },
     { icon: History,         label: 'Payment History',   path: '/college/payment-history' },
-    { icon: Settings,        label: 'Settings & Proof',  path: '/college/settings' },
-    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
+    { icon: Settings,        label: 'College Settings & Documents',  path: '/college/settings' },
+    { icon: Headphones,      label: 'Help & Support', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
   ],
   admin: [
     { icon: LayoutDashboard, label: 'Command Center', path: '/admin/dashboard' },
-    { icon: Users,           label: 'Users Account',  path: '/admin/users' },
-    { icon: Briefcase,       label: 'Job Inventory',  path: '/admin/jobs' },
-    { icon: GraduationCap,   label: 'College KYC',    path: '/admin/colleges' },
+    { icon: Users,           label: 'Users',  path: '/admin/users' },
+    { icon: Briefcase,       label: 'Jobs',  path: '/admin/jobs' },
+    { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges' },
     {
       icon: CreditCard,
       label: 'Subscriptions',
@@ -77,30 +78,32 @@ const coreMenus = {
       children: [
         { label: 'Plans', path: '/admin/subscriptions/plans' },
         { label: 'Renewals', path: '/admin/subscriptions/renewals' },
-        { label: 'Buyers', path: '/admin/subscriptions/buyers' },
-        { label: 'Pay-per System', path: '/admin/subscriptions/pay-per' },
+        { label: 'Refunds', path: '/admin/subscriptions/refunds' },
+        { label: 'Subscribers', path: '/admin/subscriptions/buyers' },
+        { label: 'Pay-per-use Items', path: '/admin/subscriptions/pay-per' },
         { label: 'Coupons', path: '/admin/subscriptions/coupons' }
       ]
     },
     { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests' },
     { icon: History,         label: 'Payment History', path: '/admin/payment-history' },
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
-    { icon: Headphones,      label: 'Tickets & Queries', path: '/admin/tickets' },
-    { icon: MessageSquareQuote, label: 'Manage Reviews', path: '/admin/reviews' },
+    { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets' },
+    { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews' },
+    { icon: Settings,       label: 'Settings',       path: '/admin/settings' },
   ],
   // A team member added via the "employee" invite flow (role becomes org_employee rather than
   // staying 'recruiter') — same recruiter-shaped workspace as coreMenus.recruiter, just with its
   // own Overview page, since org_employee is functionally a delegated recruiter, not a jobseeker.
   org_employee: [
-    { icon: LayoutDashboard, label: 'Overview',          path: '/employee' },
+    { icon: LayoutDashboard, label: 'Dashboard',          path: '/employee' },
     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
     { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
+    { icon: Users,           label: 'Search Candidates',   path: '/company/candidates' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
-    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
+    { icon: CreditCard,      label: 'My Plan',      path: '/company/subscription' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
-    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
+    { icon: Headphones,      label: 'Help & Support', path: '/tickets/my' },
+    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
   ],
 };
 
@@ -109,38 +112,37 @@ const premiumMenus = {
   jobseeker: [
     { icon: FileText,      label: 'Resume Builder',      path: '/candidate/resume-builder',      featureKey: 'hasResumeBuilder' },
     { icon: Bell,          label: 'Job Alerts',          path: '/candidate/job-alerts',          featureKey: 'jobAlerts' },
-    { icon: Sparkles,      label: 'Take Assessment',     path: '/candidate/skill-tests' },
-    { icon: Users,         label: 'Profile Insights',    path: '/candidate/profile-insights',    featureKey: 'hasProfileViewInsights' },
+    { icon: Sparkles,      label: 'Skill Tests',     path: '/candidate/skill-tests' },
+    { icon: Users,         label: 'Who Viewed Me',    path: '/candidate/profile-insights',    featureKey: 'hasProfileViewInsights' },
     { icon: Star,          label: 'Career Counselling',  path: '/candidate/career-counselling',  featureKey: 'hasCareerCounselling' },
     { icon: Mic,           label: 'Mock Interviews',     path: '/candidate/mock-interviews',     featureKey: 'hasMockInterviews' },
-    { icon: BookOpen,      label: 'AI Profile Review',    path: '/candidate/ai-resume-review',    featureKey: 'hasAiResumeReview' },
-    { icon: MessageCircle, label: 'Direct Messages',     path: '/candidate/messages',            featureKey: 'hasMessageRecruiters' },
+    { icon: BookOpen,      label: 'AI Resume Review',    path: '/candidate/ai-resume-review',    featureKey: 'hasAiResumeReview' },
+    { icon: MessageCircle, label: 'Messages',     path: '/candidate/messages',            featureKey: 'hasMessageRecruiters' },
   ],
   recruiter: [
-    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
-    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
-    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
-    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
-    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
+    { icon: Layers,    label: 'Hiring Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Hiring Reports',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: Mail,      label: 'Message Candidates', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Video,     label: 'Interviews', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+    { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
   ],
   company: [
-    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
-    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
-    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
-    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
-    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
-    { icon: ClipboardList, label: 'Campus Drive Requests', path: '/company/drive-requests' },
+    { icon: Layers,    label: 'Hiring Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Hiring Reports',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: Mail,      label: 'Message Candidates', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Video,     label: 'Interviews', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+    { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
+    { icon: ClipboardList, label: 'Campus Drives', path: '/company/drive-requests' },
   ],
   college: [
-    { icon: BarChart2, label: 'Reports',            path: '/college/reports',       featureKey: 'hasAnalyticsDashboard' },
-    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
+    { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
   ],
   org_employee: [
-    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
-    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
-    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
-    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
-    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
+    { icon: Layers,    label: 'Hiring Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+    { icon: BarChart2, label: 'Hiring Reports',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+    { icon: Mail,      label: 'Message Candidates', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+    { icon: Video,     label: 'Interviews', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+    { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
   ],
 };
 
@@ -149,7 +151,7 @@ const NavItem = ({ item, active, isCollapsed }) => {
   return (
     <Link
       to={item.path}
-      title={isCollapsed ? item.label : undefined}
+      title={item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined)}
       className={`group flex items-center transition-all rounded-none relative outline-none focus:outline-none
         ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
         ${active
@@ -248,7 +250,7 @@ const PremiumNavItem = ({ item, active, unlocked, isCollapsed }) => {
   return (
     <Link
       to={item.path}
-      title={isCollapsed ? item.label : undefined}
+      title={item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined)}
       className={`group flex items-center transition-all relative rounded-none outline-none focus:outline-none
         ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
         ${active
@@ -293,12 +295,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   // If role is strictly drive_incharge, they get Manage Drive as their only core item
   if (role === 'drive_incharge') {
     if (!coreItems.find(i => i.path === '/incharge')) {
-      coreItems.push({ icon: QrCode, label: 'Manage Drive', path: '/incharge' });
+      coreItems.push({ icon: QrCode, label: 'My Drive', path: '/incharge' });
     }
   } else if (user?.hasInchargeDrives) {
     // If they have another role but also manage drives, append Manage Drive to their menu
     if (!coreItems.find(i => i.path === '/incharge')) {
-      coreItems.push({ icon: QrCode, label: 'Manage Drive', path: '/incharge' });
+      coreItems.push({ icon: QrCode, label: 'My Drive', path: '/incharge' });
     }
   }
 
@@ -317,7 +319,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     const key = findPermissionKeyForPath(path);
     return key ? !(user.teamPermissions || []).includes(key) : false;
   };
-  coreItems = coreItems.filter(i => !isPermissionBlocked(i.path));
+  coreItems = coreItems.filter(i => !isPermissionBlocked(i.path)).map(i => ({ ...i, tagline: taglineFor(role, i.label) }));
 
   // Delegated team members (not the owner, who already gets the full /company/team management
   // page from coreMenus.company) get a read-only "My Team" roster so they can see who else has
@@ -330,7 +332,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     else coreItems.splice(requestsIdx, 0, teamItem);
   }
 
-  const premiumItems = (premiumMenus[role] || []).filter(i => !isPermissionBlocked(i.path));
+  const premiumItems = (premiumMenus[role] || []).filter(i => !isPermissionBlocked(i.path)).map(i => ({ ...i, tagline: taglineFor(role, i.label) }));
 
   const isActive = (path) => {
     const exactRoutes = ['/candidate', '/company/dashboard', '/admin/dashboard', '/subadmin', '/employee', '/college/dashboard', '/incharge', '/company/jobs'];
@@ -405,7 +407,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                     {user?.name || 'Authorized User'}
                     {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={13} className="text-blue-400 shrink-0" />}
                   </p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mt-0.5">{role} Access</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mt-0.5">{ROLE_LABELS[role] || role}</p>
                 </div>
                 <ChevronRight size={14} className="text-slate-500 group-hover:text-[#34b678] transition-colors shrink-0" />
               </>
@@ -456,7 +458,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           <div className="space-y-1">
             {!isCollapsed ? (
               <div className="px-5 mb-4 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 flex items-center gap-3">
-                <span>Control Desk</span>
+                <span>Menu</span>
                 <div className="h-[1px] flex-1 bg-white/10" />
               </div>
             ) : (

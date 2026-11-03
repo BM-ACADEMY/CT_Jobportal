@@ -64,7 +64,7 @@ const CollegeVerification = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
         <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-          <GraduationCap size={20} className="text-emerald-600" /> College KYC Verification
+          <GraduationCap size={20} className="text-emerald-600" /> College Verification
         </h1>
         <p className="text-xs text-slate-500 mt-1 font-medium">
           Verify uploaded proof documents before a college's drives become publicly reachable.
