@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const getRazorpay = require('../config/razorpay');
+const { refundAtGateway } = require('../utils/refundGateway');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Payment = require('../models/Payment');
@@ -587,7 +588,17 @@ const approveRefund = async (req, res) => {
       return res.status(400).json({ msg: 'Refund is not pending' });
     }
 
+    // Send the money back through Razorpay FIRST. If Razorpay refuses, nothing changes here and the admin sees why.
+    let gateway;
+    try {
+      gateway = await refundAtGateway(getRazorpay(), payment);
+    } catch (err) {
+      console.error('Razorpay refund failed for payment', String(payment._id), err.message);
+      return res.status(502).json({ msg: err.userMessage || 'Razorpay could not process the refund. Nothing was changed.' });
+    }
+
     payment.status = 'refunded';
+    if (gateway.refundId) payment.razorpay_refund_id = gateway.refundId;
     await payment.save();
 
     // Revoke the user's subscription
@@ -622,7 +633,7 @@ const approveRefund = async (req, res) => {
       metadata: { paymentId: payment._id, status: 'refunded' }
     }).catch(err => console.error('Refund approval notification failed:', err.message));
 
-    res.json({ success: true, msg: 'Refund approved. Subscription revoked.' });
+    res.json({ success: true, msg: 'Refund approved and sent to Razorpay. Subscription revoked.', refundId: gateway.refundId || null });
   } catch (err) {
     console.error('Approve Refund Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

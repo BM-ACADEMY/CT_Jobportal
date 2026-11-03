@@ -39,7 +39,7 @@ const db = {
   adminNotes: [],
   inAppNotes: []
 };
-const razorpay = { orders: {}, subscriptions: {}, createdOrders: [] };
+const razorpay = { orders: {}, subscriptions: {}, createdOrders: [], refunds: [], refundError: null };
 
 // ---- outside-world fakes ------------------------------------------------------------------
 stub('config/razorpay', () => ({
@@ -50,7 +50,14 @@ stub('config/razorpay', () => ({
       return { id: `order_created_${razorpay.createdOrders.length}`, amount: options.amount, currency: options.currency };
     }
   },
-  subscriptions: { fetch: async id => razorpay.subscriptions[id] }
+  subscriptions: { fetch: async id => razorpay.subscriptions[id] },
+  payments: {
+    refund: async (paymentId, options) => {
+      if (razorpay.refundError) throw razorpay.refundError;
+      razorpay.refunds.push({ paymentId, options });
+      return { id: `rfnd_${razorpay.refunds.length}`, payment_id: paymentId };
+    }
+  }
 }));
 stub('utils/sendEmail', async options => { db.emails.push(options); return true; });
 stub('utils/inAppNotifications', {
@@ -181,6 +188,8 @@ const reset = () => {
     for (const k of Object.keys(db[key])) delete db[key][k];
   }
   razorpay.createdOrders.length = 0;
+  razorpay.refunds.length = 0;
+  razorpay.refundError = null;
   for (const k of Object.keys(razorpay.orders)) delete razorpay.orders[k];
   for (const k of Object.keys(razorpay.subscriptions)) delete razorpay.subscriptions[k];
 };

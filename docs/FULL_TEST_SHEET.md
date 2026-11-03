@@ -177,7 +177,7 @@ Use this before launch and before each big release. The 20-minute version is `do
 | 10.1 | Buy a plan with a small real payment | Payment succeeds; plan activates | |
 | 10.2 | Webhook | Razorpay Dashboard shows the webhook delivered (200); purchase granted | |
 | 10.3 | Receipt email | Arrives with GST details | |
-| 10.4 | Request a refund | Button works within the allowed window; admin refunds; student is told | |
+| 10.4 | Request a refund, then admin approves | Button works within the allowed window; admin approves; student is told and moves to the Free plan. Backend: the refund appears in Razorpay Dashboard > Refunds (approving now sends it); if Razorpay refuses, the admin sees the reason and the request stays pending | |
 | 10.5 | Failed or cancelled payment | No plan granted; clear message | |
 | 10.6 | Coupon | Discount applies correctly | |
 
