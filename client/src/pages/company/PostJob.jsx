@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons';
 import { toast } from 'sonner';
 import { IndianRupee, Briefcase } from 'lucide-react';
+import JobQualityPanel from '@/components/company/JobQualityPanel';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -231,6 +232,7 @@ const PostJob = () => {
                 style={{ marginTop: '32px' }}
                 disabled={limitReached}
             >
+                <JobQualityPanel form={form} skills={skills} isRangeHidden={isRangeHidden} />
                 <Row gutter={[24, 24]}>
                     {/* Left Column: Main Details */}
                     <Col xs={24} lg={16}>

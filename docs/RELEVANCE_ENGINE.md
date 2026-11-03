@@ -73,6 +73,14 @@ Behind RELEVANCE_ENGINE_ENABLED: while it is off nothing is stored.
 - **Limits to know:** shown means delivered in the list, not scrolled into view; the home page feed and email clicks are not tracked yet (the surfaces exist in the schema); the recruiter side measures the top-candidates panel only, not the search list.
 - **Tests:** tests/auth/recommendationEvents.test.js (9), tests/auth/recommendationEndpoint.test.js (4).
 
+## Job post quality score (plan B2)
+Not behind the switch: it only advises and never changes ranking.
+- **API:** `POST /api/jobs/quality-check` (recruiter, company, org employee). Send the draft job fields; get back `{ score 0-100, level good|ok|weak, tips: [{ field, tip }] }`. Nothing is saved.
+- **Scoring (100):** title 20 (vague titles like "Hiring" get half), skills 30 (full marks at 5 distinct skills), location 15 (remote needs none), salary range 15 (hidden range gets half), description 15 (80+ characters), experience 5.
+- **Why skills weigh most:** a job with no skills listed cannot be matched, so it is shown to fewer people; the tip says exactly that.
+- **Page:** Post Job shows the score and tips live while typing (`client/src/components/company/JobQualityPanel.jsx`). It never blocks publishing; if the request fails the panel hides.
+- Uses only the job's own fields, never the poster. Tests: `tests/auth/jobQuality.test.js` (8).
+
 ## Not wired yet (next steps in the plan)
 - The home page and dashboard use the same endpoint, so they pick up the new order automatically but do not yet show the why-line.
 - WhatsApp job alerts (none exist today).

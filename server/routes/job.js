@@ -5,6 +5,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 
 // Trigger nodemon restart
 const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getJobById, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getTopCandidates, getAICandidateMatches, getJobQuota, cloneJob, importPipeline, bulkAiMatch, markJobApplicantsViewed } = require('../controllers/jobController');
+const { scoreJobPost } = require('../utils/jobQuality');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
 
 // --- Jobseeker Routes ---
@@ -13,6 +14,8 @@ router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), calcul
 
 // --- Recruiter / Company Routes ---
 router.post('/', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), createJob);
+// Quality score and tips for a draft job, so the poster can fix it before publishing. Stateless; nothing is saved.
+router.post('/quality-check', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), (req, res) => res.json(scoreJobPost(req.body && typeof req.body === 'object' ? req.body : {})));
 router.post('/import-pipeline', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), upload.single('file'), importPipeline);
 router.get('/company-jobs', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getCompanyJobs);
 router.get('/company-jobs-stats', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), getCompanyJobsWithStats);

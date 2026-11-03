@@ -1,6 +1,6 @@
 # Job and candidate relevance plan, and the AI assistant (OpenAI)
 
-Status: PLAN. Nothing in this file is built yet. Written from what the code does today.
+Status: PARTLY BUILT (updated 3 Nov 2026). The section 1 and 2 text below is the original plan; section 3 shows today's status. See RELEVANCE_ENGINE.md and AI_ASSISTANT.md for what is built.
 
 ## 1. What the code does today (so the plan starts from facts)
 
@@ -58,14 +58,14 @@ Build one module, `server/utils/relevance.js`, used by the website, emails and W
 | Lifecycle mails and onboarding mails | Built, off; waiting on mail service |
 | Onboarding tour, checklist, banners, all portals | Built |
 | Fake testimonials, 3x claim, +543 placed counter | Removed |
-| Relevance engine (this plan) | Not built |
-| AI assistant | Not built, needs decisions in section 4 |
-| Request refund button | Not built |
-| Free assessment page still exposes answers | Not fixed |
-| Mail bounce handling, TLS certificate check | Not built |
-| CSV-imported students get weak default passwords | Not fixed |
-| `/uploads` documents are public | Not fixed |
-| Free-plan limits (2 jobs, 10 searches, 3 free hires) | Location in code unknown, dev to confirm |
+| Relevance engine (this plan) | Built, off by default (RELEVANCE_ENGINE_ENABLED): job seeker feed and why-lines, job emails, recruiter candidate search, top 5 candidates, event logging and admin summary, job post quality score. Still open: similar jobs, skill gap, applicant list score and AI top-20, saved searches, college lists, company needs-attention list |
+| AI assistant | Backend and chat widget built, off by default (ASSISTANT_ENABLED). Waiting on: OpenAI key and model in server .env, lawyer review of the Privacy and Terms wording, a test with the real key |
+| Request refund button | Built (Payment History) |
+| Free assessment page still exposes answers | Fixed: marked on the server, answers returned only after submit |
+| Mail bounce handling, TLS certificate check | Built for Brevo events (BOUNCE_HANDLING.md). Not active while mail goes through Hostinger SMTP |
+| CSV-imported students get weak default passwords | Fixed for new imports. Old weak passwords: reset script exists, not run on live |
+| `/uploads` documents are public | Fixed: signed links; PROTECT_DOCUMENT_UPLOADS=true on live |
+| Free-plan limits (2 jobs, 10 searches, 3 free hires) | Read-only check script printFreePlanLimits.js exists; not yet run on live |
 | Payment tests and client build | Dev reports pass |
 | LinkedIn app, GA4, Pixel, Search Console | Waiting on accounts |
 
