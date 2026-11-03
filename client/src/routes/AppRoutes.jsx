@@ -31,6 +31,7 @@ const JobseekerRedirect = () => {
 
 const TermsAndConditions = lazy(() => import('../pages/TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
+const DeleteAccount = lazy(() => import('../pages/DeleteAccount'));
 const RefundPolicy = lazy(() => import('../pages/RefundPolicy'));
 const JobPostTemplates = lazy(() => import('../pages/public/JobPostTemplates'));
 const Blog = lazy(() => import('../pages/Blog'));
@@ -164,6 +165,7 @@ const AppRoutes = () => {
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/delete-account" element={<DeleteAccount />} />
         <Route path="/jobseeker/*" element={<JobseekerRedirect />} />
         <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/job-post-templates" element={<JobPostTemplates />} />

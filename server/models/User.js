@@ -311,6 +311,9 @@ const userSchema = new mongoose.Schema({
   lastLoginAt: {
     type: Date
   },
+  // Set when the person deletes their own account; personal data is removed, the row stays for records.
+  isDeleted: { type: Boolean, default: false, index: true },
+  deletedAt: { type: Date, default: null },
   // First-login tour state. tourSeenAt is set when the person finishes or skips the welcome tour.
   onboarding: {
     tourSeenAt: { type: Date, default: null }

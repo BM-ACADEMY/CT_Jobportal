@@ -9,7 +9,7 @@
       "destination": "/api/sitemap"
     },
     {
-      "source": "/((?!assets/|api/|icons/|sw\\.js|manifest\\.webmanifest|offline\\.html).*)",
+      "source": "/((?!assets/|api/|icons/|sw\\.js|manifest\\.webmanifest|offline\\.html|\\.well-known/).*)",
       "destination": "/"
     }
   ],

@@ -75,7 +75,7 @@ const CANDIDATE_FIELDS = 'name avatar profile.headline profile.skills profile.lo
 const getTopCandidatesForJob = async (job, { User, Role, SkillTestResult }, { limit = 5 } = {}) => {
   const seekerRole = await Role.findOne({ name: 'jobseeker' });
   if (!seekerRole) return [];
-  const pool = await User.find({ role: seekerRole._id, isAdminBlocked: { $ne: true } }).select(CANDIDATE_FIELDS).lean();
+  const pool = await User.find({ role: seekerRole._id, isAdminBlocked: { $ne: true }, isDeleted: { $ne: true } }).select(CANDIDATE_FIELDS).lean();
   const owners = [job.company?._id || job.company, job.recruiter?._id || job.recruiter].filter(Boolean).map(String);
   const eligible = pool.filter((c) => !(c.blockedEntities || []).some((b) => owners.includes(String(b))));
 

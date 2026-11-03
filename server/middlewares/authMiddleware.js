@@ -25,7 +25,10 @@ const verifyToken = async (req, res, next) => {
   // A token is valid for days, so a block applied by an admin must take effect immediately.
   // Admin-panel accounts live in a separate collection, so a missing User row is fine here.
   try {
-    const account = await User.findById(req.user.id).select('isAdminBlocked').lean();
+    const account = await User.findById(req.user.id).select('isAdminBlocked isDeleted').lean();
+    if (account && account.isDeleted) {
+      return res.status(401).json({ msg: 'This account has been deleted.' });
+    }
     if (account && account.isAdminBlocked) {
       return res.status(403).json({ msg: 'Access denied: Account blocked.' });
     }
