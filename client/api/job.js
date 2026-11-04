@@ -8,8 +8,11 @@ export default async function handler(req, res) {
     const id = lib.jobIdFromSlug(req.query.slug);
     const shell = await lib.getShell(req);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    // Shows which branch served the page: check with  curl -sI <job url> | grep -i x-velaivaaipu-seo
+    const tag = (v) => res.setHeader('X-Velaivaaipu-SEO', v);
 
     if (!id || !lib.API_URL) {
+      tag('shell-no-id-or-api');
       res.setHeader('Cache-Control', 'public, s-maxage=60');
       return res.status(200).send(shell);
     }
@@ -18,6 +21,7 @@ export default async function handler(req, res) {
 
     // Job missing or API unreachable: serve the app untouched and keep it out of the index.
     if (status !== 200 || !job) {
+      tag(`unavailable-${status}`);
       const html = lib.injectHead(shell, {
         title: 'Job not available | Velaivaaipu',
         description: 'This job is no longer available. Browse the latest jobs in Tamil Nadu on Velaivaaipu.',
@@ -34,8 +38,17 @@ export default async function handler(req, res) {
     const image = job.company?.logo ? lib.absolute(job.company.logo) : lib.OG_IMAGE;
     const image2 = /\.(png|jpe?g)$/i.test(image) ? image : lib.OG_IMAGE; // WhatsApp ignores webp/svg previews
 
+    // One address per job: an old /job/<id> link or a changed title redirects (301) to the keyword URL.
+    const wanted = canonical.slice(canonical.indexOf('/job/') + 5);
+    if (req.query.slug !== wanted && (req.method === 'GET' || !req.method)) {
+      res.setHeader('Location', canonical);
+      res.setHeader('Cache-Control', 'public, s-maxage=300');
+      return res.status(301).send('');
+    }
+
     // Closed / filled job: keep the URL alive with a clear message, but drop the JobPosting markup.
     if (job.closed) {
+      tag('closed');
       const html = lib.injectHead(shell, {
         title: `${job.title || 'This job'} — position filled | Velaivaaipu`,
         description: `This ${job.title || ''} opening at ${company} has been filled. Find similar jobs in ${city} on Velaivaaipu.`,
@@ -67,6 +80,7 @@ export default async function handler(req, res) {
       ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
     };
 
+    tag('job');
     const html = lib.injectHead(shell, {
       title: lib.clip(`${job.title} Job in ${city} – ${company} | Velaivaaipu`.length <= 60 ? `${job.title} Job in ${city} – ${company} | Velaivaaipu` : `${job.title} Job in ${city} | Velaivaaipu`, 70),
       description,
@@ -81,6 +95,7 @@ export default async function handler(req, res) {
     // Never break the page: fall back to the plain app.
     try {
       const shell = await lib.getShell(req);
+      res.setHeader('X-Velaivaaipu-SEO', 'shell-error');
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.status(200).send(shell);
     } catch {

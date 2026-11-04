@@ -34,7 +34,7 @@ const { default: job } = await import('../job.js');
 const { default: sitemap } = await import('../sitemap.js');
 
 test('open job: JobPosting, canonical slug URL and OG tags are in the raw HTML', async () => {
-  const res = await call(job, jobReq(`react-dev-pondicherry-${OPEN}`));
+  const res = await call(job, jobReq(`react-dev-qa-pondicherry-${OPEN}`));
   assert.equal(res.code, 200);
   assert.ok(res.body.includes('"@type":"JobPosting"'));
   assert.match(res.body, /rel="canonical" href="https:\/\/velaivaaipu\.in\/job\/react-dev-qa-pondicherry-a{24}"/);
@@ -44,12 +44,12 @@ test('open job: JobPosting, canonical slug URL and OG tags are in the raw HTML',
 });
 
 test('job text is HTML-escaped in tags', async () => {
-  const res = await call(job, jobReq(OPEN));
+  const res = await call(job, jobReq(`react-dev-qa-pondicherry-${OPEN}`));
   assert.ok(res.body.includes('React &lt;Dev&gt; &amp; &quot;QA&quot;'));
 });
 
 test('closed job stays reachable (200), is noindex and has no JobPosting', async () => {
-  const res = await call(job, jobReq(`old-role-${CLOSED}`));
+  const res = await call(job, jobReq(`old-role-chennai-${CLOSED}`));
   assert.equal(res.code, 200);
   assert.ok(res.body.includes('noindex'));
   assert.ok(!res.body.includes('JobPosting'));
@@ -66,4 +66,18 @@ test('sitemap lists static pages and slugged job URLs', async () => {
   assert.match(res.headers['Content-Type'], /xml/);
   assert.ok(res.body.includes(`https://velaivaaipu.in/job/react-dev-pondicherry-${OPEN}`));
   assert.ok(res.body.includes('https://velaivaaipu.in/for-colleges'));
+});
+
+test('old /job/<id> link redirects (301) to the keyword URL', async () => {
+  const res = await call(job, jobReq(OPEN));
+  assert.equal(res.code, 301);
+  assert.match(res.headers.Location, /\/job\/react-dev-qa-pondicherry-a{24}$/);
+});
+
+test('page says which branch served it (X-Velaivaaipu-SEO)', async () => {
+  const ok = await call(job, jobReq(`react-dev-qa-pondicherry-${OPEN}`));
+  assert.equal(ok.code, 200);
+  assert.equal(ok.headers['X-Velaivaaipu-SEO'], 'job');
+  const gone = await call(job, jobReq(`x-${'c'.repeat(24)}`));
+  assert.equal(gone.headers['X-Velaivaaipu-SEO'], 'unavailable-404');
 });

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Button, Tag, Input, Select, Card, Typography, Pagination, Modal, Space, Skeleton, Row, Col } from 'antd';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
+import { jobPath } from '../../utils/jobUrl';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -304,7 +305,7 @@ const MyApplications = () => {
                   <Space className="shrink-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto justify-end">
                     {job?._id && (
                       <Button
-                        onClick={() => navigate(`/job/${job._id}`)}
+                        onClick={() => navigate(jobPath(job))}
                         icon={<Eye size={14} />}
                         className="h-9 px-4 rounded-md border-slate-200 font-bold text-xs uppercase tracking-wider text-slate-600 hover:text-emerald-600 hover:border-emerald-600 shadow-none"
                       >

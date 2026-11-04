@@ -725,7 +725,7 @@ const searchCandidates = async (req, res) => {
     // Only search jobseekers
     const Role = require('../models/Role');
     const seekerRole = await Role.findOne({ name: 'jobseeker' });
-    const baseQuery = { role: { $exists: true } };
+    const baseQuery = { role: { $exists: true }, isDeleted: { $ne: true } };
     if (seekerRole) baseQuery.role = seekerRole._id;
 
     // Fuzzy/typo-tolerant matching (q, location, degree, experienceRole) can't be pushed down

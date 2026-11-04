@@ -20,13 +20,15 @@ const {
   declineCompanyInvite,
   uploadDocuments,
   updateDocument,
-  deleteDocument
+  deleteDocument,
+  deleteMyAccount
 } = require('../controllers/userController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const upload = require('../middleware/upload');
 
 // All user routes require authentication
 router.use(verifyToken);
+router.delete('/me', deleteMyAccount);
 
 router.post('/generate-resume', generateAIResume);
 router.post('/analyze-resume', upload.single('resume'), analyzeResume);
