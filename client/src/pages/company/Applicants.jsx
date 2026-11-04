@@ -235,7 +235,16 @@ const Applicants = () => {
     }
   };
 
+  // A team-managed recruiter needs the "Messages" permission for the chat page itself, so say so here
+  // instead of sending a request the server would refuse (middlewares/teamPermission.js) and then
+  // bouncing off /company/messages.
+  const canMessage = !(user?.role === 'recruiter' && user?.isTeamManaged === true && !(user?.teamPermissions || []).includes('messages'));
+
   const handleStartConversation = async (recipientId) => {
+    if (!canMessage) {
+      toast.info('Your company admin has not given you access to Messages. Ask them to add it under My Team > Manage permissions.');
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       const res = await axios.post(`${API_BASE_URL}/messages/conversation`,
@@ -480,9 +489,10 @@ const Applicants = () => {
                     </Button>
                     <Button
                       variant="ghost"
+                      aria-disabled={!canMessage}
+                      title={canMessage ? 'Message' : 'Messages not enabled for you: ask your company admin'}
                       onClick={() => handleStartConversation(app.applicant?._id)}
-                      className="w-10 h-10 rounded-xl text-slate-300 hover:text-violet-600 hover:bg-violet-50 transition-all"
-                      title="Message Candidate"
+                      className={`w-10 h-10 rounded-xl transition-all ${canMessage ? 'text-slate-300 hover:text-violet-600 hover:bg-violet-50' : 'text-slate-200 cursor-not-allowed'}`}
                     >
                       <MessageSquare size={20} />
                     </Button>
