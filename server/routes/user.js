@@ -24,14 +24,15 @@ const {
   deleteMyAccount
 } = require('../controllers/userController');
 const { verifyToken } = require('../middlewares/authMiddleware');
+const { aiDailyCap } = require('../middlewares/aiDailyCap');
 const upload = require('../middleware/upload');
 
 // All user routes require authentication
 router.use(verifyToken);
 router.delete('/me', deleteMyAccount);
 
-router.post('/generate-resume', generateAIResume);
-router.post('/analyze-resume', upload.single('resume'), analyzeResume);
+router.post('/generate-resume', aiDailyCap('other'), generateAIResume);
+router.post('/analyze-resume', aiDailyCap('other'), upload.single('resume'), analyzeResume);
 router.put('/profile', updateProfile);
 router.post('/resume', upload.single('resume'), uploadResume);
 router.post('/documents', upload.array('documents', 20), upload.convertImagesToWebp, uploadDocuments);

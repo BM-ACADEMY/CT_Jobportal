@@ -21,11 +21,13 @@ const {
   selectSlot,
 } = require('../controllers/requestController');
 
+const { aiDailyCap } = require('../middlewares/aiDailyCap');
+
 router.use(verifyToken);
 
 router.post('/counselling', authorizeRoles('jobseeker'), submitCounsellingRequest);
 router.post('/mock-interview', authorizeRoles('jobseeker'), submitMockInterviewRequest);
-router.post('/ai-resume-review', authorizeRoles('jobseeker'), submitAiResumeReviewRequest);
+router.post('/ai-resume-review', authorizeRoles('jobseeker'), aiDailyCap('other'), submitAiResumeReviewRequest);
 router.get('/my-sessions', authorizeRoles('jobseeker'), getMySessions);
 router.get('/my-mock-interviews', authorizeRoles('jobseeker'), getMyMockInterviews);
 router.get('/my-ai-resume-reviews', authorizeRoles('jobseeker'), getMyAiResumeReviews);

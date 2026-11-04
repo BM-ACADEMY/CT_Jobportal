@@ -16,7 +16,7 @@ const FREE_PLANS = [
     resumeBuilderCount: 1,       // 1 resume allowed
 
     // Job Alerts
-    jobAlerts: 'Monthly',
+    jobAlerts: 'Weekly',
 
     // Premium features OFF by default
     hasProfileBoost: false,
@@ -25,12 +25,13 @@ const FREE_PLANS = [
     messageRecruitersCount: 1,   // 1 recruiter conversation
 
     hasCareerCounselling: true,
-    careerCounsellingCount: 0,   // 0 = unlimited sessions (basic counselling)
+    careerCounsellingCount: 1,   // launch setting: 1 free session per student (0 would mean unlimited)
 
     hasInterviewPrep: false,
     hasPriorityBadge: false,
     hasSalaryBenchmarking: false,
     hasAiResumeReview: false,
+    hasJobMatchAnalysis: true,   // the AI hook; keep the cost safe with the OpenRouter spend limit
   },
   {
     name: 'Free',

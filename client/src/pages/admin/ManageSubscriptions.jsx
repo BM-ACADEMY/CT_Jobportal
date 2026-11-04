@@ -601,11 +601,13 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
     if (!form.name.trim()) { toast.error('Plan name is required'); return; }
     setSaving(true);
     try {
+      // The price box can be empty while typing; a free plan is saved as 0.
+      const body = { ...form, price: Number(form.price) || 0 };
       if (editingPlan) {
-        await axios.put(`${API}/subscriptions/${editingPlan._id}`, form, { headers: authHeader() });
+        await axios.put(`${API}/subscriptions/${editingPlan._id}`, body, { headers: authHeader() });
         toast.success('Plan updated');
       } else {
-        await axios.post(`${API}/subscriptions`, form, { headers: authHeader() });
+        await axios.post(`${API}/subscriptions`, body, { headers: authHeader() });
         toast.success('Plan created');
       }
       onSaved();
@@ -650,11 +652,11 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
                 <Input
                   type="number"
                   min="0"
-                  value={form.isCustomPrice ? '' : (form.price || '')}
-                  onChange={e => set('price', Number(e.target.value) || 0)}
+                  value={form.isCustomPrice ? '' : (form.price ?? '')}
+                  onChange={e => set('price', e.target.value === '' ? '' : Number(e.target.value))}
                   disabled={form.isCustomPrice}
                   className={`h-11 rounded-xl border-slate-200 text-sm ${form.isCustomPrice ? 'bg-slate-50 opacity-60' : ''}`}
-                  required={!form.isCustomPrice}
+                  required={false}
                 />
               </div>
               <div>

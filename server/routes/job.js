@@ -7,10 +7,11 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getJobById, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getTopCandidates, getAICandidateMatches, getJobQuota, cloneJob, importPipeline, bulkAiMatch, markJobApplicantsViewed } = require('../controllers/jobController');
 const { scoreJobPost } = require('../utils/jobQuality');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
+const { aiDailyCap } = require('../middlewares/aiDailyCap');
 
 // --- Jobseeker Routes ---
 router.get('/matching', verifyToken, authorizeRoles('jobseeker'), getMatchingJobs);
-router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), calculatePreMatch);
+router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), aiDailyCap('match'), calculatePreMatch);
 
 // --- Recruiter / Company Routes ---
 router.post('/', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), createJob);
