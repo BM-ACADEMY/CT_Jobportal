@@ -667,7 +667,7 @@ exports.inviteToAssessment = async (req, res) => {
       if (applicantPhone) {
         const result = await sendWhatsAppTemplate({
           to: applicantPhone,
-          template: 'assessment_testinvite',
+          template: process.env.WA_TEMPLATE_ASSESSMENT_INVITE || 'assessment_testinvite',
           params: [applicant.name || 'there', skill, companyName, deadlineLabel, link]
         });
         if (result?.ok) notified = true;
