@@ -22,6 +22,7 @@ const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 const { isValidSignature, isDuplicateKeyError, findPaymentByRazorpayId, checkoutNotes, findCoupon, countCouponUse } = require('../utils/paymentGuards');
 
 const RECURRING_ROLES = ['college', 'company'];
+const PLAN_UNAVAILABLE_MSG = 'This plan is not available';
 const subscriptionPageFor = role => role === 'college' ? '/college/subscription' : ['company', 'recruiter', 'org_employee'].includes(role) ? '/company/subscription' : '/candidate/subscription';
 const paymentHistoryLink = role => role === 'college'
   ? '/college/payment-history'
@@ -81,6 +82,7 @@ const createOrder = async (req, res) => {
     if (!plan) {
       return res.status(404).json({ msg: 'Subscription plan not found' });
     }
+    if (plan.isActive === false) return res.status(400).json({ msg: PLAN_UNAVAILABLE_MSG });
 
     // Razorpay doesn't allow 0 amount orders
     if (plan.price === 0) {
@@ -165,6 +167,13 @@ const verifyPayment = async (req, res) => {
 
     if (!canPurchasePlan(user, plan, req.user.role)) {
       return res.status(403).json({ msg: 'Only your organization admin can change the organization plan.' });
+    }
+
+    // A plan switched off by the admin cannot be bought or activated. The one exception: a person already on a
+    // free plan that was later switched off may keep "selecting" it (the client re-sends it), which changes nothing.
+    const alreadyOnPlan = String(user.subscription?._id || user.subscription || '') === String(plan._id);
+    if (plan.isActive === false && !(isFree && alreadyOnPlan)) {
+      return res.status(400).json({ msg: PLAN_UNAVAILABLE_MSG });
     }
 
     let quantity = 1;
@@ -256,6 +265,7 @@ const createSubscriptionOrder = async (req, res) => {
 
     const plan = await Subscription.findById(planId);
     if (!plan) return res.status(404).json({ msg: 'Subscription plan not found' });
+    if (plan.isActive === false) return res.status(400).json({ msg: PLAN_UNAVAILABLE_MSG });
     if (plan.price === 0) return res.status(400).json({ msg: 'Free plans do not require billing' });
     if (!RECURRING_ROLES.includes(plan.role)) {
       return res.status(400).json({ msg: 'Recurring subscriptions are only available for college and company plans' });
