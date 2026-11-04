@@ -200,9 +200,7 @@ const userSchema = new mongoose.Schema({
   teamPermissions: {
     type: [String],
     default: [],
-    enum: ['post_job', 'my_jobs', 'candidate_search', 'messages',
-           'ats_pipeline', 'analytics', 'bulk_messaging',
-           'bulk_applicant_management', 'interview_scheduling', 'ai_candidate_matching']
+    enum: require('../config/teamPermissions').TEAM_PERMISSION_KEYS
   },
   pendingCompanyInvite: {
     company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },

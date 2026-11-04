@@ -9,11 +9,7 @@ const { emailWrapper } = require('../utils/emailTemplates');
 const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/teamMembership');
 const { notifyUser } = require('../utils/inAppNotifications');
 
-const TEAM_PERMISSIONS = [
-  'post_job', 'my_jobs', 'candidate_search', 'messages',
-  'ats_pipeline', 'analytics', 'bulk_messaging',
-  'bulk_applicant_management', 'interview_scheduling', 'ai_candidate_matching'
-];
+const { TEAM_PERMISSION_KEYS: TEAM_PERMISSIONS } = require('../config/teamPermissions');
 
 // @desc    Get Recruiter Profile and Company Details
 // @route   GET /api/recruiter/profile
@@ -184,7 +180,7 @@ const getTeamMembers = async (req, res) => {
       ],
       _id: { $ne: userId } 
     })
-      .select('name email avatar recruiterProfile companyProfile role companyHistory createdAt display_id isActiveSeat')
+      .select('name email avatar recruiterProfile companyProfile role companyHistory createdAt display_id isActiveSeat isTeamManaged teamPermissions')
       .populate('role', 'name');
 
     const mappedMembers = members.map(m => {
@@ -198,7 +194,8 @@ const getTeamMembers = async (req, res) => {
         role: m.role,
         display_id: m.display_id,
         isActiveSeat: m.isActiveSeat,
-        teamPermissions: m.teamPermissions
+        isTeamManaged: !!m.isTeamManaged,
+        teamPermissions: m.teamPermissions || []
       };
     });
 

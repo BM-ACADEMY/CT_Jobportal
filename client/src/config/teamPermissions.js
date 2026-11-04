@@ -1,6 +1,7 @@
-// Grantable page permissions for a team-managed recruiter — mirrors the fixed key list
-// enforced server-side (server/models/User.js teamPermissions enum). Drives both the
-// invite/edit-permissions checkbox UI and the PrivateRoute/Sidebar filtering.
+// Grantable page permissions for a team-managed recruiter. Same keys and labels as
+// server/config/teamPermissions.js, where the server enforces them on every company API
+// (server/middlewares/teamPermission.js). Here they drive the invite/edit-permissions checkbox
+// UI and the PrivateRoute/Sidebar filtering; a test on the server checks the two lists match.
 export const TEAM_PERMISSIONS = [
   { key: 'post_job', label: 'Post Job', routes: ['/company/jobs/new'] },
   { key: 'my_jobs', label: 'My Jobs', routes: ['/company/jobs'] },
