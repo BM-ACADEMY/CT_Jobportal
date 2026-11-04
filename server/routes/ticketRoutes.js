@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
+const { requireAdminOr } = require('../middlewares/staffPermission');
 const {
   createTicket,
   getMyTickets,
@@ -34,8 +35,9 @@ const upload = multer({
 
 router.post('/', verifyToken, upload.single('errorLogFile'), createTicket);
 router.get('/my', verifyToken, getMyTickets);
-router.get('/admin/all', verifyToken, isAdmin, getAllTickets);
-router.patch('/admin/:id', verifyToken, isAdmin, updateTicket);
+// Admin, or a staff member with the matching permission (support role).
+router.get('/admin/all', verifyToken, requireAdminOr('tickets_view'), getAllTickets);
+router.patch('/admin/:id', verifyToken, requireAdminOr('tickets_update'), updateTicket);
 router.get('/:id/support-contact', verifyToken, getSupportContact);
 router.get('/:id', verifyToken, getTicketById);
 

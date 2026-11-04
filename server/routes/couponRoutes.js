@@ -13,7 +13,7 @@ router.post('/validate', validateCoupon);
 
 // Admin routes
 router.use(verifyToken);
-router.use(authorizeRoles('admin', 'subadmin'));
+router.use(authorizeRoles('admin'));
 router.get('/', getCoupons);
 router.post('/', createCoupon);
 router.patch('/:id', updateCoupon);

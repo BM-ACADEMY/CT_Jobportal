@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { hasStaffPermission } from '../../config/staffPermissions';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { GraduationCap, CheckCircle2, XCircle, Clock, FileText, Search, Eye } from 'lucide-react';
@@ -14,6 +16,8 @@ const statusStyles = {
 };
 
 const CollegeVerification = () => {
+  const { user: me } = useAuth();
+  const canVerify = hasStaffPermission(me, 'colleges_verify');
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -107,6 +111,7 @@ const CollegeVerification = () => {
                 <Button size="sm" variant="outline" onClick={() => navigate(`/admin/colleges/${c._id}`)} className="rounded-lg text-xs font-bold gap-1 h-9 text-slate-600 border-slate-200 hover:bg-slate-50">
                   <Eye size={13} /> View
                 </Button>
+                {canVerify && <>
                 <Button size="sm" disabled={acting === c._id || c.verificationStatus === 'verified'} onClick={() => act(c._id, 'verified')} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1 h-9">
                   <CheckCircle2 size={13} /> Verify
                 </Button>
@@ -118,6 +123,7 @@ const CollegeVerification = () => {
                     <Clock size={13} /> Reset
                   </Button>
                 )}
+                </>}
               </div>
             </div>
           ))}

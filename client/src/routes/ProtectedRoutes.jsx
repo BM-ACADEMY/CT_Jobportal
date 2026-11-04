@@ -34,7 +34,9 @@ export const GuestRoute = ({ children }) => {
 // If permissionKey is provided, additionally restricts team-managed recruiters (an org's
 // delegated team member, not the company owner or a solo recruiter) to only the pages
 // their admin has explicitly granted.
-export const PrivateRoute = ({ children, roles, permissionKey }) => {
+// staffPermission: a platform staff member (role subadmin) may open the page only with that permission
+// (server enforces the same list; see config/staffPermissions.js).
+export const PrivateRoute = ({ children, roles, permissionKey, staffPermission }) => {
   const { user, loading } = useAuth();
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" replace />;
@@ -50,6 +52,9 @@ export const PrivateRoute = ({ children, roles, permissionKey }) => {
       drive_incharge: '/incharge'
     };
     return <Navigate to={roleRedirects[user.role] || '/candidate'} replace />;
+  }
+  if (staffPermission && user.role === 'subadmin' && !(user.staff?.permissions || []).includes(staffPermission)) {
+    return <Navigate to="/subadmin" replace />;
   }
   if (
     permissionKey &&

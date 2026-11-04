@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken, authorizeRoles, isAdmin } = require('../middlewares/authMiddleware');
+const { requireAdminOr } = require('../middlewares/staffPermission');
 const {
   submitCounsellingRequest,
   submitMockInterviewRequest,
@@ -38,10 +39,12 @@ router.patch('/:id/select-slot', authorizeRoles('jobseeker'), selectSlot);
 
 router.post('/website-request', authorizeRoles('recruiter', 'company', 'org_employee'), submitWebsiteRequest);
 
-router.get('/admin', isAdmin, getAdminRequests);
-router.get('/admin/assignees', isAdmin, getAssignees);
-router.patch('/admin/:id', isAdmin, updateRequestStatus);
-router.patch('/admin/:id/assign', isAdmin, adminAssignRequest);
+// Admin, or a staff member with the matching permission (counsellor role). Staff only see and touch
+// counselling, mock interview and resume review requests (controller applies the scope).
+router.get('/admin', requireAdminOr('requests_view'), getAdminRequests);
+router.get('/admin/assignees', requireAdminOr('requests_assign'), getAssignees);
+router.patch('/admin/:id', requireAdminOr('requests_update'), updateRequestStatus);
+router.patch('/admin/:id/assign', requireAdminOr('requests_assign'), adminAssignRequest);
 
 router.get('/assigned', authorizeRoles('recruiter', 'company', 'org_employee'), getAssignedRequests);
 router.patch('/assigned/:id', authorizeRoles('recruiter', 'company', 'org_employee'), updateAssignedRequest);

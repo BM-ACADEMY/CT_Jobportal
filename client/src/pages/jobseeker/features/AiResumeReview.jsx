@@ -307,10 +307,12 @@ const AiResumeReview = () => {
 
   const handleRequestClick = () => {
     if (remainingCount === 0 || remainingCount === '0') {
-      Modal.warning({
+      Modal.confirm({
         title: 'Limit Reached',
         content: 'You have no AI resume reviews left. Please upgrade your subscription or purchase an add-on to get more reviews.',
-        okText: 'Close',
+        okText: 'Upgrade plan',
+        cancelText: 'Close',
+        onOk: () => { window.location.assign('/candidate/subscription'); },
         okButtonProps: { className: 'bg-violet-600 hover:bg-violet-700 border-none shadow-none' },
       });
     } else {

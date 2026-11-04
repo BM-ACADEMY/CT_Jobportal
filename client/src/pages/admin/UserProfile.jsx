@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -47,6 +48,8 @@ const openFile = (e, url) => {
 };
 
 const UserProfile = () => {
+  const { user: me } = useAuth();
+  const readOnly = me?.role === 'subadmin';
   const { id } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -238,7 +241,7 @@ const UserProfile = () => {
               >
                 <MessageSquare size={14} /> Message
               </Button>
-              <Button
+              {!readOnly && <Button
                 variant="outline"
                 size="sm"
                 onClick={handleToggleBlock}
@@ -249,7 +252,7 @@ const UserProfile = () => {
                 }`}
               >
                 {user.isAdminBlocked ? <><ShieldCheck size={14} /> Unblock</> : <><ShieldAlert size={14} /> Block</>}
-              </Button>
+              </Button>}
             </div>
           </div>
         </div>

@@ -53,6 +53,7 @@ const ManageUsers = page('admin/ManageUsers');
 const UserProfile = page('admin/UserProfile');
 const ManageJobs = page('admin/ManageJobs');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
+const ManageStaff = page('admin/ManageStaff');
 const ManageRenewals = page('admin/ManageRenewals');
 const ManageRefunds = page('admin/ManageRefunds');
 const ManageBuyers = page('admin/ManageBuyers');
@@ -413,7 +414,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/users"
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="users_view">
               <ManageUsers />
             </PrivateRoute>
           }
@@ -421,7 +422,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/users/:id"
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="users_view">
               <UserProfile />
             </PrivateRoute>
           }
@@ -437,7 +438,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/colleges"
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="colleges_view">
               <AdminCollegeVerification />
             </PrivateRoute>
           }
@@ -445,7 +446,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/colleges/:id"
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="colleges_view">
               <CollegeKycDetails />
             </PrivateRoute>
           }
@@ -537,7 +538,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/requests"
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="requests_view">
               <ManageRequests />
             </PrivateRoute>
           }
@@ -551,9 +552,17 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/admin/tickets"
+          path="/admin/staff"
           element={
             <PrivateRoute roles={['admin']}>
+              <ManageStaff />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/tickets"
+          element={
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="tickets_view">
               <AdminTickets />
             </PrivateRoute>
           }

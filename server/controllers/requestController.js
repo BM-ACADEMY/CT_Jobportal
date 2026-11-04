@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { staffMayTouchRequestType, staffRequestTypeFilter } = require('../middlewares/staffPermission');
 const AdminRequest = require('../models/AdminRequest');
 const Role = require('../models/Role');
 const mongoose = require('mongoose');
@@ -647,7 +648,9 @@ const getAdminRequests = async (req, res) => {
     const { type, status, search, assignedTo } = req.query;
     let query = {};
 
-    if (type && type !== 'all') query.type = type;
+    // Staff (counsellor) are limited to the counselling-type requests; admin sees what was asked.
+    const typeFilter = staffRequestTypeFilter(req, type);
+    if (typeFilter !== undefined) query.type = typeFilter;
     if (status && status !== 'all') query.status = status;
     if (assignedTo && assignedTo !== 'all') {
       if (assignedTo === 'unassigned') query.assignedTo = { $exists: false };
@@ -692,6 +695,7 @@ const updateRequestStatus = async (req, res) => {
     const request = await AdminRequest.findById(req.params.id);
 
     if (!request) return res.status(404).json({ msg: 'Request not found' });
+    if (!staffMayTouchRequestType(req, request.type)) return res.status(403).json({ msg: 'Staff accounts cannot change this type of request.' });
 
     if (status) request.status = status;
     if (adminNotes !== undefined) request.adminNotes = adminNotes;
@@ -719,12 +723,14 @@ const updateRequestStatus = async (req, res) => {
 const adminAssignRequest = async (req, res) => {
   try {
     const { assignedToPool } = req.body;
-    if (req.user.role !== 'admin') {
+    // Route gate: admin, or staff with requests_assign (middlewares/staffPermission.js). Kept as a second check.
+    if (req.user.role !== 'admin' && req.user.role !== 'subadmin') {
       return res.status(403).json({ msg: 'Not authorized to assign tasks' });
     }
 
     const request = await AdminRequest.findById(req.params.id).populate('user', 'name');
     if (!request) return res.status(404).json({ msg: 'Request not found' });
+    if (!staffMayTouchRequestType(req, request.type)) return res.status(403).json({ msg: 'Staff accounts cannot assign this type of request.' });
 
     request.assignedToPool = assignedToPool || [];
     request.assignedTo = null;

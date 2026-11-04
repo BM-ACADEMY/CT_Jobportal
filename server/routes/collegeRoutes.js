@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
+const { requireAdminOr } = require('../middlewares/staffPermission');
 const { rateLimit } = require('../middlewares/rateLimit');
 
 // Campus events put many students behind one college Wi-Fi IP, so these limits are generous.
@@ -150,9 +151,10 @@ router.get('/public/company-drive/:token/export', exportCompanyDriveStudents);
 router.post('/public/company-drive/:token/sign-file', signCompanyDriveFile);
 
 // ── Admin routes ────────────────────────────────────────────────────────────
-router.get('/admin/all-colleges', verifyToken, authorizeRoles('admin'), getAllCollegesForAdmin);
-router.get('/admin/colleges/:collegeId', verifyToken, authorizeRoles('admin'), getCollegeByIdForAdmin);
-router.put('/admin/verify/:collegeId', verifyToken, authorizeRoles('admin'), adminVerifyCollege);
+// Admin, or a staff member with the matching permission (college verifier role).
+router.get('/admin/all-colleges', verifyToken, requireAdminOr('colleges_view'), getAllCollegesForAdmin);
+router.get('/admin/colleges/:collegeId', verifyToken, requireAdminOr('colleges_view'), getCollegeByIdForAdmin);
+router.put('/admin/verify/:collegeId', verifyToken, requireAdminOr('colleges_verify'), adminVerifyCollege);
 
 // ── TPO authenticated routes ────────────────────────────────────────────────
 router.get('/dashboard', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), getDashboard);
