@@ -12,7 +12,7 @@ const stub = (rel, exports) => {
 };
 
 // --- fake models -----------------------------------------------------------------------------------
-const db = { subs: [], users: {}, deleted: [], updates: [] };
+const db = { subs: [], users: {}, deleted: [], updates: [], counters: {} };
 const PushSubscription = {
   find: async (q) => db.subs.filter(s => String(s.user) === String(q.user)),
   distinct: async (field, q) => [...new Set(db.subs.filter(s => q.user.$in.map(String).includes(String(s.user))).map(s => String(s.user)))],
@@ -23,7 +23,20 @@ const User = {
   find: (q) => ({ select: () => ({ lean: async () => q._id.$in.map(id => db.users[String(id)]).filter(Boolean) }) }),
   updateOne: async (q, u) => { const usr = db.users[String(q._id)]; if (usr) { usr.pushPrefs = usr.pushPrefs || {}; usr.pushPrefs.lastJobPushAt = u.$set['pushPrefs.lastJobPushAt']; } },
 };
+// Atomic counter stand-in with the same semantics as the Mongo upsert in reserveDailySlot:
+// the filter matches only count < max; at the cap the upsert becomes a duplicate-key error.
+const PushDailyCounter = {
+  findOneAndUpdate: async (q, u) => {
+    const key = `${q.user}|${q.day}`;
+    const row = db.counters[key];
+    if (row && !(row.count < q.count.$lt)) { const e = new Error('dup'); e.code = 11000; throw e; }
+    db.counters[key] = { count: (row?.count || 0) + 1 };
+    return db.counters[key];
+  },
+  updateOne: async (q, u) => { const row = db.counters[`${q.user}|${q.day}`]; if (row && row.count > 0) row.count += u.$inc.count; },
+};
 stub('models/PushSubscription', PushSubscription);
+stub('models/PushDailyCounter', PushDailyCounter);
 stub('models/User', User);
 
 const webPush = require(path.join(SRV, 'utils/webPush'));
@@ -50,7 +63,8 @@ const reset = () => {
     { _id: 's3', user: 'u2', endpoint: 'https://push.example/u2-phone', keys: { p256dh: 'p', auth: 'a' }, failures: 4 },
   ];
   db.users = { u1: { _id: 'u1', pushPrefs: { mutedCategories: [] } }, u2: { _id: 'u2', pushPrefs: { mutedCategories: ['applications'] } } };
-  db.deleted = []; db.updates = []; sentTo.length = 0; failWith = null;
+  db.deleted = []; db.updates = []; db.counters = {}; sentTo.length = 0; failWith = null;
+  delete process.env.WEB_PUSH_MAX_PER_DAY;
   process.env.WEB_PUSH_VAPID_PUBLIC_KEY = 'pub';
   process.env.WEB_PUSH_VAPID_PRIVATE_KEY = 'priv';
   delete process.env.WEB_PUSH_ENABLED;
@@ -158,5 +172,66 @@ describe('web push: sending', () => {
     failWith = { endpointMatch: 'u2-phone', statusCode: 500 };
     await webPush.sendPush({ recipientIds: ['u2'], title: 'T', message: 'm', type: 'message', now: DAY });
     assert.deepEqual(db.deleted, ['s3']);
+  });
+});
+
+describe('web push: daily cap across all categories', () => {
+  beforeEach(reset);
+  const send = (type, now = DAY) => webPush.sendPush({ recipientIds: ['u1'], title: 'T', message: 'm', type, now });
+
+  it('defaults to 2 a day and reads WEB_PUSH_MAX_PER_DAY', () => {
+    assert.equal(webPush.maxPerDay(), 2);
+    process.env.WEB_PUSH_MAX_PER_DAY = '5'; assert.equal(webPush.maxPerDay(), 5);
+    process.env.WEB_PUSH_MAX_PER_DAY = '0'; assert.equal(webPush.maxPerDay(), 2);
+    process.env.WEB_PUSH_MAX_PER_DAY = 'lots'; assert.equal(webPush.maxPerDay(), 2);
+  });
+
+  it('skips the third push of the day, whatever the categories', async () => {
+    assert.equal((await send('application_received')).sent, 1);
+    assert.equal((await send('refund_status')).sent, 1);
+    assert.equal((await send('message')).sent, 0, 'third push skipped');
+    assert.equal((await send('team_removed')).sent, 0);
+    assert.equal(sentTo.length, 4, 'two pushes to two devices');
+  });
+
+  it('the counter starts again at midnight IST, not UTC', async () => {
+    await send('application_received'); await send('refund_status');          // 5 Nov: 2 used
+    assert.equal((await send('message')).sent, 0);
+    assert.equal((await send('message', new Date('2026-11-05T18:29:00Z'))).sent, 0, '23:59 IST is still 5 Nov');
+    assert.equal((await send('message', new Date('2026-11-05T19:00:00Z'))).sent, 1, '00:30 IST is 6 Nov: fresh counter');
+    assert.equal((await send('message', NEXT_DAY)).sent, 1);                    // 6 Nov: 2 used
+    assert.equal((await send('message', NEXT_DAY)).sent, 0);
+    assert.equal(db.counters['u1|2026-11-05'].count, 2);
+    assert.equal(db.counters['u1|2026-11-06'].count, 2);
+  });
+
+  it('concurrent sends cannot exceed the cap', async () => {
+    const results = await Promise.all(['application_received', 'refund_status', 'message', 'team_removed', 'ticket_status'].map(t => send(t)));
+    assert.equal(results.reduce((n, r) => n + r.sent, 0), 2);
+    assert.equal(db.counters['u1|2026-11-05'].count, 2);
+  });
+
+  it('interviews bypass the cap but not a mute', async () => {
+    await send('application_received'); await send('refund_status');
+    assert.equal((await send('interview_scheduled')).sent, 1);
+    assert.equal((await send('mock_interview')).sent, 1);
+    db.users.u1.pushPrefs.mutedCategories = ['interviews'];
+    assert.equal((await send('interview_scheduled')).sent, 0);
+  });
+
+  it('gives the slot back when no device accepted the push', async () => {
+    failWith = { endpointMatch: 'u1', statusCode: 500 };
+    assert.equal((await send('application_received')).sent, 0);
+    assert.equal(db.counters['u1|2026-11-05'].count, 0);
+    failWith = null;
+    assert.equal((await send('refund_status')).sent, 1);
+    assert.equal((await send('message')).sent, 1);
+  });
+
+  it('a higher WEB_PUSH_MAX_PER_DAY allows more', async () => {
+    process.env.WEB_PUSH_MAX_PER_DAY = '3';
+    await send('application_received'); await send('refund_status');
+    assert.equal((await send('message')).sent, 1);
+    assert.equal((await send('team_removed')).sent, 0);
   });
 });

@@ -32,7 +32,11 @@ shipped. Branch `web-push`.
   and now also calls `sendPush()`. Nothing else had to change, so every existing notification type is covered.
 - **Quiet hours 21:00 to 08:00 IST**: no push, except the `interviews` and `messages` categories. The bell and
   email still go out at once; the push is skipped, not queued.
-- **New-jobs cap**: at most one `jobs` push per person per day.
+- **Daily cap**: at most `WEB_PUSH_MAX_PER_DAY` pushes (default 2) per person per IST day across all categories.
+  The slot is taken with an atomic counter (`PushDailyCounter`, one row per person per day, upsert with
+  `count < max`), so two notifications arriving at the same moment cannot both get through on the last slot.
+  Interviews are exempt from the cap (a mute still applies). A slot is given back if no device accepted the push.
+- **New-jobs cap**: on top of that, at most one `jobs` push per person per day.
 - **Consent is per device**; the per-category mute list is per person (`user.pushPrefs.mutedCategories`).
 - Dead devices are removed on a 404/410 from the push service, or after 5 failures in a row.
 - The payload is only title (60 chars), body (140 chars), link and type. The service worker fetches nothing on
@@ -49,7 +53,8 @@ shipped. Branch `web-push`.
 | GET / PUT | `/api/push/prefs` | signed in | `{ mutedCategories: [...] }` (GET also returns `devices`) |
 | POST | `/api/push/test` | signed in | sends one test push to the caller's devices |
 
-New collection `PushSubscription` (user, endpoint, keys, userAgent, failures). New User field `pushPrefs`.
+New collections `PushSubscription` (user, endpoint, keys, userAgent, failures) and `PushDailyCounter` (user, day,
+count; rows expire after two days). New User field `pushPrefs`.
 
 ## Not included (decide later)
 

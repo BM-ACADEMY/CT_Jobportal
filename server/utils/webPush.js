@@ -7,12 +7,16 @@
 // category (mute list in user.pushPrefs). Rules:
 //   - no push during quiet hours (21:00 to 08:00 IST) except interviews and messages; the in-app
 //     notification and email still go out at once, only the push is skipped (not queued);
-//   - at most one "jobs" push per person per day;
+//   - at most WEB_PUSH_MAX_PER_DAY pushes (default 2) per person per IST day across all categories,
+//     reserved with an atomic counter so simultaneous notifications cannot both slip through;
+//     interviews are exempt from the cap (mutes still apply);
+//   - on top of that, at most one "jobs" push per person per day;
 //   - a subscription the push service reports as gone (404/410) is deleted; other failures are counted
 //     and the row is dropped after MAX_FAILURES in a row.
 // Pure helpers (categoryOf, isQuietHour, pickDeliverable) are exported for tests.
 
 const PushSubscription = require('../models/PushSubscription');
+const PushDailyCounter = require('../models/PushDailyCounter');
 const User = require('../models/User');
 
 const MAX_FAILURES = 5;
@@ -24,6 +28,14 @@ const TIME_ZONE = 'Asia/Kolkata';
 const CATEGORIES = ['jobs', 'applications', 'interviews', 'messages', 'billing', 'team', 'general'];
 // These are time-sensitive, so they are pushed even in quiet hours.
 const URGENT_CATEGORIES = new Set(['interviews', 'messages']);
+// Exempt from the per-day cap (a reminder for today's interview must never be the one that is dropped).
+const CAP_EXEMPT_CATEGORIES = new Set(['interviews']);
+
+const DEFAULT_MAX_PER_DAY = 2;
+const maxPerDay = () => {
+  const n = Number(process.env.WEB_PUSH_MAX_PER_DAY);
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_MAX_PER_DAY;
+};
 
 const config = () => {
   const publicKey = (process.env.WEB_PUSH_VAPID_PUBLIC_KEY || '').trim();
@@ -78,6 +90,28 @@ const pickDeliverable = ({ category, prefs = {}, now = new Date() }) => {
   }
   return { ok: true };
 };
+
+// Atomically takes one of today's slots for this person. Returns false when the cap is reached.
+// The filter only matches a row with count < max; when the row exists at the cap the upsert tries to
+// insert a duplicate (user, day) and fails with 11000, which is the "no slot" answer. Two concurrent
+// calls therefore cannot both succeed on the last slot.
+const reserveDailySlot = async (userId, now = new Date(), max = maxPerDay()) => {
+  const day = dayKeyIst(now);
+  try {
+    const row = await PushDailyCounter.findOneAndUpdate(
+      { user: userId, day, count: { $lt: max } },
+      { $inc: { count: 1 }, $setOnInsert: { user: userId, day, expiresAt: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000) } },
+      { upsert: true, new: true }
+    );
+    return !!row;
+  } catch (err) {
+    if (err && err.code === 11000) return false;
+    throw err;
+  }
+};
+// Gives a slot back when nothing could be delivered (every device was dead), so a dead device does not eat the cap.
+const releaseDailySlot = (userId, now = new Date()) =>
+  PushDailyCounter.updateOne({ user: userId, day: dayKeyIst(now), count: { $gt: 0 } }, { $inc: { count: -1 } }).catch(() => {});
 
 const clip = (s = '', n) => (String(s).length > n ? `${String(s).slice(0, n - 1).trim()}…` : String(s));
 
@@ -136,17 +170,22 @@ const sendPush = async ({ recipientIds = [], title, message, link = '', type = '
   for (const u of users) {
     const decision = pickDeliverable({ category, prefs: u.pushPrefs || {}, now });
     if (!decision.ok) continue;
+    const capped = !CAP_EXEMPT_CATEGORIES.has(category);
+    if (capped && !(await reserveDailySlot(u._id, now))) continue; // daily cap reached
     const delivered = await sendToUser(u._id, payload, { urgent: URGENT_CATEGORIES.has(category) });
     if (delivered > 0) {
       sent += 1;
       if (category === 'jobs') await User.updateOne({ _id: u._id }, { $set: { 'pushPrefs.lastJobPushAt': now } });
+    } else if (capped) {
+      await releaseDailySlot(u._id, now);
     }
   }
   return { sent, skipped: ids.length - sent };
 };
 
 module.exports = {
-  CATEGORIES, URGENT_CATEGORIES, MAX_FAILURES, QUIET_START, QUIET_END,
+  CATEGORIES, URGENT_CATEGORIES, CAP_EXEMPT_CATEGORIES, MAX_FAILURES, QUIET_START, QUIET_END, DEFAULT_MAX_PER_DAY,
   isPushEnabled, publicKey, categoryOf, isQuietHour, pickDeliverable, buildPayload, sendToUser, sendPush,
+  maxPerDay, reserveDailySlot, releaseDailySlot,
   _setLibForTests: (fake) => { webPushLib = fake; }
 };
