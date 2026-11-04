@@ -603,8 +603,10 @@ const approveRefund = async (req, res) => {
     await payment.save();
 
     // Revoke the user's subscription, but only when the refunded payment was for a plan. Refunding a
-    // pay-per-feature purchase must leave the user's plan alone.
-    const user = payment.plan ? await User.findById(payment.user._id).populate('role') : null;
+    // pay-per-feature purchase must leave the user's plan alone. (Same rule as cancelSubscription and
+    // fulfillPlanPayment: anything not marked pay-per-feature is a plan payment.)
+    const isPlanPayment = payment.paymentType !== 'pay-per-feature';
+    const user = isPlanPayment ? await User.findById(payment.user._id).populate('role') : null;
     if (user) {
       const userRoleName = user.role?.name || 'jobseeker';
       const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: userRoleName });
@@ -631,14 +633,14 @@ const approveRefund = async (req, res) => {
       io: req.io,
       recipientId: payment.user._id,
       title: 'Refund approved',
-      message: payment.plan ? 'Your refund request was approved and your subscription was updated.' : 'Your refund request was approved.',
-      emailBody: `<p>Your refund request was approved. The money goes back to your original payment method and usually shows up within 5 to 7 working days, depending on your bank.</p>${payment.plan ? '<p>Your account has moved to the Free plan. You can subscribe again at any time.</p>' : ''}`,
+      message: isPlanPayment ? 'Your refund request was approved and your subscription was updated.' : 'Your refund request was approved.',
+      emailBody: `<p>Your refund request was approved. The money goes back to your original payment method and usually shows up within 5 to 7 working days, depending on your bank.</p>${isPlanPayment ? '<p>Your account has moved to the Free plan. You can subscribe again at any time.</p>' : ''}`,
       type: 'refund_status',
       link: paymentHistoryLink(roleName),
       metadata: { paymentId: payment._id, status: 'refunded' }
     }).catch(err => console.error('Refund approval notification failed:', err.message));
 
-    res.json({ success: true, msg: 'Refund approved and sent to Razorpay. Subscription revoked.', refundId: gateway.refundId || null });
+    res.json({ success: true, msg: isPlanPayment ? 'Refund approved and sent to Razorpay. Subscription revoked.' : 'Refund approved and sent to Razorpay.', refundId: gateway.refundId || null });
   } catch (err) {
     console.error('Approve Refund Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

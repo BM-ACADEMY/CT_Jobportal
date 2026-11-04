@@ -4,8 +4,10 @@ Scope: `server/controllers/paymentController.js`, `routes/paymentRoutes.js`, `ut
 `paymentGuards.js`, `pricing.js`, `refundPolicy.js`, `refundGateway.js`, `webhookRawBody.js`, `models/Payment.js`,
 `models/Coupon.js`. Read-only review of 5 Nov 2026 plus three small fixes (marked FIXED).
 
-**Not verified by running code.** The review session could not install npm packages, so the payment test
-suite (`node --test tests/payments/*.test.js`) was NOT run against these fixes. Run it before merging.
+**Verified on 4 Nov 2026:** `node --test tests/auth/*.test.js tests/payments/*.test.js` passes (272 tests) on this
+branch. The first version of fix 2 decided "plan payment" by `payment.plan`, which the refund test fixture does not
+set; it now uses `paymentType !== 'pay-per-feature'`, the same rule as `cancelSubscription` and `fulfillPlanPayment`,
+and a test covers the pay-per refund case.
 
 Prices, GST (18%) and the Razorpay setup were not changed.
 
