@@ -1,0 +1,156 @@
+From d9711463810665f86d7c02d84ecbcd720e664a1f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 3 Nov 2026 14:59:08 +0000
+Subject: [PATCH] Assistant: OpenRouter is the default provider; policy wording
+ names OpenRouter and the model provider
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PsgX1usF7TKCh3J48NhtVG
+---
+ client/src/pages/PrivacyPolicy.jsx      |  4 ++--
+ client/src/pages/TermsAndConditions.jsx |  2 +-
+ docs/AI_ASSISTANT.md                    |  4 ++--
+ server/.env.example                     |  8 ++++----
+ server/tests/auth/assistant.test.js     | 17 +++++++++--------
+ server/utils/aiHelper.js                |  4 ++--
+ 6 files changed, 20 insertions(+), 19 deletions(-)
+
+diff --git a/client/src/pages/PrivacyPolicy.jsx b/client/src/pages/PrivacyPolicy.jsx
+index 87e7060..4913b17 100644
+--- a/client/src/pages/PrivacyPolicy.jsx
++++ b/client/src/pages/PrivacyPolicy.jsx
+@@ -75,9 +75,9 @@ const PrivacyPolicy = () => (
+     </Section>
+ 
+     <Section id="processors" title="6. Services we use">
+-      {/* DRAFT wording for the AI assistant. A lawyer must review it, and OpenAI's current API data terms must be checked, before the assistant is switched on (see docs/AI_ASSISTANT.md). */}
++      {/* DRAFT wording for the AI assistant. A lawyer must review it, and the data terms of OpenRouter and the chosen model provider must be checked, before the assistant is switched on (see docs/AI_ASSISTANT.md). */}
+       <p>We use trusted providers to run the platform: Razorpay (payments), Meta WhatsApp Business (messages), Google and LinkedIn (sign-in), Google Analytics and Meta Pixel (analytics and advertising measurement), AI model providers accessed through OpenRouter (for AI features such as skill tests, resume review and candidate matching; the text you submit for those features, such as your resume, is sent to them to produce the result), email delivery services, and cloud hosting. They process data on our behalf or under their own privacy terms. Some of them store data on servers outside India.</p>
+-      {ASSISTANT_LIVE && <p><strong>Velaivaaipu assistant (job seekers).</strong> If you use the assistant, your question and a short summary of your own career profile are sent to OpenAI to produce the answer: your headline, preferred role, location, skills, degree names, past job titles, how complete your profile is, and the jobs we suggested to you. We do not send your name, email, phone number, photo, password, payment details or resume text, and we do not keep the text of your conversation; we only count how many messages you send. OpenAI handles that data under its own terms and privacy policy. Do not type passwords, OTPs, card details or ID numbers into the assistant. Its answers can be wrong; check important details yourself.</p>}
++      {ASSISTANT_LIVE && <p><strong>Velaivaaipu assistant (job seekers).</strong> If you use the assistant, your question and a short summary of your own career profile are sent, through OpenRouter, to the AI model provider that produces the answer: your headline, preferred role, location, skills, degree names, past job titles, how complete your profile is, and the jobs we suggested to you. We do not send your name, email, phone number, photo, password, payment details or resume text, and we do not keep the text of your conversation; we only count how many messages you send. OpenRouter and that provider handle the data under their own terms and privacy policies. Do not type passwords, OTPs, card details or ID numbers into the assistant. Its answers can be wrong; check important details yourself.</p>}
+     </Section>
+ 
+     <Section id="retention" title="7. How long we keep data">
+diff --git a/client/src/pages/TermsAndConditions.jsx b/client/src/pages/TermsAndConditions.jsx
+index 0bb4ecf..489eae7 100644
+--- a/client/src/pages/TermsAndConditions.jsx
++++ b/client/src/pages/TermsAndConditions.jsx
+@@ -193,7 +193,7 @@ const TermsAndConditions = () => {
+ 
+           <Section id="third-party" title="12. Third-Party Services">
+             <p>
+-              The Platform integrates third-party services including Razorpay (payments), Google/LinkedIn (social login), AI model providers, accessed through OpenRouter (AI-assisted features such as skill tests, resume review and candidate matching), {ASSISTANT_LIVE ? 'OpenAI (the Velaivaaipu assistant for job seekers), ' : ''}and Meta WhatsApp Business (messaging). Your use of these integrations is also subject to those providers' own terms and privacy policies. We are not responsible for outages, errors, or policy changes originating from third-party providers.
++              The Platform integrates third-party services including Razorpay (payments), Google/LinkedIn (social login), AI model providers, accessed through OpenRouter (AI-assisted features such as skill tests, resume review and candidate matching), {ASSISTANT_LIVE ? 'the model providers behind the Velaivaaipu assistant for job seekers (also through OpenRouter), ' : ''}and Meta WhatsApp Business (messaging). Your use of these integrations is also subject to those providers' own terms and privacy policies. We are not responsible for outages, errors, or policy changes originating from third-party providers.
+             </p>
+             {/* DRAFT wording for the AI assistant; lawyer to review before the assistant is switched on (docs/AI_ASSISTANT.md). */}
+             {ASSISTANT_LIVE && <p>
+diff --git a/docs/AI_ASSISTANT.md b/docs/AI_ASSISTANT.md
+index cfea713..3f2a781 100644
+--- a/docs/AI_ASSISTANT.md
++++ b/docs/AI_ASSISTANT.md
+@@ -1,4 +1,4 @@
+-# AI assistant for job seekers (OpenAI): what is built
++# AI assistant for job seekers (OpenRouter by default): what is built
+ 
+ Status: backend built, **off by default** (`ASSISTANT_ENABLED` unset). Not tested against the real OpenAI API: that needs your key. The chat widget and draft legal wording are in (Day 19), also hidden or inert until the assistant is switched on.
+ 
+@@ -8,7 +8,7 @@ Status: backend built, **off by default** (`ASSISTANT_ENABLED` unset). Not teste
+ 3. Languages: English and Tamil (it answers in the language the person writes in).
+ 
+ ## Switching it on
+-Set on the server: `ASSISTANT_ENABLED=true`, `OPENAI_API_KEY`, `OPENAI_ASSISTANT_MODEL=<the model you chose>`. No model name is built into the code, so a model change is an env change. To use OpenRouter instead: `AI_PROVIDER_ASSISTANT=openrouter`, `OPENROUTER_API_KEY`, `OPENROUTER_ASSISTANT_MODEL`. If the key or the model is missing, the endpoint answers 503 "not available" and logs why.
++Set on the server: `ASSISTANT_ENABLED=true`, `OPENROUTER_API_KEY`, `OPENROUTER_ASSISTANT_MODEL=<the model you chose>`. OpenRouter is the default provider, so `AI_PROVIDER_ASSISTANT` can stay unset. No model name is built into the code, so a model change is an env change. To use OpenAI directly instead: `AI_PROVIDER_ASSISTANT=openai`, `OPENAI_API_KEY`, `OPENAI_ASSISTANT_MODEL`. If the key or the model is missing, the endpoint answers 503 "not available" and logs why.
+ 
+ ## The endpoint
+ `POST /api/assistant/chat` `{ message, history? }`, job seekers only (login and role check). Reply: `{ reply, notice, remaining }`. The notice is "AI can make mistakes. Check important details before you act on them."
+diff --git a/server/.env.example b/server/.env.example
+index 6182992..6515a89 100644
+--- a/server/.env.example
++++ b/server/.env.example
+@@ -92,9 +92,9 @@ OPENROUTER_API_KEY=
+ 
+ # --- AI assistant for job seekers (OFF by default). Needs a provider key AND a model name; no model is built in. ---
+ # ASSISTANT_ENABLED=false
+-# AI_PROVIDER_ASSISTANT=openai          # openai | openrouter
+-# OPENAI_API_KEY=
+-# OPENAI_ASSISTANT_MODEL=               # set to the model you have chosen; changing it needs no code change
+-# OPENROUTER_ASSISTANT_MODEL=           # only if AI_PROVIDER_ASSISTANT=openrouter
++# AI_PROVIDER_ASSISTANT=openrouter      # openrouter (default, uses OPENROUTER_API_KEY) | openai (needs OPENAI_API_KEY)
++# OPENROUTER_ASSISTANT_MODEL=           # set to the model you have chosen (for example an OpenAI model name on OpenRouter); changing it needs no code change
++# OPENAI_API_KEY=                       # only if AI_PROVIDER_ASSISTANT=openai
++# OPENAI_ASSISTANT_MODEL=               # only if AI_PROVIDER_ASSISTANT=openai
+ # ASSISTANT_DAILY_LIMIT=30              # messages per person per day
+ # ASSISTANT_MONTHLY_TOKEN_BUDGET=2000000  # all people; alarm at 80 percent, hard stop at 100 percent
+diff --git a/server/tests/auth/assistant.test.js b/server/tests/auth/assistant.test.js
+index 6e16ea8..e106486 100644
+--- a/server/tests/auth/assistant.test.js
++++ b/server/tests/auth/assistant.test.js
+@@ -34,7 +34,7 @@ const { buildContext, buildMessages, cleanMessage, cleanHistory, SYSTEM_PROMPT }
+ 
+ const ENV_KEYS = ['ASSISTANT_ENABLED', 'AI_PROVIDER_ASSISTANT', 'OPENAI_API_KEY', 'OPENAI_ASSISTANT_MODEL', 'OPENROUTER_API_KEY', 'OPENROUTER_ASSISTANT_MODEL', 'ASSISTANT_DAILY_LIMIT', 'ASSISTANT_MONTHLY_TOKEN_BUDGET', 'RELEVANCE_ENGINE_ENABLED'];
+ const reset = () => { ENV_KEYS.forEach((k) => delete process.env[k]); usage.clear(); alarms.length = 0; };
+-const configure = () => { process.env.ASSISTANT_ENABLED = 'true'; process.env.OPENAI_API_KEY = 'sk-test'; process.env.OPENAI_ASSISTANT_MODEL = 'test-model'; };
++const configure = () => { process.env.ASSISTANT_ENABLED = 'true'; process.env.OPENROUTER_API_KEY = 'sk-test'; process.env.OPENROUTER_ASSISTANT_MODEL = 'test-model'; };
+ 
+ const seeker = () => ({
+   _id: 'u1', name: 'Priya Raman', email: 'priya@example.com', password: 'hash', phone: '9876543210',
+@@ -56,18 +56,19 @@ test('off by default and until a key AND a model are set', async () => {
+   assert.equal((await call()).code, 503);
+   process.env.ASSISTANT_ENABLED = 'true';
+   assert.equal((await call()).code, 503); // no key, no model
+-  process.env.OPENAI_API_KEY = 'sk-test';
++  process.env.OPENROUTER_API_KEY = 'sk-test';
+   assert.equal((await call()).code, 503); // key but no model: no model name is guessed
+-  assert.match(resolveProvider('ASSISTANT').error, /OPENAI_ASSISTANT_MODEL/);
++  assert.match(resolveProvider('ASSISTANT').error, /OPENROUTER_ASSISTANT_MODEL/);
+ });
+ 
+ test('provider switching is env-only', () => {
+   reset();
+-  process.env.OPENAI_API_KEY = 'k1'; process.env.OPENAI_ASSISTANT_MODEL = 'm1';
+-  assert.deepEqual([resolveProvider('ASSISTANT').provider, resolveProvider('ASSISTANT').url], ['openai', 'https://api.openai.com/v1/chat/completions']);
+-  process.env.AI_PROVIDER_ASSISTANT = 'openrouter'; process.env.OPENROUTER_API_KEY = 'k2'; process.env.OPENROUTER_ASSISTANT_MODEL = 'vendor/m2';
++  process.env.OPENROUTER_API_KEY = 'k2'; process.env.OPENROUTER_ASSISTANT_MODEL = 'vendor/m2';
++  const d = resolveProvider('ASSISTANT'); // OpenRouter is the default provider
++  assert.deepEqual([d.provider, d.url, d.model, d.apiKey], ['openrouter', 'https://openrouter.ai/api/v1/chat/completions', 'vendor/m2', 'k2']);
++  process.env.AI_PROVIDER_ASSISTANT = 'openai'; process.env.OPENAI_API_KEY = 'k1'; process.env.OPENAI_ASSISTANT_MODEL = 'm1';
+   const p = resolveProvider('ASSISTANT');
+-  assert.deepEqual([p.provider, p.model, p.apiKey], ['openrouter', 'vendor/m2', 'k2']);
++  assert.deepEqual([p.provider, p.url, p.model, p.apiKey], ['openai', 'https://api.openai.com/v1/chat/completions', 'm1', 'k1']);
+   process.env.AI_PROVIDER_ASSISTANT = 'nonsense';
+   assert.match(resolveProvider('ASSISTANT').error, /Unknown AI provider/);
+ });
+@@ -207,7 +208,7 @@ test('status says enabled only when the switch, key and model are all set', () =
+   assert.deepEqual(ask(), { enabled: false, dailyLimit: 0 });
+   process.env.ASSISTANT_ENABLED = 'true';
+   assert.equal(ask().enabled, false);
+-  process.env.OPENAI_API_KEY = 'sk-test'; process.env.OPENAI_ASSISTANT_MODEL = 'm';
++  process.env.OPENROUTER_API_KEY = 'sk-test'; process.env.OPENROUTER_ASSISTANT_MODEL = 'm';
+   assert.deepEqual(ask(), { enabled: true, dailyLimit: 30 });
+   process.env.ASSISTANT_DAILY_LIMIT = '12';
+   assert.equal(ask().dailyLimit, 12);
+diff --git a/server/utils/aiHelper.js b/server/utils/aiHelper.js
+index f184042..78adf6f 100644
+--- a/server/utils/aiHelper.js
++++ b/server/utils/aiHelper.js
+@@ -64,7 +64,7 @@ class GoogleGenerativeAI {
+ // ---------------------------------------------------------------------------------------------------------------
+ // Provider-switchable chat call, used by the assistant. The existing features keep using the OpenRouter-backed class
+ // above; a feature moves to another provider only by setting its own env variables, with no code change:
+-//   AI_PROVIDER_ASSISTANT = openai (default) | openrouter
++//   AI_PROVIDER_ASSISTANT = openrouter (default) | openai
+ //   OPENAI_API_KEY, OPENAI_ASSISTANT_MODEL        (no model name is built in, so the model is a deployment choice)
+ //   OPENROUTER_API_KEY, OPENROUTER_ASSISTANT_MODEL (used when the provider is openrouter)
+ const PROVIDERS = {
+@@ -74,7 +74,7 @@ const PROVIDERS = {
+ 
+ // Which provider, key and model a feature uses, or { error } when it is not configured.
+ const resolveProvider = (feature = 'ASSISTANT', env = process.env) => {
+-  const name = String(env[`AI_PROVIDER_${feature}`] || 'openai').toLowerCase();
++  const name = String(env[`AI_PROVIDER_${feature}`] || 'openrouter').toLowerCase();
+   const p = PROVIDERS[name];
+   if (!p) return { error: `Unknown AI provider "${name}"` };
+   const apiKey = env[p.keyEnv];
+-- 
+2.43.0
+

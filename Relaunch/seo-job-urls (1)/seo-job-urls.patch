@@ -1,0 +1,209 @@
+From c1ad5c1c373f91a384e1d7317b0714e4535b60e3 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 3 Nov 2026 13:17:05 +0000
+Subject: [PATCH] SEO: job pages work without the env var, 301 to the keyword
+ URL, X-Velaivaaipu-SEO header, keyword links in app
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PsgX1usF7TKCh3J48NhtVG
+---
+ client/api/__tests__/seo.test.mjs             | 20 ++++++++++++++++---
+ client/api/_lib.js                            |  3 ++-
+ client/api/job.js                             | 15 ++++++++++++++
+ client/src/components/home/JobCarousel.jsx    |  5 +++--
+ .../components/jobseeker/DetailedJobCard.jsx  |  3 ++-
+ client/src/pages/jobseeker/MyApplications.jsx |  3 ++-
+ 6 files changed, 41 insertions(+), 8 deletions(-)
+
+diff --git a/client/api/__tests__/seo.test.mjs b/client/api/__tests__/seo.test.mjs
+index 887dde0..a51055f 100644
+--- a/client/api/__tests__/seo.test.mjs
++++ b/client/api/__tests__/seo.test.mjs
+@@ -34,7 +34,7 @@ const { default: job } = await import('../job.js');
+ const { default: sitemap } = await import('../sitemap.js');
+ 
+ test('open job: JobPosting, canonical slug URL and OG tags are in the raw HTML', async () => {
+-  const res = await call(job, jobReq(`react-dev-pondicherry-${OPEN}`));
++  const res = await call(job, jobReq(`react-dev-qa-pondicherry-${OPEN}`));
+   assert.equal(res.code, 200);
+   assert.ok(res.body.includes('"@type":"JobPosting"'));
+   assert.match(res.body, /rel="canonical" href="https:\/\/velaivaaipu\.in\/job\/react-dev-qa-pondicherry-a{24}"/);
+@@ -44,12 +44,12 @@ test('open job: JobPosting, canonical slug URL and OG tags are in the raw HTML',
+ });
+ 
+ test('job text is HTML-escaped in tags', async () => {
+-  const res = await call(job, jobReq(OPEN));
++  const res = await call(job, jobReq(`react-dev-qa-pondicherry-${OPEN}`));
+   assert.ok(res.body.includes('React &lt;Dev&gt; &amp; &quot;QA&quot;'));
+ });
+ 
+ test('closed job stays reachable (200), is noindex and has no JobPosting', async () => {
+-  const res = await call(job, jobReq(`old-role-${CLOSED}`));
++  const res = await call(job, jobReq(`old-role-chennai-${CLOSED}`));
+   assert.equal(res.code, 200);
+   assert.ok(res.body.includes('noindex'));
+   assert.ok(!res.body.includes('JobPosting'));
+@@ -67,3 +67,17 @@ test('sitemap lists static pages and slugged job URLs', async () => {
+   assert.ok(res.body.includes(`https://velaivaaipu.in/job/react-dev-pondicherry-${OPEN}`));
+   assert.ok(res.body.includes('https://velaivaaipu.in/for-colleges'));
+ });
++
++test('old /job/<id> link redirects (301) to the keyword URL', async () => {
++  const res = await call(job, jobReq(OPEN));
++  assert.equal(res.code, 301);
++  assert.match(res.headers.Location, /\/job\/react-dev-qa-pondicherry-a{24}$/);
++});
++
++test('page says which branch served it (X-Velaivaaipu-SEO)', async () => {
++  const ok = await call(job, jobReq(`react-dev-qa-pondicherry-${OPEN}`));
++  assert.equal(ok.code, 200);
++  assert.equal(ok.headers['X-Velaivaaipu-SEO'], 'job');
++  const gone = await call(job, jobReq(`x-${'c'.repeat(24)}`));
++  assert.equal(gone.headers['X-Velaivaaipu-SEO'], 'unavailable-404');
++});
+diff --git a/client/api/_lib.js b/client/api/_lib.js
+index 9096d11..758e42a 100644
+--- a/client/api/_lib.js
++++ b/client/api/_lib.js
+@@ -1,6 +1,7 @@
+ // Shared helpers for the SEO serverless functions (Vercel, ES modules). Files starting with "_" are not routes.
+ const SITE_URL = (process.env.SITE_URL || 'https://velaivaaipu.in').replace(/\/$/, '');
+-const API_URL = (process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
++// Falls back to the production API so job pages keep their own title, description and JobPosting data even if the env var is missing.
++const API_URL = (process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || 'https://api.velaivaaipu.in/api').replace(/\/$/, '');
+ const API_DOMAIN = (process.env.VITE_API_DOMAIN || API_URL.replace(/\/api$/, '')).replace(/\/$/, '');
+ const OG_IMAGE = `${SITE_URL}/og-default.png`;
+ 
+diff --git a/client/api/job.js b/client/api/job.js
+index b989dc8..dbe9ef5 100644
+--- a/client/api/job.js
++++ b/client/api/job.js
+@@ -8,8 +8,11 @@ export default async function handler(req, res) {
+     const id = lib.jobIdFromSlug(req.query.slug);
+     const shell = await lib.getShell(req);
+     res.setHeader('Content-Type', 'text/html; charset=utf-8');
++    // Shows which branch served the page: check with  curl -sI <job url> | grep -i x-velaivaaipu-seo
++    const tag = (v) => res.setHeader('X-Velaivaaipu-SEO', v);
+ 
+     if (!id || !lib.API_URL) {
++      tag('shell-no-id-or-api');
+       res.setHeader('Cache-Control', 'public, s-maxage=60');
+       return res.status(200).send(shell);
+     }
+@@ -18,6 +21,7 @@ export default async function handler(req, res) {
+ 
+     // Job missing or API unreachable: serve the app untouched and keep it out of the index.
+     if (status !== 200 || !job) {
++      tag(`unavailable-${status}`);
+       const html = lib.injectHead(shell, {
+         title: 'Job not available | Velaivaaipu',
+         description: 'This job is no longer available. Browse the latest jobs in Tamil Nadu on Velaivaaipu.',
+@@ -34,8 +38,17 @@ export default async function handler(req, res) {
+     const image = job.company?.logo ? lib.absolute(job.company.logo) : lib.OG_IMAGE;
+     const image2 = /\.(png|jpe?g)$/i.test(image) ? image : lib.OG_IMAGE; // WhatsApp ignores webp/svg previews
+ 
++    // One address per job: an old /job/<id> link or a changed title redirects (301) to the keyword URL.
++    const wanted = canonical.slice(canonical.indexOf('/job/') + 5);
++    if (req.query.slug !== wanted && (req.method === 'GET' || !req.method)) {
++      res.setHeader('Location', canonical);
++      res.setHeader('Cache-Control', 'public, s-maxage=300');
++      return res.status(301).send('');
++    }
++
+     // Closed / filled job: keep the URL alive with a clear message, but drop the JobPosting markup.
+     if (job.closed) {
++      tag('closed');
+       const html = lib.injectHead(shell, {
+         title: `${job.title || 'This job'} — position filled | Velaivaaipu`,
+         description: `This ${job.title || ''} opening at ${company} has been filled. Find similar jobs in ${city} on Velaivaaipu.`,
+@@ -67,6 +80,7 @@ export default async function handler(req, res) {
+       ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
+     };
+ 
++    tag('job');
+     const html = lib.injectHead(shell, {
+       title: lib.clip(`${job.title} Job in ${city} – ${company} | Velaivaaipu`.length <= 60 ? `${job.title} Job in ${city} – ${company} | Velaivaaipu` : `${job.title} Job in ${city} | Velaivaaipu`, 70),
+       description,
+@@ -81,6 +95,7 @@ export default async function handler(req, res) {
+     // Never break the page: fall back to the plain app.
+     try {
+       const shell = await lib.getShell(req);
++      res.setHeader('X-Velaivaaipu-SEO', 'shell-error');
+       res.setHeader('Content-Type', 'text/html; charset=utf-8');
+       return res.status(200).send(shell);
+     } catch {
+diff --git a/client/src/components/home/JobCarousel.jsx b/client/src/components/home/JobCarousel.jsx
+index 6e3db82..b6b2265 100644
+--- a/client/src/components/home/JobCarousel.jsx
++++ b/client/src/components/home/JobCarousel.jsx
+@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
+ import { motion } from 'framer-motion';
+ import { MapPin, IndianRupee, Briefcase, Loader2, ArrowRight } from 'lucide-react';
+ import MotionIcon from './MotionIcon';
++import { jobPath } from '../../utils/jobUrl';
+ 
+ const EASE = [0.22, 1, 0.36, 1];
+ // Start as soon as a little of the target is on screen, so nothing feels late.
+@@ -103,7 +104,7 @@ const JobCard = ({ job, badgeText, anim }) => {
+         </div>
+         <div className="flex-1 min-w-0">
+           <h3 className="text-[17px] font-bold leading-snug text-zinc-900 line-clamp-2">
+-            <Link to={`/job/${job._id}`} className="hover:text-[#138060] transition-colors focus-visible:outline-none focus-visible:underline">{job.title}</Link>
++            <Link to={jobPath(job)} className="hover:text-[#138060] transition-colors focus-visible:outline-none focus-visible:underline">{job.title}</Link>
+           </h3>
+           <div className="mt-0.5 flex items-center justify-between gap-2 text-xs">
+             <span className="text-zinc-500 truncate">{job.company?.name}</span>
+@@ -149,7 +150,7 @@ const JobCard = ({ job, badgeText, anim }) => {
+       {/* Actions */}
+       <div className="mt-4">
+         <Link
+-          to={`/job/${job._id}`}
++          to={jobPath(job)}
+           className="home-shine relative overflow-hidden w-full h-12 rounded-full bg-gradient-to-r from-[#179a73] to-[#138060] text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-800/20 transition-all hover:shadow-lg hover:from-[#138060] hover:to-[#0f664d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+         >
+           Apply Now <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={16} />
+diff --git a/client/src/components/jobseeker/DetailedJobCard.jsx b/client/src/components/jobseeker/DetailedJobCard.jsx
+index 60214a4..de4e86c 100644
+--- a/client/src/components/jobseeker/DetailedJobCard.jsx
++++ b/client/src/components/jobseeker/DetailedJobCard.jsx
+@@ -4,6 +4,7 @@ import axios from 'axios';
+ import { useNavigate } from 'react-router-dom';
+ import { toast } from 'sonner';
+ import { Card, Typography, Tag, Button, Space, Divider } from 'antd';
++import { jobPath } from '../../utils/jobUrl';
+ 
+ const { Text, Title, Paragraph } = Typography;
+ 
+@@ -61,7 +62,7 @@ const DetailedJobCard = ({ job, application, onRevoke }) => {
+   return (
+     <Card 
+       bordered={false}
+-      onClick={() => navigate(`/job/${job.id}`)}
++      onClick={() => navigate(jobPath(job))}
+       bodyStyle={{ padding: '28px' }}
+       className="mb-5 bg-white hover:shadow-lg transition-all cursor-pointer group shadow-sm border border-slate-200 rounded-none overflow-hidden"
+     >
+diff --git a/client/src/pages/jobseeker/MyApplications.jsx b/client/src/pages/jobseeker/MyApplications.jsx
+index 050a1b6..52b92dc 100644
+--- a/client/src/pages/jobseeker/MyApplications.jsx
++++ b/client/src/pages/jobseeker/MyApplications.jsx
+@@ -7,6 +7,7 @@ import {
+ } from 'lucide-react';
+ import { Button, Tag, Input, Select, Card, Typography, Pagination, Modal, Space, Skeleton, Row, Col } from 'antd';
+ import PageSOPBanner from '@/components/common/PageSOPBanner';
++import { jobPath } from '../../utils/jobUrl';
+ 
+ const { Title, Text, Paragraph } = Typography;
+ 
+@@ -304,7 +305,7 @@ const MyApplications = () => {
+                   <Space className="shrink-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto justify-end">
+                     {job?._id && (
+                       <Button
+-                        onClick={() => navigate(`/job/${job._id}`)}
++                        onClick={() => navigate(jobPath(job))}
+                         icon={<Eye size={14} />}
+                         className="h-9 px-4 rounded-md border-slate-200 font-bold text-xs uppercase tracking-wider text-slate-600 hover:text-emerald-600 hover:border-emerald-600 shadow-none"
+                       >
+-- 
+2.43.0
+

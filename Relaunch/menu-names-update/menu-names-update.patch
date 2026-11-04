@@ -1,0 +1,576 @@
+From 9c42f2bcf9777e66356df22b8420307eb7aeb4b4 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 2 Nov 2026 14:32:09 +0000
+Subject: [PATCH] Approved menu names, role labels, hover taglines and friendly
+ messages; admin menu gets Refunds and Settings
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PsgX1usF7TKCh3J48NhtVG
+---
+ client/src/components/common/Sidebar.jsx      | 140 +++++++++---------
+ .../src/components/onboarding/WelcomeTour.jsx |   2 +-
+ client/src/components/pwa/InstallPrompt.jsx   |   3 +-
+ .../components/subscription/FeatureGate.jsx   |   6 +-
+ client/src/config/pageSOP.js                  |  12 +-
+ client/src/data/microcopy.js                  | 107 +++++++++++++
+ .../src/pages/admin/CollegeVerification.jsx   |   2 +-
+ client/src/pages/admin/Dashboard.jsx          |   2 +-
+ client/src/pages/admin/ManageReviews.jsx      |   2 +-
+ client/src/pages/college/Verification.jsx     |   2 +-
+ 10 files changed, 194 insertions(+), 84 deletions(-)
+ create mode 100644 client/src/data/microcopy.js
+
+diff --git a/client/src/components/common/Sidebar.jsx b/client/src/components/common/Sidebar.jsx
+index e028238..02de832 100644
+--- a/client/src/components/common/Sidebar.jsx
++++ b/client/src/components/common/Sidebar.jsx
+@@ -11,65 +11,66 @@ import { useAuth } from '../../context/AuthContext';
+ import { findPermissionKeyForPath } from '../../config/teamPermissions';
+ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+ import { Badge } from "@/components/ui/badge";
++import { ROLE_LABELS, taglineFor } from '../../data/microcopy';
+ import { hasFeature } from '../subscription/FeatureGate';
+ 
+ // ─── Core nav (always visible) ───────────────────────────────────────────────
+ const coreMenus = {
+   jobseeker: [
+-    { icon: Home,        label: 'Overview',      path: '/candidate' },
+-    { icon: Briefcase,   label: 'Search Jobs',   path: '/jobs' },
+-    { icon: Building2,   label: 'Organizations', path: '/companies' },
+-    { icon: FileText,    label: 'Applications',  path: '/candidate/applications' },
++    { icon: Home,        label: 'Dashboard',      path: '/candidate' },
++    { icon: Briefcase,   label: 'Find Jobs',   path: '/jobs' },
++    { icon: Building2,   label: 'Companies', path: '/companies' },
++    { icon: FileText,    label: 'My Applications',  path: '/candidate/applications' },
+     { icon: GraduationCap, label: 'Campus Drives', path: '/candidate/campus-drives' },
+     { icon: Star,        label: 'Saved Jobs',    path: '/dashboard/saved-jobs' },
+-    { icon: CreditCard,  label: 'Subscription',  path: '/candidate/subscription' },
+-    { icon: ShoppingBag, label: 'Pay-per Features', path: '/candidate/pay-per-features' },
++    { icon: CreditCard,  label: 'My Plan',  path: '/candidate/subscription' },
++    { icon: ShoppingBag, label: 'Buy Extras', path: '/candidate/pay-per-features' },
+     { icon: History,     label: 'Payment History', path: '/candidate/payment-history' },
+-    { icon: Headphones,  label: 'Tickets & Queries', path: '/tickets/my' },
+-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
++    { icon: Headphones,  label: 'Help & Support', path: '/tickets/my' },
++    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
+   ],
+   recruiter: [
+-    { icon: LayoutDashboard, label: 'Overview',          path: '/company/dashboard' },
++    { icon: LayoutDashboard, label: 'Dashboard',          path: '/company/dashboard' },
+     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
+     { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
+-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
++    { icon: Users,           label: 'Search Candidates',   path: '/company/candidates' },
+     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
+-    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
++    { icon: CreditCard,      label: 'My Plan',      path: '/company/subscription' },
+     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+-    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
+-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
++    { icon: Headphones,      label: 'Help & Support', path: '/tickets/my' },
++    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
+   ],
+   company: [
+-    { icon: LayoutDashboard, label: 'Overview',          path: '/company/dashboard' },
++    { icon: LayoutDashboard, label: 'Dashboard',          path: '/company/dashboard' },
+     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
+     { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
+-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
++    { icon: Users,           label: 'Search Candidates',   path: '/company/candidates' },
+     { icon: UserCog,         label: 'My Team',           path: '/company/team' },
+     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
+-    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
++    { icon: CreditCard,      label: 'My Plan',      path: '/company/subscription' },
+     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+-    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
+-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
++    { icon: Headphones,      label: 'Help & Support', path: '/tickets/my' },
++    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
+   ],
+   college: [
+-    { icon: LayoutDashboard, label: 'Overview',          path: '/college/dashboard' },
++    { icon: LayoutDashboard, label: 'Dashboard',          path: '/college/dashboard' },
+     { icon: Users,           label: 'Students',          path: '/college/students' },
+     { icon: Activity,        label: 'Campus Drives',     path: '/college/drives' },
+-    { icon: ShieldCheck,     label: 'ID Verification',   path: '/college/verification' },
+-    { icon: Users,           label: 'Placement Tools',    path: '/college/placement-tools' },
+-    { icon: CalendarDays,    label: 'College Operations', path: '/college/operations' },
+-    { icon: FileText,        label: 'Reports & Passkey', path: '/college/reports' },
+-    { icon: CreditCard,      label: 'Subscription',      path: '/college/subscription' },
++    { icon: ShieldCheck,     label: 'Student Verification',   path: '/college/verification' },
++    { icon: Layers,          label: 'Placement Tools',    path: '/college/placement-tools' },
++    { icon: CalendarDays,    label: 'Calendar & Employers', path: '/college/operations' },
++    { icon: FileText,        label: 'Reports', path: '/college/reports' },
++    { icon: CreditCard,      label: 'My Plan',      path: '/college/subscription' },
+     { icon: History,         label: 'Payment History',   path: '/college/payment-history' },
+-    { icon: Settings,        label: 'Settings & Proof',  path: '/college/settings' },
+-    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
+-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
++    { icon: Settings,        label: 'College Settings & Documents',  path: '/college/settings' },
++    { icon: Headphones,      label: 'Help & Support', path: '/tickets/my' },
++    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
+   ],
+   admin: [
+     { icon: LayoutDashboard, label: 'Command Center', path: '/admin/dashboard' },
+-    { icon: Users,           label: 'Users Account',  path: '/admin/users' },
+-    { icon: Briefcase,       label: 'Job Inventory',  path: '/admin/jobs' },
+-    { icon: GraduationCap,   label: 'College KYC',    path: '/admin/colleges' },
++    { icon: Users,           label: 'Users',  path: '/admin/users' },
++    { icon: Briefcase,       label: 'Jobs',  path: '/admin/jobs' },
++    { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges' },
+     {
+       icon: CreditCard,
+       label: 'Subscriptions',
+@@ -77,30 +78,32 @@ const coreMenus = {
+       children: [
+         { label: 'Plans', path: '/admin/subscriptions/plans' },
+         { label: 'Renewals', path: '/admin/subscriptions/renewals' },
+-        { label: 'Buyers', path: '/admin/subscriptions/buyers' },
+-        { label: 'Pay-per System', path: '/admin/subscriptions/pay-per' },
++        { label: 'Refunds', path: '/admin/subscriptions/refunds' },
++        { label: 'Subscribers', path: '/admin/subscriptions/buyers' },
++        { label: 'Pay-per-use Items', path: '/admin/subscriptions/pay-per' },
+         { label: 'Coupons', path: '/admin/subscriptions/coupons' }
+       ]
+     },
+     { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests' },
+     { icon: History,         label: 'Payment History', path: '/admin/payment-history' },
+     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
+-    { icon: Headphones,      label: 'Tickets & Queries', path: '/admin/tickets' },
+-    { icon: MessageSquareQuote, label: 'Manage Reviews', path: '/admin/reviews' },
++    { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets' },
++    { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews' },
++    { icon: Settings,       label: 'Settings',       path: '/admin/settings' },
+   ],
+   // A team member added via the "employee" invite flow (role becomes org_employee rather than
+   // staying 'recruiter') — same recruiter-shaped workspace as coreMenus.recruiter, just with its
+   // own Overview page, since org_employee is functionally a delegated recruiter, not a jobseeker.
+   org_employee: [
+-    { icon: LayoutDashboard, label: 'Overview',          path: '/employee' },
++    { icon: LayoutDashboard, label: 'Dashboard',          path: '/employee' },
+     { icon: List,            label: 'My Jobs',           path: '/company/jobs' },
+     { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
+-    { icon: Users,           label: 'Find Candidates',   path: '/company/candidates' },
++    { icon: Users,           label: 'Search Candidates',   path: '/company/candidates' },
+     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
+-    { icon: CreditCard,      label: 'Subscription',      path: '/company/subscription' },
++    { icon: CreditCard,      label: 'My Plan',      path: '/company/subscription' },
+     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
+-    { icon: Headphones,      label: 'Tickets & Queries', path: '/tickets/my' },
+-    { icon: MessageSquareQuote, label: 'Write a Review', path: '/write-review' },
++    { icon: Headphones,      label: 'Help & Support', path: '/tickets/my' },
++    { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
+   ],
+ };
+ 
+@@ -109,38 +112,37 @@ const premiumMenus = {
+   jobseeker: [
+     { icon: FileText,      label: 'Resume Builder',      path: '/candidate/resume-builder',      featureKey: 'hasResumeBuilder' },
+     { icon: Bell,          label: 'Job Alerts',          path: '/candidate/job-alerts',          featureKey: 'jobAlerts' },
+-    { icon: Sparkles,      label: 'Take Assessment',     path: '/candidate/skill-tests' },
+-    { icon: Users,         label: 'Profile Insights',    path: '/candidate/profile-insights',    featureKey: 'hasProfileViewInsights' },
++    { icon: Sparkles,      label: 'Skill Tests',     path: '/candidate/skill-tests' },
++    { icon: Users,         label: 'Who Viewed Me',    path: '/candidate/profile-insights',    featureKey: 'hasProfileViewInsights' },
+     { icon: Star,          label: 'Career Counselling',  path: '/candidate/career-counselling',  featureKey: 'hasCareerCounselling' },
+     { icon: Mic,           label: 'Mock Interviews',     path: '/candidate/mock-interviews',     featureKey: 'hasMockInterviews' },
+-    { icon: BookOpen,      label: 'AI Profile Review',    path: '/candidate/ai-resume-review',    featureKey: 'hasAiResumeReview' },
+-    { icon: MessageCircle, label: 'Direct Messages',     path: '/candidate/messages',            featureKey: 'hasMessageRecruiters' },
++    { icon: BookOpen,      label: 'AI Resume Review',    path: '/candidate/ai-resume-review',    featureKey: 'hasAiResumeReview' },
++    { icon: MessageCircle, label: 'Messages',     path: '/candidate/messages',            featureKey: 'hasMessageRecruiters' },
+   ],
+   recruiter: [
+-    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+-    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+-    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+-    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+-    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
++    { icon: Layers,    label: 'Hiring Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
++    { icon: BarChart2, label: 'Hiring Reports',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
++    { icon: Mail,      label: 'Message Candidates', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
++    { icon: Video,     label: 'Interviews', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
++    { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
+   ],
+   company: [
+-    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+-    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+-    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+-    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+-    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
+-    { icon: ClipboardList, label: 'Campus Drive Requests', path: '/company/drive-requests' },
++    { icon: Layers,    label: 'Hiring Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
++    { icon: BarChart2, label: 'Hiring Reports',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
++    { icon: Mail,      label: 'Message Candidates', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
++    { icon: Video,     label: 'Interviews', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
++    { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
++    { icon: ClipboardList, label: 'Campus Drives', path: '/company/drive-requests' },
+   ],
+   college: [
+-    { icon: BarChart2, label: 'Reports',            path: '/college/reports',       featureKey: 'hasAnalyticsDashboard' },
+-    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
++    { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
+   ],
+   org_employee: [
+-    { icon: Layers,    label: 'ATS Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
+-    { icon: BarChart2, label: 'Analytics',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
+-    { icon: Mail,      label: 'Bulk Messaging', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
+-    { icon: Video,     label: 'Video Interview', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
+-    { icon: MessageCircle, label: 'Messaging',      path: '/company/messages' },
++    { icon: Layers,    label: 'Hiring Pipeline',   path: '/company/ats-pipeline',         featureKey: 'hasATSPipeline' },
++    { icon: BarChart2, label: 'Hiring Reports',      path: '/company/analytics',            featureKey: 'hasAnalyticsDashboard' },
++    { icon: Mail,      label: 'Message Candidates', path: '/company/bulk-messaging',       featureKey: 'hasBulkMessaging' },
++    { icon: Video,     label: 'Interviews', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
++    { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
+   ],
+ };
+ 
+@@ -149,7 +151,7 @@ const NavItem = ({ item, active, isCollapsed }) => {
+   return (
+     <Link
+       to={item.path}
+-      title={isCollapsed ? item.label : undefined}
++      title={item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined)}
+       className={`group flex items-center transition-all rounded-none relative outline-none focus:outline-none
+         ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
+         ${active
+@@ -248,7 +250,7 @@ const PremiumNavItem = ({ item, active, unlocked, isCollapsed }) => {
+   return (
+     <Link
+       to={item.path}
+-      title={isCollapsed ? item.label : undefined}
++      title={item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined)}
+       className={`group flex items-center transition-all relative rounded-none outline-none focus:outline-none
+         ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
+         ${active
+@@ -293,12 +295,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+   // If role is strictly drive_incharge, they get Manage Drive as their only core item
+   if (role === 'drive_incharge') {
+     if (!coreItems.find(i => i.path === '/incharge')) {
+-      coreItems.push({ icon: QrCode, label: 'Manage Drive', path: '/incharge' });
++      coreItems.push({ icon: QrCode, label: 'My Drive', path: '/incharge' });
+     }
+   } else if (user?.hasInchargeDrives) {
+     // If they have another role but also manage drives, append Manage Drive to their menu
+     if (!coreItems.find(i => i.path === '/incharge')) {
+-      coreItems.push({ icon: QrCode, label: 'Manage Drive', path: '/incharge' });
++      coreItems.push({ icon: QrCode, label: 'My Drive', path: '/incharge' });
+     }
+   }
+ 
+@@ -317,7 +319,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+     const key = findPermissionKeyForPath(path);
+     return key ? !(user.teamPermissions || []).includes(key) : false;
+   };
+-  coreItems = coreItems.filter(i => !isPermissionBlocked(i.path));
++  coreItems = coreItems.filter(i => !isPermissionBlocked(i.path)).map(i => ({ ...i, tagline: taglineFor(role, i.label) }));
+ 
+   // Delegated team members (not the owner, who already gets the full /company/team management
+   // page from coreMenus.company) get a read-only "My Team" roster so they can see who else has
+@@ -330,7 +332,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+     else coreItems.splice(requestsIdx, 0, teamItem);
+   }
+ 
+-  const premiumItems = (premiumMenus[role] || []).filter(i => !isPermissionBlocked(i.path));
++  const premiumItems = (premiumMenus[role] || []).filter(i => !isPermissionBlocked(i.path)).map(i => ({ ...i, tagline: taglineFor(role, i.label) }));
+ 
+   const isActive = (path) => {
+     const exactRoutes = ['/candidate', '/company/dashboard', '/admin/dashboard', '/subadmin', '/employee', '/college/dashboard', '/incharge', '/company/jobs'];
+@@ -405,7 +407,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+                     {user?.name || 'Authorized User'}
+                     {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={13} className="text-blue-400 shrink-0" />}
+                   </p>
+-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mt-0.5">{role} Access</p>
++                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mt-0.5">{ROLE_LABELS[role] || role}</p>
+                 </div>
+                 <ChevronRight size={14} className="text-slate-500 group-hover:text-[#34b678] transition-colors shrink-0" />
+               </>
+@@ -456,7 +458,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+           <div className="space-y-1">
+             {!isCollapsed ? (
+               <div className="px-5 mb-4 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 flex items-center gap-3">
+-                <span>Control Desk</span>
++                <span>Menu</span>
+                 <div className="h-[1px] flex-1 bg-white/10" />
+               </div>
+             ) : (
+diff --git a/client/src/components/onboarding/WelcomeTour.jsx b/client/src/components/onboarding/WelcomeTour.jsx
+index d66f577..01dfee9 100644
+--- a/client/src/components/onboarding/WelcomeTour.jsx
++++ b/client/src/components/onboarding/WelcomeTour.jsx
+@@ -31,7 +31,7 @@ const WelcomeTour = () => {
+       <DialogContent className="max-w-md rounded-3xl border-2 border-slate-900 p-0 overflow-hidden">
+         <div className="bg-slate-950 p-8">
+           <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3">
+-            {data.firstName ? `Hi ${data.firstName}` : 'Welcome'} · Step {i + 1} of {slides.length}
++            {data.firstName ? `Vanakkam, ${data.firstName}` : 'Welcome'} · Step {i + 1} of {slides.length}
+           </p>
+           <DialogTitle className="text-white font-bold text-xl">{slide.title}</DialogTitle>
+           <DialogDescription className="text-slate-300 text-sm mt-3 leading-relaxed">{slide.body}</DialogDescription>
+diff --git a/client/src/components/pwa/InstallPrompt.jsx b/client/src/components/pwa/InstallPrompt.jsx
+index 7538383..e78096c 100644
+--- a/client/src/components/pwa/InstallPrompt.jsx
++++ b/client/src/components/pwa/InstallPrompt.jsx
+@@ -1,6 +1,7 @@
+ import React, { useEffect, useState } from 'react';
+ import { Download, X, Share } from 'lucide-react';
+ import { trackEvent } from '../../utils/analytics';
++import { MESSAGES } from '../../data/microcopy';
+ import { subscribePwa, canPromptInstall, promptInstall, isStandalone, isIosSafari, visitCount } from '../../utils/pwa';
+ 
+ const DISMISS_KEY = 'vv_install_dismissed_at';
+@@ -38,7 +39,7 @@ const InstallPrompt = ({ variant = 'banner' }) => {
+         <strong className="font-bold">Install the Velaivaaipu app.</strong>{' '}
+         {ios
+           ? <>Tap <Share size={13} className="inline -mt-0.5" /> Share, then "Add to Home Screen".</>
+-          : 'Open jobs and your profile in one tap from your home screen.'}
++          : MESSAGES.installPrompt}
+       </span>
+       {!ios && (
+         <button type="button" onClick={async () => { await promptInstall(); setHidden(true); }} className="shrink-0 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-2 border-none cursor-pointer">
+diff --git a/client/src/components/subscription/FeatureGate.jsx b/client/src/components/subscription/FeatureGate.jsx
+index f44faf7..9a5f14a 100644
+--- a/client/src/components/subscription/FeatureGate.jsx
++++ b/client/src/components/subscription/FeatureGate.jsx
+@@ -185,14 +185,14 @@ const PERKS = {
+ const NAMES = {
+   hasResumeBuilder: 'Resume Builder',
+   jobAlerts: 'Job Alerts',
+-  hasProfileViewInsights: 'Profile Insights',
++  hasProfileViewInsights: 'Who Viewed Me',
+   hasMessageRecruiters: 'Direct Messaging',
+   hasCareerCounselling: 'Career Counselling',
+   hasMockInterviews: 'Mock Interviews',
+-  hasATSPipeline: 'ATS Pipeline',
++  hasATSPipeline: 'Hiring Pipeline',
+   hasAnalyticsDashboard: 'Analytics Dashboard',
+   hasCandidateDBExport: 'Candidate Export',
+-  hasBulkMessaging: 'Bulk Messaging',
++  hasBulkMessaging: 'Message Candidates',
+   hasVideoInterview: 'Video Interview',
+   hasPriorityListing: 'Priority Listing',
+   hasAICandidateMatching: 'AI Candidate Matching',
+diff --git a/client/src/config/pageSOP.js b/client/src/config/pageSOP.js
+index 1a6c592..b35cfab 100644
+--- a/client/src/config/pageSOP.js
++++ b/client/src/config/pageSOP.js
+@@ -79,7 +79,7 @@ export const PAGE_SOP = {
+     ]
+   },
+   profileInsights: {
+-    title: 'Profile Insights',
++    title: 'Who Viewed Me',
+     whatItIs: 'See who is viewing your profile and how it performs versus other candidates.',
+     howItWorks: [
+       'Recruiter/company profile views appear here as they happen.',
+@@ -187,7 +187,7 @@ export const PAGE_SOP = {
+     ]
+   },
+   atsPipeline: {
+-    title: 'ATS Pipeline',
++    title: 'Hiring Pipeline',
+     whatItIs: 'A visual, drag-and-drop board for moving candidates through your hiring stages.',
+     howItWorks: [
+       'Drag candidate cards between stages (Applied → Interview → Offer, etc.) as they progress.',
+@@ -203,7 +203,7 @@ export const PAGE_SOP = {
+     ]
+   },
+   bulkMessaging: {
+-    title: 'Bulk Messaging',
++    title: 'Message Candidates',
+     whatItIs: 'Send the same message to multiple shortlisted candidates in one action.',
+     howItWorks: [
+       'Select recipients from your candidate list.',
+@@ -327,7 +327,7 @@ export const PAGE_SOP = {
+     ]
+   },
+   collegeReports: {
+-    title: 'Reports & Passkey',
++    title: 'Reports',
+     whatItIs: 'Generate placement performance reports and a shareable executive summary link for your Principal/Management.',
+     howItWorks: [
+       'Generate a report to see placement stats (placed/total, package trends).',
+@@ -335,7 +335,7 @@ export const PAGE_SOP = {
+     ]
+   },
+   collegeVerification: {
+-    title: 'ID Verification',
++    title: 'Student Verification',
+     whatItIs: 'Approve or reject student ID/document verification requests.',
+     howItWorks: [
+       'Review each pending student\'s submitted documents.',
+@@ -428,7 +428,7 @@ export const PAGE_SOP = {
+     ]
+   },
+   manageReviews: {
+-    title: 'Manage Reviews',
++    title: 'Reviews',
+     whatItIs: 'Moderate company/platform reviews submitted by users.',
+     howItWorks: ['Approve genuine reviews or remove ones that violate content guidelines.']
+   },
+diff --git a/client/src/data/microcopy.js b/client/src/data/microcopy.js
+new file mode 100644
+index 0000000..fcd6937
+--- /dev/null
++++ b/client/src/data/microcopy.js
+@@ -0,0 +1,107 @@
++// Friendly names and short taglines for the menus, plus a few fun messages.
++// Names stay plain; the fun is in the tagline (shown on hover) and in empty/loading/success messages.
++// Do NOT use fun text for payments, refunds, KYC rejections, test failures, security or legal messages.
++export const ROLE_LABELS = {
++  jobseeker: 'Student / Job seeker',
++  recruiter: 'Recruiter',
++  company: 'Company',
++  org_employee: 'Team member',
++  college: 'College placement cell',
++  drive_incharge: 'Drive in-charge',
++  subadmin: 'Admin',
++  admin: 'Super Admin',
++};
++
++const ALL = {
++  Dashboard: 'Your home base. Coffee optional.',
++  'Help & Support': "Stuck? We've got your back.",
++  Blog: 'Tips, stories and job-hunt know-how.',
++};
++
++const STUDENT = {
++  'Find Jobs': 'Your next job is probably hiding here.',
++  Companies: 'See who\'s hiring. Research, not stalking.',
++  'My Applications': "Where 'Applied' turns into 'Hired'.",
++  'Campus Drives': 'Your college. Their hiring. Your chance.',
++  'Saved Jobs': "Your 'maybe later' list. Don't wait too long.",
++  'My Plan': "What you've unlocked so far.",
++  'Buy Extras': 'Power-ups for your job hunt.',
++  'Payment History': 'Every rupee, neatly noted.',
++  'Review Velaivaaipu': "Tell us how we're doing. We can take it.",
++  'Resume Builder': "A resume that doesn't look like everyone else's.",
++  'Job Alerts': 'We watch the jobs. You live your life.',
++  'Skill Tests': 'Prove it. 10 questions, no pressure (okay, a little).',
++  'Who Viewed Me': 'Someone looked at you. Go on, feel good.',
++  'Career Counselling': 'Talk it out with someone who knows.',
++  'Mock Interviews': 'Practise here so the real one feels easy.',
++  'AI Resume Review': 'A second pair of AI eyes, minus the judgement.',
++  Messages: 'Recruiters talk. This is where you listen.',
++};
++
++const COMPANY = {
++  'My Jobs': 'All your open positions in one place.',
++  'Post Job': 'Great hires start with a great post.',
++  'Search Candidates': 'Find your next teammate.',
++  'Hiring Pipeline': "From 'hello' to 'welcome aboard'.",
++  'Hiring Reports': 'Numbers that make you look smart in meetings.',
++  'Message Candidates': 'Say hi to many, politely.',
++  Interviews: 'Schedule it, show up, hire.',
++  'Campus Drives': 'Fresh talent, straight from campus.',
++  'My Team': 'Your hiring crew.',
++  'My Plan': "What's included in your plan.",
++  'Payment History': 'Every rupee, neatly noted.',
++  'Review Velaivaaipu': "Tell us how we're doing. We can take it.",
++  Messages: 'Candidates reply here.',
++};
++
++const COLLEGE = {
++  Students: 'Your whole batch, one list.',
++  'Campus Drives': 'Bring the companies to campus.',
++  'Student Verification': 'Check, approve, repeat.',
++  'Placement Tools': "The placement cell's toolbox.",
++  'Calendar & Employers': "Dates, drives and who's hiring.",
++  Reports: 'Reports your principal will actually read.',
++  'College Settings & Documents': 'Set it up once, then forget it.',
++  'My Plan': "What's included in your plan.",
++  'Payment History': 'Every rupee, neatly noted.',
++  'Review Velaivaaipu': "Tell us how we're doing. We can take it.",
++};
++
++const ADMIN = {
++  'Command Center': "Mission control. Please don't press red buttons.",
++  Users: 'Everyone who signed up.',
++  Jobs: 'Every job on the platform.',
++  'College Verification': 'Gatekeeper duty.',
++  Subscriptions: "Plans, renewals and who's paying.",
++  Subscribers: "Who's paying, and for what.",
++  Refunds: 'Handle with care (and a calculator).',
++  'Support Tickets': "Today's chance to be a hero.",
++  Reviews: 'Only real reviews get through.',
++  Settings: 'The knobs and switches.',
++  'Payment History': 'Every rupee, neatly noted.',
++};
++
++const BY_ROLE = {
++  jobseeker: STUDENT, recruiter: COMPANY, company: COMPANY, org_employee: COMPANY,
++  college: COLLEGE, drive_incharge: { 'My Drive': "Today's drive, in your hands." }, subadmin: ADMIN, admin: ADMIN,
++};
++
++export const taglineFor = (role, label) => BY_ROLE[role]?.[label] || ALL[label] || '';
++
++// Fun text for places that are safe to be light-hearted. Other messages stay plain.
++export const MESSAGES = {
++  welcomeGreeting: (name) => `Vanakkam${name ? `, ${name}` : ''}! Let's set you up in 2 minutes.`,
++  emptyApplications: 'Nothing here yet. Your first application is one click away.',
++  emptySaved: 'Your saved list is lonely. Tap the star on a job you like.',
++  emptyNotifications: 'All quiet. Enjoy it while it lasts.',
++  emptyStudents: 'No students yet. Share the QR code and watch this page fill up.',
++  loadingJobs: 'Hunting for jobs...',
++  loadingTest: 'Sharpening pencils...',
++  loadingAi: 'Asking the AI nicely...',
++  appliedOk: 'Applied! Fingers crossed. We crossed ours too.',
++  profileSaved: 'Profile saved. Looking sharp.',
++  testPassed: 'Nailed it! Your skill badge is on its way.',
++  testBelow: 'Good start. Here is a quick way to level up.',
++  notFound: "This page took the day off. Let's get you back on track.",
++  installPrompt: "Put Velaivaaipu on your home screen. It's faster, and it won't judge your browser tabs.",
++};
+diff --git a/client/src/pages/admin/CollegeVerification.jsx b/client/src/pages/admin/CollegeVerification.jsx
+index a54dd42..817eda1 100644
+--- a/client/src/pages/admin/CollegeVerification.jsx
++++ b/client/src/pages/admin/CollegeVerification.jsx
+@@ -64,7 +64,7 @@ const CollegeVerification = () => {
+     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+       <div>
+         <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+-          <GraduationCap size={20} className="text-emerald-600" /> College KYC Verification
++          <GraduationCap size={20} className="text-emerald-600" /> College Verification
+         </h1>
+         <p className="text-xs text-slate-500 mt-1 font-medium">
+           Verify uploaded proof documents before a college's drives become publicly reachable.
+diff --git a/client/src/pages/admin/Dashboard.jsx b/client/src/pages/admin/Dashboard.jsx
+index 8ccd1f0..b62181f 100644
+--- a/client/src/pages/admin/Dashboard.jsx
++++ b/client/src/pages/admin/Dashboard.jsx
+@@ -48,7 +48,7 @@ const AdminDashboard = () => {
+         {[
+           { label: 'Total Revenue', value: loading ? '...' : `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
+           { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'hover:border-emerald-200' },
+-          { label: 'Job Inventory', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'hover:border-blue-200' },
++          { label: 'Jobs', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'hover:border-blue-200' },
+           { label: 'Organizations', value: loading ? '...' : stats.companies, color: 'text-violet-600', bg: 'bg-violet-50', icon: Building2, border: 'hover:border-violet-200' }
+         ].map((stat, i) => (
+           <Card key={i} className={`rounded-[32px] border-slate-200/60 shadow-sm bg-white transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50 ${stat.border}`}>
+diff --git a/client/src/pages/admin/ManageReviews.jsx b/client/src/pages/admin/ManageReviews.jsx
+index 5c8c083..c7f7b8f 100644
+--- a/client/src/pages/admin/ManageReviews.jsx
++++ b/client/src/pages/admin/ManageReviews.jsx
+@@ -63,7 +63,7 @@ const ManageReviews = () => {
+   return (
+     <div className="max-w-6xl mx-auto space-y-6 py-6 px-2">
+       <div>
+-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Manage Reviews</h1>
++        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Reviews</h1>
+         <p className="text-sm text-slate-500 mt-1">Approve or reject user testimonials for the homepage.</p>
+       </div>
+ 
+diff --git a/client/src/pages/college/Verification.jsx b/client/src/pages/college/Verification.jsx
+index b746676..bb3f7b0 100644
+--- a/client/src/pages/college/Verification.jsx
++++ b/client/src/pages/college/Verification.jsx
+@@ -48,7 +48,7 @@ const Verification = () => {
+       <PageSOPBanner pageKey="collegeVerification" />
+       <div>
+         <h1 className="text-lg font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+-          <ShieldCheck size={18} className="text-[#39c884]" /> ID Verification Queue
++          <ShieldCheck size={18} className="text-[#39c884]" /> Student Verification Queue
+         </h1>
+         <p className="text-xs text-slate-500 mt-1 font-medium">
+           Students who self-registered from their job-seeker settings and are awaiting your approval, plus anyone with a pending ID document.
+-- 
+2.43.0
+

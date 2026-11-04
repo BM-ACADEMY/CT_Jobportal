@@ -1,0 +1,187 @@
+From 9dfd015cdb3e7b5e8c88a5bf7692bb979856cffc Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 2 Nov 2026 13:39:15 +0000
+Subject: [PATCH] Audit and safe removal scripts for test data; autopilot
+ checklist
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PsgX1usF7TKCh3J48NhtVG
+---
+ docs/CLEAN_DATA_AND_AUTOPILOT.md | 35 +++++++++++++++++
+ server/scripts/auditTestData.js  | 48 +++++++++++++++++++++++
+ server/scripts/removeTestData.js | 66 ++++++++++++++++++++++++++++++++
+ 3 files changed, 149 insertions(+)
+ create mode 100644 docs/CLEAN_DATA_AND_AUTOPILOT.md
+ create mode 100644 server/scripts/auditTestData.js
+ create mode 100644 server/scripts/removeTestData.js
+
+diff --git a/docs/CLEAN_DATA_AND_AUTOPILOT.md b/docs/CLEAN_DATA_AND_AUTOPILOT.md
+new file mode 100644
+index 0000000..3fae41b
+--- /dev/null
++++ b/docs/CLEAN_DATA_AND_AUTOPILOT.md
+@@ -0,0 +1,35 @@
++# Clean the live data, then switch the platform to autopilot
++
++## Part 1. Remove dummy and test data (do this before marketing)
++The admin dashboard on live shows 542 users, Rs 127,584.66 revenue, 23 jobs and 6 organisations. Nobody has checked how much of this is real. The revenue line is high in Aug and zero after, which suggests test payments. Payments are saved as "completed" by default, even without a Razorpay payment id, so test payments look like revenue.
++
++Steps (Sneha, with Kamar reviewing):
++1. **Take a full database backup first** and confirm it can be restored.
++2. `cd server && node scripts/auditTestData.js` (read-only). It writes `test-data-audit.csv` and prints how many users, jobs, companies, colleges and payments look like test data, and how much "revenue" has no Razorpay id.
++3. **Kamar opens the CSV** (the "looks_like_test" and "has_real_payment" columns help). In the last column type `yes` only for rows to remove. Keep every real student, company, college and any real payment.
++4. `node scripts/removeTestData.js test-data-audit.csv` is a **dry run**; it shows what would go.
++5. When the list is right: `node scripts/removeTestData.js test-data-audit.csv --apply`. It saves a copy of everything removed (`removed-<time>.json`) before deleting. It never removes admins or anything with a real Razorpay payment.
++6. Reload the admin dashboard. Revenue should now equal real Razorpay money only. Check against the Razorpay dashboard.
++7. Remove old demo accounts and fixed-password admin scripts (task T07 in the plan sheet).
++
++Rule: when in doubt, keep it. Wrong deletes cannot be undone except from the backup file.
++
++## Part 2. Autopilot: what runs by itself, and what a person still does
++Everything below is already built. Each part has a switch so it goes on only when it is safe.
++
++| Automation | Runs | Switch | Turn on when |
++|---|---|---|---|
++| Welcome mail after email verification | On every verification | Always on | Mail service working |
++| Lifecycle mails (profile nudges, onboarding, job alerts, college and company nudges, re-engagement) | Every day 10:00 IST, one mail per person per day, daily cap | `LIFECYCLE_EMAILS_ENABLED=true`, cap `LIFECYCLE_MAX_PER_RUN` | Mail service healthy, SPF/DKIM/DMARC pass, bounce handling done. Start with a small cap and raise it |
++| WhatsApp follow-up after a skill test below 60% | Every 10 minutes, 9am to 8pm IST only | `WHATSAPP_FOLLOWUP_ENABLED=true` | Meta template approved, STOP webhook live |
++| Festival scholarship offer in follow-ups | Inside the dates only | `COURSE_SCHOLARSHIP_*` | Kamar confirms dates and price |
++| Interview reminders | Every 15 minutes | Always on | Already on |
++| Job expiry | Hourly | Always on | Already on |
++| Placement reports for colleges | Daily 07:00 | Scheduled in app | Already on |
++| Subscription renewal | Razorpay webhook | Webhook registered | T12 in the plan sheet |
++| Question bank for skill tests | Pre-made sets | Seed script | Bank seeded and reviewed |
++| Relevance, alerts, assistant | Built in the next sprints | Kill switch | After build |
++
++Still done by a person (not automated, on purpose): college KYC approval, refund approval, support tickets and messages, urgent hiring requests (to CoreTalents), content and blog posts, and payment disputes.
++
++Switch-on order: (1) clean the data, (2) mail service, (3) lifecycle mails at a small cap, (4) Meta template then WhatsApp follow-up, (5) raise caps after a week of clean results (low bounces and complaints), (6) watch the admin dashboard daily for the first two weeks.
+diff --git a/server/scripts/auditTestData.js b/server/scripts/auditTestData.js
+new file mode 100644
+index 0000000..06de7e7
+--- /dev/null
++++ b/server/scripts/auditTestData.js
+@@ -0,0 +1,48 @@
++// READ-ONLY. Lists records that look like test or dummy data so a person can decide what to remove.
++//   node scripts/auditTestData.js            -> writes test-data-audit.csv in the current folder
++// Nothing is changed in the database. Needs MONGODB_URI in server/.env.
++require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
++const fs = require('fs');
++const mongoose = require('mongoose');
++const User = require('../models/User');
++const Job = require('../models/Job');
++const Company = require('../models/Company');
++const College = require('../models/College');
++const Payment = require('../models/Payment');
++
++const TEST_WORDS = /\b(test|testing|demo|dummy|sample|fake|asdf|qwerty|xyz|temp|sneha|trial)\b/i;
++const TEST_DOMAINS = /@(example\.|test\.|mailinator|yopmail|guerrillamail|tempmail|ct\.com$|abc\.com$|xyz\.com$)/i;
++const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
++
++(async () => {
++  await mongoose.connect(process.env.MONGODB_URI);
++  const rows = [['collection', 'id', 'label', 'email', 'created', 'looks_like_test', 'has_real_payment', 'remove (type yes)']];
++  const realPay = new Set((await Payment.find({ razorpay_payment_id: { $exists: true, $ne: null, $ne: '' } }).select('user').lean()).map((p) => String(p.user)));
++
++  for (const u of await User.find({}).select('name email role createdAt').lean()) {
++    const hit = TEST_WORDS.test(u.name || '') || TEST_DOMAINS.test(u.email || '') || TEST_WORDS.test((u.email || '').split('@')[0]);
++    rows.push(['User', u._id, `${u.name || ''} (${u.role})`, u.email, u.createdAt?.toISOString().slice(0, 10), hit ? 'yes' : 'no', realPay.has(String(u._id)) ? 'yes' : 'no', '']);
++  }
++  for (const j of await Job.find({}).select('title createdAt').lean()) {
++    rows.push(['Job', j._id, j.title, '', j.createdAt?.toISOString().slice(0, 10), TEST_WORDS.test(j.title || '') ? 'yes' : 'no', 'no', '']);
++  }
++  for (const c of await Company.find({}).select('name admin_email createdAt').lean()) {
++    rows.push(['Company', c._id, c.name, c.admin_email, c.createdAt?.toISOString().slice(0, 10), TEST_WORDS.test(c.name || '') || TEST_DOMAINS.test(c.admin_email || '') ? 'yes' : 'no', 'no', '']);
++  }
++  for (const c of await College.find({}).select('name principalEmail createdAt').lean()) {
++    rows.push(['College', c._id, c.name, c.principalEmail, c.createdAt?.toISOString().slice(0, 10), TEST_WORDS.test(c.name || '') || TEST_DOMAINS.test(c.principalEmail || '') ? 'yes' : 'no', 'no', '']);
++  }
++  // Payments with no Razorpay payment id are not real money (Payment.status defaults to "completed").
++  const pays = await Payment.find({}).select('user amount status razorpay_payment_id createdAt').lean();
++  for (const p of pays) {
++    const real = !!p.razorpay_payment_id;
++    rows.push(['Payment', p._id, `Rs ${p.amount} ${p.status}`, '', p.createdAt?.toISOString().slice(0, 10), real ? 'no' : 'yes', real ? 'yes' : 'no', '']);
++  }
++  fs.writeFileSync('test-data-audit.csv', rows.map((r) => r.map(csvCell).join(',')).join('\n'));
++  const count = (col, flag) => rows.filter((r) => r[0] === col && r[5] === flag).length;
++  console.log('Written test-data-audit.csv');
++  for (const col of ['User', 'Job', 'Company', 'College', 'Payment']) console.log(`${col}: ${count(col, 'yes')} look like test, ${count(col, 'no')} look real`);
++  const sum = pays.filter((p) => p.status === 'completed' && !p.razorpay_payment_id).reduce((a, p) => a + (p.amount || 0), 0);
++  console.log(`Completed payments with no Razorpay id (not real money): Rs ${sum}`);
++  process.exit(0);
++})().catch((e) => { console.error(e); process.exit(1); });
+diff --git a/server/scripts/removeTestData.js b/server/scripts/removeTestData.js
+new file mode 100644
+index 0000000..00bb104
+--- /dev/null
++++ b/server/scripts/removeTestData.js
+@@ -0,0 +1,66 @@
++// Removes only the records a person marked "yes" in the last column of test-data-audit.csv.
++//   node scripts/removeTestData.js test-data-audit.csv            -> DRY RUN, shows what would go
++//   node scripts/removeTestData.js test-data-audit.csv --apply    -> really deletes
++// Before deleting, every removed record is saved to removed-<time>.json so it can be put back.
++// Take a database backup first. Admin accounts and anything with a real Razorpay payment are never removed.
++require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
++const fs = require('fs');
++const mongoose = require('mongoose');
++const models = {
++  User: require('../models/User'), Job: require('../models/Job'), Company: require('../models/Company'),
++  College: require('../models/College'), Payment: require('../models/Payment'),
++};
++const Application = require('../models/Application');
++const Notification = require('../models/Notification');
++const SkillTestResult = require('../models/SkillTestResult');
++const EmailLog = require('../models/EmailLog');
++const Payment = models.Payment;
++
++const parseCsv = (text) => text.split(/\r?\n/).filter(Boolean).map((line) => {
++  const cells = []; let cur = ''; let q = false;
++  for (let i = 0; i < line.length; i++) {
++    const ch = line[i];
++    if (q) { if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch; }
++    else if (ch === '"') q = true; else if (ch === ',') { cells.push(cur); cur = ''; } else cur += ch;
++  }
++  cells.push(cur); return cells;
++});
++
++(async () => {
++  const file = process.argv[2];
++  const apply = process.argv.includes('--apply');
++  if (!file || !fs.existsSync(file)) { console.error('Usage: node scripts/removeTestData.js <audit.csv> [--apply]'); process.exit(1); }
++  const marked = parseCsv(fs.readFileSync(file, 'utf8')).slice(1).filter((r) => String(r[7]).trim().toLowerCase() === 'yes');
++  await mongoose.connect(process.env.MONGODB_URI);
++  const saved = []; const plan = {}; const related = [];
++  for (const [col, id] of marked.map((r) => [r[0], r[1]])) {
++    const Model = models[col];
++    if (!Model || !mongoose.isValidObjectId(id)) { console.log(`Skip ${col} ${id}: not recognised`); continue; }
++    const doc = await Model.findById(id).lean();
++    if (!doc) continue;
++    if (col === 'User' && /admin/i.test(String(doc.role))) { console.log(`Skip ${doc.email}: admin account`); continue; }
++    if (col === 'Payment' && doc.razorpay_payment_id) { console.log(`Skip payment ${id}: has a Razorpay payment id`); continue; }
++    if (col === 'User' && await Payment.exists({ user: id, razorpay_payment_id: { $exists: true, $ne: null, $ne: '' } })) { console.log(`Skip ${doc.email}: has a real payment`); continue; }
++    plan[col] = (plan[col] || 0) + 1;
++    saved.push({ collection: col, doc });
++    // Records that belong to this one go with it, and are backed up too.
++    if (col === 'User') {
++      for (const [name, M, filter] of [['Application', Application, { applicant: id }], ['Notification', Notification, { recipient: id }], ['SkillTestResult', SkillTestResult, { user: id }], ['EmailLog', EmailLog, { user: id }]]) {
++        const docs = await M.find(filter).lean(); docs.forEach((d) => related.push({ name, M, doc: d }));
++      }
++    }
++    if (col === 'Job') (await Application.find({ job: id }).lean()).forEach((d) => related.push({ name: 'Application', M: Application, doc: d }));
++  }
++  const relCount = related.reduce((a, r) => ({ ...a, [r.name]: (a[r.name] || 0) + 1 }), {});
++  console.log(apply ? 'DELETING:' : 'DRY RUN, nothing deleted. Would remove:', plan, 'plus related records:', relCount);
++  if (apply && (saved.length || related.length)) {
++    const backup = `removed-${Date.now()}.json`;
++    fs.writeFileSync(backup, JSON.stringify({ records: saved, related: related.map((r) => ({ collection: r.name, doc: r.doc })) }));
++    console.log(`Backup of everything about to be removed saved in ${backup}`);
++    for (const r of related) await r.M.deleteOne({ _id: r.doc._id });
++    for (const { collection, doc } of saved) await models[collection].deleteOne({ _id: doc._id });
++    console.log('Done.');
++  }
++  if (!apply) console.log('Run again with --apply when the list looks right.');
++  process.exit(0);
++})().catch((e) => { console.error(e); process.exit(1); });
+-- 
+2.43.0
+

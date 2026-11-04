@@ -1,0 +1,424 @@
+From c142bd58ef49979a8e9637487922893801c52af7 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 2 Nov 2026 08:15:11 +0000
+Subject: [PATCH] Free skill test: skill dropdown from the question bank,
+ server-side marking, 10 more skills
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PsgX1usF7TKCh3J48NhtVG
+---
+ client/src/pages/public/FreeAssessment.jsx | 95 ++++++++++++----------
+ docs/FREE_SKILL_TEST_UPDATE.md             | 31 +++++++
+ server/config/courseMap.js                 | 11 +++
+ server/controllers/assessmentController.js | 63 ++++++++++++++
+ server/routes/assessmentRoutes.js          |  8 +-
+ server/tests/auth/courseMap.test.js        |  5 +-
+ server/tests/auth/freeBankTest.test.js     | 59 ++++++++++++++
+ 7 files changed, 227 insertions(+), 45 deletions(-)
+ create mode 100644 docs/FREE_SKILL_TEST_UPDATE.md
+ create mode 100644 server/tests/auth/freeBankTest.test.js
+
+diff --git a/client/src/pages/public/FreeAssessment.jsx b/client/src/pages/public/FreeAssessment.jsx
+index 75742d9..01f99bd 100644
+--- a/client/src/pages/public/FreeAssessment.jsx
++++ b/client/src/pages/public/FreeAssessment.jsx
+@@ -1,9 +1,8 @@
+-import React, { useState } from 'react';
++import React, { useEffect, useState } from 'react';
+ import { useNavigate } from 'react-router-dom';
+ import axios from 'axios';
+ import { Sparkles, ArrowRight, ArrowLeft, Loader2, Target, CheckCircle2, AlertCircle } from 'lucide-react';
+ import { Button } from '@/components/ui/button';
+-import { Input } from '@/components/ui/input';
+ import { toast } from 'sonner';
+ 
+ import { useAuth } from '../../context/AuthContext';
+@@ -15,8 +14,12 @@ const FreeAssessment = () => {
+   const { user } = useAuth();
+   
+   const [step, setStep] = useState('entry'); // entry, test, lead, results
+-  const [skill, setSkill] = useState('');
+-  const [difficulty, setDifficulty] = useState('medium');
++  const [skills, setSkills] = useState([]);
++  const [skillsLoaded, setSkillsLoaded] = useState(false);
++  const [skillKey, setSkillKey] = useState('');
++  const [skill, setSkill] = useState('');          // label shown to the student and saved with the result
++  const difficulty = 'medium';                      // the question bank has one level
++  const [attemptToken, setAttemptToken] = useState('');
+   const [loading, setLoading] = useState(false);
+   const [questions, setQuestions] = useState([]);
+   
+@@ -29,19 +32,29 @@ const FreeAssessment = () => {
+   const [leadName, setLeadName] = useState('');
+   const [leadPhone, setLeadPhone] = useState('');
+ 
++  // Skills that have questions ready. A list (not a text box) means no spelling mistakes and no dead ends.
++  useEffect(() => {
++    axios.get(`${API}/assessments/skills`)
++      .then((res) => setSkills(Array.isArray(res.data) ? res.data : []))
++      .catch(() => setSkills([]))
++      .finally(() => setSkillsLoaded(true));
++  }, []);
++
+   const startAssessment = async (e) => {
+     e.preventDefault();
+-    if (!skill.trim()) return toast.error('Please enter a skill');
+-    
++    if (!skillKey) return toast.error('Please choose a skill');
++
+     setLoading(true);
+     try {
+-      const res = await axios.get(`${API}/assessments/public`, {
+-        params: { skill, difficulty }
+-      });
++      const res = await axios.get(`${API}/assessments/bank`, { params: { category: skillKey } });
+       setQuestions(res.data.questions);
++      setAttemptToken(res.data.attemptToken);
++      setSkill(res.data.skill);
++      setCurrentQIndex(0);
++      setAnswers({});
+       setStep('test');
+     } catch (err) {
+-      toast.error(err.response?.status === 503 ? (err.response.data?.msg || 'The test is not available right now. Please try again later.') : 'Failed to generate assessment. Try a different skill.');
++      toast.error(err.response?.data?.msg || 'The test is not available right now. Please try again later.');
+     } finally {
+       setLoading(false);
+     }
+@@ -55,15 +68,22 @@ const FreeAssessment = () => {
+     if (currentQIndex < questions.length - 1) {
+       setCurrentQIndex(prev => prev + 1);
+     } else {
+-      // Calculate score before moving to lead step
++      // The server marks the test. The browser never sees the right answers until it has submitted.
+       let calculatedScore = 0;
+-      questions.forEach((q, idx) => {
+-        if (answers[idx] === q.correct_option) {
+-          calculatedScore++;
+-        }
+-      });
++      let reviewed = questions;
++      try {
++        const picked = {};
++        questions.forEach((q, idx) => { picked[q.id] = answers[idx]; });
++        const res = await axios.post(`${API}/assessments/bank/submit`, { category: skillKey, attemptToken, answers: picked });
++        calculatedScore = res.data.score;
++        const byId = new Map(res.data.review.map((r) => [r.id, r]));
++        reviewed = questions.map((q) => ({ ...q, correct_option: byId.get(q.id)?.correct_option, explanation: byId.get(q.id)?.explanation }));
++      } catch (err) {
++        return toast.error(err.response?.data?.msg || 'Could not check your answers. Please try again.');
++      }
++      setQuestions(reviewed);
+       setScore(calculatedScore);
+-      
++
+       if (user?.role === 'jobseeker') {
+         try {
+           await axios.post(`${API}/skill-tests/save`, {
+@@ -73,7 +93,7 @@ const FreeAssessment = () => {
+             total: questions.length,
+             percentage: Math.round((calculatedScore / questions.length) * 100),
+             passed: (calculatedScore / questions.length) >= 0.6,
+-            questions,
++            questions: reviewed,
+             answers
+           }); // Removed withCredentials: true as we use Bearer tokens
+           navigate('/candidate/skill-tests');
+@@ -121,40 +141,31 @@ const FreeAssessment = () => {
+           <form onSubmit={startAssessment} className="space-y-4 text-left">
+             <div>
+               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Skill to Test</label>
+-              <Input 
+-                value={skill} 
+-                onChange={e => setSkill(e.target.value)} 
+-                placeholder="e.g. React Hooks, Python, AWS" 
+-                className="mt-1.5 h-12 rounded-xl"
+-              />
+-            </div>
+-            <div>
+-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Difficulty</label>
+-              <div className="grid grid-cols-3 gap-2">
+-                {['easy', 'medium', 'hard'].map(level => (
+-                  <div 
+-                    key={level}
+-                    onClick={() => setDifficulty(level)}
+-                    className={`cursor-pointer text-center py-2.5 rounded-lg text-sm font-bold border transition-colors ${difficulty === level ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+-                  >
+-                    {level.charAt(0).toUpperCase() + level.slice(1)}
+-                  </div>
+-                ))}
+-              </div>
++              <select
++                value={skillKey}
++                onChange={e => setSkillKey(e.target.value)}
++                disabled={!skillsLoaded || skills.length === 0}
++                className="mt-1.5 h-12 w-full rounded-xl border border-input bg-white px-3 text-sm font-medium text-slate-800"
++              >
++                <option value="">{!skillsLoaded ? 'Loading skills...' : skills.length ? 'Choose a skill' : 'Tests are being prepared'}</option>
++                {skills.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
++              </select>
++              {skillsLoaded && skills.length === 0 && (
++                <p className="text-xs text-amber-600 font-semibold mt-2">Tests are being prepared. Please check back soon.</p>
++              )}
+             </div>
+-            
+             <Button 
+               type="submit" 
+-              disabled={loading} 
++              disabled={loading || !skillKey} 
+               className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold gap-2 mt-4 transition-all"
+             >
+-              {loading ? <Loader2 className="animate-spin" size={18} /> : 'Generate Assessment'}
++              {loading ? <Loader2 className="animate-spin" size={18} /> : 'Start Assessment'}
+               {!loading && <ArrowRight size={18} />}
+             </Button>
+             
+             {loading && (
+               <p className="text-center text-xs text-slate-500 font-semibold animate-pulse mt-3">
+-                Our AI is actively generating tailored questions for you. This usually takes 5-10 seconds...
++                Preparing your questions...
+               </p>
+             )}
+           </form>
+diff --git a/docs/FREE_SKILL_TEST_UPDATE.md b/docs/FREE_SKILL_TEST_UPDATE.md
+new file mode 100644
+index 0000000..6ccb9ea
+--- /dev/null
++++ b/docs/FREE_SKILL_TEST_UPDATE.md
+@@ -0,0 +1,31 @@
++# Free skill test: dropdown + question bank (update)
++
++## What changed
++- `/free-assessment` now shows a **dropdown of skills** (no typing, no spelling mistakes, no dead end). The page text still says "AI-powered": the questions are written by AI and checked by a person before students see them.
++- Questions come from the **pre-made question bank**, not a live AI call. If OpenRouter is down, students still get a test.
++- **Marks are calculated on the server.** The browser gets the right answers only after it submits. Results save the same way as before (`/skill-tests/save`, pending-assessment after sign-up).
++- Skills: the original 7 plus **10 new** (MS Word and PowerPoint, Typing and Data Entry, Aptitude and Reasoning, Basic English Grammar, HTML and CSS, Python Basics, SQL Basics, Sales Basics, HR Basics, Banking and Finance Basics). The dropdown lists **only skills that have at least one set in the bank**, so nothing broken is ever shown.
++- New endpoints: `GET /api/assessments/skills`, `GET /api/assessments/bank?category=`, `POST /api/assessments/bank/submit` (rate limited).
++- Files: `server/config/courseMap.js`, `server/controllers/assessmentController.js`, `server/routes/assessmentRoutes.js`, `client/src/pages/public/FreeAssessment.jsx`, tests `server/tests/auth/freeBankTest.test.js`, `courseMap.test.js`.
++
++## Steps for the developer
++1. Apply the patch. Run `cd server && npm test`.
++2. On the server: `node scripts/generateQuestionBank.js --sets 5` (needs OpenRouter credit; about 85 AI calls for 17 skills).
++3. Dev 2 reviews the questions (checklist below). Mark bad sets `active: false` in `campusquestionsets`.
++4. Open `/free-assessment` on a phone: the dropdown must list every reviewed skill; finish one test; check the score and review screen.
++5. The old public endpoint `/api/assessments/public` (free text, answers in the response) is no longer used by the page. Remove or protect it (task T24).
++6. The campus registration page still shows the original 7 skills. Add the new ones to `client/src/data/skillCategories.js` if you want them there too.
++
++## Dev 2 question review checklist (about 5 questions per skill, all 17 skills)
++- Exactly one option is clearly correct; check it yourself, do not trust the marked answer.
++- No two options mean the same thing; no "all of the above" tricks.
++- Wording is simple English, fresher level, Indian context (rupees, Indian companies, Tally, GST) where it helps.
++- No question about prices of a brand or a company's current policy.
++- No wrong or out-of-date facts (GST rules, software menus, Python/SQL syntax).
++- Question and options read well on a phone (short).
++- Two sets for the same skill are not copies of each other.
++- If a set has 2 or more problems, set `active: false` and regenerate; do not edit by hand.
++- Log: skill, set id, question number, problem, action.
++
++## For Kamar to confirm
++The course shown after a low score for each new skill (WhatsApp follow-up and mail), currently: MS Word and PowerPoint, Typing and Data Entry, Python Basics, SQL Basics, Banking and Finance go to Data Analytics with Power BI; Aptitude, English Grammar and HR Basics go to Soft Skills and Interview Prep; HTML and CSS goes to Web Design (Basic); Sales Basics goes to AI-powered Digital Marketing.
+diff --git a/server/config/courseMap.js b/server/config/courseMap.js
+index 972ca52..a2c8c77 100644
+--- a/server/config/courseMap.js
++++ b/server/config/courseMap.js
+@@ -11,6 +11,17 @@ const SKILL_CATEGORIES = [
+   { key: 'communication', label: 'Communication / English', course: 'Soft Skills & Interview Prep' },
+   { key: 'computer-basics', label: 'Computer Basics', course: 'Web Design (Basic)' },
+   { key: 'customer-service', label: 'Customer Service', course: 'Production Support Engineer Program' },
++  // Added for the free skill test (course mapping to be confirmed by Kamar).
++  { key: 'ms-office', label: 'MS Word & PowerPoint', course: 'Data Analytics with Power BI' },
++  { key: 'typing-data-entry', label: 'Typing & Data Entry', course: 'Data Analytics with Power BI' },
++  { key: 'aptitude', label: 'Aptitude & Reasoning', course: 'Soft Skills & Interview Prep' },
++  { key: 'english-grammar', label: 'Basic English Grammar', course: 'Soft Skills & Interview Prep' },
++  { key: 'html-css', label: 'HTML & CSS Basics', course: 'Web Design (Basic)' },
++  { key: 'python-basics', label: 'Python Basics', course: 'Data Analytics with Power BI' },
++  { key: 'sql-basics', label: 'SQL Basics', course: 'Data Analytics with Power BI' },
++  { key: 'sales-basics', label: 'Sales Basics', course: 'AI-powered Digital Marketing' },
++  { key: 'hr-basics', label: 'HR Basics', course: 'Soft Skills & Interview Prep' },
++  { key: 'banking-finance', label: 'Banking & Finance Basics', course: 'Data Analytics with Power BI' },
+ ];
+ 
+ const byKey = new Map(SKILL_CATEGORIES.map((c) => [c.key, c]));
+diff --git a/server/controllers/assessmentController.js b/server/controllers/assessmentController.js
+index 6da97dc..645e510 100644
+--- a/server/controllers/assessmentController.js
++++ b/server/controllers/assessmentController.js
+@@ -1,5 +1,9 @@
+ const Assessment = require('../models/Assessment');
+ const { GoogleGenerativeAI } = require('../utils/aiHelper');
++const CampusQuestionSet = require('../models/CampusQuestionSet');
++const { SKILL_CATEGORIES, getCategory, PASS_RATIO } = require('../config/courseMap');
++const { pickSet } = require('../utils/questionBank');
++const { publicQuestions, signAttempt, verifyAttempt, scoreAttempt } = require('../utils/campusTest');
+ 
+ // @desc    Generate or fetch a skill assessment
+ // @route   GET /api/assessments/public?skill=X&difficulty=Y
+@@ -270,7 +274,66 @@ const saveResult = async (req, res) => {
+   }
+ };
+ 
++// Free skill test from the pre-checked question bank (no live AI call, answers scored on the server).
++// @route GET /api/assessments/skills  -> skills that have questions ready
++const getFreeSkills = async (req, res) => {
++  try {
++    const ready = await CampusQuestionSet.distinct('category', { active: true });
++    const skills = SKILL_CATEGORIES.filter((c) => ready.includes(c.key)).map(({ key, label }) => ({ key, label }));
++    res.json(skills);
++  } catch (err) {
++    console.error('Free skills list error:', err.message);
++    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
++  }
++};
++
++// @route GET /api/assessments/bank?category=<key>
++const getFreeBankTest = async (req, res) => {
++  try {
++    const cat = getCategory(req.query.category);
++    if (!cat) return res.status(400).json({ msg: 'Please choose a skill from the list.' });
++    let set;
++    try { set = await pickSet(cat.key); } catch (err) {
++      console.error('Question bank unavailable:', err.message);
++      return res.status(503).json({ msg: 'This test is being prepared. Please try another skill or come back later.' });
++    }
++    res.json({
++      skill: cat.label,
++      questions: publicQuestions(set),
++      attemptToken: signAttempt({ studentId: 'guest', category: cat.key, setId: set._id }),
++    });
++  } catch (err) {
++    console.error('Free bank test error:', err.message);
++    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
++  }
++};
++
++// @route POST /api/assessments/bank/submit   Body: { category, attemptToken, answers: { "<questionId>": "a" } }
++const submitFreeBankTest = async (req, res) => {
++  try {
++    const cat = getCategory(req.body.category);
++    if (!cat) return res.status(400).json({ msg: 'Please choose a skill from the list.' });
++    const check = verifyAttempt(req.body.attemptToken, { studentId: 'guest', category: cat.key });
++    if (check.error === 'too_fast') return res.status(400).json({ msg: 'That was too fast. Please read each question and try again.' });
++    if (check.error) return res.status(400).json({ msg: 'This test has expired. Please start again.' });
++    const set = await CampusQuestionSet.findById(check.claims.set);
++    if (!set) return res.status(400).json({ msg: 'This test has expired. Please start again.' });
++    const { score, total } = scoreAttempt(set, req.body.answers);
++    const percentage = Math.round((score / total) * 100);
++    res.json({
++      score, total, percentage, passed: score / total >= PASS_RATIO,
++      review: set.questions.map((q) => ({ id: q.id, correct_option: q.correct_option, explanation: q.explanation })),
++    });
++  } catch (err) {
++    console.error('Free bank submit error:', err.message);
++    res.status(500).json({ msg: 'Something went wrong. Please try again.' });
++  }
++};
++
+ module.exports = {
++  getFreeSkills,
++  getFreeBankTest,
++  submitFreeBankTest,
+   getAssessment,
+   getCategories,
+   startTest,
+diff --git a/server/routes/assessmentRoutes.js b/server/routes/assessmentRoutes.js
+index 0c5b34d..f94a06e 100644
+--- a/server/routes/assessmentRoutes.js
++++ b/server/routes/assessmentRoutes.js
+@@ -1,7 +1,13 @@
+ const express = require('express');
++const { rateLimit } = require('../middlewares/rateLimit');
+ const router = express.Router();
+-const { getAssessment } = require('../controllers/assessmentController');
++const { getAssessment, getFreeSkills, getFreeBankTest, submitFreeBankTest } = require('../controllers/assessmentController');
+ 
++const freeTestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, message: 'Too many requests from this network. Please wait a few minutes.' });
++
++router.get('/skills', freeTestLimiter, getFreeSkills);
++router.get('/bank', freeTestLimiter, getFreeBankTest);
++router.post('/bank/submit', freeTestLimiter, submitFreeBankTest);
+ router.get('/public', getAssessment);
+ 
+ module.exports = router;
+diff --git a/server/tests/auth/courseMap.test.js b/server/tests/auth/courseMap.test.js
+index cbc4934..b4f619a 100644
+--- a/server/tests/auth/courseMap.test.js
++++ b/server/tests/auth/courseMap.test.js
+@@ -2,8 +2,9 @@ const test = require('node:test');
+ const assert = require('node:assert');
+ const { SKILL_CATEGORIES, getCategory, offerText, isSendWindow, PASS_RATIO } = require('../../config/courseMap');
+ 
+-test('seven categories, each with a course', () => {
+-  assert.equal(SKILL_CATEGORIES.length, 7);
++test('seventeen categories, each with a course and a unique key', () => {
++  assert.equal(SKILL_CATEGORIES.length, 17);
++  assert.equal(new Set(SKILL_CATEGORIES.map((c) => c.key)).size, 17);
+   SKILL_CATEGORIES.forEach((c) => assert.ok(c.key && c.label && c.course));
+ });
+ test('getCategory rejects unknown and non-string keys', () => {
+diff --git a/server/tests/auth/freeBankTest.test.js b/server/tests/auth/freeBankTest.test.js
+new file mode 100644
+index 0000000..6e149a9
+--- /dev/null
++++ b/server/tests/auth/freeBankTest.test.js
+@@ -0,0 +1,59 @@
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const Module = require('module');
++const crypto = require('crypto');
++
++process.env.JWT_SECRET = 'z'.repeat(40);
++
++// Stand-ins for packages/models that are not needed to test the endpoint logic.
++const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
++const mac = (d, s) => crypto.createHmac('sha256', s).update(d).digest('base64url');
++let backdate = 0; // seconds to age new tokens, to get past the "too fast" check
++const jwtStub = {
++  sign: (p, s) => { const body = `${b64({ alg: 'HS256' })}.${b64({ ...p, iat: Math.floor(Date.now() / 1000) - backdate })}`; return `${body}.${mac(body, s)}`; },
++  verify: (t, s) => { const [h, p, sig] = String(t).split('.'); if (!sig || mac(`${h}.${p}`, s) !== sig) throw new Error('bad'); return JSON.parse(Buffer.from(p, 'base64url').toString()); },
++};
++const sets = [{ _id: 's1', category: 'ms-excel', active: true, questions: Array.from({ length: 10 }, (_, i) => ({ id: i + 1, question: `Q${i + 1}`, options: { a: 'A', b: 'B', c: 'C', d: 'D' }, correct_option: 'b', explanation: 'x' })) }];
++const modelStub = { distinct: async () => ['ms-excel'], findById: async (id) => sets.find((s) => s._id === id) || null };
++const realLoad = Module._load;
++Module._load = function (request, ...rest) {
++  if (request === 'jsonwebtoken') return jwtStub;
++  if (request === '../models/Assessment') return {};
++  if (request === '../models/CampusQuestionSet') return modelStub;
++  if (request === '../utils/aiHelper') return { GoogleGenerativeAI: class {} };
++  if (request === '../utils/questionBank') return { pickSet: async (key) => { if (key !== 'ms-excel') throw new Error('empty'); return sets[0]; } };
++  if (request === '../models/SkillTestResult' || request === '../models/User') return {};
++  return realLoad.call(this, request, ...rest);
++};
++const c = require('../../controllers/assessmentController');
++const res = () => { const r = { code: 200 }; r.status = (n) => { r.code = n; return r; }; r.json = (b) => { r.body = b; return r; }; return r; };
++
++test('skill list shows only skills that have questions', async () => {
++  const r = res(); await c.getFreeSkills({}, r);
++  assert.deepEqual(r.body, [{ key: 'ms-excel', label: 'MS Excel' }]);
++});
++test('test never contains the right answers', async () => {
++  const r = res(); await c.getFreeBankTest({ query: { category: 'ms-excel' } }, r);
++  assert.equal(r.code, 200);
++  assert.ok(r.body.attemptToken);
++  assert.ok(!JSON.stringify(r.body.questions).includes('correct_option'));
++});
++test('unknown or empty skill is refused cleanly', async () => {
++  let r = res(); await c.getFreeBankTest({ query: { category: 'nonsense' } }, r); assert.equal(r.code, 400);
++  r = res(); await c.getFreeBankTest({ query: { category: 'sql-basics' } }, r); assert.equal(r.code, 503);
++});
++test('server scores the test and rejects instant or forged submissions', async () => {
++  let r = res(); await c.getFreeBankTest({ query: { category: 'ms-excel' } }, r);
++  const token = r.body.attemptToken;
++  const answers = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, i < 7 ? 'b' : 'a']));
++  let s = res(); await c.submitFreeBankTest({ body: { category: 'ms-excel', attemptToken: token, answers } }, s);
++  assert.equal(s.code, 400); // instant submit
++  backdate = 60;
++  r = res(); await c.getFreeBankTest({ query: { category: 'ms-excel' } }, r);
++  s = res(); await c.submitFreeBankTest({ body: { category: 'ms-excel', attemptToken: r.body.attemptToken, answers } }, s);
++  assert.equal(s.code, 200); assert.equal(s.body.score, 7); assert.equal(s.body.passed, true); assert.equal(s.body.review.length, 10);
++  s = res(); await c.submitFreeBankTest({ body: { category: 'ms-excel', attemptToken: 'forged.token.x', answers } }, s);
++  assert.equal(s.code, 400);
++  s = res(); await c.submitFreeBankTest({ body: { category: 'accounting', attemptToken: r.body.attemptToken, answers } }, s);
++  assert.equal(s.code, 400); // token is for another skill
++});
+-- 
+2.43.0
+

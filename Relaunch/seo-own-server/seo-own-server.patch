@@ -1,0 +1,365 @@
+From 80b97b84bcedfa0f855776a29eb26431329fdc7b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 3 Nov 2026 15:51:11 +0000
+Subject: [PATCH] SEO for the self-hosted website: job pages with JobPosting
+ and keyword URL, and sitemap, served by the Node server behind nginx
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PsgX1usF7TKCh3J48NhtVG
+---
+ docs/SEO_ON_OWN_SERVER.md          |  52 +++++++++++
+ server/index.js                    |   1 +
+ server/routes/seoRoutes.js         |  46 ++++++++++
+ server/tests/auth/seoPages.test.js |  68 ++++++++++++++
+ server/utils/seoPages.js           | 140 +++++++++++++++++++++++++++++
+ 5 files changed, 307 insertions(+)
+ create mode 100644 docs/SEO_ON_OWN_SERVER.md
+ create mode 100644 server/routes/seoRoutes.js
+ create mode 100644 server/tests/auth/seoPages.test.js
+ create mode 100644 server/utils/seoPages.js
+
+diff --git a/docs/SEO_ON_OWN_SERVER.md b/docs/SEO_ON_OWN_SERVER.md
+new file mode 100644
+index 0000000..c851a72
+--- /dev/null
++++ b/docs/SEO_ON_OWN_SERVER.md
+@@ -0,0 +1,52 @@
++# Job pages and sitemap for Google and WhatsApp, when the website runs on our own server (nginx)
++
++The files in `client/api/` (job page and sitemap) only run on Vercel. The live site is served from the Hostinger server, so
++nothing was adding a job's own title, description and JobPosting data to the page: every job link showed the homepage's tags.
++This adds the same logic to the Node server and sends two kinds of addresses to it.
++
++## What was added
++- `server/utils/seoPages.js`: builds the page (title, description, canonical keyword URL, Open Graph, JobPosting) and the sitemap.
++- `server/routes/seoRoutes.js`, mounted at `/seo`: `GET /seo/job/<slug>` and `GET /seo/sitemap.xml`.
++- Rules, same as `client/api/job.js`: an old `/job/<id>` link or a changed title answers 301 to the keyword link; a closed or expired job stays up with
++  "position filled" and noindex; a missing job is noindex; the page falls back to the plain app if anything fails.
++- Every answer carries `X-Velaivaaipu-SEO: job | redirect | closed | unavailable | shell-no-id | shell-error`.
++- Tests: `server/tests/auth/seoPages.test.js` (9).
++
++## Server env
++- `SITE_URL=https://velaivaaipu.in` (default is the same).
++- `API_PUBLIC_URL=https://api.velaivaaipu.in` (already used by mail; used for company logos).
++- `CLIENT_INDEX_PATH=/full/path/to/the/built/client/dist/index.html` (recommended). If it is not set the server fetches `https://velaivaaipu.in/` once every 5 minutes instead.
++Restart the server after setting them.
++
++## nginx (on the site's server block for velaivaaipu.in)
++Add these two blocks. Use the port the Node server runs on (`PORT`, default 5000). Keep the existing rule that sends other paths to `index.html`.
++
++```nginx
++# Job pages: the app with the job's own SEO tags
++location ~ ^/job/([^/]+)$ {
++    proxy_pass http://127.0.0.1:5000/seo/job/$1;
++    proxy_set_header Host $host;
++    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
++    proxy_set_header X-Forwarded-Proto $scheme;
++}
++
++# Sitemap from the database (jobs and companies)
++location = /sitemap.xml {
++    proxy_pass http://127.0.0.1:5000/seo/sitemap.xml;
++    proxy_set_header Host $host;
++    proxy_set_header X-Forwarded-Proto $scheme;
++}
++```
++If the Node server is not on the same machine as the website, use `proxy_pass https://api.velaivaaipu.in/seo/job/$1;` with `proxy_ssl_server_name on;` and `proxy_set_header Host api.velaivaaipu.in;`.
++If a static `sitemap.xml` file exists in the site folder, remove it so the database one is used.
++Test the config (`nginx -t`) and reload (`systemctl reload nginx`). Keep the old config to roll back.
++
++## Check
++1. `curl -sI https://velaivaaipu.in/job/<any job link> | grep -i x-velaivaaipu-seo` should say `job` (or `redirect` for an old link).
++2. `curl -s https://velaivaaipu.in/job/<link> | grep -i -E "<title>|canonical|JobPosting"` shows the job's own title, the keyword URL and JobPosting.
++3. `https://velaivaaipu.in/sitemap.xml` lists job links like `/job/telecaller-puducherry-<id>`.
++4. Google Rich Results Test on one job link finds a JobPosting. Paste a job link in WhatsApp: the preview shows the job's title.
++5. Search Console: submit `https://velaivaaipu.in/sitemap.xml`.
++
++## Roll back
++Remove the two nginx blocks and reload. The site goes back to serving the plain app for every address. Nothing else depends on this.
+diff --git a/server/index.js b/server/index.js
+index 572bb13..7348bf0 100644
+--- a/server/index.js
++++ b/server/index.js
+@@ -219,6 +219,7 @@ app.use(passport.initialize());
+ app.use(passport.session());
+ 
+ // Routes
++app.use('/seo', require('./routes/seoRoutes')); // job pages and sitemap for search engines (see docs/SEO_ON_OWN_SERVER.md)
+ app.use('/api/auth', authRoutes);
+ app.use('/api/user', userRoutes);
+ app.use('/api/onboarding', onboardingRoutes);
+diff --git a/server/routes/seoRoutes.js b/server/routes/seoRoutes.js
+new file mode 100644
+index 0000000..a1c3dfb
+--- /dev/null
++++ b/server/routes/seoRoutes.js
+@@ -0,0 +1,46 @@
++// Mounted at /seo. nginx rewrites /job/* and /sitemap.xml to these (docs/SEO_ON_OWN_SERVER.md).
++const express = require('express');
++const Job = require('../models/Job');
++const Company = require('../models/Company');
++const { buildJobResponse, buildSitemap, getShell, jobIdFromSlug } = require('../utils/seoPages');
++
++const router = express.Router();
++const send = (res, out, tag) => {
++  res.set('X-Velaivaaipu-SEO', tag || out.tag);
++  Object.entries(out.headers).forEach(([k, v]) => res.set(k, v));
++  return res.status(out.status).send(out.body);
++};
++
++router.get('/job/:slug', async (req, res) => {
++  let shell = '';
++  try {
++    shell = await getShell();
++    const id = jobIdFromSlug(req.params.slug);
++    if (!id) return send(res, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60' }, body: shell }, 'shell-no-id');
++    const job = await Job.findById(id).populate('company', 'name logo website').lean();
++    return send(res, buildJobResponse({ slug: req.params.slug, job, shell }));
++  } catch (err) {
++    console.error('[SEO] job page failed, serving the plain app:', err.message);
++    if (!shell) return res.status(502).send('Temporarily unavailable');
++    res.set('X-Velaivaaipu-SEO', 'shell-error').set('Content-Type', 'text/html; charset=utf-8');
++    return res.status(200).send(shell);
++  }
++});
++
++router.get('/sitemap.xml', async (req, res) => {
++  try {
++    const now = new Date();
++    const [jobs, companies] = await Promise.all([
++      Job.find({ status: 'active', $or: [{ validThrough: { $gte: now } }, { validThrough: null }] }).select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
++      Company.find({}).select('updatedAt').sort({ updatedAt: -1 }).limit(2000).lean(),
++    ]);
++    res.set('Content-Type', 'application/xml; charset=utf-8').set('Cache-Control', 'public, s-maxage=900');
++    return res.send(buildSitemap({ jobs, companies }));
++  } catch (err) {
++    console.error('[SEO] sitemap failed, serving the static pages:', err.message);
++    res.set('Content-Type', 'application/xml; charset=utf-8');
++    return res.send(buildSitemap({}));
++  }
++});
++
++module.exports = router;
+diff --git a/server/tests/auth/seoPages.test.js b/server/tests/auth/seoPages.test.js
+new file mode 100644
+index 0000000..fb92ca3
+--- /dev/null
++++ b/server/tests/auth/seoPages.test.js
+@@ -0,0 +1,68 @@
++const test = require('node:test');
++const assert = require('node:assert/strict');
++process.env.SITE_URL = 'https://velaivaaipu.in';
++process.env.API_PUBLIC_URL = 'https://api.velaivaaipu.in';
++const { buildJobResponse, buildSitemap, jobSlug, jobIdFromSlug, getShell, resetShellCache } = require('../../utils/seoPages');
++
++const SHELL = '<!doctype html><html><head><meta name="description" content="old" /><meta property="og:title" content="old" /><link rel="canonical" href="https://velaivaaipu.in/" /><title>old</title></head><body><div id="root"></div></body></html>';
++const ID = 'a'.repeat(24);
++const job = { _id: ID, title: 'Telecaller <Exec> & "QA"', location: 'Puducherry', vacancies: 2, description: '<p>Call leads</p>', status: 'active', createdAt: '2026-11-01', validThrough: '2099-01-01', jobType: 'Full-time', company: { name: 'Acme', logo: '/uploads/logo.png' }, salary: { min: 300000, max: 500000 } };
++const slug = jobSlug(job);
++const run = (over = {}, s = slug) => buildJobResponse({ slug: s, job: { ...job, ...over }, shell: SHELL, now: new Date('2026-11-05') });
++
++test('open job: own title, canonical keyword URL, JobPosting and Open Graph in the raw HTML', () => {
++  const r = run();
++  assert.equal(r.status, 200); assert.equal(r.tag, 'job');
++  assert.ok(r.body.includes('"@type":"JobPosting"'));
++  assert.ok(r.body.includes(`rel="canonical" href="https://velaivaaipu.in/job/${slug}"`));
++  assert.ok(!r.body.includes('content="old"') && !r.body.includes('<title>old</title>'));
++  assert.match(r.body, /og:image" content="https:\/\/api\.velaivaaipu\.in\/uploads\/logo\.png"|og:image" content="https:\/\/velaivaaipu\.in\/og-default\.png"/);
++  assert.ok(r.body.includes('"unitText":"YEAR"'));
++});
++test('job text is HTML-escaped and cannot close the script tag', () => {
++  const r = run({ description: '</script><script>alert(1)</script>' });
++  assert.ok(r.body.includes('Telecaller &lt;Exec&gt; &amp; &quot;QA&quot;'));
++  assert.ok(!r.body.includes('</script><script>alert(1)'));
++});
++test('old /job/<id> link and changed titles redirect (301) to the keyword URL', () => {
++  const r = run({}, ID);
++  assert.equal(r.status, 301);
++  assert.equal(r.headers.Location, `https://velaivaaipu.in/job/${slug}`);
++  assert.equal(run({}, `old-title-${ID}`).status, 301);
++});
++test('closed or expired job stays reachable, noindex, and has no JobPosting', () => {
++  for (const over of [{ status: 'closed' }, { validThrough: '2026-01-01' }]) {
++    const r = run(over);
++    assert.equal(r.status, 200); assert.equal(r.tag, 'closed');
++    assert.ok(r.body.includes('noindex, follow') && !r.body.includes('JobPosting'));
++  }
++});
++test('missing job: app served, noindex, canonical to /jobs', () => {
++  const r = buildJobResponse({ slug: `gone-${'d'.repeat(24)}`, job: null, shell: SHELL });
++  assert.equal(r.status, 200); assert.equal(r.tag, 'unavailable');
++  assert.ok(r.body.includes('noindex, follow') && r.body.includes('href="https://velaivaaipu.in/jobs"'));
++});
++test('remote job gets TELECOMMUTE; hidden salary is not published', () => {
++  const r = run({ workMode: 'Remote', salary: { min: 1, isRangeHidden: true } });
++  assert.ok(r.body.includes('TELECOMMUTE') && !r.body.includes('baseSalary'));
++});
++test('slug helpers match the client rule', () => {
++  assert.equal(jobIdFromSlug(`x-y-${ID}`), ID);
++  assert.equal(jobIdFromSlug('no-id'), '');
++  assert.ok(slug.endsWith(ID) && /^[a-z0-9-]+$/.test(slug));
++});
++test('sitemap lists static pages, jobs by keyword URL and companies', () => {
++  const xml = buildSitemap({ jobs: [{ _id: ID, title: 'Telecaller', location: 'Puducherry', updatedAt: '2026-11-02' }], companies: [{ _id: 'b'.repeat(24), updatedAt: '2026-11-02' }] });
++  assert.ok(xml.includes('<loc>https://velaivaaipu.in/jobs</loc>'));
++  assert.ok(xml.includes(`<loc>https://velaivaaipu.in/job/telecaller-puducherry-${ID}</loc>`));
++  assert.ok(xml.includes(`/companies/${'b'.repeat(24)}`));
++});
++test('the app shell is fetched once and cached; a failed fetch is an error', async () => {
++  resetShellCache(); delete process.env.CLIENT_INDEX_PATH;
++  let n = 0;
++  const ok = async () => { n += 1; return { ok: true, text: async () => SHELL }; };
++  await getShell({ fetchImpl: ok, now: 1000 }); await getShell({ fetchImpl: ok, now: 2000 });
++  assert.equal(n, 1);
++  resetShellCache();
++  await assert.rejects(getShell({ fetchImpl: async () => ({ ok: false, status: 500 }) }), /shell 500/);
++});
+diff --git a/server/utils/seoPages.js b/server/utils/seoPages.js
+new file mode 100644
+index 0000000..c94c711
+--- /dev/null
++++ b/server/utils/seoPages.js
+@@ -0,0 +1,140 @@
++// Search-engine pages for the website when it is served from our own server (nginx) and not from Vercel.
++//   GET /seo/job/<slug>-<id>   the normal single-page app, with the job's title, description, Open Graph tags and
++//                              JobPosting data already in the HTML (what Google, WhatsApp and Facebook read)
++//   GET /seo/sitemap.xml       static pages + every active job and company
++// nginx sends /job/* and /sitemap.xml here (see docs/SEO_ON_OWN_SERVER.md). Same rules as client/api/job.js.
++const fs = require('fs');
++
++const SITE_URL = () => (process.env.SITE_URL || 'https://velaivaaipu.in').replace(/\/$/, '');
++const API_DOMAIN = () => (process.env.API_PUBLIC_URL || 'https://api.velaivaaipu.in').replace(/\/api\/?$/, '').replace(/\/$/, '');
++const OG_IMAGE = () => `${SITE_URL()}/og-default.png`;
++
++const escapeHtml = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
++const stripHtml = (v) => String(v ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
++const clip = (text, max) => (text.length > max ? `${text.slice(0, max - 1).replace(/\s+\S*$/, '')}…` : text);
++// Same rule as client/src/utils/jobUrl.js
++const slugify = (text) => String(text ?? '').toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_]+/g, '-').replace(/-+/g, '-').slice(0, 60);
++const jobIdFromSlug = (slug) => (String(slug || '').match(/([a-f0-9]{24})$/i) || [])[1] || '';
++const jobSlug = (job) => {
++  const parts = [slugify(job.title), slugify(job.location)].filter(Boolean).join('-');
++  return `${parts ? `${parts}-` : ''}${job._id || job.id}`;
++};
++const jobUrl = (job) => `${SITE_URL()}/job/${jobSlug(job)}`;
++const absolute = (url) => (!url ? '' : /^https?:/i.test(url) ? url : `${API_DOMAIN()}${url}`);
++
++// The built single-page app (index.html). Read from CLIENT_INDEX_PATH when set, otherwise fetched from the site itself.
++let shellCache = { html: '', at: 0 };
++const SHELL_TTL_MS = 5 * 60 * 1000;
++const getShell = async ({ fetchImpl = fetch, now = Date.now() } = {}) => {
++  if (shellCache.html && now - shellCache.at < SHELL_TTL_MS) return shellCache.html;
++  let html;
++  if (process.env.CLIENT_INDEX_PATH) html = fs.readFileSync(process.env.CLIENT_INDEX_PATH, 'utf8');
++  else {
++    const res = await fetchImpl(`${SITE_URL()}/`, { headers: { 'x-seo-shell': '1' } });
++    if (!res.ok) throw new Error(`shell ${res.status}`);
++    html = await res.text();
++  }
++  shellCache = { html, at: now };
++  return html;
++};
++const resetShellCache = () => { shellCache = { html: '', at: 0 }; };
++
++const injectHead = (html, { title, description, canonical, robots = 'index, follow', image = OG_IMAGE(), type = 'website', jsonLd }) => {
++  const t = escapeHtml(title);
++  const d = escapeHtml(description);
++  const out = html
++    .replace(/<title>[\s\S]*?<\/title>/i, `<title>${t}</title>`)
++    .replace(/<meta\s+name="description"[^>]*>\s*/i, '')
++    .replace(/<link\s+rel="canonical"[^>]*>\s*/i, '')
++    .replace(/<meta\s+name="robots"[^>]*>\s*/i, '')
++    .replace(/<meta\s+property="og:[^>]*>\s*/gi, '')
++    .replace(/<meta\s+name="twitter:[^>]*>\s*/gi, '');
++  const tags = [
++    `<meta name="description" content="${d}" />`,
++    `<meta name="robots" content="${escapeHtml(robots)}" />`,
++    `<link rel="canonical" href="${escapeHtml(canonical)}" />`,
++    `<meta property="og:site_name" content="Velaivaaipu" />`,
++    `<meta property="og:type" content="${escapeHtml(type)}" />`,
++    `<meta property="og:title" content="${t}" />`,
++    `<meta property="og:description" content="${d}" />`,
++    `<meta property="og:url" content="${escapeHtml(canonical)}" />`,
++    `<meta property="og:image" content="${escapeHtml(image)}" />`,
++    `<meta name="twitter:card" content="summary_large_image" />`,
++    `<meta name="twitter:title" content="${t}" />`,
++    `<meta name="twitter:description" content="${d}" />`,
++    `<meta name="twitter:image" content="${escapeHtml(image)}" />`,
++  ];
++  if (jsonLd) tags.push(`<script type="application/ld+json" data-velaivaaipu-schema="true">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`);
++  return out.replace(/<\/head>/i, `${tags.join('\n    ')}\n  </head>`);
++};
++
++/**
++ * Pure: decides the response for one job URL.
++ * @param {{slug:string, job:object|null, shell:string}} input  job = plain object from the database, or null when missing
++ * @returns {{status:number, headers:object, body:string, tag:string}}
++ */
++const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
++  const html = { 'Content-Type': 'text/html; charset=utf-8' };
++  if (!job) {
++    return { status: 200, tag: 'unavailable', headers: { ...html, 'Cache-Control': 'public, s-maxage=60' }, body: injectHead(shell, {
++      title: 'Job not available | Velaivaaipu',
++      description: 'This job is no longer available. Browse the latest jobs in Tamil Nadu on Velaivaaipu.',
++      canonical: `${SITE_URL()}/jobs`, robots: 'noindex, follow',
++    }) };
++  }
++  const company = job.company?.name || 'Velaivaaipu';
++  const city = job.location || 'Tamil Nadu';
++  const canonical = jobUrl(job);
++
++  // One address per job: an old /job/<id> link or a changed title redirects (301) to the keyword URL.
++  if (slug !== jobSlug(job)) return { status: 301, tag: 'redirect', headers: { Location: canonical, 'Cache-Control': 'public, s-maxage=300' }, body: '' };
++
++  const expired = job.validThrough && new Date(job.validThrough) <= now;
++  if (job.status !== 'active' || expired) {
++    return { status: 200, tag: 'closed', headers: { ...html, 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' }, body: injectHead(shell, {
++      title: `${job.title || 'This job'} — position filled | Velaivaaipu`,
++      description: `This ${job.title || ''} opening at ${company} has been filled. Find similar jobs in ${city} on Velaivaaipu.`,
++      canonical, robots: 'noindex, follow',
++    }) };
++  }
++
++  const image = job.company?.logo ? absolute(job.company.logo) : OG_IMAGE();
++  const image2 = /\.(png|jpe?g)$/i.test(image) ? image : OG_IMAGE(); // WhatsApp ignores webp/svg previews
++  const description = clip(`${company} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}. Apply free on Velaivaaipu. ${stripHtml(job.description)}`, 155);
++  const jsonLd = {
++    '@context': 'https://schema.org',
++    '@type': 'JobPosting',
++    title: job.title,
++    description: job.description || `${company} is hiring ${job.title} in ${city}.`,
++    identifier: { '@type': 'PropertyValue', name: 'Velaivaaipu', value: job.display_id || String(job._id) },
++    datePosted: job.createdAt,
++    validThrough: job.validThrough,
++    employmentType: String(job.jobType || 'FULL_TIME').toUpperCase().replace(/[ -]/g, '_'),
++    hiringOrganization: { '@type': 'Organization', name: company, ...(job.company?.website ? { sameAs: job.company.website } : {}), ...(job.company?.logo ? { logo: absolute(job.company.logo) } : {}) },
++    jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: city, addressRegion: 'Tamil Nadu', addressCountry: 'IN' } },
++    directApply: true,
++    ...(job.workMode === 'Remote' ? { jobLocationType: 'TELECOMMUTE', applicantLocationRequirements: { '@type': 'Country', name: 'IN' } } : {}),
++    // Salary is entered per year (lakhs x 100000 in the post-job form)
++    ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
++  };
++  const full = `${job.title} Job in ${city} – ${company} | Velaivaaipu`;
++  return { status: 200, tag: 'job', headers: { ...html, 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' }, body: injectHead(shell, {
++    title: clip(full.length <= 60 ? full : `${job.title} Job in ${city} | Velaivaaipu`, 70),
++    description, canonical, image: image2, type: 'article', jsonLd,
++  }) };
++};
++
++const STATIC_PAGES = [
++  '/', '/jobs', '/companies', '/how-it-works', '/contact', '/blog', '/for-colleges', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
++  '/blog/it-jobs-in-pondicherry-for-freshers', '/blog/work-from-home-jobs-in-tamil-nadu', '/blog/private-jobs-in-pondicherry', '/blog/how-to-spot-fake-job-offer-tamil-nadu',
++];
++const urlEntry = (loc, lastmod, priority) =>
++  `  <url><loc>${escapeHtml(loc)}</loc>${lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${priority ? `<priority>${priority}</priority>` : ''}</url>`;
++const buildSitemap = ({ jobs = [], companies = [] }) => {
++  const entries = STATIC_PAGES.map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, null, p === '/' ? '1.0' : '0.8'));
++  jobs.forEach((j) => entries.push(urlEntry(jobUrl(j), j.updatedAt, '0.7')));
++  companies.forEach((c) => entries.push(urlEntry(`${SITE_URL()}/companies/${c._id}`, c.updatedAt, '0.5')));
++  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>\n`;
++};
++
++module.exports = { buildJobResponse, buildSitemap, getShell, resetShellCache, injectHead, jobIdFromSlug, jobSlug, jobUrl, slugify, STATIC_PAGES };
+-- 
+2.43.0
+
