@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const sendEmail = require('./sendEmail');
 const { emailWrapper } = require('./emailTemplates');
+const { sendPush } = require('./webPush');
 
 const EMAIL_BATCH_SIZE = 10;
 
@@ -46,6 +47,10 @@ const notifyUsers = async ({ io, recipientIds, title, message, type = 'general',
     recipient, title, message, type, link, metadata
   })));
   notifications.forEach(notification => emitNotification(io, notification));
+
+  // Web push to the recipients' devices (no-op until VAPID keys are set; see utils/webPush.js).
+  sendPush({ recipientIds: ids, title, message, link, type })
+    .catch(err => console.error(`Push notification failed (${type}):`, err.message));
 
   if (email) {
     emailRecipients({ recipientIds: ids, title, message, link, emailSubject, emailBody })

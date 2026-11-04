@@ -40,6 +40,7 @@ const recommendationRoutes = require('./routes/recommendationRoutes');
 const assistantRoutes = require('./routes/assistantRoutes');
 const couponRoutes = require('./routes/couponRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const pushRoutes = require('./routes/pushRoutes');
 const seedRoles = require('./config/seedRoles');
 const seedAdmin = require('./config/seedAdmin');
 const { seedSubscriptions, migrateUsersToFreePlan } = require('./config/seedSubscriptions');
@@ -248,6 +249,7 @@ app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/push', pushRoutes);
 app.use('/api/files', fileRoutes);
 
 

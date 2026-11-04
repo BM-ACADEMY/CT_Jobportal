@@ -327,6 +327,13 @@ const userSchema = new mongoose.Schema({
     bouncedAt: { type: Date, default: null },
     bounceReason: { type: String, default: '' }
   },
+  // Web push preferences. Consent is per device (PushSubscription rows); this is the per-category mute
+  // list plus the one-per-day cap marker for job pushes (utils/webPush.js).
+  pushPrefs: {
+    mutedCategories: { type: [String], default: [] },
+    lastJobPushAt: { type: Date, default: null },
+    updatedAt: { type: Date, default: null }
+  },
   lastLogoutAt: {
     type: Date
   },

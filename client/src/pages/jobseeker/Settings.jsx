@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import DeleteAccountCard from '../../components/settings/DeleteAccountCard';
+import PushSettings from '../../components/notifications/PushSettings';
 import axios from 'axios';
 import { 
   User, Mail, Phone, MapPin, Briefcase, GraduationCap,
@@ -1742,6 +1743,7 @@ const Settings = () => {
 
                 {/* ── TAB: JOB PREFERENCES ── */}
                 <TabsContent value="preferences" className="mt-8 flex flex-col gap-6">
+                    <PushSettings />
                     <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
                         <CardHeader className="pb-4 border-b border-slate-200 p-6">
                             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
