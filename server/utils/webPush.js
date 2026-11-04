@@ -6,7 +6,8 @@
 // each call site knowing about push. The person decides per device (subscribe/unsubscribe) and per
 // category (mute list in user.pushPrefs). Rules:
 //   - no push during quiet hours (21:00 to 08:00 IST) except interviews and messages; the in-app
-//     notification and email still go out at once, only the push is skipped (not queued);
+//     notification and email still go out at once, only the push is dropped (not queued or replayed
+//     at 08:00: the person already has the bell and the mail, a replay would be a stale duplicate);
 //   - at most WEB_PUSH_MAX_PER_DAY pushes (default 2) per person per IST day across all categories,
 //     reserved with an atomic counter so simultaneous notifications cannot both slip through;
 //     interviews are exempt from the cap (mutes still apply);

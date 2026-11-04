@@ -30,8 +30,11 @@ shipped. Branch `web-push`.
 
 - Push rides on the existing in-app notifications: `notifyUsers()` saves the bell notification, emails as before,
   and now also calls `sendPush()`. Nothing else had to change, so every existing notification type is covered.
-- **Quiet hours 21:00 to 08:00 IST**: no push, except the `interviews` and `messages` categories. The bell and
-  email still go out at once; the push is skipped, not queued.
+- **Quiet hours 21:00 to 08:00 IST**: no push, except the `interviews` and `messages` categories. The push is
+  **dropped, not queued**: the same event already reached the person as the in-app bell notification and the
+  email at the moment it happened, so an 08:00 replay would be a second copy of old news (and a queue would need
+  its own storage, retry and de-duplication). If a morning digest is wanted later, the right place is a
+  scheduled job that sends one "while you were away" push built from the unread bell notifications.
 - **Daily cap**: at most `WEB_PUSH_MAX_PER_DAY` pushes (default 2) per person per IST day across all categories.
   The slot is taken with an atomic counter (`PushDailyCounter`, one row per person per day, upsert with
   `count < max`), so two notifications arriving at the same moment cannot both get through on the last slot.
