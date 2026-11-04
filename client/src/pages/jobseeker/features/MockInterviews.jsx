@@ -376,10 +376,12 @@ const MockInterviews = () => {
 
   const handleRequestClick = () => {
     if (remainingCount === 0 || remainingCount === '0') {
-      Modal.warning({
+      Modal.confirm({
         title: 'Limit Reached',
         content: 'You have no mock interview requests left. Please upgrade your subscription or purchase an add-on to get more mock interviews.',
-        okText: 'Close',
+        okText: 'Upgrade plan',
+        cancelText: 'Close',
+        onOk: () => { window.location.assign('/candidate/subscription'); },
         okButtonProps: { className: 'bg-teal-500 hover:bg-teal-600 border-none shadow-none' },
       });
     } else {

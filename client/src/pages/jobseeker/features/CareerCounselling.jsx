@@ -388,10 +388,12 @@ const CareerCounselling = () => {
 
   const handleBookClick = () => {
     if (atLimit) {
-      Modal.warning({
+      Modal.confirm({
         title: 'Limit Reached',
         content: 'You have no career counselling sessions left. Please upgrade your subscription or purchase an add-on to book more sessions.',
-        okText: 'Close',
+        okText: 'Upgrade plan',
+        cancelText: 'Close',
+        onOk: () => { window.location.assign('/candidate/subscription'); },
         okButtonProps: { className: 'bg-rose-500 hover:bg-rose-600 border-none shadow-none' },
       });
     } else {
