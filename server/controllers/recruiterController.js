@@ -10,6 +10,8 @@ const { promoteToOrgEmployee, grantRecruiterTeamAccess } = require('../utils/tea
 const { notifyUser } = require('../utils/inAppNotifications');
 
 const { TEAM_PERMISSION_KEYS: TEAM_PERMISSIONS } = require('../config/teamPermissions');
+const { sanitizeCompanyData } = require('../utils/companyData');
+const { teamMemberFilter } = require('../utils/teamMembership');
 
 // @desc    Get Recruiter Profile and Company Details
 // @route   GET /api/recruiter/profile
@@ -86,20 +88,8 @@ const updateRecruiterProfile = async (req, res) => {
         company = await Company.findById(user.company);
       }
 
-      // Convert foundedYear to number or null to prevent CastError
-      const sanitizedCompanyData = { ...companyData };
-      if (sanitizedCompanyData.foundedYear === '') {
-        delete sanitizedCompanyData.foundedYear;
-      } else {
-        sanitizedCompanyData.foundedYear = Number(sanitizedCompanyData.foundedYear);
-      }
-
-      // Remove empty slug so the sparse unique index is not triggered
-      if (!sanitizedCompanyData.slug || sanitizedCompanyData.slug.trim() === '') {
-        delete sanitizedCompanyData.slug;
-      } else {
-        sanitizedCompanyData.slug = sanitizedCompanyData.slug.trim().toLowerCase().replace(/\s+/g, '-');
-      }
+      // foundedYear ('' / missing / text) and an empty slug are cleaned in utils/companyData.js
+      const sanitizedCompanyData = sanitizeCompanyData(companyData);
 
       if (!company) {
         // Create new company
@@ -241,12 +231,9 @@ const addTeamMember = async (req, res) => {
     const userWithSub = await User.findById(req.user.id).populate('subscription');
     const subscription = userWithSub?.subscription;
     if (subscription) {
-      const currentMemberCount = await User.countDocuments({
-        $or: [
-          { company: adminUser.company },
-          { employerCompany: adminUser.company }
-        ]
-      });
+      // Team members only: the owner is not a seat (toggleTeamMemberSeat and reconcileTeamSeats
+      // already count this way; counting the owner made a 1-seat plan unable to invite anyone).
+      const currentMemberCount = await User.countDocuments(teamMemberFilter(adminUser.company, adminUser._id));
 
       if (currentMemberCount >= subscription.userSeats) {
         return res.status(400).json({
@@ -390,14 +377,7 @@ const toggleTeamMemberSeat = async (req, res) => {
       const limit = plan?.userSeats || 1;
 
       // Count currently active team members
-      const activeMembers = await User.countDocuments({
-        $or: [
-          { company: adminUser.company },
-          { employerCompany: adminUser.company }
-        ],
-        isActiveSeat: true,
-        _id: { $ne: adminUser._id }
-      });
+      const activeMembers = await User.countDocuments({ ...teamMemberFilter(adminUser.company, adminUser._id), isActiveSeat: true });
 
       if (activeMembers >= limit) {
         return res.status(400).json({ 

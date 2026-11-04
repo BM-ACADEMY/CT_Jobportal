@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Application = require('../models/Application');
 const Role = require('../models/Role');
 const { getEffectivePlanLimit, getEffectiveSearchLimit } = require('../utils/getEffectivePlanLimit');
+const { activeJobCountQuery } = require('../utils/jobCountQuery');
 const { logTeamActivity } = require('../utils/teamActivityLog');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { parse } = require('csv-parse/sync');
@@ -55,14 +56,8 @@ const createJob = async (req, res) => {
       });
     }
 
-    let activeCountQuery = { status: { $in: ['active', 'closed'] } };
-    if (user.role && user.role.name === 'recruiter') {
-      activeCountQuery.recruiter = userId;
-    } else if (user.company) {
-      activeCountQuery.company = user.company;
-    }
-
-    const activeCount = await Job.countDocuments(activeCountQuery);
+    // Own jobs for a recruiter or anyone without a company yet; the company's jobs otherwise (utils/jobCountQuery.js)
+    const activeCount = await Job.countDocuments(activeJobCountQuery(user, userId));
 
     if (!isUnlimited && activeCount >= totalAllowed) {
       return res.status(403).json({
