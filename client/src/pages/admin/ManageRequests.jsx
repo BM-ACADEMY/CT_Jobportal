@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { hasStaffPermission } from '../../config/staffPermissions';
 import axios from 'axios';
 import { toast } from 'sonner';
 import {
@@ -282,6 +284,9 @@ const STATUS_TABS = [
 ];
 
 const ManageRequests = () => {
+  const { user: me } = useAuth();
+  const canAssign = hasStaffPermission(me, 'requests_assign');
+  const canUpdate = hasStaffPermission(me, 'requests_update');
   const [requests, setRequests]     = useState([]);
   const [loading, setLoading]       = useState(true);
   const [typeTab, setTypeTab]       = useState('all');
@@ -636,7 +641,7 @@ const ManageRequests = () => {
                           >
                             <Eye size={11} /> View
                           </button>
-                          {r.status !== 'cancelled' && r.status !== 'completed' && (
+                          {canAssign && r.status !== 'cancelled' && r.status !== 'completed' && (
                             <button
                               onClick={() => setAssignTarget(r)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"
@@ -644,12 +649,12 @@ const ManageRequests = () => {
                               <UserCheck size={11} /> {r.assignedTo ? 'Reassign' : 'Assign'}
                             </button>
                           )}
-                          <button
+                          {canUpdate && <button
                             onClick={() => setUpdateTarget(r)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
                           >
                             Update
-                          </button>
+                          </button>}
                         </div>
                       </td>
                     </tr>

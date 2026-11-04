@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findPermissionKeyForPath } from '../../config/teamPermissions';
+import { staffMenuFor } from '../../config/staffPermissions';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_LABELS, taglineFor } from '../../data/microcopy';
@@ -89,6 +90,7 @@ const coreMenus = {
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
     { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets' },
     { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews' },
+    { icon: UserCog,        label: 'Staff',          path: '/admin/staff' },
     { icon: Settings,       label: 'Settings',       path: '/admin/settings' },
   ],
   // A team member added via the "employee" invite flow (role becomes org_employee rather than
@@ -292,6 +294,16 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
 
   let coreItems = [...(coreMenus[role] || [])];
 
+  // Platform staff (support, counsellor, college verifier): one entry per area their permissions cover.
+  if (role === 'subadmin') {
+    const icons = { '/admin/tickets': Headphones, '/admin/users': Users, '/admin/requests': ClipboardList, '/admin/colleges': GraduationCap };
+    coreItems = [
+      { icon: LayoutDashboard, label: 'Home', path: '/subadmin' },
+      ...staffMenuFor(user?.staff?.permissions).map(i => ({ ...i, icon: icons[i.path] || List })),
+      { icon: Headphones, label: 'Help & Support', path: '/tickets/my' },
+    ];
+  }
+
   // If role is strictly drive_incharge, they get Manage Drive as their only core item
   if (role === 'drive_incharge') {
     if (!coreItems.find(i => i.path === '/incharge')) {
@@ -381,7 +393,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                     company: '/company/settings',
                     college: '/college/settings',
                     admin: '/admin/settings',
-                    subadmin: '/subadmin/settings',
+                    subadmin: '/subadmin',
                     org_employee: '/employee/settings'
                 };
                 navigate(routes[role] || '/candidate/settings');

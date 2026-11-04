@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -53,6 +54,8 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import Pagination from '@/components/shared/Pagination';
 
 const ManageUsers = () => {
+  const { user: me } = useAuth();
+  const readOnly = me?.role === 'subadmin'; // staff: look up users, no block / delete / verification changes
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -249,6 +252,7 @@ const ManageUsers = () => {
                     <Switch
                       checked={user.profileVerificationStatus === 'Verified'}
                       onCheckedChange={(checked) => handleStatusChange(user._id, checked ? 'Verified' : 'Pending')}
+                      disabled={readOnly}
                       className={`${user.profileVerificationStatus === 'Verified' ? 'data-[state=checked]:bg-emerald-600' : 'data-[state=unchecked]:bg-slate-200'}`}
                     />
                     <span className={`text-[9px] font-bold uppercase tracking-widest ${
@@ -268,17 +272,17 @@ const ManageUsers = () => {
                     <Button variant="ghost" size="icon" onClick={() => handleViewDetails(user)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all" title="Inspect">
                       <Eye size={16} />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleToggleBlock(user._id)} className={`h-9 w-9 rounded-lg transition-all ${
+                    {!readOnly && <Button variant="ghost" size="icon" onClick={() => handleToggleBlock(user._id)} className={`h-9 w-9 rounded-lg transition-all ${
                         user.isAdminBlocked ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:text-red-600 hover:bg-red-50'
                       }`} title={user.isAdminBlocked ? 'Unblock' : 'Block'}>
                       {user.isAdminBlocked ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
-                    </Button>
+                    </Button>}
                     <Button variant="ghost" size="icon" onClick={() => handleStartConversation(user._id)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-all" title="Direct Message">
                       <MessageSquare size={16} />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(user._id)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all" title="Delete">
+                    {!readOnly && <Button variant="ghost" size="icon" onClick={() => handleDelete(user._id)} className="h-9 w-9 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all" title="Delete">
                       <Trash2 size={16} />
-                    </Button>
+                    </Button>}
                   </div>
                 </td>
               </tr>

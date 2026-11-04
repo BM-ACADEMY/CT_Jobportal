@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { hasStaffPermission } from '../../config/staffPermissions';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -12,6 +14,8 @@ const statusStyles = {
 };
 
 const CollegeKycDetails = () => {
+  const { user: me } = useAuth();
+  const canVerify = hasStaffPermission(me, 'colleges_verify');
   const { id } = useParams();
   const navigate = useNavigate();
   const [college, setCollege] = useState(null);
@@ -125,7 +129,7 @@ const CollegeKycDetails = () => {
           )}
         </div>
 
-        <div className="pt-6 border-t border-slate-50 flex items-center gap-3">
+        {canVerify && <div className="pt-6 border-t border-slate-50 flex items-center gap-3">
           <Button disabled={acting || college.verificationStatus === 'verified'} onClick={() => act('verified')} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold gap-2 px-6 h-11">
             <CheckCircle2 size={16} /> Verify College
           </Button>
@@ -137,7 +141,7 @@ const CollegeKycDetails = () => {
               <Clock size={16} /> Reset Status
             </Button>
           )}
-        </div>
+        </div>}
       </div>
     </div>
   );

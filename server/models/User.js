@@ -202,6 +202,15 @@ const userSchema = new mongoose.Schema({
     default: [],
     enum: require('../config/teamPermissions').TEAM_PERMISSION_KEYS
   },
+  // Platform staff (support, counsellor, college verifier): set only by the Super Admin from Admin > Staff.
+  // The account's role is `subadmin`; these permissions decide which admin APIs it may reach
+  // (middlewares/staffPermission.js, config/staffPermissions.js).
+  staff: {
+    role: { type: String, enum: require('../config/staffPermissions').STAFF_ROLE_KEYS.concat([null]), default: null },
+    permissions: { type: [String], default: [] },
+    grantedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+    grantedAt: { type: Date, default: null }
+  },
   pendingCompanyInvite: {
     company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },
     type: { type: String, enum: ['employee', 'recruiter'], default: 'employee' },

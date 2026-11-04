@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { hasStaffPermission } from '../../config/staffPermissions';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +32,8 @@ const STATUS_CONFIG = {
 const SEV_COLOR = { critical: 'text-red-600', major: 'text-amber-600', minor: 'text-blue-600' };
 
 const AdminTickets = () => {
+  const { user: me } = useAuth();
+  const canUpdate = hasStaffPermission(me, 'tickets_update'); // staff with view only can read but not change
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -339,6 +343,7 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
                       <select
                         value={currentStatus}
                         onChange={e => setEdit(t._id, 'status', e.target.value)}
+                        disabled={!canUpdate}
                         className="w-full sm:w-56 h-9 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                       >
                         {Object.entries(STATUS_CONFIG).map(([v, c]) => <option key={v} value={v}>{c.label}</option>)}
@@ -353,6 +358,7 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
                       <textarea
                         value={currentConclusion}
                         onChange={e => setEdit(t._id, 'conclusion', e.target.value)}
+                        disabled={!canUpdate}
                         placeholder={needsConclusion
                           ? 'Provide a clear resolution summary before marking as resolved or closed…'
                           : 'Optional conclusion or progress update…'}
@@ -379,10 +385,14 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
                       className="rounded-xl">
                       <X size={13} className="mr-1" /> Cancel
                     </Button>
-                    <Button size="sm" onClick={() => handleUpdate(t)} disabled={saving === t._id}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
-                      <Save size={13} className="mr-1" /> {saving === t._id ? 'Saving…' : 'Save Changes'}
-                    </Button>
+                    {canUpdate ? (
+                      <Button size="sm" onClick={() => handleUpdate(t)} disabled={saving === t._id}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
+                        <Save size={13} className="mr-1" /> {saving === t._id ? 'Saving…' : 'Save Changes'}
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-slate-400 self-center">Read-only: your staff account cannot change tickets.</span>
+                    )}
                   </div>
                 </div>
               )}
