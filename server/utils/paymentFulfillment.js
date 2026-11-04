@@ -30,6 +30,20 @@ const COLLEGE_TIER_MAP = {
 const canPurchasePlan = (user, plan, roleName) =>
   !(plan.role === 'company' && (user.isTeamManaged || roleName === 'org_employee'));
 
+// Which plan roles each account type may buy or activate. Recruiters and company owners share the two
+// employer tiers; org employees buy nothing (their admin holds the plan); admins never buy.
+const PLAN_ROLES_FOR = {
+  jobseeker: ['jobseeker'],
+  recruiter: ['recruiter', 'company'],
+  company: ['recruiter', 'company'],
+  college: ['college'],
+  org_employee: []
+};
+const planRoleMatches = (roleName, plan) => (PLAN_ROLES_FOR[roleName] || []).includes(plan.role);
+const PLAN_ROLE_MISMATCH_MSG = 'This plan is for a different type of account.';
+const TEAM_MEMBER_NO_PLANS_MSG = 'Team member accounts cannot buy plans. Ask your company admin.';
+const planRoleError = (roleName) => (roleName === 'org_employee' ? TEAM_MEMBER_NO_PLANS_MSG : PLAN_ROLE_MISMATCH_MSG);
+
 // Creates the Payment row that claims a Razorpay payment id. Resolves to { payment } for the caller
 // that won the claim, or { duplicate: existingPayment } if that payment was already recorded
 // (sequentially or by a concurrent request — the unique index on razorpay_payment_id decides).
@@ -388,7 +402,7 @@ const recordRenewalPayment = async ({ subscriberModel, doc, plan, paymentEntity,
 };
 
 module.exports = {
-  canPurchasePlan,
+  canPurchasePlan, planRoleMatches, planRoleError, PLAN_ROLES_FOR,
   fulfillPlanPayment,
   fulfillRecurringPayment,
   fulfillPayPerPayment,

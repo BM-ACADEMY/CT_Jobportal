@@ -39,7 +39,7 @@ const db = {
   adminNotes: [],
   inAppNotes: []
 };
-const razorpay = { orders: {}, subscriptions: {}, createdOrders: [], refunds: [], refundError: null };
+const razorpay = { orders: {}, subscriptions: {}, createdOrders: [], createdSubscriptions: [], createdPlans: [], refunds: [], refundError: null };
 
 // ---- outside-world fakes ------------------------------------------------------------------
 stub('config/razorpay', () => ({
@@ -50,7 +50,11 @@ stub('config/razorpay', () => ({
       return { id: `order_created_${razorpay.createdOrders.length}`, amount: options.amount, currency: options.currency };
     }
   },
-  subscriptions: { fetch: async id => razorpay.subscriptions[id] },
+  subscriptions: {
+    fetch: async id => razorpay.subscriptions[id],
+    create: async options => { razorpay.createdSubscriptions.push(options); return { id: `sub_created_${razorpay.createdSubscriptions.length}` }; }
+  },
+  plans: { create: async options => { razorpay.createdPlans.push(options); return { id: `plan_rzp_${razorpay.createdPlans.length}` }; } },
   payments: {
     refund: async (paymentId, options) => {
       if (razorpay.refundError) throw razorpay.refundError;
@@ -124,7 +128,8 @@ Coupon.findOne = async q => {
 };
 Coupon.updateOne = async () => { db.couponUses += 1; };
 
-User.findById = async id => db.users[id] || null;
+// Usable both as `await User.findById(id)` and `await User.findById(id).select(...)`.
+User.findById = id => { const q = Promise.resolve(db.users[id] || null); q.select = () => q; return q; };
 User.findOne = async q => Object.values(db.users).find(u => u.email === q.email) || null;
 College.findOne = async q => (q.razorpaySubscriptionId
   ? db.colleges[q.razorpaySubscriptionId] || null
@@ -134,14 +139,18 @@ Company.findOne = async () => null;
 Company.findById = async () => null;
 
 // ---- catalogue ----------------------------------------------------------------------------
-const plan = (fields) => ({ features: [], toObject() { return { name: this.name }; }, ...fields });
+const plan = (fields) => ({ features: [], toObject() { return { name: this.name }; }, async save() { db.saves += 1; }, ...fields });
 const plans = {
   pro: plan({ _id: 'planPro', name: 'Pro', price: 1000, duration: 'Monthly', role: 'jobseeker' }),
   cheap: plan({ _id: 'planCheap', name: 'Cheap', price: 100, duration: 'Monthly', role: 'jobseeker' }),
   free: plan({ _id: 'planFree', name: 'Free', price: 0, duration: 'Lifetime', role: 'jobseeker' }),
   enterprise: plan({ _id: 'planEnterprise', name: 'Enterprise', price: 0, isCustomPrice: true, duration: 'Yearly', role: 'jobseeker' }),
   org: plan({ _id: 'planOrg', name: 'Org', price: 2000, duration: 'Monthly', role: 'company' }),
-  campus: plan({ _id: 'planCampus', name: 'Campus Pro', price: 5000, duration: 'Yearly', role: 'college' })
+  orgFree: plan({ _id: 'planOrgFree', name: 'Org Free', price: 0, duration: 'Lifetime', role: 'company' }),
+  recruiterPlan: plan({ _id: 'planRecruiter', name: 'Recruiter Plus', price: 500, duration: 'Monthly', role: 'recruiter' }),
+  campus: plan({ _id: 'planCampus', name: 'Campus Pro', price: 5000, duration: 'Yearly', role: 'college' }),
+  inactive: plan({ _id: 'planOld', name: 'Old Pro', price: 800, duration: 'Monthly', role: 'jobseeker', isActive: false }),
+  inactiveCampus: plan({ _id: 'planOldCampus', name: 'Old Campus', price: 4000, duration: 'Yearly', role: 'college', isActive: false })
 };
 Subscription.findById = async id => Object.values(plans).find(p => p._id === id) || null;
 
@@ -188,6 +197,8 @@ const reset = () => {
     for (const k of Object.keys(db[key])) delete db[key][k];
   }
   razorpay.createdOrders.length = 0;
+  razorpay.createdSubscriptions.length = 0;
+  razorpay.createdPlans.length = 0;
   razorpay.refunds.length = 0;
   razorpay.refundError = null;
   for (const k of Object.keys(razorpay.orders)) delete razorpay.orders[k];
@@ -216,6 +227,7 @@ const asUser = (userId, role = 'jobseeker') => ({ id: userId, role });
 const createOrder = (userId, body, role) => invoke(paymentController.createOrder, { user: asUser(userId, role), body });
 const verifyPayment = (userId, body, role) => invoke(paymentController.verifyPayment, { user: asUser(userId, role), body });
 const verifySubscription = (userId, body) => invoke(paymentController.verifySubscriptionPayment, { user: asUser(userId), body });
+const createSubscriptionOrder = (userId, body, role = 'college') => invoke(paymentController.createSubscriptionOrder, { user: asUser(userId, role), body });
 const payPerCreateOrder = (userId, body) => invoke(payPerController.purchaseCreateOrder, { user: asUser(userId), body });
 const payPerVerify = (userId, body) => invoke(payPerController.purchaseVerify, { user: asUser(userId), body });
 
@@ -256,7 +268,7 @@ reset();
 module.exports = {
   SRV, db, razorpay, plans, feature, otherFeature,
   hmac, webhookHmac, sign, reset, makeUser, makeCollege,
-  createOrder, verifyPayment, verifySubscription, payPerCreateOrder, payPerVerify, webhook,
+  createOrder, verifyPayment, verifySubscription, createSubscriptionOrder, payPerCreateOrder, payPerVerify, webhook,
   paidOrder, paidFeatureOrder, orderNotes, featureNotes, orderPaidPayload, subscriptionChargedPayload,
   mockRes
 };
