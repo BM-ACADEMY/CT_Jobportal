@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { Building2, ShieldCheck, Upload, FileText, CheckCircle2, AlertCircle, Clock, Save, GraduationCap, Plus, X } from 'lucide-react';
+import PushSettings from '../../components/notifications/PushSettings';
 import { Button } from '@/components/ui/button';
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -150,6 +151,8 @@ const CollegeSettings = () => {
           Manage your institution details, upload verification proofs, and principal information.
         </p>
       </div>
+
+      <PushSettings />
 
       {/* Verification Banner */}
       <div className={`p-5 rounded-none border flex items-start justify-between gap-4 shadow-sm ${

@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import PushSettings from '../../components/notifications/PushSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -517,6 +518,7 @@ const RecruiterSettings = () => {
 
                 {/* ── TAB: PERSONAL PROFILE ── */}
                 <TabsContent value="personal" className="space-y-8 outline-none mt-4">
+                    <PushSettings />
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <Card className="lg:col-span-2 rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <div className="relative h-48 sm:h-64 bg-slate-100 group">
