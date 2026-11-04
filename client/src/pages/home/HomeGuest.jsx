@@ -22,12 +22,8 @@ import SkillAssessment from '@/components/home/SkillAssessment';
 import MotionIcon from '@/components/home/MotionIcon';
 import CategoryCards from '@/components/home/CategoryCards';
 
-const fallbackStats = [
-  { label: 'Jobs Posted', value: '2L+', icon: Briefcase },
-  { label: 'Companies', value: '10K+', icon: Building2, invert: true },
-  { label: 'Job Seekers', value: '50L+', icon: Users },
-  { label: 'Avg Rating', value: '4.8â˜…', icon: Star },
-];
+// A number below this is not worth showing on a public page.
+const MIN_STAT = 10;
 
 const formatCount = (n) => {
   if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr+`;
@@ -55,7 +51,7 @@ const fallbackCompanies = [
 
 // Cards floating around the hero photo.
 const heroFloatCards = [
-  { title: 'Interview Scheduled', subtitle: 'Frontend Developer Â· Today', icon: CalendarCheck, iconClass: 'bg-amber-100 text-amber-600', position: '-right-8 top-1/2', anim: 'bounce' },
+  { title: 'Interview Scheduled', subtitle: 'Frontend Developer · Today', icon: CalendarCheck, iconClass: 'bg-amber-100 text-amber-600', position: '-right-8 top-1/2', anim: 'bounce' },
   { title: 'Verified Employers', subtitle: 'Every company screened', icon: BadgeCheck, iconClass: 'bg-sky-100 text-sky-600', position: 'left-0 -bottom-4', anim: 'pop' },
 ];
 
@@ -110,25 +106,27 @@ const HomeGuest = () => {
     [jobs]
   );
 
-  // Only real numbers are ever shown; until they load (or if the API is down) the stats band is hidden.
-  const useFallbackStats = !platformStats;
+  // Only real numbers are ever shown. Until they load (or if the API is down) nothing is shown,
+  // and any stat under MIN_STAT is left out rather than advertising a tiny number.
+  const hasStats = !!platformStats;
 
-  const statCards = useFallbackStats ? [] : [
-    { label: 'Active Jobs', value: formatCount(platformStats.activeJobsCount), icon: Briefcase },
-    { label: 'Companies', value: formatCount(platformStats.companiesCount), icon: Building2, invert: true },
-    { label: 'Job Seekers', value: formatCount(platformStats.jobseekersCount), icon: Users },
-    {
-      label: platformStats.reviewsCount ? 'Avg Rating' : 'Reviews',
-      value: platformStats.reviewsCount ? `${platformStats.avgRating.toFixed(1)}â˜…` : '0',
-      icon: Star,
-    },
-  ];
+  const statCards = !hasStats ? [] : [
+    { label: 'Open Jobs', raw: platformStats.openJobs ?? platformStats.activeJobsCount, icon: Briefcase },
+    { label: 'Companies Hiring', raw: platformStats.companiesHiring ?? platformStats.companiesCount, icon: Building2, invert: true },
+    { label: 'Students', raw: platformStats.students ?? platformStats.jobseekersCount, icon: Users },
+    { label: 'Avg Rating', raw: platformStats.reviewsCount, icon: Star, display: `${Number(platformStats.avgRating || 0).toFixed(1)}\u2605` },
+  ]
+    .filter((c) => Number(c.raw) >= MIN_STAT)
+    .map((c) => ({ label: c.label, value: c.display || formatCount(Number(c.raw)), icon: c.icon, invert: c.invert }));
 
-  const heroRatingValue = (!useFallbackStats && platformStats.reviewsCount > 0)
-    ? platformStats.avgRating.toFixed(1)
-    : '4.8';
-  const heroCompaniesLabel = useFallbackStats ? '10K+' : formatCount(platformStats.companiesCount);
-
+  // The small proof line under the search box: same data, same rule.
+  const heroStats = !hasStats ? [] : [
+    { label: 'Companies Hiring', raw: platformStats.companiesHiring },
+    { label: 'Open Jobs', raw: platformStats.openJobs },
+    { label: 'Students', raw: platformStats.students },
+  ]
+    .filter((c) => Number(c.raw) >= MIN_STAT)
+    .map((c) => ({ label: c.label, value: formatCount(Number(c.raw)) }));
 
   return (
     <MotionConfig reducedMotion="user">
@@ -220,29 +218,20 @@ const HomeGuest = () => {
                 ))}
               </motion.div>
 
-              {/* Social proof */}
-              <motion.div variants={heroItem} className="flex items-center gap-6 flex-wrap pt-6 border-t border-zinc-200">
-                <div className="flex -space-x-2">
-                  {[11, 12, 13, 14].map(i => (
-                    <div key={i} className="w-9 h-9 rounded-full border-2 border-white bg-zinc-200 overflow-hidden shadow-sm">
-                      <img src={`https://i.pravatar.cc/100?img=${i}`} alt="" loading="lazy" className="w-full h-full object-cover" />
-                    </div>
+              {/* Live numbers (hidden until there is something real to say) */}
+              {heroStats.length > 0 && (
+                <motion.div variants={heroItem} className="flex items-center gap-6 flex-wrap pt-6 border-t border-zinc-200">
+                  {heroStats.map((st, i) => (
+                    <React.Fragment key={st.label}>
+                      {i > 0 && <div className="h-8 w-px bg-zinc-200" />}
+                      <div>
+                        <p className="text-zinc-900 font-bold text-sm leading-none">{st.value}</p>
+                        <p className="text-zinc-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5">{st.label}</p>
+                      </div>
+                    </React.Fragment>
                   ))}
-                  <div className="w-9 h-9 rounded-full border-2 border-white bg-[#059669] flex items-center justify-center text-[9px] font-bold text-white shadow-sm">+10k</div>
-                </div>
-                <div className="h-8 w-px bg-zinc-200" />
-                <div>
-                  <p className="flex items-center gap-1 text-zinc-900 font-bold text-sm leading-none">
-                    <MotionIcon icon={Star} animation="pop" size={14} className="fill-amber-400 text-amber-400" /> {heroRatingValue} / 5
-                  </p>
-                  <p className="text-zinc-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5">Candidate Rating</p>
-                </div>
-                <div className="h-8 w-px bg-zinc-200" />
-                <div>
-                  <p className="text-zinc-900 font-bold text-sm leading-none">{heroCompaniesLabel}</p>
-                  <p className="text-zinc-500 text-[10px] font-semibold uppercase tracking-wider mt-1.5">Companies Hiring</p>
-                </div>
-              </motion.div>
+                </motion.div>
+              )}
             </motion.div>
 
             {/* Right Column */}
@@ -301,7 +290,7 @@ const HomeGuest = () => {
 
         <TrendingSearches terms={trendingSearches} companies={companyStrip} />
 
-        <StatBento cards={statCards} />
+        {statCards.length > 0 && <StatBento cards={statCards} />}
 
         <StepStory title="Get Hired in 3 Simple Steps" steps={howItWorks} />
 
