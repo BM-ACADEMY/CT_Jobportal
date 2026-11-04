@@ -262,8 +262,14 @@ const verifyPayment = async (req, res) => {
 
 // @desc    Create a recurring Razorpay subscription (mandate) for College/Company plans (spec 9.2)
 // @route   POST /api/payments/create-subscription
+// Recurring (auto-charged) company and college plans are not for sale until RECURRING_PLANS_ENABLED=true:
+// cancelling does not yet stop the Razorpay mandate (docs/PAYMENTS_REVIEW.md, High). One-time plans are unaffected.
+const recurringPlansOpen = () => process.env.RECURRING_PLANS_ENABLED === 'true';
+const RECURRING_CLOSED_MSG = 'Recurring plans open soon';
+
 const createSubscriptionOrder = async (req, res) => {
   try {
+    if (!recurringPlansOpen()) return res.status(503).json({ msg: RECURRING_CLOSED_MSG, recurringPlansEnabled: false });
     const { planId, couponCode } = req.body;
     if (!planId) return res.status(400).json({ msg: 'planId is required' });
 
