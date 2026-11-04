@@ -401,7 +401,62 @@ const BLOG_UI_OVERRIDES = `
       padding: 2.75rem 1.25rem 1.5rem !important;
     }
   }
+  .job-links-card .job-links {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+  }
+  .card.job-links-card ul.job-links,
+  .card.job-links-card ul.job-links li {
+    list-style: none;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+  .card.job-links-card ul.job-links li {
+    margin: 0 0 8px;
+  }
+  .card.job-links-card ul.job-links li::before,
+  .card.job-links-card ul.job-links li::marker {
+    content: none;
+  }
+  .job-links-card .job-links a {
+    color: #047857;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .job-links-card .job-links a:hover {
+    text-decoration: underline;
+  }
 `;
+
+// Internal links from each post to the matching job pages (candidate posts) or to the
+// employer tools (employer posts). Keys are blog slugs; anything not listed gets the default.
+const BLOG_JOB_LINKS = {
+  'jobs-in-cuddalore': [['/jobs/cuddalore', 'Latest jobs in Cuddalore'], ['/jobs/pondicherry', 'Jobs in Pondicherry'], ['/jobs/villupuram', 'Jobs in Villupuram']],
+  'jobs-in-villupuram': [['/jobs/villupuram', 'Latest jobs in Villupuram'], ['/jobs/pondicherry', 'Jobs in Pondicherry'], ['/jobs/cuddalore', 'Jobs in Cuddalore']],
+  'jobs-in-tindivanam': [['/jobs/tindivanam', 'Latest jobs in Tindivanam'], ['/jobs/villupuram', 'Jobs in Villupuram'], ['/jobs/pondicherry', 'Jobs in Pondicherry']],
+  'jobs-in-pondicherry-today': [['/jobs/pondicherry', 'Latest jobs in Pondicherry'], ['/jobs/cuddalore', 'Jobs in Cuddalore'], ['/jobs', 'All jobs in Tamil Nadu']],
+  'fresher-jobs-in-pondicherry': [['/jobs/pondicherry', 'Fresher jobs in Pondicherry'], ['/free-assessment', 'Take the free skill test'], ['/jobs', 'All jobs in Tamil Nadu']],
+  'it-jobs-in-pondicherry-for-freshers': [['/jobs/pondicherry', 'IT jobs in Pondicherry'], ['/free-assessment', 'Take the free skill test'], ['/jobs/chennai', 'Jobs in Chennai']],
+  'private-jobs-in-pondicherry': [['/jobs/pondicherry', 'Private jobs in Pondicherry'], ['/jobs', 'All jobs in Tamil Nadu'], ['/companies', 'Companies hiring now']],
+  'walk-in-interviews-in-pondicherry': [['/jobs/pondicherry', 'Latest jobs in Pondicherry'], ['/jobs', 'All jobs in Tamil Nadu']],
+  'part-time-jobs-for-college-students-in-pondicherry': [['/jobs/pondicherry', 'Jobs in Pondicherry'], ['/free-assessment', 'Take the free skill test']],
+  'work-from-home-jobs-in-tamil-nadu': [['/jobs', 'Latest jobs in Tamil Nadu'], ['/jobs/chennai', 'Jobs in Chennai'], ['/jobs/pondicherry', 'Jobs in Pondicherry']],
+  'how-to-spot-fake-job-offer-tamil-nadu': [['/jobs', 'Latest jobs in Tamil Nadu'], ['/companies', 'Companies hiring now']],
+  'where-to-advertise-job-vacancy-pondicherry': [['/job-post-templates', 'Free job post templates'], ['/for-colleges', 'Campus hiring with colleges']],
+  'recruitment-agency-charges-india': [['/jobs', 'Latest jobs in Tamil Nadu'], ['/job-post-templates', 'Free job post templates (employers)']],
+};
+const DEFAULT_JOB_LINKS = [['/jobs', 'Latest jobs in Tamil Nadu'], ['/jobs/pondicherry', 'Jobs in Pondicherry']];
+const EMPLOYER_POSTS = new Set(['where-to-advertise-job-vacancy-pondicherry']);
+
+const escapeText = (value) => String(value).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+const buildJobLinksCard = (slug) => {
+  const links = BLOG_JOB_LINKS[slug] || DEFAULT_JOB_LINKS;
+  const heading = EMPLOYER_POSTS.has(slug) ? 'Hiring? Start here' : 'Browse live jobs';
+  const items = links.map(([href, label]) => `<li><a href="${escapeText(href)}">${escapeText(label)} &rarr;</a></li>`).join('');
+  return `<div class="card job-links-card"><div class="card-label">${heading}</div><ul class="job-links">${items}</ul></div>`;
+};
 
 const HtmlBlog = ({ blog }) => {
   const hostRef = useRef(null);
@@ -473,6 +528,13 @@ const HtmlBlog = ({ blog }) => {
         <div class="copyright">© 2026 Velai Vaaipu. All rights reserved.</div>
       </div>`;
     }
+
+    // Internal links to the job pages, as the first card in the sidebar (or at the end of the post).
+    const linksCard = buildJobLinksCard(blog.slug);
+    const aside = root.querySelector('aside');
+    const main = root.querySelector('main');
+    if (aside) aside.insertAdjacentHTML('afterbegin', linksCard);
+    else if (main) main.insertAdjacentHTML('beforeend', linksCard);
   }, [blog]);
 
   return <div ref={hostRef} className="block min-h-screen bg-slate-50" />;

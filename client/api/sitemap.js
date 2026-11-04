@@ -1,12 +1,15 @@
-// GET /sitemap.xml  — static pages + every active job and company, refreshed every few minutes.
+// GET /sitemap.xml  — static pages, city job pages, every blog post, and every active job and company, refreshed every few minutes.
 import * as lib from './_lib.js';
+import { IMPORTED_BLOGS } from '../src/data/importedBlogs.js';
+
+// Every blog post comes from the same data the site renders, so new posts are listed automatically.
+const BLOG_PAGES = IMPORTED_BLOGS.map((blog) => `/blog/${blog.slug}`);
 
 const STATIC_PAGES = [
-  '/', '/jobs', '/companies', '/how-it-works', '/contact', '/blog', '/for-colleges', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
-  '/blog/it-jobs-in-pondicherry-for-freshers',
-  '/blog/work-from-home-jobs-in-tamil-nadu',
-  '/blog/private-jobs-in-pondicherry',
-  '/blog/how-to-spot-fake-job-offer-tamil-nadu',
+  '/', '/jobs', '/companies', '/how-it-works', '/contact', '/blog', '/for-colleges', '/free-assessment',
+  '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
+  '/jobs/pondicherry', '/jobs/chennai', '/jobs/villupuram', '/jobs/cuddalore',
+  ...BLOG_PAGES,
 ];
 
 const urlEntry = (loc, lastmod, priority) =>

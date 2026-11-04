@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/recruitment-agency-fees-india",
+      "destination": "/blog/recruitment-agency-charges-india",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/job/:slug",
