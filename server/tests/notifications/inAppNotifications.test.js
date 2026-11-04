@@ -23,6 +23,7 @@ stub('utils/sendEmail', async options => {
 const Notification = require(path.join(SRV, 'models/Notification'));
 const User = require(path.join(SRV, 'models/User'));
 const Role = require(path.join(SRV, 'models/Role'));
+const Admin = require(path.join(SRV, 'models/Admin'));
 
 const inserted = [];
 Notification.insertMany = async docs => { inserted.push(...docs); return docs; };
@@ -32,6 +33,13 @@ User.find = q => {
   const roleIds = (q.role?.$in || []).map(String);
   const users = Object.values(directory).filter(u => (ids.length ? ids.includes(String(u._id)) : roleIds.includes(String(u.role))));
   return { select: async () => users };
+};
+const adminPanel = [];
+Admin.find = q => {
+  const ids = (q._id?.$in || []).map(String);
+  const roles = q.role?.$in || [];
+  const rows = adminPanel.filter(a => (ids.length ? ids.includes(String(a._id)) : roles.includes(a.role)));
+  return { select: async () => rows };
 };
 Role.find = () => ({ select: async () => [{ _id: 'adminRole' }] });
 
@@ -101,6 +109,16 @@ describe('in-app notifications also send email', () => {
     await notifyRoles({ roles: ['admin'], title: 'New user registered', message: 'Mano registered as jobseeker.' });
     await settle();
     assert.deepEqual(emails.map(e => e.email), ['admin@example.com']);
+  });
+
+  it('also alerts and emails admin-panel accounts (Admin collection)', async () => {
+    adminPanel.push({ _id: 'panelAdmin', name: 'Kamar', email: 'kamar@example.com', role: 'admin' });
+    try {
+      await notifyRoles({ roles: ['admin', 'subadmin'], title: 'New counselling request', message: 'Booked.' });
+      await settle();
+      assert.ok(inserted.some(n => String(n.recipient) === 'panelAdmin'));
+      assert.ok(emails.some(e => e.email === 'kamar@example.com'));
+    } finally { adminPanel.length = 0; }
   });
 
   it('escapes HTML in user-supplied names and messages', async () => {
