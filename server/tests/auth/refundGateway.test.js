@@ -37,6 +37,14 @@ test('approving a refund sends it to Razorpay (full amount) and then marks it re
   assert.equal(user.subscription, h.plans.free._id, 'plan moved to Free');
 });
 
+test('refunding a pay-per-feature purchase does not touch the plan', async () => {
+  const user = setup({ paymentType: 'pay-per-feature', plan: null, payPerFeature: 'ppf1' });
+  const res = await approve();
+  assert.equal(res.statusCode, 200);
+  assert.equal(record.status, 'refunded');
+  assert.equal(user.subscription, 'planPro', 'plan kept');
+});
+
 test('if Razorpay refuses, nothing changes and the admin sees the reason', async () => {
   const user = setup();
   h.razorpay.refundError = { statusCode: 400, error: { description: 'Insufficient balance to refund' } };

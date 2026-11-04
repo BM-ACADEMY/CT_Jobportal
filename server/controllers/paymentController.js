@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Payment = require('../models/Payment');
 const Role = require('../models/Role');
+const { paymentsOpen, PAYMENTS_CLOSED_MSG } = require('../utils/paymentsSwitch');
 const PayPerFeature = require('../models/PayPerFeature');
 const College = require('../models/College');
 const Company = require('../models/Company');
@@ -16,12 +17,13 @@ const { emailWrapper } = require('../utils/emailTemplates');
 const Coupon = require('../models/Coupon');
 const { reconcileTeamSeats } = require('../utils/teamMembership');
 const { fetchGstPercentage, getPricingOption, computeNextRenewalDate } = require('../utils/pricing');
-const { canPurchasePlan, fulfillPlanPayment, fulfillRecurringPayment, fulfillPayPerPayment, recordRenewalPayment } = require('../utils/paymentFulfillment');
+const { canPurchasePlan, planRoleMatches, planRoleError, fulfillPlanPayment, fulfillRecurringPayment, fulfillPayPerPayment, recordRenewalPayment } = require('../utils/paymentFulfillment');
 const { checkRefundEligibility } = require('../utils/refundPolicy');
 const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 const { isValidSignature, isDuplicateKeyError, findPaymentByRazorpayId, checkoutNotes, findCoupon, countCouponUse } = require('../utils/paymentGuards');
 
 const RECURRING_ROLES = ['college', 'company'];
+const PLAN_UNAVAILABLE_MSG = 'This plan is not available';
 const subscriptionPageFor = role => role === 'college' ? '/college/subscription' : ['company', 'recruiter', 'org_employee'].includes(role) ? '/company/subscription' : '/candidate/subscription';
 const paymentHistoryLink = role => role === 'college'
   ? '/college/payment-history'
@@ -70,6 +72,7 @@ const replyAlreadyProcessed = (res, payment, userId, extra = {}) => {
 // @route   POST /api/payments/create-order
 const createOrder = async (req, res) => {
   try {
+    if (!paymentsOpen()) return res.status(503).json({ msg: PAYMENTS_CLOSED_MSG, paymentsEnabled: false });
     const { planId } = req.body;
 
     if (!planId) {
@@ -81,6 +84,9 @@ const createOrder = async (req, res) => {
     if (!plan) {
       return res.status(404).json({ msg: 'Subscription plan not found' });
     }
+    if (plan.isActive === false) return res.status(400).json({ msg: PLAN_UNAVAILABLE_MSG });
+    // A plan can only be bought by the account type it is for (a candidate cannot buy a company plan).
+    if (!planRoleMatches(req.user.role, plan)) return res.status(403).json({ msg: planRoleError(req.user.role) });
 
     // Razorpay doesn't allow 0 amount orders
     if (plan.price === 0) {
@@ -163,8 +169,17 @@ const verifyPayment = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
+    // The account type must match the plan (also covers "activating" another role's free plan).
+    if (!planRoleMatches(req.user.role, plan)) return res.status(403).json({ msg: planRoleError(req.user.role) });
     if (!canPurchasePlan(user, plan, req.user.role)) {
       return res.status(403).json({ msg: 'Only your organization admin can change the organization plan.' });
+    }
+
+    // A plan switched off by the admin cannot be bought or activated. The one exception: a person already on a
+    // free plan that was later switched off may keep "selecting" it (the client re-sends it), which changes nothing.
+    const alreadyOnPlan = String(user.subscription?._id || user.subscription || '') === String(plan._id);
+    if (plan.isActive === false && !(isFree && alreadyOnPlan)) {
+      return res.status(400).json({ msg: PLAN_UNAVAILABLE_MSG });
     }
 
     let quantity = 1;
@@ -249,13 +264,22 @@ const verifyPayment = async (req, res) => {
 
 // @desc    Create a recurring Razorpay subscription (mandate) for College/Company plans (spec 9.2)
 // @route   POST /api/payments/create-subscription
+// Recurring (auto-charged) company and college plans are not for sale until RECURRING_PLANS_ENABLED=true:
+// cancelling does not yet stop the Razorpay mandate (docs/PAYMENTS_REVIEW.md, High). One-time plans are unaffected.
+const recurringPlansOpen = () => process.env.RECURRING_PLANS_ENABLED === 'true';
+const RECURRING_CLOSED_MSG = 'Recurring plans open soon';
+
 const createSubscriptionOrder = async (req, res) => {
   try {
+    if (!paymentsOpen()) return res.status(503).json({ msg: PAYMENTS_CLOSED_MSG, paymentsEnabled: false });
+    if (!recurringPlansOpen()) return res.status(503).json({ msg: RECURRING_CLOSED_MSG, recurringPlansEnabled: false });
     const { planId, couponCode } = req.body;
     if (!planId) return res.status(400).json({ msg: 'planId is required' });
 
     const plan = await Subscription.findById(planId);
     if (!plan) return res.status(404).json({ msg: 'Subscription plan not found' });
+    if (plan.isActive === false) return res.status(400).json({ msg: PLAN_UNAVAILABLE_MSG });
+    if (!planRoleMatches(req.user.role, plan)) return res.status(403).json({ msg: planRoleError(req.user.role) });
     if (plan.price === 0) return res.status(400).json({ msg: 'Free plans do not require billing' });
     if (!RECURRING_ROLES.includes(plan.role)) {
       return res.status(400).json({ msg: 'Recurring subscriptions are only available for college and company plans' });
@@ -329,7 +353,7 @@ const createSubscriptionOrder = async (req, res) => {
       notes: { 
         planId: String(plan._id), 
         userId: String(req.user.id),
-        couponCode: couponCode || ''
+        couponCode: couponApplied ? couponCode.toUpperCase() : ''
       }
     });
 
@@ -446,8 +470,9 @@ const cancelSubscription = async (req, res) => {
     }
 
     // Mark existing completed/active payments as cancelled
+    // Plan payments only: pay-per-feature purchases are separate add-ons the user still holds.
     await Payment.updateMany(
-      { user: req.user.id, status: 'completed' },
+      { user: req.user.id, status: 'completed', paymentType: { $ne: 'pay-per-feature' } },
       { $set: { status: 'cancelled' } }
     );
 
@@ -601,8 +626,11 @@ const approveRefund = async (req, res) => {
     if (gateway.refundId) payment.razorpay_refund_id = gateway.refundId;
     await payment.save();
 
-    // Revoke the user's subscription
-    const user = await User.findById(payment.user._id).populate('role');
+    // Revoke the user's subscription, but only when the refunded payment was for a plan. Refunding a
+    // pay-per-feature purchase must leave the user's plan alone. (Same rule as cancelSubscription and
+    // fulfillPlanPayment: anything not marked pay-per-feature is a plan payment.)
+    const isPlanPayment = payment.paymentType !== 'pay-per-feature';
+    const user = isPlanPayment ? await User.findById(payment.user._id).populate('role') : null;
     if (user) {
       const userRoleName = user.role?.name || 'jobseeker';
       const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: userRoleName });
@@ -622,18 +650,21 @@ const approveRefund = async (req, res) => {
       }
     }
 
+    // For a pay-per refund the user doc above was not loaded, so look the role up only for the link.
+    const roleName = user?.role?.name || (await Role.findById(payment.user.role).select('name').catch(() => null))?.name;
+
     notifyUser({
       io: req.io,
       recipientId: payment.user._id,
       title: 'Refund approved',
-      message: 'Your refund request was approved and your subscription was updated.',
-      emailBody: '<p>Your refund request was approved. The money goes back to your original payment method and usually shows up within 5 to 7 working days, depending on your bank.</p><p>Your account has moved to the Free plan. You can subscribe again at any time.</p>',
+      message: isPlanPayment ? 'Your refund request was approved and your subscription was updated.' : 'Your refund request was approved.',
+      emailBody: `<p>Your refund request was approved. The money goes back to your original payment method and usually shows up within 5 to 7 working days, depending on your bank.</p>${isPlanPayment ? '<p>Your account has moved to the Free plan. You can subscribe again at any time.</p>' : ''}`,
       type: 'refund_status',
-      link: paymentHistoryLink(user?.role?.name),
+      link: paymentHistoryLink(roleName),
       metadata: { paymentId: payment._id, status: 'refunded' }
     }).catch(err => console.error('Refund approval notification failed:', err.message));
 
-    res.json({ success: true, msg: 'Refund approved and sent to Razorpay. Subscription revoked.', refundId: gateway.refundId || null });
+    res.json({ success: true, msg: isPlanPayment ? 'Refund approved and sent to Razorpay. Subscription revoked.' : 'Refund approved and sent to Razorpay.', refundId: gateway.refundId || null });
   } catch (err) {
     console.error('Approve Refund Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

@@ -1,4 +1,5 @@
 const Settings = require('../models/Settings');
+const { paymentsOpen } = require('../utils/paymentsSwitch');
 
 const getSettings = async (req, res) => {
   try {
@@ -15,7 +16,9 @@ const getSettings = async (req, res) => {
         billingName: 'Velaivaaipu Tech Private Limited'
       });
     }
-    res.json(settings);
+    // paymentsEnabled is the server switch (PAYMENTS_ENABLED), not a stored setting: the plan pages hide
+    // the pay buttons while it is false.
+    res.json({ ...(settings.toObject ? settings.toObject() : settings), paymentsEnabled: paymentsOpen() });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: 'Server error' });

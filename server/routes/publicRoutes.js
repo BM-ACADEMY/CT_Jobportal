@@ -14,6 +14,7 @@ const PayPerFeature = require('../models/PayPerFeature');
 const ContactMessage = require('../models/ContactMessage');
 const sendEmail = require('../utils/sendEmail');
 const { rateLimit } = require('../middlewares/rateLimit');
+const { computeHeroStats, createCache } = require('../utils/publicStats');
 const { verifyAlertToken, lifecycleWrapper, button, esc, frontend } = require('../utils/lifecycleEmails');
 
 // @desc  GET /api/public/unsubscribe?token=...
@@ -58,8 +59,12 @@ router.get('/sitemap-feed', async (req, res) => {
 //        Real, aggregate platform counts for the public home page.
 //        No placement/success-rate figures are returned — the platform
 //        has no "hired" status to honestly back that claim.
+//        openJobs / companiesHiring / students leave out test accounts; the whole
+//        answer is cached in memory for about 10 minutes.
+const statsCache = createCache();
 router.get('/stats', async (req, res) => {
   try {
+    const payload = await statsCache.get(async () => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -105,7 +110,10 @@ router.get('/stats', async (req, res) => {
       ]),
     ]);
 
-    res.json({
+    const hero = await computeHeroStats({ User, Job, Role });
+
+    return {
+      ...hero,
       activeJobsCount,
       companiesCount,
       jobseekersCount,
@@ -117,7 +125,10 @@ router.get('/stats', async (req, res) => {
       studentsPlacedCount,
       collegesOnboardedCount,
       placementHighlights,
+    };
     });
+    res.set('Cache-Control', 'public, max-age=600');
+    res.json(payload);
   } catch (err) {
     console.error('Public Stats Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

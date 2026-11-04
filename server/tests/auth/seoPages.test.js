@@ -54,6 +54,7 @@ test('slug helpers match the client rule', () => {
 test('sitemap lists static pages, jobs by keyword URL and companies', () => {
   const xml = buildSitemap({ jobs: [{ _id: ID, title: 'Telecaller', location: 'Puducherry', updatedAt: '2026-11-02' }], companies: [{ _id: 'b'.repeat(24), updatedAt: '2026-11-02' }] });
   assert.ok(xml.includes('<loc>https://velaivaaipu.in/jobs</loc>'));
+  assert.ok(xml.includes('<loc>https://velaivaaipu.in/plans</loc>'));
   assert.ok(xml.includes(`<loc>https://velaivaaipu.in/job/telecaller-puducherry-${ID}</loc>`));
   assert.ok(xml.includes(`/companies/${'b'.repeat(24)}`));
 });

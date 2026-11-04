@@ -66,6 +66,7 @@ test('sitemap lists static pages and slugged job URLs', async () => {
   assert.match(res.headers['Content-Type'], /xml/);
   assert.ok(res.body.includes(`https://velaivaaipu.in/job/react-dev-pondicherry-${OPEN}`));
   assert.ok(res.body.includes('https://velaivaaipu.in/for-colleges'));
+  assert.ok(res.body.includes('https://velaivaaipu.in/plans'));
 });
 
 test('old /job/<id> link redirects (301) to the keyword URL', async () => {

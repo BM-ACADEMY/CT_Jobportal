@@ -11,27 +11,16 @@ import { Card, Typography, Tag, Button, Switch, Modal, Space } from 'antd';
 import PricingCard from '../../components/subscription/PricingCard';
 import CheckoutModal from '../../components/subscription/CheckoutModal';
 import PageSOPBanner from '../../components/common/PageSOPBanner';
+import { buildPlanFeatures, sortPlans } from '../../data/planFeatures';
 
 const { Title, Text, Paragraph } = Typography;
-
-const JOBSEEKER_FEATURES = [
-  { label: 'Resume Builder', key: 'hasResumeBuilder' },
-  { label: 'Resume Count', key: 'resumeBuilderCount' },
-  { label: 'Job Alerts', key: 'jobAlerts' },
-  { label: 'Profile Boost', key: 'hasProfileBoost' },
-  { label: 'Profile View Insights', key: 'hasProfileViewInsights' },
-  { label: 'Career Counselling', key: 'hasCareerCounselling' },
-  { label: 'Counselling Sessions', key: 'careerCounsellingCount' },
-  { label: 'Mock Interviews', key: 'hasMockInterviews' },
-  { label: 'Priority Badge', key: 'hasPriorityBadge' },
-];
 
 const FEATURE_HIGHLIGHTS = [
   { key: 'hasResumeBuilder', icon: FileText, label: 'Resume Builder', desc: 'AI-powered professional templates', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
   { key: 'hasProfileBoost', icon: TrendingUp, label: 'Profile Boost', desc: 'Appear higher in recruiter searches', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
   { key: 'hasProfileViewInsights', icon: Users, label: 'Profile Insights', desc: 'See who viewed your profile', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-  { key: 'hasCareerCounselling', icon: Star, label: 'Career Counselling', desc: '1-on-1 expert career sessions', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100' },
-  { key: 'hasMockInterviews', icon: Briefcase, label: 'Mock Interviews', desc: 'AI mock interviews & feedback', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100' },
+  { key: 'hasCareerCounselling', icon: Star, label: 'Career Counselling', desc: '1-on-1 sessions booked with our team', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100' },
+  { key: 'hasMockInterviews', icon: Briefcase, label: 'Mock Interviews', desc: 'Practice interviews booked with our team', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100' },
 ];
 
 const SubscriptionPage = () => {
@@ -39,6 +28,7 @@ const SubscriptionPage = () => {
   const [plans, setPlans] = useState([]);
   const [globalFeatures, setGlobalFeatures] = useState([]);
   const [gstPercentage, setGstPercentage] = useState(0);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkoutPlan, setCheckoutPlan] = useState(null);
   // Held from the moment a payment starts until Razorpay closes (or the request fails), so a
@@ -59,9 +49,10 @@ const SubscriptionPage = () => {
           axios.get(`${API_BASE_URL}/subscriptions/features`),
           axios.get(`${API_BASE_URL}/settings`),
         ]);
-        setPlans(plansRes.data.filter(p => p.isActive && p.role === 'jobseeker'));
+        setPlans(sortPlans(plansRes.data.filter(p => p.isActive && p.role === 'jobseeker')));
         setGlobalFeatures(featuresRes.data.filter(f => f.role === 'jobseeker'));
         setGstPercentage(settingsRes.data.gstPercentage || 0);
+        setPaymentsEnabled(settingsRes.data.paymentsEnabled === true);
       } catch {
         toast.error('Failed to load plans');
       } finally {
@@ -125,6 +116,10 @@ const SubscriptionPage = () => {
   const handleUpgrade = (plan) => {
     if (plan.price === 0) {
       handleProceedPayment(plan);
+      return;
+    }
+    if (!paymentsEnabled) {
+      toast('Paid plans open soon, once online payments are switched on.');
       return;
     }
     setCheckoutPlan(plan);
@@ -211,23 +206,7 @@ const SubscriptionPage = () => {
     }
   };
 
-  const buildPlanFeatures = (plan) => {
-    const staticLabels = new Set(JOBSEEKER_FEATURES.map(f => f.label.toLowerCase()));
-    return [
-      ...JOBSEEKER_FEATURES,
-      ...globalFeatures
-        .filter(gf => !staticLabels.has(gf.name.toLowerCase()))
-        .map(gf => {
-          const featureInPlan = (plan.features || []).find(f => f.name === gf.name);
-          return {
-            label: gf.name,
-            isDynamic: true,
-            isActive: !!featureInPlan?.isActive,
-            value: featureInPlan?.value ?? null,
-          };
-        }),
-    ];
-  };
+  const planFeatures = (plan) => buildPlanFeatures(plan, 'jobseeker', globalFeatures);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-20 pt-8 px-4">
@@ -434,16 +413,16 @@ const SubscriptionPage = () => {
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans.map((plan, idx) => (
+            {plans.map((plan) => (
               <PricingCard
                 key={plan._id}
                 plan={plan}
-                features={buildPlanFeatures(plan)}
+                features={planFeatures(plan)}
                 currentPlanId={effectiveCurrentPlanId}
                 onAction={handleUpgrade}
                 onCancel={!isOnFreePlan ? handleCancel : undefined}
-                isPopular={idx === Math.floor(plans.length / 2)}
                 gstPercentage={gstPercentage}
+                paymentsEnabled={paymentsEnabled}
               />
             ))}
           </div>

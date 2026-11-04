@@ -1,4 +1,5 @@
 const PayPerFeature = require('../models/PayPerFeature');
+const { paymentsOpen, PAYMENTS_CLOSED_MSG } = require('../utils/paymentsSwitch');
 const getRazorpay = require('../config/razorpay');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
@@ -91,6 +92,7 @@ const computePayPerCharge = async (feature, quantity) => {
 // @route   POST /api/pay-per/purchase/create-order
 exports.purchaseCreateOrder = async (req, res) => {
   try {
+    if (!paymentsOpen()) return res.status(503).json({ msg: PAYMENTS_CLOSED_MSG, paymentsEnabled: false });
     const { featureId } = req.body;
     if (!featureId) {
       return res.status(400).json({ msg: 'featureId is required' });

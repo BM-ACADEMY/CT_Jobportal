@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell, BellOff, User, Settings, LogOut, ChevronDown, CheckCheck,
-  Menu, X, Briefcase, Building2, Mail, Home, Newspaper, Trash2, ArrowRight, GraduationCap
+  Menu, X, Briefcase, Building2, Mail, Home, Newspaper, Trash2, ArrowRight, GraduationCap, Tag
 } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
@@ -21,6 +21,7 @@ const NAV_LINKS = [
   { to: '/jobs', label: 'Find Jobs', icon: Briefcase },
   { to: '/companies', label: 'Companies', icon: Building2 },
   { to: '/for-colleges', label: 'For Colleges', icon: GraduationCap },
+  { to: '/plans', label: 'Plans', icon: Tag },
   { to: '/blog', label: 'Blog', icon: Newspaper },
   { to: '/contact', label: 'Contact', icon: Mail },
 ];

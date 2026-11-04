@@ -6,7 +6,7 @@ import { IMPORTED_BLOGS } from '../src/data/importedBlogs.js';
 const BLOG_PAGES = IMPORTED_BLOGS.map((blog) => `/blog/${blog.slug}`);
 
 const STATIC_PAGES = [
-  '/', '/jobs', '/companies', '/how-it-works', '/contact', '/blog', '/for-colleges', '/free-assessment',
+  '/', '/jobs', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/free-assessment',
   '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
   '/jobs/pondicherry', '/jobs/chennai', '/jobs/villupuram', '/jobs/cuddalore',
   ...BLOG_PAGES,

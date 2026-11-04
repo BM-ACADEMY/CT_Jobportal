@@ -10,6 +10,8 @@ import WelcomeTour from '../components/onboarding/WelcomeTour';
 import OnboardingChecklistCard from '../components/onboarding/OnboardingChecklistCard';
 import IncompleteProfileBanner from '../components/onboarding/IncompleteProfileBanner';
 import InstallPrompt from '../components/pwa/InstallPrompt';
+import PushPrompt from '../components/notifications/PushPrompt';
+import { listenForResubscribe } from '../utils/push';
 
 // Each portal's home screen shows the full checklist card; every other page shows the slim banner.
 const DASHBOARD_PATH = /^\/(candidate\/?|company\/dashboard\/?|college\/dashboard\/?|employee\/?)$/;
@@ -19,6 +21,9 @@ const DashboardLayoutInner = () => {
   const isDashboardHome = DASHBOARD_PATH.test(pathname);
   const showOnboarding = !pathname.startsWith('/admin') && !pathname.startsWith('/subadmin') && !pathname.includes('/messages');
   const showBlogRecommendations = !pathname.startsWith('/admin') && !pathname.includes('/messages');
+
+  // If the push service rotates this device's subscription, the worker tells us and we re-save it.
+  React.useEffect(() => listenForResubscribe(), []);
 
   const [isCollapsed, setIsCollapsed] = React.useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true';
@@ -86,6 +91,7 @@ const DashboardLayoutInner = () => {
         }`}>
           <main className="flex-1 min-w-0">
             {isDashboardHome && <InstallPrompt />}
+            {isDashboardHome && <PushPrompt />}
             {showOnboarding && (isDashboardHome ? <OnboardingChecklistCard /> : <IncompleteProfileBanner />)}
             <Outlet />
             {showBlogRecommendations && (

@@ -32,6 +32,13 @@ Record device, OS, browser version and Pass/Fail.
 | 12 | Deploy twice (any small change), open the app after each | "A new version is ready" with Refresh; page reloads only after tapping Refresh; never reloads on first install | |
 | 13 | Desktop Chrome and Edge | Install icon in the address bar; installs and launches | |
 | 14 | Lighthouse (Chrome DevTools, mobile) on `/` | PWA installable checks pass; note Performance score and fix list | |
-| 15 | Chrome DevTools > Application > Cache Storage | Only `vv-static-v1`, containing assets, icons, images and offline page; no `/api` responses and no HTML | |
+| 15 | Chrome DevTools > Application > Cache Storage | Only `vv-static-v2`, containing assets, icons, images and offline page; no `/api` responses and no HTML | |
 | 16 | GA4 DebugView | `pwa_install_prompt`, `pwa_install_accepted` or `pwa_install_dismissed`, `pwa_installed`, `pwa_standalone_session` arrive | |
 | 17 | Dismiss the install banner | Hidden for 14 days | |
+| 18 | Web push (server has VAPID keys): Settings > "Notifications on this device" on Android Chrome | Browser asks once; switch stays on; "Send me a test notification" shows a notification with the Velaivaaipu icon | |
+| 19 | Tap the test notification | The app opens on the link; no second tab if one is already open | |
+| 20 | Recruiter: a student applies while the recruiter's app is closed | "New job application" push arrives (outside 9 pm to 8 am IST) | |
+| 21 | Switch off "Applications" in Settings, apply again | No push; the bell and email still arrive | |
+| 22 | iPhone Safari, not installed | The switch is disabled with the "Add to Home Screen" note; from the installed app (iOS 16.4+) it works like Android | |
+| 23 | Dashboard home on the second visit, permission not yet asked | Blue "Turn on notifications" banner; "Not now" hides it for 30 days; never shown on the first visit | |
+| 24 | Chrome DevTools > Application > Cache Storage after this deploy | Only `vv-static-v2` (the old `vv-static-v1` is gone) | |

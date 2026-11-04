@@ -47,6 +47,12 @@ const grantRecruiterTeamAccess = async (user, companyId, permissions = []) => {
   user.companyProfile.adminRole = 'Member';
 };
 
+// Everyone attached to a company except its owner: the people who occupy seats.
+const teamMemberFilter = (companyId, ownerId) => ({
+  $or: [{ company: companyId }, { employerCompany: companyId }],
+  _id: { $ne: ownerId }
+});
+
 // Deactivates the newest active team-member seats in excess of a plan's userSeats limit —
 // called whenever an org owner's effective plan changes (upgrade/downgrade/cancel/expiry) so
 // seat activations stay in sync instead of only being enforced going forward on new activations.
@@ -56,14 +62,7 @@ const reconcileTeamSeats = async (ownerUser, plan) => {
 
   const limit = Number(plan?.userSeats) || 0;
 
-  const activeMembers = await User.find({
-    $or: [
-      { company: ownerUser.company },
-      { employerCompany: ownerUser.company }
-    ],
-    isActiveSeat: true,
-    _id: { $ne: ownerUser._id }
-  }).sort({ createdAt: 1 });
+  const activeMembers = await User.find({ ...teamMemberFilter(ownerUser.company, ownerUser._id), isActiveSeat: true }).sort({ createdAt: 1 });
 
   if (activeMembers.length <= limit) return;
 
@@ -74,4 +73,4 @@ const reconcileTeamSeats = async (ownerUser, plan) => {
   );
 };
 
-module.exports = { promoteToOrgEmployee, grantRecruiterTeamAccess, reconcileTeamSeats };
+module.exports = { promoteToOrgEmployee, grantRecruiterTeamAccess, reconcileTeamSeats, teamMemberFilter };
