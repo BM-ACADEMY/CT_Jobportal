@@ -16,7 +16,7 @@ const { emailWrapper } = require('../utils/emailTemplates');
 const Coupon = require('../models/Coupon');
 const { reconcileTeamSeats } = require('../utils/teamMembership');
 const { fetchGstPercentage, getPricingOption, computeNextRenewalDate } = require('../utils/pricing');
-const { canPurchasePlan, fulfillPlanPayment, fulfillRecurringPayment, fulfillPayPerPayment, recordRenewalPayment } = require('../utils/paymentFulfillment');
+const { canPurchasePlan, planRoleMatches, planRoleError, fulfillPlanPayment, fulfillRecurringPayment, fulfillPayPerPayment, recordRenewalPayment } = require('../utils/paymentFulfillment');
 const { checkRefundEligibility } = require('../utils/refundPolicy');
 const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
 const { isValidSignature, isDuplicateKeyError, findPaymentByRazorpayId, checkoutNotes, findCoupon, countCouponUse } = require('../utils/paymentGuards');
@@ -83,6 +83,8 @@ const createOrder = async (req, res) => {
       return res.status(404).json({ msg: 'Subscription plan not found' });
     }
     if (plan.isActive === false) return res.status(400).json({ msg: PLAN_UNAVAILABLE_MSG });
+    // A plan can only be bought by the account type it is for (a candidate cannot buy a company plan).
+    if (!planRoleMatches(req.user.role, plan)) return res.status(403).json({ msg: planRoleError(req.user.role) });
 
     // Razorpay doesn't allow 0 amount orders
     if (plan.price === 0) {
@@ -165,6 +167,8 @@ const verifyPayment = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
+    // The account type must match the plan (also covers "activating" another role's free plan).
+    if (!planRoleMatches(req.user.role, plan)) return res.status(403).json({ msg: planRoleError(req.user.role) });
     if (!canPurchasePlan(user, plan, req.user.role)) {
       return res.status(403).json({ msg: 'Only your organization admin can change the organization plan.' });
     }
@@ -266,6 +270,7 @@ const createSubscriptionOrder = async (req, res) => {
     const plan = await Subscription.findById(planId);
     if (!plan) return res.status(404).json({ msg: 'Subscription plan not found' });
     if (plan.isActive === false) return res.status(400).json({ msg: PLAN_UNAVAILABLE_MSG });
+    if (!planRoleMatches(req.user.role, plan)) return res.status(403).json({ msg: planRoleError(req.user.role) });
     if (plan.price === 0) return res.status(400).json({ msg: 'Free plans do not require billing' });
     if (!RECURRING_ROLES.includes(plan.role)) {
       return res.status(400).json({ msg: 'Recurring subscriptions are only available for college and company plans' });

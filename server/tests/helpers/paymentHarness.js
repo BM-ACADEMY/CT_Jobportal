@@ -146,6 +146,8 @@ const plans = {
   free: plan({ _id: 'planFree', name: 'Free', price: 0, duration: 'Lifetime', role: 'jobseeker' }),
   enterprise: plan({ _id: 'planEnterprise', name: 'Enterprise', price: 0, isCustomPrice: true, duration: 'Yearly', role: 'jobseeker' }),
   org: plan({ _id: 'planOrg', name: 'Org', price: 2000, duration: 'Monthly', role: 'company' }),
+  orgFree: plan({ _id: 'planOrgFree', name: 'Org Free', price: 0, duration: 'Lifetime', role: 'company' }),
+  recruiterPlan: plan({ _id: 'planRecruiter', name: 'Recruiter Plus', price: 500, duration: 'Monthly', role: 'recruiter' }),
   campus: plan({ _id: 'planCampus', name: 'Campus Pro', price: 5000, duration: 'Yearly', role: 'college' }),
   inactive: plan({ _id: 'planOld', name: 'Old Pro', price: 800, duration: 'Monthly', role: 'jobseeker', isActive: false }),
   inactiveCampus: plan({ _id: 'planOldCampus', name: 'Old Campus', price: 4000, duration: 'Yearly', role: 'college', isActive: false })
