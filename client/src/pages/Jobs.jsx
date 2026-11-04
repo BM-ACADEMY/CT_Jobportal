@@ -14,6 +14,7 @@ import { fuzzySearch, matchesForKey, tokenize } from '../utils/fuzzySearch';
 import HighlightText from '../components/shared/HighlightText';
 import SEOHead from '../components/seo/SEOHead';
 import { jobPath } from '../utils/jobUrl';
+import { getCityIntro, CITY_LINKS } from '../data/cityJobIntros';
 
 const SEARCH_FIELD_LABELS = {
   title: 'Job Title',
@@ -233,6 +234,7 @@ const Jobs = () => {
   const searchedLocation = locationTerm.trim()
     .replace(/\s+/g, ' ')
     .replace(/\b\w/g, character => character.toUpperCase());
+  const cityIntro = getCityIntro(routeLocation);
   const metaPlace = searchedLocation || 'Tamil Nadu';
   const jobsMetaTitle = loading
     ? `Latest Job Vacancies in ${metaPlace} | Velaivaaipu`
@@ -641,6 +643,35 @@ const Jobs = () => {
           </div>
         </div>
       </div>
+
+      {/* City intro + jobs by city (SEO content for /jobs and /jobs/<city>) */}
+      <section className="max-w-7xl mx-auto px-6 pb-16">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8">
+          {cityIntro && (
+            <>
+              <h2 className="text-xl md:text-2xl font-bold text-zinc-900 mb-4 tracking-tight">{cityIntro.heading}</h2>
+              {cityIntro.paragraphs.map((text) => (
+                <p key={text.slice(0, 24)} className="text-sm text-zinc-600 leading-relaxed mb-3 max-w-3xl">{text}</p>
+              ))}
+            </>
+          )}
+          <h2 className={`text-base font-bold text-zinc-900 ${cityIntro ? 'mt-6' : ''} mb-3`}>Browse jobs by city</h2>
+          <nav aria-label="Jobs by city" className="flex flex-wrap gap-2">
+            <Link to="/jobs" className="px-4 py-2 rounded-full border border-slate-200 text-sm text-zinc-700 hover:border-[#00D492] hover:text-[#00A372] transition-colors">
+              Jobs in Tamil Nadu
+            </Link>
+            {CITY_LINKS.map((city) => (
+              <Link
+                key={city.slug}
+                to={`/jobs/${city.slug}`}
+                className="px-4 py-2 rounded-full border border-slate-200 text-sm text-zinc-700 hover:border-[#00D492] hover:text-[#00A372] transition-colors"
+              >
+                Jobs in {city.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </section>
 
       {/* Mobile Filters Drawer */}
       <AnimatePresence>

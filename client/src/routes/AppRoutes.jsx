@@ -171,7 +171,7 @@ const AppRoutes = () => {
         <Route path="/job-post-templates" element={<JobPostTemplates />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogDetails />} />
-        <Route path="/recruitment-agency-fees-india" element={<BlogDetails staticSlug="recruitment-agency-fees-india" />} />
+        <Route path="/recruitment-agency-fees-india" element={<Navigate to="/blog/recruitment-agency-charges-india" replace />} />
       </Route>
 
 

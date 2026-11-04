@@ -7,7 +7,23 @@ const baseSchema = {
   '@type': 'Organization',
   '@id': 'https://velaivaaipu.in/#organization',
   name: 'Velaivaaipu',
+  alternateName: 'வேலைவாய்ப்பு',
   url: 'https://velaivaaipu.in',
+  logo: 'https://velaivaaipu.in/velaivaaipu-logo.png',
+  email: 'support@velaivaaipu.in',
+  telephone: '+91-99445-09441',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '78 Lenin Street, Kosapalayam',
+    addressLocality: 'Puducherry',
+    postalCode: '605013',
+    addressRegion: 'Puducherry',
+    addressCountry: 'IN',
+  },
+  areaServed: [
+    { '@type': 'State', name: 'Tamil Nadu' },
+    { '@type': 'State', name: 'Puducherry' },
+  ],
 };
 
 const META = {
@@ -24,7 +40,6 @@ const PublicSEO = () => {
   const location = useLocation();
   const value = useMemo(() => {
     if (location.pathname.startsWith('/blog/')) return null;
-    if (location.pathname === '/recruitment-agency-fees-india') return null;
     if (location.pathname.startsWith('/job/')) return null;
     // Company profiles set their own tags once the company has loaded.
     if (location.pathname.startsWith('/companies/')) return null;
