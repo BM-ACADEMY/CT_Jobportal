@@ -137,11 +137,11 @@ const ManageStaff = () => {
           return (
             <div key={m._id} className="border border-slate-200 bg-white p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-bold text-slate-900 m-0">{m.name || m.email} <span className="text-xs font-normal text-slate-400">{m.display_id}</span></p>
-                  <p className="text-xs text-slate-500 m-0">{m.email}{m.grantedAt ? ` · staff since ${new Date(m.grantedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}</p>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 m-0 break-words">{m.name || m.email} <span className="text-xs font-normal text-slate-400">{m.display_id}</span></p>
+                  <p className="text-xs text-slate-500 m-0 break-all">{m.email}{m.grantedAt ? ` · staff since ${new Date(m.grantedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <select value={d.staffRole} onChange={(e) => changeRole(m, e.target.value)} className="h-9 px-2 border border-slate-200 text-sm bg-white">
                     {Object.entries(STAFF_ROLES).map(([k, r]) => <option key={k} value={k}>{r.label}</option>)}
                   </select>
