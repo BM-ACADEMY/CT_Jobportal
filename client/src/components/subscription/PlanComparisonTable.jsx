@@ -18,7 +18,7 @@ const PlanComparisonTable = ({ title, plans, features }) => {
                   <h3 className="text-base font-black text-slate-900 uppercase">{plan.name}</h3>
                   <p className="text-lg font-bold text-emerald-600">
                     {plan.price === 0 ? 'Free' : `₹${plan.price.toLocaleString()}`}
-                    <span className="text-[10px] text-slate-400 font-bold ml-1">/mo</span>
+                    {plan.price > 0 && plan.duration && <span className="text-[10px] text-slate-400 font-bold ml-1">/{String(plan.duration).toLowerCase()}</span>}
                   </p>
                 </div>
               </th>

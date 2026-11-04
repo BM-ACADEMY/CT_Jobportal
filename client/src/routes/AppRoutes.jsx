@@ -46,6 +46,7 @@ const CompanyLogin = lazy(() => import('../pages/auth/CompanyLogin'));
 
 const pageModules = import.meta.glob('../pages/**/*.jsx');
 const page = (path) => lazy(pageModules[`../pages/${path}.jsx`]);
+const Plans = page('Plans');
 const JobSeekerDashboard = page('jobseeker/Dashboard');
 const AdminDashboard = page('admin/Dashboard');
 const AdminLogin = page('admin/AdminLogin');
@@ -163,6 +164,7 @@ const AppRoutes = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/for-colleges" element={<ForColleges />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/plans" element={<Plans />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/delete-account" element={<DeleteAccount />} />

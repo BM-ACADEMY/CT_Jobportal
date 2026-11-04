@@ -125,7 +125,7 @@ const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
 };
 
 const STATIC_PAGES = [
-  '/', '/jobs', '/companies', '/how-it-works', '/contact', '/blog', '/for-colleges', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
+  '/', '/jobs', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
   '/blog/it-jobs-in-pondicherry-for-freshers', '/blog/work-from-home-jobs-in-tamil-nadu', '/blog/private-jobs-in-pondicherry', '/blog/how-to-spot-fake-job-offer-tamil-nadu',
 ];
 const urlEntry = (loc, lastmod, priority) =>

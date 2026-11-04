@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, Tag } from 'antd';
 import PricingCard from '../../components/subscription/PricingCard';
+import { buildPlanFeatures as buildSharedPlanFeatures, sortPlans } from '../../data/planFeatures';
 import CheckoutModal from '../../components/subscription/CheckoutModal';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 
@@ -163,27 +164,6 @@ const downloadInvoice = (payment, user) => {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 };
 
-const RECRUITER_FEATURES = [
-  { label: 'Job postings', key: 'activeJobPostings' },
-  { label: 'Candidate search', key: 'candidateSearchPerDay', unit: '/day' },
-  { label: 'ATS pipeline', key: 'hasATSPipeline' },
-  { label: 'Analytics dashboard', key: 'hasAnalyticsDashboard' },
-  { label: 'Candidate DB export', key: 'hasCandidateDBExport' },
-  { label: 'Bulk messaging', key: 'hasBulkMessaging' },
-  { label: 'Video interview', key: 'hasVideoInterview' },
-  { label: 'Priority Listing', key: 'hasPriorityListing' },
-  { label: 'AI candidate matching', key: 'hasAICandidateMatching' },
-];
-
-const COMPANY_FEATURES = [
-  { label: 'User seats', key: 'userSeats' },
-  { label: 'Company profile', key: 'companyProfileType' },
-  { label: 'Team collaboration', key: 'hasTeamCollaboration' },
-  { label: 'Bulk app management', key: 'hasBulkApplicantManagement' },
-  { label: 'Interview scheduling', key: 'hasInterviewScheduling' },
-  { label: 'Dedicated onboarding', key: 'hasDedicatedOnboarding' },
-];
-
 const AutoRenewToggle = ({ enabled, onToggle, saving }) => (
   <button
     onClick={onToggle}
@@ -231,7 +211,7 @@ const SubscriptionPage = () => {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
-        setPlans(plansRes.data.filter(p => p.isActive));
+        setPlans(sortPlans(plansRes.data.filter(p => p.isActive)));
         setGlobalFeatures(featuresRes.data);
         setGstPercentage(settingsRes.data.gstPercentage || 0);
         setPayments(paymentsRes.data);
@@ -449,35 +429,7 @@ const SubscriptionPage = () => {
     }
   };
 
-  const buildFeatures = (plan, role) => {
-    if (role === 'college') {
-      return (plan.features || []).map(f => ({
-        label: f.name,
-        key: 'dynamic',
-        isDynamic: true,
-        isActive: !!f.isActive,
-        value: f.value,
-      }));
-    }
-    const base = role === 'company' ? COMPANY_FEATURES : RECRUITER_FEATURES;
-    const staticLabels = new Set(base.map(f => f.label.toLowerCase()));
-    return [
-      ...base,
-      ...globalFeatures
-        .filter(f => f.role === role)
-        .filter(gf => !staticLabels.has(gf.name.toLowerCase()))
-        .map(gf => {
-          const featureInPlan = (plan.features || []).find(f => f.name === gf.name);
-          return {
-            label: gf.name,
-            key: 'dynamic',
-            isDynamic: true,
-            isActive: !!featureInPlan?.isActive,
-            value: featureInPlan?.value,
-          };
-        }),
-    ];
-  };
+  const buildFeatures = (plan, role) => buildSharedPlanFeatures(plan, role, globalFeatures);
 
   const defaultTab = user?.role === 'company' ? 'company' : user?.role === 'college' ? 'college' : 'recruiter';
 
@@ -677,14 +629,13 @@ const SubscriptionPage = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                    {plans.filter(p => p.role === 'recruiter').map((plan, idx) => (
+                    {plans.filter(p => p.role === 'recruiter').map((plan) => (
                       <PricingCard
                         key={plan._id}
                         plan={plan}
                         features={buildFeatures(plan, 'recruiter')}
                         currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
-                        isPopular={idx === 1}
                         gstPercentage={gstPercentage}
                       />
                     ))}
@@ -700,14 +651,13 @@ const SubscriptionPage = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                    {plans.filter(p => p.role === 'company').map((plan, idx) => (
+                    {plans.filter(p => p.role === 'company').map((plan) => (
                       <PricingCard
                         key={plan._id}
                         plan={plan}
                         features={buildFeatures(plan, 'company')}
                         currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
-                        isPopular={idx === 1}
                         gstPercentage={gstPercentage}
                       />
                     ))}
@@ -723,14 +673,13 @@ const SubscriptionPage = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                    {plans.filter(p => p.role === 'college').sort((a, b) => a.price - b.price).map((plan, idx) => (
+                    {plans.filter(p => p.role === 'college').map((plan) => (
                       <PricingCard
                         key={plan._id}
                         plan={plan}
                         features={buildFeatures(plan, 'college')}
                         currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
-                        isPopular={idx === 2}
                         gstPercentage={gstPercentage}
                       />
                     ))}
