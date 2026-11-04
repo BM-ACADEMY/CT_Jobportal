@@ -62,9 +62,12 @@ const PricingCard = ({
   currentPlanId = null,
   footer = null,
   gstPercentage = 0,
+  paymentsEnabled = true,
 }) => {
   const isCurrent = currentPlanId === plan._id;
   const isFree = plan.price === 0;
+  // Paid plans cannot be bought until the payment gateway is live (server switch PAYMENTS_ENABLED).
+  const paymentsClosed = !isFree && !paymentsEnabled && !isCurrent;
   // The GST line is shown whenever tax applies so the card price never differs from the checkout total by surprise.
   const showGst = !isFree && !plan.isCustomPrice && Number(gstPercentage) > 0;
 
@@ -147,9 +150,10 @@ const PricingCard = ({
             <>
               <button
                 onClick={() => onAction?.(plan)}
-                disabled={isCurrent}
+                disabled={isCurrent || paymentsClosed}
+                aria-disabled={isCurrent || paymentsClosed}
                 className={`w-full h-12 rounded-none cursor-pointer text-xs font-black uppercase tracking-[1.5px] transition-all duration-300 flex items-center justify-center gap-2 border-none ${
-                  isCurrent
+                  (isCurrent || paymentsClosed)
                     ? (isPopular ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed')
                     : (isPopular 
                         ? 'bg-emerald-500 text-slate-900 hover:bg-emerald-400 shadow-[0_0_20px_rgba(52,182,120,0.3)] hover:shadow-[0_0_30px_rgba(52,182,120,0.5)]' 
@@ -158,6 +162,8 @@ const PricingCard = ({
               >
                 {isCurrent ? (
                   'Current Plan'
+                ) : paymentsClosed ? (
+                  'Opening soon'
                 ) : isFree ? (
                   'Get started'
                 ) : (

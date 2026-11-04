@@ -166,6 +166,7 @@ const PayPerFeatures = () => {
   const purchaseInFlight = useRef(false);
   const [payments, setPayments] = useState([]);
   const [gstPercentage, setGstPercentage] = useState(0);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [checkoutFeature, setCheckoutFeature] = useState(null);
   const [descriptionModal, setDescriptionModal] = useState(null);
 
@@ -187,6 +188,7 @@ const PayPerFeatures = () => {
         setFeatures(featuresRes.data);
         setPayments(paymentsRes.data);
         setGstPercentage(settingsRes.data.gstPercentage || 0);
+        setPaymentsEnabled(settingsRes.data.paymentsEnabled === true);
       } catch (err) {
         console.error('Error loading features:', err);
         toast.error('Failed to load pay-per features');
@@ -198,6 +200,10 @@ const PayPerFeatures = () => {
   }, [API_BASE_URL]);
 
   const handleCheckout = (feature) => {
+    if (!paymentsEnabled) {
+      toast('Add-ons open soon, once online payments are switched on.');
+      return;
+    }
     if (!user) {
       toast.error('Please log in to purchase features');
       return;
@@ -477,7 +483,7 @@ const PayPerFeatures = () => {
 
                   <Button
                     onClick={() => handleCheckout(f)}
-                    disabled={isProcessing || hasCreditsRemaining}
+                    disabled={isProcessing || hasCreditsRemaining || !paymentsEnabled}
                     icon={isProcessing ? <Loader2 size={16} className="animate-spin" /> : hasCreditsRemaining ? <CheckCircle2 size={16} /> : purchased ? <ArrowUpCircle size={16} /> : <ShoppingBag size={16} />}
                     className={`w-full h-11 flex items-center justify-center gap-2 rounded font-medium text-xs uppercase tracking-widest transition-all shadow-none ${
                       hasCreditsRemaining
@@ -485,7 +491,7 @@ const PayPerFeatures = () => {
                         : '!bg-emerald-600 hover:!bg-emerald-700 !text-white border-transparent'
                     }`}
                   >
-                    {isProcessing ? 'Processing...' : hasCreditsRemaining ? 'Already Purchased' : purchased ? 'Upgrade / Buy Again' : 'Buy Now'}
+                    {isProcessing ? 'Processing...' : hasCreditsRemaining ? 'Already Purchased' : !paymentsEnabled ? 'Opening soon' : purchased ? 'Upgrade / Buy Again' : 'Buy Now'}
                   </Button>
                 </div>
               </Card>

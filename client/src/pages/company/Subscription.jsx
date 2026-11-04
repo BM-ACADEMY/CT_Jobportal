@@ -187,6 +187,7 @@ const SubscriptionPage = () => {
   const [plans, setPlans] = useState([]);
   const [globalFeatures, setGlobalFeatures] = useState([]);
   const [gstPercentage, setGstPercentage] = useState(0);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkoutPlan, setCheckoutPlan] = useState(null);
   // Held from the moment a payment starts until Razorpay closes (or the request fails), so a
@@ -214,6 +215,7 @@ const SubscriptionPage = () => {
         setPlans(sortPlans(plansRes.data.filter(p => p.isActive)));
         setGlobalFeatures(featuresRes.data);
         setGstPercentage(settingsRes.data.gstPercentage || 0);
+        setPaymentsEnabled(settingsRes.data.paymentsEnabled === true);
         setPayments(paymentsRes.data);
       } catch {
         toast.error('Failed to load subscription plans');
@@ -295,6 +297,10 @@ const SubscriptionPage = () => {
     }
     if (plan.price === 0) {
       handleProceedPayment(plan);
+      return;
+    }
+    if (!paymentsEnabled) {
+      toast('Paid plans open soon, once online payments are switched on.');
       return;
     }
     setCheckoutPlan(plan);
@@ -636,6 +642,7 @@ const SubscriptionPage = () => {
                         features={buildFeatures(plan, 'recruiter')}
                         currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
+                        paymentsEnabled={paymentsEnabled}
                         gstPercentage={gstPercentage}
                       />
                     ))}
@@ -658,6 +665,7 @@ const SubscriptionPage = () => {
                         features={buildFeatures(plan, 'company')}
                         currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
+                        paymentsEnabled={paymentsEnabled}
                         gstPercentage={gstPercentage}
                       />
                     ))}
@@ -680,6 +688,7 @@ const SubscriptionPage = () => {
                         features={buildFeatures(plan, 'college')}
                         currentPlanId={isExpired ? plans.find(p => p.price === 0 && p.role === plan.role)?._id : currentPlan?._id}
                         onAction={handleUpgrade}
+                        paymentsEnabled={paymentsEnabled}
                         gstPercentage={gstPercentage}
                       />
                     ))}

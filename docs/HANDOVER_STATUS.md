@@ -20,6 +20,7 @@ Base: main `7ba33a5` + the 18-commit launch patch + the work below. Server tests
 | Test sheets | QR test, smoke test, onboarding, PWA devices, LinkedIn | docs/*_SHEET.md |
 
 ## Switches, all OFF by default
+`PAYMENTS_ENABLED` (set to `true` only after Razorpay approves the live account; until then paid plans and add-ons show "opening soon" and the order endpoints answer 503, while free plans still work).
 `LIFECYCLE_EMAILS_ENABLED`, `WHATSAPP_FOLLOWUP_ENABLED`, `RELEVANCE_ENGINE_ENABLED`, `ASSISTANT_ENABLED`, `PROTECT_DOCUMENT_UPLOADS`. Turn on one at a time, in that order of readiness: lifecycle mail after the mail switch and DNS pass; WhatsApp after Meta approves the template; relevance after the soft-launch week; assistant only after legal review and the real-key check.
 
 ## New environment variables

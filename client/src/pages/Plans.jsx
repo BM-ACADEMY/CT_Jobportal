@@ -19,6 +19,8 @@ const Plans = () => {
   const [plans, setPlans] = useState([]);
   const [globalFeatures, setGlobalFeatures] = useState([]);
   const [gstPercentage, setGstPercentage] = useState(0);
+  // Server switch PAYMENTS_ENABLED: until Razorpay approves the live account, paid plans show "Opening soon".
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [status, setStatus] = useState('loading'); // loading | ready | error
 
   const requested = searchParams.get('for');
@@ -38,6 +40,7 @@ const Plans = () => {
       setPlans((plansRes.data || []).filter((p) => p.isActive));
       setGlobalFeatures(featuresRes.data || []);
       setGstPercentage(Number(settingsRes.data?.gstPercentage) || 0);
+      setPaymentsEnabled(settingsRes.data?.paymentsEnabled === true);
       setStatus('ready');
     }).catch(() => { if (!cancelled) setStatus('error'); });
     return () => { cancelled = true; };
@@ -142,12 +145,18 @@ const Plans = () => {
                   plan={plan}
                   features={buildPlanFeatures(plan, current.key, globalFeatures)}
                   gstPercentage={gstPercentage}
+                  paymentsEnabled={paymentsEnabled}
                   onAction={choose}
                   actionLabel={user && current.roles.includes(user.role) ? 'Go to my plans' : 'Choose plan'}
                 />
               ))}
             </div>
-            {hasPaid && (
+            {hasPaid && !paymentsEnabled && (
+              <p className="text-center text-sm text-amber-800 bg-amber-50 border border-amber-100 px-4 py-3 mt-10 m-0">
+                Paid plans open soon, once online payments are switched on. Free plans are available today.
+              </p>
+            )}
+            {hasPaid && paymentsEnabled && (
               <p className="text-center text-xs text-slate-500 mt-10 m-0">
                 {gstPercentage > 0 ? `Prices are before ${gstPercentage}% GST; the exact total is shown before you pay. ` : ''}
                 Payments go through Razorpay. Refunds follow our <Link to="/refund-policy" className="text-emerald-700 font-bold">Refund Policy</Link>.

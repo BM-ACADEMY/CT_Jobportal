@@ -28,6 +28,7 @@ const SubscriptionPage = () => {
   const [plans, setPlans] = useState([]);
   const [globalFeatures, setGlobalFeatures] = useState([]);
   const [gstPercentage, setGstPercentage] = useState(0);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checkoutPlan, setCheckoutPlan] = useState(null);
   // Held from the moment a payment starts until Razorpay closes (or the request fails), so a
@@ -51,6 +52,7 @@ const SubscriptionPage = () => {
         setPlans(sortPlans(plansRes.data.filter(p => p.isActive && p.role === 'jobseeker')));
         setGlobalFeatures(featuresRes.data.filter(f => f.role === 'jobseeker'));
         setGstPercentage(settingsRes.data.gstPercentage || 0);
+        setPaymentsEnabled(settingsRes.data.paymentsEnabled === true);
       } catch {
         toast.error('Failed to load plans');
       } finally {
@@ -114,6 +116,10 @@ const SubscriptionPage = () => {
   const handleUpgrade = (plan) => {
     if (plan.price === 0) {
       handleProceedPayment(plan);
+      return;
+    }
+    if (!paymentsEnabled) {
+      toast('Paid plans open soon, once online payments are switched on.');
       return;
     }
     setCheckoutPlan(plan);
@@ -416,6 +422,7 @@ const SubscriptionPage = () => {
                 onAction={handleUpgrade}
                 onCancel={!isOnFreePlan ? handleCancel : undefined}
                 gstPercentage={gstPercentage}
+                paymentsEnabled={paymentsEnabled}
               />
             ))}
           </div>
