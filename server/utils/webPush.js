@@ -37,6 +37,25 @@ const maxPerDay = () => {
   return Number.isInteger(n) && n > 0 ? n : DEFAULT_MAX_PER_DAY;
 };
 
+// The only hosts a browser subscription endpoint may point at. The server POSTs to the endpoint, so
+// accepting any URL would let a signed-in person make the server call an address of their choosing.
+// Exact hosts, plus the suffixes Windows (per-tenant hosts) and Apple use.
+const PUSH_ENDPOINT_HOSTS = Object.freeze({
+  exact: ['fcm.googleapis.com', 'updates.push.services.mozilla.com', 'web.push.apple.com'],
+  suffixes: ['.notify.windows.com', '.push.apple.com']
+});
+
+// true only for https URLs whose host is one of the known push services (no look-alikes:
+// "fcm.googleapis.com.evil.com" is rejected because the match is on the whole host).
+const isAllowedEndpoint = (endpoint) => {
+  if (typeof endpoint !== 'string' || endpoint.length > 2048) return false;
+  let url;
+  try { url = new URL(endpoint); } catch { return false; }
+  if (url.protocol !== 'https:' || url.username || url.password) return false;
+  const host = url.hostname.toLowerCase();
+  return PUSH_ENDPOINT_HOSTS.exact.includes(host) || PUSH_ENDPOINT_HOSTS.suffixes.some((s) => host.endsWith(s) && host.length > s.length);
+};
+
 const config = () => {
   const publicKey = (process.env.WEB_PUSH_VAPID_PUBLIC_KEY || '').trim();
   const privateKey = (process.env.WEB_PUSH_VAPID_PRIVATE_KEY || '').trim();
@@ -186,6 +205,6 @@ const sendPush = async ({ recipientIds = [], title, message, link = '', type = '
 module.exports = {
   CATEGORIES, URGENT_CATEGORIES, CAP_EXEMPT_CATEGORIES, MAX_FAILURES, QUIET_START, QUIET_END, DEFAULT_MAX_PER_DAY,
   isPushEnabled, publicKey, categoryOf, isQuietHour, pickDeliverable, buildPayload, sendToUser, sendPush,
-  maxPerDay, reserveDailySlot, releaseDailySlot,
+  maxPerDay, reserveDailySlot, releaseDailySlot, PUSH_ENDPOINT_HOSTS, isAllowedEndpoint,
   _setLibForTests: (fake) => { webPushLib = fake; }
 };

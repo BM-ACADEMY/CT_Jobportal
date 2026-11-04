@@ -42,6 +42,10 @@ shipped. Branch `web-push`.
 - The payload is only title (60 chars), body (140 chars), link and type. The service worker fetches nothing on
   its own, so a push never pulls personal data into the cache.
 - Signing in to another account in the same browser moves that device's subscription to the new account.
+- **Endpoint allowlist**: a subscription is stored only if its endpoint is an https URL on a known push service
+  (`fcm.googleapis.com`, `updates.push.services.mozilla.com`, `web.push.apple.com`, `*.notify.windows.com`,
+  `*.push.apple.com`; constant `PUSH_ENDPOINT_HOSTS` in `utils/webPush.js`). Anything else gets 400, because the
+  server POSTs to that URL. Add a host there if a browser you support uses another service.
 
 ## API
 

@@ -4,10 +4,12 @@ const webPush = require('../utils/webPush');
 
 const MAX_DEVICES_PER_USER = 10;
 
+// Shape check plus the push-service allowlist (utils/webPush.isAllowedEndpoint): the server will POST to
+// this URL, so it must be a known push service, not any https address.
 const validSubscription = (sub) =>
-  sub && typeof sub.endpoint === 'string' && /^https:\/\//.test(sub.endpoint) && sub.endpoint.length < 2048 &&
-  sub.keys && typeof sub.keys.p256dh === 'string' && typeof sub.keys.auth === 'string' &&
-  sub.keys.p256dh.length < 256 && sub.keys.auth.length < 128;
+  !!sub && webPush.isAllowedEndpoint(sub.endpoint) &&
+  !!sub.keys && typeof sub.keys.p256dh === 'string' && typeof sub.keys.auth === 'string' &&
+  sub.keys.p256dh.length > 0 && sub.keys.auth.length > 0 && sub.keys.p256dh.length < 256 && sub.keys.auth.length < 128;
 
 // @route GET /api/push/config  (public)  -> { enabled, publicKey, categories }
 const getConfig = (req, res) => {
@@ -19,7 +21,7 @@ const subscribe = async (req, res) => {
   try {
     if (!webPush.isPushEnabled()) return res.status(503).json({ msg: 'Push notifications are not switched on.' });
     const { subscription, standalone } = req.body || {};
-    if (!validSubscription(subscription)) return res.status(400).json({ msg: 'Invalid push subscription.' });
+    if (!validSubscription(subscription)) return res.status(400).json({ msg: 'Invalid push subscription: the endpoint must belong to a known browser push service.' });
 
     const existing = await PushSubscription.findOne({ endpoint: subscription.endpoint });
     if (existing && String(existing.user) !== String(req.user.id)) {
