@@ -329,7 +329,7 @@ const createSubscriptionOrder = async (req, res) => {
       notes: { 
         planId: String(plan._id), 
         userId: String(req.user.id),
-        couponCode: couponCode || ''
+        couponCode: couponApplied ? couponCode.toUpperCase() : ''
       }
     });
 
@@ -446,8 +446,9 @@ const cancelSubscription = async (req, res) => {
     }
 
     // Mark existing completed/active payments as cancelled
+    // Plan payments only: pay-per-feature purchases are separate add-ons the user still holds.
     await Payment.updateMany(
-      { user: req.user.id, status: 'completed' },
+      { user: req.user.id, status: 'completed', paymentType: { $ne: 'pay-per-feature' } },
       { $set: { status: 'cancelled' } }
     );
 
@@ -601,8 +602,9 @@ const approveRefund = async (req, res) => {
     if (gateway.refundId) payment.razorpay_refund_id = gateway.refundId;
     await payment.save();
 
-    // Revoke the user's subscription
-    const user = await User.findById(payment.user._id).populate('role');
+    // Revoke the user's subscription, but only when the refunded payment was for a plan. Refunding a
+    // pay-per-feature purchase must leave the user's plan alone.
+    const user = payment.plan ? await User.findById(payment.user._id).populate('role') : null;
     if (user) {
       const userRoleName = user.role?.name || 'jobseeker';
       const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: userRoleName });
@@ -622,14 +624,17 @@ const approveRefund = async (req, res) => {
       }
     }
 
+    // For a pay-per refund the user doc above was not loaded, so look the role up only for the link.
+    const roleName = user?.role?.name || (await Role.findById(payment.user.role).select('name').catch(() => null))?.name;
+
     notifyUser({
       io: req.io,
       recipientId: payment.user._id,
       title: 'Refund approved',
-      message: 'Your refund request was approved and your subscription was updated.',
-      emailBody: '<p>Your refund request was approved. The money goes back to your original payment method and usually shows up within 5 to 7 working days, depending on your bank.</p><p>Your account has moved to the Free plan. You can subscribe again at any time.</p>',
+      message: payment.plan ? 'Your refund request was approved and your subscription was updated.' : 'Your refund request was approved.',
+      emailBody: `<p>Your refund request was approved. The money goes back to your original payment method and usually shows up within 5 to 7 working days, depending on your bank.</p>${payment.plan ? '<p>Your account has moved to the Free plan. You can subscribe again at any time.</p>' : ''}`,
       type: 'refund_status',
-      link: paymentHistoryLink(user?.role?.name),
+      link: paymentHistoryLink(roleName),
       metadata: { paymentId: payment._id, status: 'refunded' }
     }).catch(err => console.error('Refund approval notification failed:', err.message));
 
