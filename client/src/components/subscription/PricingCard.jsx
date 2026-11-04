@@ -3,7 +3,7 @@ import { Check, X, Star, Zap, Infinity, XCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const NUMERIC_KEYS = new Set([
-  'resumeBuilderCount', 'careerCounsellingCount', 'teamCollaborationCount',
+  'resumeBuilderCount', 'careerCounsellingCount', 'teamCollaborationCount', 'aiResumeReviewCount',
   'activeJobPostings', 'candidateSearchPerDay', 'userSeats',
 ]);
 const STRING_ENUM_KEYS = new Set(['jobAlerts', 'companyProfileType']);
@@ -33,6 +33,7 @@ const resolveFeature = (feature, plan) => {
     const PARENT_BOOLEAN_KEYS = {
       careerCounsellingCount: 'hasCareerCounselling',
       resumeBuilderCount: 'hasResumeBuilder',
+      aiResumeReviewCount: 'hasAiResumeReview',
       messageRecruitersCount: 'hasMessageRecruiters'
     };
     
@@ -60,13 +61,15 @@ const PricingCard = ({
   isPopular = false,
   currentPlanId = null,
   footer = null,
+  gstPercentage = 0,
+  paymentsEnabled = true,
 }) => {
   const isCurrent = currentPlanId === plan._id;
   const isFree = plan.price === 0;
-
-  const savePct =
-    plan.duration === 'Yearly' ? '40%' :
-    plan.duration === 'Quarterly' ? '20%' : null;
+  // Paid plans cannot be bought until the payment gateway is live (server switch PAYMENTS_ENABLED).
+  const paymentsClosed = !isFree && !paymentsEnabled && !isCurrent;
+  // The GST line is shown whenever tax applies so the card price never differs from the checkout total by surprise.
+  const showGst = !isFree && !plan.isCustomPrice && Number(gstPercentage) > 0;
 
   return (
     <div className={`relative flex flex-col h-full transition-all duration-500 ${isPopular ? 'scale-105 z-10' : 'hover:-translate-y-2'}`}>
@@ -105,16 +108,10 @@ const PricingCard = ({
             )}
           </div>
 
-          {savePct && !isFree && (
-            <div className="mb-8 -mt-4">
-              <span className={`inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-none border ${
-                isPopular 
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                  : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-              }`}>
-                Save {savePct}
-              </span>
-            </div>
+          {showGst && (
+            <p className={`-mt-6 mb-8 text-[11px] font-semibold m-0 ${isPopular ? 'text-slate-400' : 'text-slate-500'}`}>
+              + {Number(gstPercentage)}% GST (₹{Math.round(plan.price * (1 + Number(gstPercentage) / 100)).toLocaleString('en-IN')} total)
+            </p>
           )}
 
           <div className={`h-px w-full mb-8 ${isPopular ? 'bg-slate-800' : 'bg-slate-100'}`} />
@@ -153,9 +150,10 @@ const PricingCard = ({
             <>
               <button
                 onClick={() => onAction?.(plan)}
-                disabled={isCurrent}
+                disabled={isCurrent || paymentsClosed}
+                aria-disabled={isCurrent || paymentsClosed}
                 className={`w-full h-12 rounded-none cursor-pointer text-xs font-black uppercase tracking-[1.5px] transition-all duration-300 flex items-center justify-center gap-2 border-none ${
-                  isCurrent
+                  (isCurrent || paymentsClosed)
                     ? (isPopular ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed')
                     : (isPopular 
                         ? 'bg-emerald-500 text-slate-900 hover:bg-emerald-400 shadow-[0_0_20px_rgba(52,182,120,0.3)] hover:shadow-[0_0_30px_rgba(52,182,120,0.5)]' 
@@ -164,6 +162,8 @@ const PricingCard = ({
               >
                 {isCurrent ? (
                   'Current Plan'
+                ) : paymentsClosed ? (
+                  'Opening soon'
                 ) : isFree ? (
                   'Get started'
                 ) : (

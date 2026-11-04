@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Payment = require('../models/Payment');
 const Role = require('../models/Role');
+const { paymentsOpen, PAYMENTS_CLOSED_MSG } = require('../utils/paymentsSwitch');
 const PayPerFeature = require('../models/PayPerFeature');
 const College = require('../models/College');
 const Company = require('../models/Company');
@@ -71,6 +72,7 @@ const replyAlreadyProcessed = (res, payment, userId, extra = {}) => {
 // @route   POST /api/payments/create-order
 const createOrder = async (req, res) => {
   try {
+    if (!paymentsOpen()) return res.status(503).json({ msg: PAYMENTS_CLOSED_MSG, paymentsEnabled: false });
     const { planId } = req.body;
 
     if (!planId) {
@@ -269,6 +271,7 @@ const RECURRING_CLOSED_MSG = 'Recurring plans open soon';
 
 const createSubscriptionOrder = async (req, res) => {
   try {
+    if (!paymentsOpen()) return res.status(503).json({ msg: PAYMENTS_CLOSED_MSG, paymentsEnabled: false });
     if (!recurringPlansOpen()) return res.status(503).json({ msg: RECURRING_CLOSED_MSG, recurringPlansEnabled: false });
     const { planId, couponCode } = req.body;
     if (!planId) return res.status(400).json({ msg: 'planId is required' });
