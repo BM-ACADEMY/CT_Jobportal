@@ -62,7 +62,10 @@ const main = async () => {
     if (!body.includes(apiHost)) return fail('Website build points at the API', `${apiHost} is not in the build; rebuild with VITE_API_BASE_URL`);
     if (/["'`]undefined\/(jobs|auth)/.test(body)) return fail('Website build points at the API', 'build contains "undefined/..." addresses');
     pass('Website build points at the API');
-    /G-[A-Z0-9]{8,12}/.test(body) ? pass('Google Analytics ID is in the build') : warn('Google Analytics ID is in the build', 'not found; check VITE_GA_MEASUREMENT_ID and rebuild');
+    // The tracking IDs live in their own small file (analytics-*.js), loaded by the main script, not in the main script itself.
+    const analyticsFile = (body.match(/analytics-[A-Za-z0-9_-]+\.js/) || [])[0];
+    const analyticsBody = analyticsFile ? (await get(`${SITE}/assets/${analyticsFile}`)).body : '';
+    /G-[A-Z0-9]{8,12}/.test(body + analyticsBody) ? pass('Google Analytics ID is in the build') : warn('Google Analytics ID is in the build', 'not found; check VITE_GA_MEASUREMENT_ID and rebuild');
   });
 
   // 3. API: public data and CORS

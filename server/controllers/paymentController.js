@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const getRazorpay = require('../config/razorpay');
 const { refundAtGateway } = require('../utils/refundGateway');
+const { cancelRecurringMandates } = require('../utils/cancelRecurring');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Payment = require('../models/Payment');
@@ -467,6 +468,14 @@ const cancelSubscription = async (req, res) => {
     const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: userRole });
     if (!freePlan) {
       return res.status(404).json({ msg: 'Free plan not found for this role' });
+    }
+
+    // Stop the Razorpay automatic charge first (college and company plans). If Razorpay refuses, nothing is changed.
+    try {
+      await cancelRecurringMandates(getRazorpay(), user);
+    } catch (err) {
+      console.error('Cancel mandate error:', err.message);
+      return res.status(502).json({ msg: err.userMessage || 'Could not cancel the automatic payment. Your plan was not changed.' });
     }
 
     // Mark existing completed/active payments as cancelled

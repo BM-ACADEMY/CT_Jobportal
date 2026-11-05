@@ -40,7 +40,7 @@ const db = {
   adminNotes: [],
   inAppNotes: []
 };
-const razorpay = { orders: {}, subscriptions: {}, createdOrders: [], createdSubscriptions: [], createdPlans: [], refunds: [], refundError: null };
+const razorpay = { orders: {}, subscriptions: {}, createdOrders: [], createdSubscriptions: [], createdPlans: [], refunds: [], refundError: null, cancelledSubscriptions: [], cancelError: null };
 
 // ---- outside-world fakes ------------------------------------------------------------------
 stub('config/razorpay', () => ({
@@ -53,7 +53,12 @@ stub('config/razorpay', () => ({
   },
   subscriptions: {
     fetch: async id => razorpay.subscriptions[id],
-    create: async options => { razorpay.createdSubscriptions.push(options); return { id: `sub_created_${razorpay.createdSubscriptions.length}` }; }
+    create: async options => { razorpay.createdSubscriptions.push(options); return { id: `sub_created_${razorpay.createdSubscriptions.length}` }; },
+    cancel: async (id, atCycleEnd) => {
+      if (razorpay.cancelError) throw razorpay.cancelError;
+      razorpay.cancelledSubscriptions.push({ id, atCycleEnd });
+      return { id, status: 'cancelled' };
+    }
   },
   plans: { create: async options => { razorpay.createdPlans.push(options); return { id: `plan_rzp_${razorpay.createdPlans.length}` }; } },
   payments: {
@@ -202,6 +207,8 @@ const reset = () => {
   razorpay.createdPlans.length = 0;
   razorpay.refunds.length = 0;
   razorpay.refundError = null;
+  razorpay.cancelError = null;
+  razorpay.cancelledSubscriptions.length = 0;
   for (const k of Object.keys(razorpay.orders)) delete razorpay.orders[k];
   for (const k of Object.keys(razorpay.subscriptions)) delete razorpay.subscriptions[k];
 };
