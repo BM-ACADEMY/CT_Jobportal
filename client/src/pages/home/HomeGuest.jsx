@@ -5,7 +5,7 @@ import { motion, MotionConfig } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   Search, Briefcase, Building2, Users, Star, ArrowRight, MapPin, CheckCircle2,
-  BadgeCheck, CalendarCheck,
+  BadgeCheck,
 } from 'lucide-react';
 
 import BackToTop from '@/components/home/BackToTop';
@@ -41,7 +41,6 @@ const howItWorks = [
 
 // Cards floating around the hero photo.
 const heroFloatCards = [
-  { title: 'Interview Scheduled', subtitle: 'Frontend Developer · Today', icon: CalendarCheck, iconClass: 'bg-amber-100 text-amber-600', position: '-right-8 top-1/2', anim: 'bounce' },
   { title: 'Verified Employers', subtitle: 'Every company screened', icon: BadgeCheck, iconClass: 'bg-sky-100 text-sky-600', position: 'left-0 -bottom-4', anim: 'pop' },
 ];
 
@@ -159,7 +158,7 @@ const HomeGuest = () => {
               </motion.h1>
 
               <motion.p variants={heroItem} className="text-zinc-600 text-base max-w-lg leading-relaxed">
-                Connect with world-class employers. Discover opportunities that match your skills, location, and career aspirations.
+                Find jobs from verified employers in Puducherry, Tamil Nadu and beyond. Discover openings that match your skills, location, and career aspirations.
               </motion.p>
 
               {/* Search card */}
@@ -188,7 +187,7 @@ const HomeGuest = () => {
                   <input
                     value={locationQuery}
                     onChange={e => setLocationQuery(e.target.value)}
-                    placeholder="City or Remote"
+                    placeholder="City, e.g. Puducherry, or Remote"
                     className="flex-1 min-w-0 bg-transparent outline-none text-zinc-800 font-medium placeholder:text-zinc-400 text-sm"
                   />
                 </label>
