@@ -21,6 +21,7 @@ import TrendingSearches from '@/components/home/TrendingSearches';
 import SkillAssessment from '@/components/home/SkillAssessment';
 import MotionIcon from '@/components/home/MotionIcon';
 import CategoryCards from '@/components/home/CategoryCards';
+import { popularTerms, MIN_POPULAR_TERMS } from '@/utils/popularSearches';
 
 // A number below this is not worth showing on a public page.
 const MIN_STAT = 10;
@@ -34,19 +35,8 @@ const formatCount = (n) => {
 
 const howItWorks = [
   { step: '01', title: 'Create Your Profile', desc: 'Build your professional profile in minutes. Upload your resume and showcase your skills.', icon: Users },
-  { step: '02', title: 'Explore Opportunities', desc: 'Browse thousands of curated jobs from top companies across India and abroad.', icon: Search },
+  { step: '02', title: 'Explore Opportunities', desc: 'Browse open jobs from verified employers, search by role and location.', icon: Search },
   { step: '03', title: 'Apply & Get Hired', desc: 'Apply with one click and track your applications in real-time through your dashboard.', icon: CheckCircle2 },
-];
-
-const trendingSearches = [
-  'Software Engineer', 'Product Manager', 'Data Analyst', 'UI/UX Designer',
-  'Sales Executive', 'HR Manager', 'Digital Marketing', 'DevOps Engineer',
-  'Business Analyst', 'Content Writer',
-];
-
-const fallbackCompanies = [
-  'Tata Consultancy', 'Infosys', 'Wipro', 'HCL Technologies', 'Accenture',
-  'Reliance Industries', 'Flipkart', 'Zomato', 'Swiggy', 'Byju\'s',
 ];
 
 // Cards floating around the hero photo.
@@ -96,10 +86,14 @@ const HomeGuest = () => {
     navigate(`/jobs?q=${searchQuery}&loc=${locationQuery}`);
   };
 
-  const companyStrip = useMemo(() => {
-    const names = [...new Set(jobs.map(j => j.company?.name).filter(Boolean))];
-    return names.length >= 6 ? names : fallbackCompanies;
-  }, [jobs]);
+  // Real company names only. With few companies the strip simply shows fewer names.
+  const companyStrip = useMemo(
+    () => [...new Set(jobs.map(j => j.company?.name).filter(Boolean))],
+    [jobs]
+  );
+
+  // Popular searches come from the open jobs, so every chip leads to results.
+  const trendingSearches = useMemo(() => popularTerms(jobs), [jobs]);
 
   const recentJobs = useMemo(
     () => [...jobs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3),
@@ -205,6 +199,7 @@ const HomeGuest = () => {
               </motion.form>
 
               {/* Popular searches */}
+              {trendingSearches.length > 0 && (
               <motion.div variants={heroItem} className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="font-semibold text-zinc-500 mr-1">Popular:</span>
                 {trendingSearches.slice(0, 4).map(term => (
@@ -217,6 +212,7 @@ const HomeGuest = () => {
                   </Link>
                 ))}
               </motion.div>
+              )}
 
               {/* Live numbers (hidden until there is something real to say) */}
               {heroStats.length > 0 && (
@@ -288,7 +284,9 @@ const HomeGuest = () => {
 
         <ExplainerTabs />
 
-        <TrendingSearches terms={trendingSearches} companies={companyStrip} />
+        {trendingSearches.length >= MIN_POPULAR_TERMS && (
+          <TrendingSearches terms={trendingSearches} companies={companyStrip} />
+        )}
 
         {statCards.length > 0 && <StatBento cards={statCards} />}
 
