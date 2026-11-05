@@ -22,6 +22,7 @@ import SkillAssessment from '@/components/home/SkillAssessment';
 import MotionIcon from '@/components/home/MotionIcon';
 import CategoryCards from '@/components/home/CategoryCards';
 import { popularTerms, MIN_POPULAR_TERMS } from '@/utils/popularSearches';
+import { trackEvent } from '@/utils/analytics';
 
 // A number below this is not worth showing on a public page.
 const MIN_STAT = 10;
@@ -212,6 +213,33 @@ const HomeGuest = () => {
                 ))}
               </motion.div>
               )}
+
+              {/* Free skill test and a way in for each audience, always visible, no pop-up */}
+              <motion.div variants={heroItem} className="flex flex-col gap-3">
+                <Link
+                  to="/free-assessment"
+                  onClick={() => trackEvent('audience_click', { audience: 'skill_test' })}
+                  className="inline-flex w-full sm:w-fit items-center justify-center gap-2 h-11 px-6 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-sm font-bold hover:bg-emerald-100 transition-colors"
+                >
+                  <BadgeCheck size={16} /> Take a free skill test
+                </Link>
+                <div className="flex flex-wrap items-center gap-2 text-xs" aria-label="Choose how you want to use Velaivaaipu">
+                  {[
+                    { label: "I'm looking for a job", to: '/jobs', audience: 'job_seeker' },
+                    { label: "I'm hiring", to: '/company-login', audience: 'company' },
+                    { label: "I'm a college", to: '/for-colleges', audience: 'college' },
+                  ].map(item => (
+                    <Link
+                      key={item.audience}
+                      to={item.to}
+                      onClick={() => trackEvent('audience_click', { audience: item.audience })}
+                      className="px-3.5 py-2 rounded-full bg-white border border-zinc-200 font-semibold text-zinc-700 hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </motion.div>
 
               {/* Live numbers (hidden until there is something real to say) */}
               {heroStats.length > 0 && (
