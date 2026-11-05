@@ -124,14 +124,24 @@ const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
   }) };
 };
 
+// Blog posts come from the same data file the site renders, so new posts are listed automatically.
+// If the client source is not on this machine, the fixed list below is used.
+const FALLBACK_BLOGS = ['it-jobs-in-pondicherry-for-freshers', 'work-from-home-jobs-in-tamil-nadu', 'private-jobs-in-pondicherry', 'how-to-spot-fake-job-offer-tamil-nadu'];
+const blogSlugs = () => {
+  try {
+    const file = process.env.BLOG_DATA_PATH || require('path').join(__dirname, '../../client/src/data/importedBlogs.js');
+    const slugs = [...fs.readFileSync(file, 'utf8').matchAll(/"slug":\s*"([^"]+)"/g)].map((m) => m[1]);
+    return slugs.length ? [...new Set(slugs)] : FALLBACK_BLOGS;
+  } catch { return FALLBACK_BLOGS; }
+};
 const STATIC_PAGES = [
-  '/', '/jobs', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
-  '/blog/it-jobs-in-pondicherry-for-freshers', '/blog/work-from-home-jobs-in-tamil-nadu', '/blog/private-jobs-in-pondicherry', '/blog/how-to-spot-fake-job-offer-tamil-nadu',
+  '/', '/jobs', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/free-assessment', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
+  '/jobs/pondicherry', '/jobs/chennai', '/jobs/villupuram', '/jobs/cuddalore',
 ];
 const urlEntry = (loc, lastmod, priority) =>
   `  <url><loc>${escapeHtml(loc)}</loc>${lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${priority ? `<priority>${priority}</priority>` : ''}</url>`;
 const buildSitemap = ({ jobs = [], companies = [] }) => {
-  const entries = STATIC_PAGES.map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, null, p === '/' ? '1.0' : '0.8'));
+  const entries = [...STATIC_PAGES, ...blogSlugs().map((s) => `/blog/${s}`)].map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, null, p === '/' ? '1.0' : '0.8'));
   jobs.forEach((j) => entries.push(urlEntry(jobUrl(j), j.updatedAt, '0.7')));
   companies.forEach((c) => entries.push(urlEntry(`${SITE_URL()}/companies/${c._id}`, c.updatedAt, '0.5')));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>\n`;
