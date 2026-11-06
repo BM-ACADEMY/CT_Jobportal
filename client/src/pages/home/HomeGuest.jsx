@@ -5,7 +5,7 @@ import { motion, MotionConfig } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   Search, Briefcase, Building2, Users, Star, ArrowRight, MapPin, CheckCircle2,
-  BadgeCheck, CalendarCheck, ClipboardCheck, GraduationCap,
+  BadgeCheck, ClipboardCheck, GraduationCap,
 } from 'lucide-react';
 
 import BackToTop from '@/components/home/BackToTop';
@@ -21,6 +21,8 @@ import TrendingSearches from '@/components/home/TrendingSearches';
 import SkillAssessment from '@/components/home/SkillAssessment';
 import MotionIcon from '@/components/home/MotionIcon';
 import CategoryCards from '@/components/home/CategoryCards';
+import { popularTerms, MIN_POPULAR_TERMS } from '@/utils/popularSearches';
+import { trackEvent } from '@/utils/analytics';
 
 // A number below this is not worth showing on a public page.
 const MIN_STAT = 10;
@@ -34,24 +36,12 @@ const formatCount = (n) => {
 
 const howItWorks = [
   { step: '01', title: 'Create Your Profile', desc: 'Build your professional profile in minutes. Upload your resume and showcase your skills.', icon: Users },
-  { step: '02', title: 'Explore Opportunities', desc: 'Browse thousands of curated jobs from top companies across India and abroad.', icon: Search },
+  { step: '02', title: 'Explore Opportunities', desc: 'Browse open jobs from verified employers, search by role and location.', icon: Search },
   { step: '03', title: 'Apply & Get Hired', desc: 'Apply with one click and track your applications in real-time through your dashboard.', icon: CheckCircle2 },
-];
-
-const trendingSearches = [
-  'Software Engineer', 'Product Manager', 'Data Analyst', 'UI/UX Designer',
-  'Sales Executive', 'HR Manager', 'Digital Marketing', 'DevOps Engineer',
-  'Business Analyst', 'Content Writer',
-];
-
-const fallbackCompanies = [
-  'Tata Consultancy', 'Infosys', 'Wipro', 'HCL Technologies', 'Accenture',
-  'Reliance Industries', 'Flipkart', 'Zomato', 'Swiggy', 'Byju\'s',
 ];
 
 // Cards floating around the hero photo.
 const heroFloatCards = [
-  { title: 'Interview Scheduled', subtitle: 'Frontend Developer · Today', icon: CalendarCheck, iconClass: 'bg-amber-100 text-amber-600', position: '-right-8 top-1/2', anim: 'bounce' },
   { title: 'Verified Employers', subtitle: 'Every company screened', icon: BadgeCheck, iconClass: 'bg-sky-100 text-sky-600', position: 'left-0 -bottom-4', anim: 'pop' },
 ];
 
@@ -102,10 +92,14 @@ const HomeGuest = () => {
     navigate(`/jobs?q=${searchQuery}&loc=${locationQuery}`);
   };
 
-  const companyStrip = useMemo(() => {
-    const names = [...new Set(jobs.map(j => j.company?.name).filter(Boolean))];
-    return names.length >= 6 ? names : fallbackCompanies;
-  }, [jobs]);
+  // Real company names only. With few companies the strip simply shows fewer names.
+  const companyStrip = useMemo(
+    () => [...new Set(jobs.map(j => j.company?.name).filter(Boolean))],
+    [jobs]
+  );
+
+  // Popular searches come from the open jobs, so every chip leads to results.
+  const trendingSearches = useMemo(() => popularTerms(jobs), [jobs]);
 
   const recentJobs = useMemo(
     () => [...jobs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3),
@@ -175,7 +169,7 @@ const HomeGuest = () => {
               </motion.h1>
 
               <motion.p variants={heroItem} className="text-zinc-600 text-base max-w-lg leading-relaxed">
-                Connect with world-class employers. Discover opportunities that match your skills, location, and career aspirations.
+                Find jobs from verified employers in Puducherry, Tamil Nadu and beyond. Discover openings that match your skills, location, and career aspirations.
               </motion.p>
 
               {/* Search card */}
@@ -204,7 +198,7 @@ const HomeGuest = () => {
                   <input
                     value={locationQuery}
                     onChange={e => setLocationQuery(e.target.value)}
-                    placeholder="City or Remote"
+                    placeholder="City, e.g. Puducherry, or Remote"
                     className="flex-1 min-w-0 bg-transparent outline-none text-zinc-800 font-medium placeholder:text-zinc-400 text-sm"
                   />
                 </label>
@@ -215,6 +209,7 @@ const HomeGuest = () => {
               </motion.form>
 
               {/* Popular searches */}
+              {trendingSearches.length > 0 && (
               <motion.div variants={heroItem} className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="font-semibold text-zinc-500 mr-1">Popular:</span>
                 {trendingSearches.slice(0, 4).map(term => (
@@ -226,6 +221,34 @@ const HomeGuest = () => {
                     {term}
                   </Link>
                 ))}
+              </motion.div>
+              )}
+
+              {/* Free skill test and a way in for each audience, always visible, no pop-up */}
+              <motion.div variants={heroItem} className="flex flex-col gap-3">
+                <Link
+                  to="/free-assessment"
+                  onClick={() => trackEvent('audience_click', { audience: 'skill_test' })}
+                  className="inline-flex w-full sm:w-fit items-center justify-center gap-2 h-11 px-6 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-sm font-bold hover:bg-emerald-100 transition-colors"
+                >
+                  <BadgeCheck size={16} /> Take a free skill test
+                </Link>
+                <div className="flex flex-wrap items-center gap-2 text-xs" aria-label="Choose how you want to use Velaivaaipu">
+                  {[
+                    { label: "I'm looking for a job", to: '/jobs', audience: 'job_seeker' },
+                    { label: "I'm hiring", to: '/company-login', audience: 'company' },
+                    { label: "I'm a college", to: '/for-colleges', audience: 'college' },
+                  ].map(item => (
+                    <Link
+                      key={item.audience}
+                      to={item.to}
+                      onClick={() => trackEvent('audience_click', { audience: item.audience })}
+                      className="px-3.5 py-2 rounded-full bg-white border border-zinc-200 font-semibold text-zinc-700 hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
               </motion.div>
 
               {/* Live numbers (hidden until there is something real to say) */}
@@ -298,7 +321,9 @@ const HomeGuest = () => {
 
         <ExplainerTabs />
 
-        <TrendingSearches terms={trendingSearches} companies={companyStrip} />
+        {trendingSearches.length >= MIN_POPULAR_TERMS && (
+          <TrendingSearches terms={trendingSearches} companies={companyStrip} />
+        )}
 
         {/* The quote shows only until real company or college numbers are big enough to show instead. */}
         {statCards.length > 0 && (

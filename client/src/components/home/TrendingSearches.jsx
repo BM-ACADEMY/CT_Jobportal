@@ -193,6 +193,7 @@ const TrendingSearches = ({ terms, companies }) => (
           })}
         </motion.ul>
 
+        {companies.length > 0 && (
         <motion.div
           className="mt-10"
           initial="hidden"
@@ -222,6 +223,7 @@ const TrendingSearches = ({ terms, companies }) => (
             </div>
           </motion.div>
         </motion.div>
+        )}
       </div>
     </div>
   </section>
