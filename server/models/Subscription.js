@@ -75,6 +75,13 @@ const subscriptionSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // What that Razorpay Plan was created with. Razorpay plans cannot be edited, so when the price or the billing
+  // period changes here, a new Razorpay plan must be created (see createSubscriptionOrder).
+  razorpayPlanMeta: {
+    amount: { type: Number },
+    period: { type: String },
+    interval: { type: Number }
+  },
   features: [{
     name: { type: String, required: true },
     isActive: { type: Boolean, default: true },

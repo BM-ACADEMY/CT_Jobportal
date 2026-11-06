@@ -417,6 +417,10 @@ const getAllJobs = async (req, res) => {
 // @access  Public (conditionally shows inactive jobs to admins/owners)
 const getJobById = async (req, res) => {
   try {
+    // A link like /jobs/undefined is a "job not found", not a server error.
+    if (!/^[0-9a-fA-F]{24}$/.test(String(req.params.id || ''))) {
+      return res.status(404).json({ msg: 'Job not found' });
+    }
     const job = await Job.findById(req.params.id)
       .populate('company', 'name logo location website')
       .populate('recruiter', 'name email');

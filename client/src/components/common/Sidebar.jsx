@@ -82,7 +82,8 @@ const coreMenus = {
         { label: 'Refunds', path: '/admin/subscriptions/refunds' },
         { label: 'Subscribers', path: '/admin/subscriptions/buyers' },
         { label: 'Pay-per-use Items', path: '/admin/subscriptions/pay-per' },
-        { label: 'Coupons', path: '/admin/subscriptions/coupons' }
+        { label: 'Coupons', path: '/admin/subscriptions/coupons' },
+        { label: 'Job limits', path: '/admin/job-limits' }
       ]
     },
     { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests' },

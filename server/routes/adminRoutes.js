@@ -25,6 +25,7 @@ const {
 const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware');
 const { requireAdminOr } = require('../middlewares/staffPermission');
 const { listStaff, addStaff, updateStaff, removeStaff } = require('../controllers/staffController');
+const { listJobLimits, grantJobLimits } = require('../controllers/adminJobLimitController');
 
 // Public route for admin login
 router.post('/login', loginAdmin);
@@ -40,6 +41,10 @@ router.get('/users/:id/applications', requireAdminOr('users_view'), getUserAppli
 router.get('/roles', requireAdminOr('users_view'), getRoles);
 
 router.use(authorizeRoles('admin'));
+
+// Employers' active-job limits: see them and raise them without a payment (Super Admin only).
+router.get('/job-limits', listJobLimits);
+router.post('/job-limits/grant', grantJobLimits);
 
 // Staff accounts (support, counsellor, college verifier): Super Admin only.
 router.get('/staff', listStaff);

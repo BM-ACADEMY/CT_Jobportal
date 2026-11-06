@@ -60,6 +60,7 @@ const ManageRefunds = page('admin/ManageRefunds');
 const ManageBuyers = page('admin/ManageBuyers');
 const BuyerDetails = page('admin/BuyerDetails');
 const ManagePayPer = page('admin/ManagePayPer');
+const ManageJobLimits = page('admin/ManageJobLimits');
 const ManageCoupons = page('admin/ManageCoupons');
 const AdminSettings = page('admin/AdminSettings');
 const CompanyDashboard = page('company/Dashboard');
@@ -510,6 +511,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManagePayPer />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/job-limits"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageJobLimits />
             </PrivateRoute>
           }
         />

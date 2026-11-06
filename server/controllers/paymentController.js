@@ -317,15 +317,20 @@ const createSubscriptionOrder = async (req, res) => {
     // Lazily create (and cache) the Razorpay recurring Plan backing this Subscription doc
     let razorpayPlanId = plan.razorpayPlanId;
     
-    // If a coupon is applied, we must create a custom plan for this specific discounted price
-    if (couponApplied || !razorpayPlanId) {
-      const periodMap = {
-        Monthly: { period: 'monthly', interval: 1 },
-        Quarterly: { period: 'monthly', interval: 3 },
-        Yearly: { period: 'yearly', interval: 1 }
-      };
-      const { period, interval } = periodMap[plan.duration] || { period: 'yearly', interval: 1 };
+    const periodMap = {
+      Monthly: { period: 'monthly', interval: 1 },
+      Quarterly: { period: 'monthly', interval: 3 },
+      Yearly: { period: 'yearly', interval: 1 }
+    };
+    const { period, interval } = periodMap[plan.duration] || { period: 'yearly', interval: 1 };
 
+    // A Razorpay plan cannot be edited. If the price (or GST) or the billing period was changed in admin after the
+    // plan was cached, the cached one is stale and would keep charging the old amount or period: make a new one.
+    const meta = plan.razorpayPlanMeta || {};
+    const cachedPlanIsCurrent = !!razorpayPlanId && meta.amount === amountInPaise && meta.period === period && meta.interval === interval;
+
+    // If a coupon is applied, we must create a custom plan for this specific discounted price
+    if (couponApplied || !cachedPlanIsCurrent) {
       const razorpayPlan = await getRazorpay().plans.create({
         period,
         interval,
@@ -340,6 +345,7 @@ const createSubscriptionOrder = async (req, res) => {
       // Only cache the planId on the model if no coupon was applied
       if (!couponApplied) {
         plan.razorpayPlanId = razorpayPlanId;
+        plan.razorpayPlanMeta = { amount: amountInPaise, period, interval };
         await plan.save();
       }
     }
