@@ -68,18 +68,18 @@ const CompanyLogin = () => {
 
           <div>
           <h2 className="text-5xl font-black leading-[1.1] mb-6 tracking-tight">
-            Scale your <span className="text-emerald-400">engineering</span> teams faster.
+            Hire <span className="text-emerald-400">local</span> talent faster.
           </h2>
           <p className="text-emerald-100/70 text-lg font-medium leading-relaxed mb-10 max-w-sm">
-            Access India's largest pool of verified tech talent and manage your end-to-end recruitment lifecycle.
+            Post jobs, receive applications and manage your hiring from one dashboard.
           </p>
 
           <div className="space-y-4">
             {[
-              "Verified Professional Network",
-              "AI-Powered Candidate Filtering",
+              "Candidates from Tamil Nadu and Puducherry",
+              "Filter candidates by skills and location",
               "Collaborative Hiring Workflows",
-              "Real-time Analytics Dashboard"
+              "Hiring dashboard with your numbers"
             ].map((text, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
@@ -92,18 +92,6 @@ const CompanyLogin = () => {
           </div>
         </div>
 
-        <div className="relative z-10 p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-            <p className="text-sm font-bold text-emerald-100 italic">
-                "This portal transformed our hiring speed by 40% in just two quarters."
-            </p>
-            <div className="mt-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center text-[10px] font-black uppercase">JD</div>
-                <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-white">James Doe</p>
-                    <p className="text-[10px] font-bold text-emerald-400">VP of Engineering, TechFlow</p>
-                </div>
-            </div>
-        </div>
       </div>
 
       {/* Right Panel: Login Form */}
