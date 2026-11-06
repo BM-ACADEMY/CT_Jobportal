@@ -81,6 +81,30 @@ const ManageCompanies = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [verifyNote, setVerifyNote] = useState('');
+  const [verifying, setVerifying] = useState(false);
+
+  const handleVerify = async (verified) => {
+    if (!selectedCompany) return;
+    if (verified && verifyNote.trim().length < 5) {
+      toast.error('Write what you checked first (at least 5 characters).');
+      return;
+    }
+    setVerifying(true);
+    try {
+      const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/companies/${selectedCompany._id}/verify`, { verified, note: verifyNote });
+      const updated = res.data.company;
+      setSelectedCompany((prev) => ({ ...prev, ...updated }));
+      setCompanies((prev) => prev.map((c) => (c._id === updated._id ? { ...c, ...updated } : c)));
+      setVerifyNote('');
+      toast.success(res.data.msg);
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not update the verified badge');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const handleDelete = (id) => setDeleteTarget(id);
 
   const confirmDelete = async () => {
@@ -303,6 +327,41 @@ const ManageCompanies = () => {
 
               {/* Data Grid Section */}
               <div className="p-10 overflow-y-auto space-y-12 max-h-[60vh] custom-scrollbar">
+                {/* Verified badge: only an admin can change it. Write what was checked. */}
+                <Card className="p-8 rounded-[20px] border-slate-100 shadow-sm bg-white space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-slate-900">Verified badge</h3>
+                      <p className="text-xs text-slate-500">Verify only after you have checked that the company is real, a person there answered, and its job is genuine.</p>
+                    </div>
+                    <Badge variant="outline" className={selectedCompany.is_verified ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}>
+                      {selectedCompany.is_verified ? 'Verified' : 'Pending'}
+                    </Badge>
+                  </div>
+                  {selectedCompany.is_verified && selectedCompany.verifiedAt ? (
+                    <p className="text-xs text-slate-500">Verified on {new Date(selectedCompany.verifiedAt).toLocaleDateString('en-IN')}. Note: {selectedCompany.verification_note || '—'}</p>
+                  ) : null}
+                  <textarea
+                    value={verifyNote}
+                    onChange={(e) => setVerifyNote(e.target.value)}
+                    maxLength={300}
+                    rows={2}
+                    placeholder="What did you check? e.g. GST matches, owner answered the call, job is genuine"
+                    className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-400"
+                  />
+                  <div className="flex gap-3">
+                    {!selectedCompany.is_verified ? (
+                      <Button onClick={() => handleVerify(true)} disabled={verifying} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">
+                        {verifying ? <Loader2 size={16} className="animate-spin" /> : 'Mark as verified'}
+                      </Button>
+                    ) : (
+                      <Button onClick={() => handleVerify(false)} disabled={verifying} variant="outline" className="rounded-xl">
+                        {verifying ? <Loader2 size={16} className="animate-spin" /> : 'Remove verified badge'}
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+
                 {/* Information Card - Mimicking reference image */}
                 <Card className="p-8 rounded-[20px] border-slate-100 shadow-sm bg-white space-y-8">
                    <div className="flex items-center justify-between">
@@ -311,7 +370,7 @@ const ManageCompanies = () => {
                          <p className="text-xs text-slate-500">Global business identifiers and contact records.</p>
                       </div>
                       <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200">
-                         Audit Complete
+                         {selectedCompany.is_verified ? 'Verified' : 'Not yet verified'}
                       </Badge>
                    </div>
 

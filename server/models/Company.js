@@ -124,6 +124,10 @@ const companySchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Set only through PATCH /api/admin/companies/:id/verify (Super Admin). Kept as an audit trail.
+  verifiedAt: { type: Date, default: null },
+  verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  verification_note: { type: String, trim: true, maxlength: 300, default: '' },
   tax_id_ein: {
     type: String,
     trim: true
