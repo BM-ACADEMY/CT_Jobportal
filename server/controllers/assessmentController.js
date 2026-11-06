@@ -5,7 +5,16 @@ const CampusQuestionSet = require('../models/CampusQuestionSet');
 const { SKILL_CATEGORIES, getCategory, PASS_RATIO: BANK_PASS_RATIO } = require('../config/courseMap');
 const { pickSet } = require('../utils/questionBank');
 const { signAttempt, verifyAttempt } = require('../utils/campusTest');
+const FreeTestAttempt = require('../models/FreeTestAttempt');
 const { cleanSkill, cleanDifficulty, signStart, verifyStart, signResult, verifyResult, PASS_RATIO } = require('../utils/freeAssessment');
+
+// Count every scored free test. Never blocks or fails the test if the log cannot be written.
+const recordAttempt = (data) => {
+  try {
+    const p = FreeTestAttempt.create(data);
+    if (p && typeof p.catch === 'function') p.catch((err) => console.error('Free test log failed:', err.message));
+  } catch (err) { console.error('Free test log failed:', err.message); }
+};
 
 const buildPrompt = (skill, difficulty) => `
 You are an expert technical interviewer and examination engine. Your task is to generate a multiple-choice skill assessment test based on the following parameters:
@@ -108,6 +117,7 @@ const submitPublicAssessment = async (req, res) => {
 
     const { score, total } = scoreAttempt(set, req.body.answers);
     const percentage = total ? Math.round((score / total) * 100) : 0;
+    recordAttempt({ skill: attempt.claims.skill, source: 'ai', score, total, percentage, passed: total > 0 && score / total >= PASS_RATIO });
     res.json({
       score,
       total,
@@ -235,6 +245,7 @@ const submitFreeBankTest = async (req, res) => {
     if (!set) return res.status(400).json({ msg: 'This test has expired. Please start again.' });
     const { score, total } = scoreAttempt(set, req.body.answers);
     const percentage = Math.round((score / total) * 100);
+    recordAttempt({ skill: cat.label, source: 'bank', score, total, percentage, passed: score / total >= BANK_PASS_RATIO });
     res.json({
       score, total, percentage, passed: score / total >= BANK_PASS_RATIO,
       // Same signed proof the older free test gives, so a logged-in job seeker's result can be saved.

@@ -91,6 +91,7 @@ const coreMenus = {
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
     { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets' },
     { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews' },
+    { icon: BadgeCheck,    label: 'Skill tests',    path: '/admin/skill-tests' },
     { icon: UserCog,        label: 'Staff',          path: '/admin/staff' },
     { icon: Settings,       label: 'Settings',       path: '/admin/settings' },
   ],
