@@ -5,7 +5,7 @@ import { motion, MotionConfig } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   Search, Briefcase, Building2, Users, Star, ArrowRight, MapPin, CheckCircle2,
-  BadgeCheck, CalendarCheck,
+  BadgeCheck, CalendarCheck, ClipboardCheck,
 } from 'lucide-react';
 
 import BackToTop from '@/components/home/BackToTop';
@@ -76,6 +76,7 @@ const HomeGuest = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [platformStats, setPlatformStats] = useState(null);
+  const [skillTestCount, setSkillTestCount] = useState(0);
   const navigate = useNavigate();
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -88,6 +89,11 @@ const HomeGuest = () => {
 
     axios.get(`${API_BASE_URL}/public/stats`)
       .then(res => setPlatformStats(res.data && typeof res.data === "object" ? res.data : null))
+      .catch(() => { });
+
+    // Number of free skill tests on offer (real count from the question bank).
+    axios.get(`${API_BASE_URL}/assessments/skills`)
+      .then(res => setSkillTestCount(Array.isArray(res.data) ? res.data.length : 0))
       .catch(() => { });
   }, [API_BASE_URL]);
 
@@ -114,6 +120,9 @@ const HomeGuest = () => {
     { label: 'Open Jobs', raw: platformStats.openJobs ?? platformStats.activeJobsCount, icon: Briefcase },
     { label: 'Companies Hiring', raw: platformStats.companiesHiring ?? platformStats.companiesCount, icon: Building2, invert: true },
     { label: 'Students', raw: platformStats.students ?? platformStats.jobseekersCount, icon: Users },
+    { label: 'Free Skill Tests', raw: skillTestCount, icon: ClipboardCheck },
+    // A statement of focus, not a count: the site lists jobs for Tamil Nadu and Puducherry.
+    { label: 'Local Job Focus', raw: MIN_STAT, icon: MapPin, display: 'TN & PY' },
     { label: 'Avg Rating', raw: platformStats.reviewsCount, icon: Star, display: `${Number(platformStats.avgRating || 0).toFixed(1)}\u2605` },
   ]
     .filter((c) => Number(c.raw) >= MIN_STAT)
@@ -124,6 +133,7 @@ const HomeGuest = () => {
     { label: 'Companies Hiring', raw: platformStats.companiesHiring },
     { label: 'Open Jobs', raw: platformStats.openJobs },
     { label: 'Students', raw: platformStats.students },
+    { label: 'Free Skill Tests', raw: skillTestCount },
   ]
     .filter((c) => Number(c.raw) >= MIN_STAT)
     .map((c) => ({ label: c.label, value: formatCount(Number(c.raw)) }));
