@@ -5,7 +5,7 @@ import { motion, MotionConfig } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import {
   Search, Briefcase, Building2, Users, Star, ArrowRight, MapPin, CheckCircle2,
-  BadgeCheck, CalendarCheck, ClipboardCheck,
+  BadgeCheck, CalendarCheck, ClipboardCheck, GraduationCap,
 } from 'lucide-react';
 
 import BackToTop from '@/components/home/BackToTop';
@@ -119,6 +119,7 @@ const HomeGuest = () => {
   const statCards = !hasStats ? [] : [
     { label: 'Open Jobs', raw: platformStats.openJobs ?? platformStats.activeJobsCount, icon: Briefcase },
     { label: 'Companies Hiring', raw: platformStats.companiesHiring ?? platformStats.companiesCount, icon: Building2, invert: true },
+    { label: 'Colleges', raw: platformStats.collegesOnboardedCount, icon: GraduationCap },
     { label: 'Students', raw: platformStats.students ?? platformStats.jobseekersCount, icon: Users },
     { label: 'Free Skill Tests', raw: skillTestCount, icon: ClipboardCheck },
     { label: 'Avg Rating', raw: platformStats.reviewsCount, icon: Star, display: `${Number(platformStats.avgRating || 0).toFixed(1)}\u2605` },
@@ -130,6 +131,7 @@ const HomeGuest = () => {
   const heroStats = !hasStats ? [] : [
     { label: 'Companies Hiring', raw: platformStats.companiesHiring },
     { label: 'Open Jobs', raw: platformStats.openJobs },
+    { label: 'Colleges', raw: platformStats.collegesOnboardedCount },
     { label: 'Students', raw: platformStats.students },
     { label: 'Free Skill Tests', raw: skillTestCount },
   ]
@@ -298,7 +300,13 @@ const HomeGuest = () => {
 
         <TrendingSearches terms={trendingSearches} companies={companyStrip} />
 
-        {statCards.length > 0 && <StatBento cards={statCards} quote="Your next opportunity is just one application away." />}
+        {/* The quote shows only until real company or college numbers are big enough to show instead. */}
+        {statCards.length > 0 && (
+          <StatBento
+            cards={statCards}
+            quote={statCards.some((c) => c.label === 'Companies Hiring' || c.label === 'Colleges') ? undefined : 'Your next opportunity is just one application away.'}
+          />
+        )}
 
         <StepStory title="Get Hired in 3 Simple Steps" steps={howItWorks} />
 
