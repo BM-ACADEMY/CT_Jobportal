@@ -33,7 +33,7 @@ const END_RADIUS = 24;
 // It enters narrow and widens as the page scrolls, up to END_INSET (never edge to edge);
 // the band is clipped rather than resized, so nothing reflows and the text never stretches.
 // cards: [{ label, value, icon: LucideIcon, invert?: bool }]
-const StatBento = ({ cards }) => {
+const StatBento = ({ cards, quote }) => {
   const ref = useRef(null);
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'start 0.3'] });
@@ -86,6 +86,12 @@ const StatBento = ({ cards }) => {
               </motion.div>
             ))}
           </div>
+
+          {quote && (
+            <p className="relative mt-10 text-center text-lg md:text-xl italic font-medium text-emerald-50/95">
+              {'“'}{quote}{'”'}
+            </p>
+          )}
         </motion.div>
       </motion.div>
     </section>

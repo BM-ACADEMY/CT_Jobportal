@@ -121,8 +121,6 @@ const HomeGuest = () => {
     { label: 'Companies Hiring', raw: platformStats.companiesHiring ?? platformStats.companiesCount, icon: Building2, invert: true },
     { label: 'Students', raw: platformStats.students ?? platformStats.jobseekersCount, icon: Users },
     { label: 'Free Skill Tests', raw: skillTestCount, icon: ClipboardCheck },
-    // A statement of focus, not a count: the site lists jobs for Tamil Nadu and Puducherry.
-    { label: 'Local Job Focus', raw: MIN_STAT, icon: MapPin, display: 'TN & PY' },
     { label: 'Avg Rating', raw: platformStats.reviewsCount, icon: Star, display: `${Number(platformStats.avgRating || 0).toFixed(1)}\u2605` },
   ]
     .filter((c) => Number(c.raw) >= MIN_STAT)
@@ -300,7 +298,7 @@ const HomeGuest = () => {
 
         <TrendingSearches terms={trendingSearches} companies={companyStrip} />
 
-        {statCards.length > 0 && <StatBento cards={statCards} />}
+        {statCards.length > 0 && <StatBento cards={statCards} quote="Your next opportunity is just one application away." />}
 
         <StepStory title="Get Hired in 3 Simple Steps" steps={howItWorks} />
 
