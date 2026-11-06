@@ -101,16 +101,15 @@ const HomeJobseeker = () => {
     navigate(`/jobs?q=${searchQuery}&loc=${locationQuery}`);
   };
 
-  const useFallback = !platformStats || (platformStats.activeJobsCount < 1000 && platformStats.companiesCount < 1000);
-  const statCards = useFallback ? [
-    { label: 'Companies Hiring', value: '10K+', icon: Building2, invert: true },
-    { label: 'Active Jobs', value: '2L+', icon: Briefcase },
-    { label: 'New This Week', value: '5K+', icon: Sparkles },
-  ] : [
-    { label: 'Companies Hiring', value: formatCount(platformStats.companiesCount), icon: Building2, invert: true },
-    { label: 'Active Jobs', value: formatCount(platformStats.activeJobsCount), icon: Briefcase },
-    { label: 'New This Week', value: formatCount(platformStats.newJobsThisWeek), icon: Sparkles },
-  ];
+  // Only real numbers are shown. Nothing shows until they load, and any number under 10 is left out.
+  const MIN_STAT = 10;
+  const statCards = !platformStats ? [] : [
+    { label: 'Companies Hiring', raw: platformStats.companiesHiring ?? platformStats.companiesCount, icon: Building2, invert: true },
+    { label: 'Active Jobs', raw: platformStats.openJobs ?? platformStats.activeJobsCount, icon: Briefcase },
+    { label: 'New This Week', raw: platformStats.newJobsThisWeek, icon: Sparkles },
+  ]
+    .filter((c) => Number(c.raw) >= MIN_STAT)
+    .map((c) => ({ label: c.label, value: formatCount(Number(c.raw)), icon: c.icon, invert: c.invert }));
 
   return (
     <div className="w-full overflow-x-clip bg-white">
@@ -210,7 +209,7 @@ const HomeJobseeker = () => {
           </div>
         </HeroShell>
 
-      <StatBento cards={statCards} />
+      {statCards.length > 0 && <StatBento cards={statCards} />}
 
       <CompanyRecruiterList type="company" eyebrow="Top Employers" title="Companies Hiring Now" subtitle="Explore verified companies actively posting roles." />
       <CompanyRecruiterList type="recruiter" eyebrow="Meet Your Recruiters" title="Recruiters On The Platform" subtitle="Connect with the people reviewing applications." />
