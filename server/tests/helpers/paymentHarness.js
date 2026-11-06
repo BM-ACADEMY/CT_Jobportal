@@ -40,7 +40,7 @@ const db = {
   adminNotes: [],
   inAppNotes: []
 };
-const razorpay = { orders: {}, subscriptions: {}, createdOrders: [], createdSubscriptions: [], createdPlans: [], refunds: [], refundError: null };
+const razorpay = { orders: {}, subscriptions: {}, createdOrders: [], createdSubscriptions: [], createdPlans: [], refunds: [], refundError: null, cancelledSubscriptions: [], cancelError: null };
 
 // ---- outside-world fakes ------------------------------------------------------------------
 stub('config/razorpay', () => ({
@@ -53,7 +53,12 @@ stub('config/razorpay', () => ({
   },
   subscriptions: {
     fetch: async id => razorpay.subscriptions[id],
-    create: async options => { razorpay.createdSubscriptions.push(options); return { id: `sub_created_${razorpay.createdSubscriptions.length}` }; }
+    create: async options => { razorpay.createdSubscriptions.push(options); return { id: `sub_created_${razorpay.createdSubscriptions.length}` }; },
+    cancel: async (id, atCycleEnd) => {
+      if (razorpay.cancelError) throw razorpay.cancelError;
+      razorpay.cancelledSubscriptions.push({ id, atCycleEnd });
+      return { id, status: 'cancelled' };
+    }
   },
   plans: { create: async options => { razorpay.createdPlans.push(options); return { id: `plan_rzp_${razorpay.createdPlans.length}` }; } },
   payments: {
@@ -148,6 +153,7 @@ const plans = {
   enterprise: plan({ _id: 'planEnterprise', name: 'Enterprise', price: 0, isCustomPrice: true, duration: 'Yearly', role: 'jobseeker' }),
   org: plan({ _id: 'planOrg', name: 'Org', price: 2000, duration: 'Monthly', role: 'company' }),
   orgFree: plan({ _id: 'planOrgFree', name: 'Org Free', price: 0, duration: 'Lifetime', role: 'company' }),
+  enterprise: plan({ _id: 'planEnterprise', name: 'Enterprise', price: 0, isCustomPrice: true, duration: 'Lifetime', role: 'company' }),
   recruiterPlan: plan({ _id: 'planRecruiter', name: 'Recruiter Plus', price: 500, duration: 'Monthly', role: 'recruiter' }),
   campus: plan({ _id: 'planCampus', name: 'Campus Pro', price: 5000, duration: 'Yearly', role: 'college' }),
   inactive: plan({ _id: 'planOld', name: 'Old Pro', price: 800, duration: 'Monthly', role: 'jobseeker', isActive: false }),
@@ -202,6 +208,8 @@ const reset = () => {
   razorpay.createdPlans.length = 0;
   razorpay.refunds.length = 0;
   razorpay.refundError = null;
+  razorpay.cancelError = null;
+  razorpay.cancelledSubscriptions.length = 0;
   for (const k of Object.keys(razorpay.orders)) delete razorpay.orders[k];
   for (const k of Object.keys(razorpay.subscriptions)) delete razorpay.subscriptions[k];
 };
