@@ -62,3 +62,16 @@ describe('plan / account type match', () => {
     assert.equal((await h.verifyPayment('u1', { planId: 'planFree', isFree: true }, 'org_employee')).statusCode, 403);
   });
 });
+
+describe('auto-renew is only ever recorded for plans that really renew', () => {
+  beforeEach(() => { h.reset(); h.makeUser('u1'); h.makeUser('co'); });
+
+  it('a job seeker plan is never recorded as auto-renew, even if the browser sends autoRenew: true', async () => {
+    const order = await h.createOrder('u1', { planId: 'planPro' });
+    const body = h.paidOrder({ orderId: order.body.orderId, paymentId: 'pay_ar1', planId: 'planPro', userId: 'u1', amountRupees: 1180 });
+    const res = await h.verifyPayment('u1', { ...body, autoRenew: true });
+    assert.equal(res.statusCode, 200);
+    assert.equal(h.db.users.u1.autoRenew, false);
+    assert.equal(h.razorpay.createdSubscriptions.length, 0, 'no Razorpay mandate for a one-time plan');
+  });
+});

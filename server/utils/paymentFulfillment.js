@@ -126,7 +126,9 @@ const fulfillPlanPayment = async ({ user, plan, quantity = 1, couponCode = '', p
     user.subscription = plan._id;
     user.subscriptionDetails = plan.toObject();
     user.subscriptionExpiry = expiryDate;
-    if (autoRenew !== undefined) user.autoRenew = !!autoRenew;
+    // Only college and company plans are recurring (a Razorpay mandate). A one-time plan (job seeker, recruiter)
+    // has nothing that renews it, so it must never be recorded as "auto-renew on", whatever the browser sent.
+    if (autoRenew !== undefined) user.autoRenew = (plan.role === 'college' || plan.role === 'company') ? !!autoRenew : false;
 
     // Reset usage stats on new subscription
     user.downloadsUsed = 0;

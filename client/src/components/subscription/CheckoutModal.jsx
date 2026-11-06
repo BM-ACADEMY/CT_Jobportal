@@ -40,6 +40,8 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
 
   const selectedPlan = rolePlans.find(p => p._id === selectedPlanId) || initialPlan;
   const isLifetime = selectedPlan.duration === 'Lifetime';
+  // Only college and company plans renew by themselves (a Razorpay mandate). Job seeker and recruiter plans are one-time.
+  const isRecurringPlan = selectedPlan.role === 'college' || selectedPlan.role === 'company';
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -98,7 +100,7 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
   const handleProceed = async () => {
     setProcessing(true);
     try {
-      await onProceed(selectedPlan, quantity, autoRenew, appliedCoupon?.code);
+      await onProceed(selectedPlan, quantity, isRecurringPlan ? autoRenew : false, appliedCoupon?.code);
     } finally {
       setProcessing(false);
     }
@@ -313,7 +315,8 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
             {couponError && <p className="text-[10px] text-red-500 font-bold mt-1">{couponError}</p>}
           </div>
 
-          {/* Auto-pay checkbox */}
+          {/* Auto-pay checkbox: only for plans that really renew by themselves (college and company) */}
+          {isRecurringPlan && (
           <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 cursor-pointer hover:bg-slate-100/60 transition-colors group select-none">
             <div
               onClick={() => setAutoRenew(v => !v)}
@@ -335,6 +338,7 @@ const CheckoutModal = ({ plan: initialPlan, plans = [], gstPercentage = 0, onClo
               </p>
             </div>
           </label>
+          )}
 
           {/* Terms and conditions checkbox */}
           <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 cursor-pointer hover:bg-slate-100/60 transition-colors group select-none mt-2">
