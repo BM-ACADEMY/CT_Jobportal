@@ -36,13 +36,13 @@ const formatCount = (n) => {
 
 const howItWorks = [
   { step: '01', title: 'Create Your Profile', desc: 'Build your professional profile in minutes. Upload your resume and showcase your skills.', icon: Users },
-  { step: '02', title: 'Explore Opportunities', desc: 'Browse open jobs from verified employers, search by role and location.', icon: Search },
+  { step: '02', title: 'Explore Opportunities', desc: 'Browse open jobs from employers, search by role and location.', icon: Search },
   { step: '03', title: 'Apply & Get Hired', desc: 'Apply with one click and track your applications in real-time through your dashboard.', icon: CheckCircle2 },
 ];
 
 // Cards floating around the hero photo.
 const heroFloatCards = [
-  { title: 'Verified Employers', subtitle: 'Every company screened', icon: BadgeCheck, iconClass: 'bg-sky-100 text-sky-600', position: 'left-0 -bottom-4', anim: 'pop' },
+  { title: 'Local Jobs', subtitle: 'Tamil Nadu and Puducherry', icon: BadgeCheck, iconClass: 'bg-sky-100 text-sky-600', position: 'left-0 -bottom-4', anim: 'pop' },
 ];
 
 const heroStagger = {
@@ -169,7 +169,7 @@ const HomeGuest = () => {
               </motion.h1>
 
               <motion.p variants={heroItem} className="text-zinc-600 text-base max-w-lg leading-relaxed">
-                Find jobs from verified employers in Puducherry, Tamil Nadu and beyond. Discover openings that match your skills, location, and career aspirations.
+                Find jobs from employers in Puducherry, Tamil Nadu and beyond. Discover openings that match your skills, location, and career aspirations.
               </motion.p>
 
               {/* Search card */}

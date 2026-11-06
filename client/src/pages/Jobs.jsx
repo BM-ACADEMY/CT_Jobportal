@@ -384,7 +384,7 @@ const Jobs = () => {
             Find your next <span className="text-[#00D492]">opportunity</span>
           </h1>
           <p className="text-zinc-500 text-sm font-normal max-w-md leading-relaxed mb-8">
-            Browse thousands of jobs from verified companies across Tamil Nadu and beyond.
+            Browse open jobs from companies across Tamil Nadu and beyond.
           </p>
 
           {/* Search Bar */}
