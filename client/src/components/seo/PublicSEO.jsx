@@ -45,7 +45,7 @@ const PublicSEO = () => {
     if (location.pathname.startsWith('/companies/')) return null;
     // Jobs owns its metadata because the live result count is only available there.
     if (location.pathname === '/jobs' || location.pathname.startsWith('/jobs/')) return null;
-    return META[location.pathname] || ['Velaivaaipu — Jobs in Tamil Nadu', 'Find verified jobs, companies and career resources across Tamil Nadu on Velaivaaipu.'];
+    return META[location.pathname] || ['Velaivaaipu — Jobs in Tamil Nadu', 'Find jobs, companies and career resources across Tamil Nadu on Velaivaaipu.'];
   }, [location.pathname]);
 
   if (!value) return null;

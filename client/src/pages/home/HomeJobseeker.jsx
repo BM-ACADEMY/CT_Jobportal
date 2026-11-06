@@ -211,7 +211,7 @@ const HomeJobseeker = () => {
 
       {statCards.length > 0 && <StatBento cards={statCards} />}
 
-      <CompanyRecruiterList type="company" eyebrow="Top Employers" title="Companies Hiring Now" subtitle="Explore verified companies actively posting roles." />
+      <CompanyRecruiterList type="company" eyebrow="Top Employers" title="Companies Hiring Now" subtitle="Explore companies actively posting roles." />
       <CompanyRecruiterList type="recruiter" eyebrow="Meet Your Recruiters" title="Recruiters On The Platform" subtitle="Connect with the people reviewing applications." />
 
       <StepStory title="Get Hired in 3 Simple Steps" steps={howItWorks} />
