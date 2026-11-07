@@ -34,6 +34,7 @@ stubModule('../../utils/aiHelper', {
   },
 });
 const saved = [];
+stubModule('../../models/FreeTestAttempt', { create: async (d) => d });
 stubModule('../../models/SkillTestResult', { findOneAndUpdate: async (q, u) => { saved.push({ q, u }); return { ...u }; } });
 
 const { getAssessment, submitPublicAssessment, saveResult } = require('../../controllers/assessmentController');

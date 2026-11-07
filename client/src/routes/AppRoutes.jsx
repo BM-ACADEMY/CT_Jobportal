@@ -110,6 +110,7 @@ const AdminTickets = page('admin/AdminTickets');
 const EmployeeDashboard = page('employee/Dashboard');
 const WriteReview = page('shared/WriteReview');
 const ManageReviews = page('admin/ManageReviews');
+const AdminSkillTests = page('admin/SkillTests');
 const AdminCollegeVerification = page('admin/CollegeVerification');
 const CollegeKycDetails = page('admin/CollegeKycDetails');
 const CollegeDashboard = page('college/Dashboard');
@@ -583,6 +584,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManageReviews />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/skill-tests"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminSkillTests />
             </PrivateRoute>
           }
         />

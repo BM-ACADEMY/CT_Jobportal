@@ -15,6 +15,9 @@ const jwtStub = {
 };
 const sets = [{ _id: 's1', category: 'ms-excel', active: true, questions: Array.from({ length: 10 }, (_, i) => ({ id: i + 1, question: `Q${i + 1}`, options: { a: 'A', b: 'B', c: 'C', d: 'D' }, correct_option: 'b', explanation: 'x' })) }];
 const modelStub = { distinct: async () => ['ms-excel'], findById: async (id) => sets.find((s) => s._id === id) || null };
+const logged = [];
+let logFails = false;
+const logStub = { create: (d) => { if (logFails) throw new Error('db down'); logged.push(d); return Promise.resolve(d); } };
 const realLoad = Module._load;
 Module._load = function (request, ...rest) {
   if (request === 'jsonwebtoken') return jwtStub;
@@ -22,6 +25,7 @@ Module._load = function (request, ...rest) {
   if (request === '../models/CampusQuestionSet') return modelStub;
   if (request === '../utils/aiHelper') return { GoogleGenerativeAI: class {} };
   if (request === '../utils/questionBank') return { pickSet: async (key) => { if (key !== 'ms-excel') throw new Error('empty'); return sets[0]; } };
+  if (request === '../models/FreeTestAttempt') return logStub;
   if (request === '../models/SkillTestResult' || request === '../models/User') return {};
   return realLoad.call(this, request, ...rest);
 };
@@ -56,4 +60,22 @@ test('server scores the test and rejects instant or forged submissions', async (
   assert.equal(s.code, 400);
   s = res(); await c.submitFreeBankTest({ body: { category: 'accounting', attemptToken: r.body.attemptToken, answers } }, s);
   assert.equal(s.code, 400); // token is for another skill
+});
+
+test('each scored test is counted, with no personal data, and a failing log never breaks scoring', async () => {
+  backdate = 60;
+  const answers = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, i < 7 ? 'b' : 'a']));
+  const before = logged.length;
+  let r = res(); await c.getFreeBankTest({ query: { category: 'ms-excel' } }, r);
+  let s = res(); await c.submitFreeBankTest({ body: { category: 'ms-excel', attemptToken: r.body.attemptToken, answers } }, s);
+  assert.equal(s.code, 200);
+  assert.equal(logged.length, before + 1);
+  assert.deepEqual(Object.keys(logged[logged.length - 1]).sort(), ['passed', 'percentage', 'score', 'skill', 'source', 'total']);
+  assert.equal(logged[logged.length - 1].source, 'bank');
+  assert.equal(logged[logged.length - 1].passed, true);
+  logFails = true;
+  r = res(); await c.getFreeBankTest({ query: { category: 'ms-excel' } }, r);
+  s = res(); await c.submitFreeBankTest({ body: { category: 'ms-excel', attemptToken: r.body.attemptToken, answers } }, s);
+  assert.equal(s.code, 200); assert.equal(s.body.score, 7);
+  logFails = false;
 });
