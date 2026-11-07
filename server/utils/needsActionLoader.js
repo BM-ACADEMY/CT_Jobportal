@@ -4,6 +4,7 @@ const ContactMessage = require('../models/ContactMessage');
 const Review = require('../models/Review');
 const AdminRequest = require('../models/AdminRequest');
 const Job = require('../models/Job');
+const Feedback = require('../models/Feedback');
 const AdminAssignment = require('../models/AdminAssignment');
 const { buildNeedsAction } = require('./needsAction');
 
@@ -18,6 +19,7 @@ const loadNeedsAction = async (now = new Date()) => {
     messages: await load(ContactMessage.find({ status: 'new' }).select('name email subject createdAt')),
     reviews: await load(Review.find({ status: 'pending' }).select('rating comment createdAt')),
     requests: await load(AdminRequest.find({ status: 'pending' }).select('type bookingName bookingEmail createdAt')),
+    feedback: await load(Feedback.find({ status: 'new' }).select('rating text role createdAt')),
     jobs: await load(Job.find({ 'scamFlags.0': { $exists: true }, scamReviewed: { $ne: true }, status: { $ne: 'closed' } }).select('title scamFlags createdAt'))
   };
   const assignments = await AdminAssignment.find({}).lean();

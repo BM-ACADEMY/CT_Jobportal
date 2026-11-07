@@ -7,7 +7,7 @@ const stubModel = (name, exports = {}) => {
   require.cache[file] = { id: file, filename: file, loaded: true, exports };
 };
 const calls = [];
-['User', 'Role', 'College', 'Ticket', 'ContactMessage', 'Review', 'AdminRequest', 'Job', 'AdminRoutingRule'].forEach((n) => stubModel(n));
+['User', 'Role', 'College', 'Ticket', 'ContactMessage', 'Review', 'AdminRequest', 'Job', 'AdminRoutingRule', 'Feedback'].forEach((n) => stubModel(n));
 stubModel('AdminAssignment', {
   deleteOne: async (q) => { calls.push({ op: 'delete', q }); },
   findOneAndUpdate: async (q, u) => { calls.push({ op: 'upsert', q, u }); return { kind: q.kind, refId: q.refId, ownerId: u.$set.ownerId, ownerName: u.$set.ownerName }; }

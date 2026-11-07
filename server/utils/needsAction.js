@@ -20,6 +20,8 @@ const SOURCES = [
     title: (x) => text(`${x.rating || ''} star review`), detail: (x) => text(x.comment) },
   { key: 'requests', kind: 'request', label: 'Request', link: '/admin/requests',
     title: (x) => text(String(x.type || 'request').replace(/_/g, ' ')), detail: (x) => text(x.bookingName || x.bookingEmail) },
+  { key: 'feedback', kind: 'feedback', label: 'Feedback', link: '/admin/feedback',
+    title: (x) => text(`${x.rating || ''} star${x.text ? `: ${x.text}` : ''}`), detail: (x) => text(x.role) },
   { key: 'jobs', kind: 'job', label: 'Possible scam job', link: '/admin/jobs',
     title: (x) => text(x.title || 'Untitled job'), detail: (x) => text((x.scamFlags || []).join(', ').replace(/_/g, ' ')) }
 ];

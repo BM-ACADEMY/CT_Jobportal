@@ -249,6 +249,7 @@ app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use('/api/push', pushRoutes);
 app.use('/api/files', fileRoutes);
 

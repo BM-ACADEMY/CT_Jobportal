@@ -4,7 +4,7 @@ const AdminAssignment = require('../models/AdminAssignment');
 const AdminRoutingRule = require('../models/AdminRoutingRule');
 const { loadNeedsAction } = require('../utils/needsActionLoader');
 
-const KINDS = ['college', 'ticket', 'message', 'review', 'request', 'job'];
+const KINDS = ['college', 'ticket', 'message', 'review', 'request', 'feedback', 'job'];
 const HEX = /^[0-9a-fA-F]{24}$/;
 // @route GET /api/admin/needs-action
 // Everything waiting for an admin in one list, with its owner and how long it has waited. Super admin only.

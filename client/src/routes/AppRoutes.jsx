@@ -113,6 +113,7 @@ const ManageReviews = page('admin/ManageReviews');
 const AdminSkillTests = page('admin/SkillTests');
 const AdminNeedsAction = page('admin/NeedsAction');
 const AdminSpendIncome = page('admin/SpendIncome');
+const AdminFeedback = page('admin/ManageFeedback');
 const AdminCollegeVerification = page('admin/CollegeVerification');
 const CollegeKycDetails = page('admin/CollegeKycDetails');
 const CollegeDashboard = page('college/Dashboard');
@@ -586,6 +587,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManageReviews />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/feedback"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminFeedback />
             </PrivateRoute>
           }
         />
