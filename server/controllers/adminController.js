@@ -214,19 +214,20 @@ const getDashboardStats = async (req, res) => {
 
     // Real counts of things waiting for an admin. A failed count shows 0 rather than breaking the page.
     const count = (model, filter) => model.countDocuments(filter).catch(() => 0);
-    const [collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending] = await Promise.all([
+    const [collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending, jobsFlagged] = await Promise.all([
       count(require('../models/College'), { verificationStatus: 'pending', isTest: { $ne: true } }),
       count(require('../models/Ticket'), { status: { $in: ['open', 'in_progress'] } }),
       count(require('../models/ContactMessage'), { status: 'new' }),
       count(Review, { status: 'pending' }),
-      count(require('../models/AdminRequest'), { status: 'pending' })
+      count(require('../models/AdminRequest'), { status: 'pending' }),
+      count(Job, { 'scamFlags.0': { $exists: true }, scamReviewed: { $ne: true }, status: { $ne: 'closed' } })
     ]);
 
     res.json({
       users: userCount,
       companies: companyCount,
       jobs: jobCount,
-      needsAction: { collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending },
+      needsAction: { collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending, jobsFlagged },
       usersByRole,
       totalRevenue,
       revenueData,

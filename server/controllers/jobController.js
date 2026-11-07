@@ -1,3 +1,4 @@
+const { jobScamFlags } = require('../utils/jobScamFlags');
 const Job = require('../models/Job');
 const User = require('../models/User');
 const Application = require('../models/Application');
@@ -109,6 +110,7 @@ const createJob = async (req, res) => {
       recruiter: userId
     });
 
+    newJob.scamFlags = jobScamFlags({ title, description });
     const job = await newJob.save();
 
     if (job.status === 'active') {
@@ -303,9 +305,13 @@ const updateJob = async (req, res) => {
     }
 
     const previousStatus = job.status;
+    delete req.body.scamFlags; delete req.body.scamReviewed; // only the server and admin set these
+    const flagUpdate = (req.body.title !== undefined || req.body.description !== undefined)
+      ? { scamFlags: jobScamFlags({ title: req.body.title ?? job.title, description: req.body.description ?? job.description }), scamReviewed: false }
+      : {};
     job = await Job.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      { $set: { ...req.body, ...flagUpdate } },
       { new: true, runValidators: true }
     );
 

@@ -13,7 +13,7 @@ const CollegeStudent = require('../models/CollegeStudent');
 const PayPerFeature = require('../models/PayPerFeature');
 const ContactMessage = require('../models/ContactMessage');
 const sendEmail = require('../utils/sendEmail');
-const { rateLimit } = require('../middlewares/rateLimit');
+const { rateLimit, rateLimitBy, honeypot } = require('../middlewares/rateLimit');
 const { computeHeroStats, createCache } = require('../utils/publicStats');
 const { verifyAlertToken, lifecycleWrapper, button, esc, frontend } = require('../utils/lifecycleEmails');
 
@@ -355,7 +355,7 @@ router.get('/pay-per-features', async (req, res) => {
 
 // @desc  POST /api/public/contact
 //        Saves a contact form submission and sends an email notification.
-router.post('/contact', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many messages. Please try again later.' }), async (req, res) => {
+router.post('/contact', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many messages. Please try again later.' }), honeypot(), rateLimitBy({ fields: ['email'], windowMs: 60 * 60 * 1000, max: 5, message: 'Too many messages from this email. Please try again later.' }), async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
 

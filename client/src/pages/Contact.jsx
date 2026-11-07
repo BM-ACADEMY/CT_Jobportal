@@ -66,7 +66,7 @@ const FAQS = [
 ];
 
 const Contact = () => {
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '', segment: '' });
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '', segment: '', company_website: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
@@ -165,7 +165,7 @@ const Contact = () => {
                     Thank you for reaching out. Our team will reply to your email within 24 hours.
                   </p>
                   <Button
-                    onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '', segment: '' }); }}
+                    onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '', segment: '', company_website: '' }); }}
                     className="h-11 px-8 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold cursor-pointer"
                   >
                     Send Another Message
@@ -179,6 +179,12 @@ const Contact = () => {
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Hidden trap field: people never see it, bots fill it in */}
+                    <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+                      <label>Leave this empty
+                        <input type="text" name="company_website" tabIndex={-1} autoComplete="off" value={form.company_website} onChange={handleChange} />
+                      </label>
+                    </div>
                     <div className="grid sm:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">

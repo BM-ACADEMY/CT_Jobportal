@@ -198,6 +198,7 @@ const AdminDashboard = () => {
             { label: 'New contact messages', count: stats.needsAction?.messagesNew, to: '/admin/messages' },
             { label: 'Reviews waiting for approval', count: stats.needsAction?.reviewsPending, to: '/admin/reviews' },
             { label: 'Requests waiting', count: stats.needsAction?.requestsPending, to: '/admin/requests' },
+            { label: 'Jobs flagged as possible scams', count: stats.needsAction?.jobsFlagged, to: '/admin/jobs' },
           ].map((row) => (
             <Link key={row.to} to={row.to} className="p-4 bg-slate-50/50 hover:bg-slate-50 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-slate-100">
               <div className="flex items-center gap-4">

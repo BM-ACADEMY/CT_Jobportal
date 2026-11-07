@@ -8,6 +8,9 @@ const jobSchema = new mongoose.Schema({
   description: {
     type: String
   },
+  // Set automatically when the text looks like a scam (asks for money, OTP, unrealistic pay). Admin reviews it; the job stays live.
+  scamFlags: { type: [String], default: [] },
+  scamReviewed: { type: Boolean, default: false },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'

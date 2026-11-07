@@ -22,6 +22,16 @@ const ManageJobs = () => {
   const searchParams = new URLSearchParams(location.search);
   const recruiterId = searchParams.get('recruiter');
 
+  const markChecked = async (jobId) => {
+    try {
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${jobId}/scam-review`, { reviewed: true });
+      setJobs((prev) => (Array.isArray(prev) ? prev.map((j) => (j._id === jobId ? { ...j, scamReviewed: true } : j)) : prev));
+      toast.success('Marked as checked');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to update');
+    }
+  };
+
   const fetchJobs = async () => {
     setLoading(true);
     try {
@@ -153,6 +163,14 @@ const ManageJobs = () => {
                               <MapPin size={12} className="text-emerald-600" />
                               {job.location}
                             </div>
+                            {job.scamFlags?.length > 0 && !job.scamReviewed && (
+                              <div className="flex items-center gap-2 pt-1">
+                                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                                  Possible scam: {job.scamFlags.map((f) => ({ asks_for_money: 'asks for money', private_chat_or_otp: 'asks for OTP or private chat', pay_too_good: 'pay looks too good' }[f] || f)).join(', ')}
+                                </span>
+                                <button type="button" onClick={() => markChecked(job._id)} className="text-[10px] font-bold text-emerald-600 hover:underline">Looks fine</button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>

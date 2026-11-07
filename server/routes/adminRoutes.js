@@ -73,6 +73,7 @@ router.delete('/companies/:id', deleteCompany);
 router.patch('/companies/:id/verify', require('../controllers/companyVerificationController').setCompanyVerified);
 
 router.get('/jobs', getJobs);
+router.patch('/jobs/:id/scam-review', require('../controllers/jobScamReviewController').setJobScamReviewed);
 router.delete('/jobs/:id', deleteJob);
 
 module.exports = router;
