@@ -13,6 +13,7 @@ const KEY_SECRET = 'test_key_secret';
 const WEBHOOK_SECRET = 'test_webhook_secret';
 process.env.RAZORPAY_KEY_SECRET = KEY_SECRET;
 process.env.PAYMENTS_ENABLED = 'true'; // tests assume the live switch is on unless a test turns it off
+process.env.RECURRING_PLANS_ENABLED = 'true'; // same for recurring plans; recurringSwitch.test.js and recurringGate.test.js turn it off
 process.env.RAZORPAY_WEBHOOK_SECRET = WEBHOOK_SECRET;
 
 const hmacWith = secret => payload => crypto.createHmac('sha256', secret).update(payload).digest('hex');

@@ -95,6 +95,12 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ msg: 'Free plans do not require a Razorpay order' });
     }
 
+    // College and company plans renew by themselves (a Razorpay mandate) and stay closed until RECURRING_PLANS_ENABLED=true.
+    // Without this check a company or college user could still buy one as a one-time order through the API.
+    if ((plan.role === 'company' || plan.role === 'college') && !recurringPlansOpen()) {
+      return res.status(503).json({ msg: RECURRING_CLOSED_MSG, recurringPlansEnabled: false });
+    }
+
     // Block before money changes hands — a delegated team member paying for an org-tier plan
     // here would still get rejected at verifyPayment, but only after being charged with no refund.
     if (plan.role === 'company' && req.user.role === 'org_employee') {
