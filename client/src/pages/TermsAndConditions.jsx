@@ -130,7 +130,7 @@ const TermsAndConditions = () => {
 
           <Section id="refunds" title="6. Refunds & Cancellation">
             <p>
-              You can ask for a refund within <strong>24 hours of payment</strong>, as long as you have not used the plan or feature you paid for. Each account, email address and phone number is eligible for one refund. If you were charged twice for the same item, we refund the duplicate in full, at any time.
+              You can ask for a refund within <strong>10 days of the payment date</strong>, as long as you have not used the plan or feature you paid for. Each account, email address and phone number is eligible for one refund. If you were charged twice for the same item, we refund the duplicate in full, at any time.
             </p>
             <p>
               Refunds for College (campus) plans are handled directly by our team. Every refund is reviewed and approved by us before it is issued, and approved refunds go back to the original payment method. Outside these cases, payments are non-refundable, including for unused time, early cancellation, downgrade, account suspension for a Terms violation, or dissatisfaction with match outcomes or hiring results.

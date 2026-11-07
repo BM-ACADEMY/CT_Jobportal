@@ -466,7 +466,7 @@ const SubscriptionPage = () => {
         open={!!downgradePlan}
         onOpenChange={(open) => { if (!open) setDowngradePlan(null); }}
         title="Downgrade your plan?"
-        description={`You're switching from ${currentPlan?.name || 'your current plan'} to ${downgradePlan?.name || 'this plan'}. Refunds follow our Refund policy (24-hour window, nothing used), and you'll lose access to features exclusive to your current tier once the change takes effect.`}
+        description={`You're switching from ${currentPlan?.name || 'your current plan'} to ${downgradePlan?.name || 'this plan'}. Refunds follow our Refund policy (10-day window, nothing used), and you'll lose access to features exclusive to your current tier once the change takes effect.`}
         confirmLabel="Downgrade Anyway"
         destructive
         onConfirm={() => {

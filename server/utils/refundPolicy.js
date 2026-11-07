@@ -1,10 +1,11 @@
 // Refund rules (kept in one place so the Terms page, the Refund page and the API agree).
-//   1. Self-serve refund requests are accepted within 24 hours of the payment.
+//   1. Self-serve refund requests are accepted within 10 days of the payment.
 //   2. One refund per account / email / phone number.
 //   3. A duplicate charge (same item paid twice within 24h) is always refundable, at any time.
 //   4. College (campus) plans are handled by our team: the request is not self-serve.
 //   5. An admin still approves every refund and confirms that nothing was used.
-const REFUND_WINDOW_HOURS = 24;
+const REFUND_WINDOW_DAYS = 10;
+const REFUND_WINDOW_HOURS = REFUND_WINDOW_DAYS * 24;
 const HOUR_MS = 60 * 60 * 1000;
 
 /**
@@ -19,7 +20,7 @@ const checkRefundEligibility = async (payment, deps, context = {}) => {
   const { user, planRole } = context;
 
   // 'cancelled' is what a payment becomes when the buyer presses "Cancel plan" after paying. The money was still taken and
-  // nothing was refunded, so it stays refundable (same 24-hour window and one-refund rules). Pressing Cancel plan must never
+  // nothing was refunded, so it stays refundable (same 10-day window and one-refund rules). Pressing Cancel plan must never
   // lock a customer out of the refund they are entitled to. 'refunded', 'refund_pending', 'failed' etc. are still rejected.
   if (payment.status !== 'completed' && payment.status !== 'cancelled') {
     return { eligible: false, code: 'not_completed', msg: 'Only completed payments can be refunded' };
@@ -50,9 +51,9 @@ const checkRefundEligibility = async (payment, deps, context = {}) => {
     return { eligible: false, code: 'contact_support', msg: 'College plans are reviewed by our team. Please raise a support ticket or email support so we can help you.' };
   }
 
-  // 1. window
+  // 1. window (10 days from the payment date)
   if (now - created > REFUND_WINDOW_HOURS * HOUR_MS) {
-    return { eligible: false, code: 'window_closed', msg: `Refund requests must be made within ${REFUND_WINDOW_HOURS} hours of payment. See the Refund & Cancellation policy.` };
+    return { eligible: false, code: 'window_closed', msg: `Refund requests must be made within ${REFUND_WINDOW_DAYS} days of payment. See the Refund & Cancellation policy.` };
   }
 
   // 2. one refund per account / email / phone
@@ -77,4 +78,4 @@ const checkRefundEligibility = async (payment, deps, context = {}) => {
   return { eligible: true };
 };
 
-module.exports = { checkRefundEligibility, REFUND_WINDOW_HOURS };
+module.exports = { checkRefundEligibility, REFUND_WINDOW_HOURS, REFUND_WINDOW_DAYS };

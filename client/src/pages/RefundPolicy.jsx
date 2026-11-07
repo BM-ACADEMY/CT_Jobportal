@@ -23,11 +23,11 @@ const RefundPolicy = () => (
     sections={SECTIONS}
     seoPath="/refund-policy"
     seoTitle="Refund & Cancellation Policy for Paid Plans | Velaivaaipu"
-    seoDescription="See the Velaivaaipu refund and cancellation policy: the 24-hour refund window, full refunds for duplicate charges and how to stop auto-renewal. Read it."
+    seoDescription="See the Velaivaaipu refund and cancellation policy: the 10-day refund window, full refunds for duplicate charges and how to stop auto-renewal. Read it."
   >
     <Section id="summary" title="1. In short">
       <ul className="list-disc pl-5 space-y-1.5">
-        <li>Ask within <strong>24 hours</strong> of paying, and you get a refund if you have not used what you bought.</li>
+        <li>Ask within <strong>10 days</strong> of paying, and you get a refund if you have not used what you bought.</li>
         <li>Charged twice for the same thing? We refund the extra charge in full, whenever you tell us.</li>
         <li>One refund per account, email address and phone number.</li>
         <li>Every refund is checked and approved by our team.</li>
@@ -37,7 +37,7 @@ const RefundPolicy = () => (
     <Section id="eligible" title="2. When you can get a refund">
       <p>You are eligible if all of these are true:</p>
       <ul className="list-disc pl-5 space-y-1.5">
-        <li>The request is made within 24 hours of the payment.</li>
+        <li>The request is made within 10 days of the payment date.</li>
         <li>You have not used the plan or feature you paid for (for example, no candidate unlocks, job posts, credits or premium tools used).</li>
         <li>You have not already received or requested a refund on this account, email address or phone number.</li>
       </ul>
@@ -47,7 +47,7 @@ const RefundPolicy = () => (
 
     <Section id="not-eligible" title="3. When a refund is not available">
       <ul className="list-disc pl-5 space-y-1.5">
-        <li>More than 24 hours have passed (other than a duplicate charge).</li>
+        <li>More than 10 days have passed since the payment (other than a duplicate charge).</li>
         <li>You have used the plan or feature, fully or partly.</li>
         <li>Unused time or credits after you cancel, downgrade or change your mind later.</li>
         <li>Your account was suspended or closed for breaking our <Link to="/terms" className="font-bold text-emerald-700 hover:underline">Terms</Link>.</li>

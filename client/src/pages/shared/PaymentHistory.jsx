@@ -35,13 +35,14 @@ const FILTER_OPTIONS = [
   { key: 'refunded',  label: 'Refunded' },
 ];
 
-// The server decides every refund (24 hours, once per account/email/phone, college plans by our team, duplicates always).
-// This only decides whether to show the button: paid, completed, inside 24 hours, or a likely duplicate charge.
+// The server decides every refund (10 days, once per account/email/phone, college plans by our team, duplicates always).
+// This only decides whether to show the button: paid, completed (or cancelled after paying), inside 10 days, or a likely duplicate charge.
 const DAY_MS = 24 * 60 * 60 * 1000;
+const REFUND_WINDOW_DAYS = 10;
 const canOfferRefund = (p, all) => {
-  if (p.status !== 'completed' || !(Number(p.amount) > 0) || p.isRenewal) return false;
+  if ((p.status !== 'completed' && p.status !== 'cancelled') || !(Number(p.amount) > 0) || p.isRenewal) return false;
   const created = new Date(p.createdAt).getTime();
-  if (Date.now() - created <= DAY_MS) return true;
+  if (Date.now() - created <= REFUND_WINDOW_DAYS * DAY_MS) return true;
   const itemId = (x) => String(x.plan?._id || x.plan || x.payPerFeature?._id || x.payPerFeature || '');
   return all.some((o) => o._id !== p._id && o.status !== 'failed' && o.status !== 'pending' && itemId(o) && itemId(o) === itemId(p) && Math.abs(new Date(o.createdAt).getTime() - created) <= DAY_MS);
 };
@@ -249,7 +250,7 @@ const PaymentHistory = () => {
       setRefundReason('');
       await fetchPayments();
     } catch (err) {
-      // The server's message names the exact rule (24-hour window, one per account, college plans, ...).
+      // The server's message names the exact rule (10-day window, one per account, college plans, ...).
       toast.error(err.response?.data?.msg || 'Could not send the refund request. Please try again.');
     } finally {
       setRefundBusy(false);
@@ -465,7 +466,7 @@ const PaymentHistory = () => {
           <DialogHeader>
             <DialogTitle>Request a refund</DialogTitle>
             <DialogDescription>
-              Refunds are accepted within 24 hours of payment, once per account, email and phone number. A duplicate charge is always refundable.
+              Refunds are accepted within 10 days of the payment date, once per account, email and phone number. A duplicate charge is always refundable.
               Our team confirms nothing was used and replies within 3 working days. If approved, your plan moves to Free and the money returns to your original payment method in 5 to 7 working days.
               <a href="/refund-policy" target="_blank" rel="noreferrer" className="text-blue-600 underline ml-1">Read the refund policy</a>
             </DialogDescription>

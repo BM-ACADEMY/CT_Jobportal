@@ -247,6 +247,10 @@ const SubscriptionPage = () => {
           <Paragraph className="text-slate-500 mb-6 text-sm">
             Your plan will be cancelled immediately and you'll be moved to the <Text strong>Free plan</Text>. Any remaining paid period will be forfeited.
           </Paragraph>
+          <div className="text-left rounded-lg border border-amber-200 bg-amber-50 p-3 mb-6 text-xs leading-relaxed text-amber-900">
+            <p className="m-0 font-bold">Cancelling does not refund your payment.</p>
+            <p className="m-0 mt-1">If you want a refund, go to <a href="/candidate/payment-history" className="font-bold underline">Payment History</a> and request one. A refund is processed only if the request is made within <strong>10 days</strong> of the payment date.</p>
+          </div>
           <div className="flex gap-3">
             <Button
               size="large"
