@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeftOpen,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, CalendarDays
+  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, CalendarDays, ListChecks
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findPermissionKeyForPath } from '../../config/teamPermissions';
@@ -91,6 +91,7 @@ const coreMenus = {
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
     { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets' },
     { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews' },
+    { icon: ListChecks,    label: 'Needs action',   path: '/admin/needs-action' },
     { icon: BadgeCheck,    label: 'Skill tests',    path: '/admin/skill-tests' },
     { icon: UserCog,        label: 'Staff',          path: '/admin/staff' },
     { icon: Settings,       label: 'Settings',       path: '/admin/settings' },

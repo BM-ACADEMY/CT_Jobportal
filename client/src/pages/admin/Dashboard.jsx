@@ -187,7 +187,7 @@ const AdminDashboard = () => {
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">Waiting on you</h2>
           </div>
           <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
-            Live counts
+            <Link to="/admin/needs-action">See all with owners</Link>
           </div>
         </div>
 
