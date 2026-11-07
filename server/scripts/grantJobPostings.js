@@ -12,6 +12,8 @@
 require('dotenv').config({ path: __dirname + '/../.env' });
 const mongoose = require('mongoose');
 const User = require('../models/User');
+require('../models/Role');          // loaded so populate('role') works when this script runs on its own
+require('../models/Subscription');  // loaded so populate('subscription') works
 const { getEffectivePlanLimit } = require('../utils/getEffectivePlanLimit');
 
 const arg = (name, fallback = '') => {
