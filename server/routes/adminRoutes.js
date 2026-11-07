@@ -69,6 +69,7 @@ router.patch('/users/:id/block', toggleBlockUser);
 
 router.get('/companies', getCompanies);
 router.delete('/companies/:id', deleteCompany);
+router.patch('/companies/:id/verify', require('../controllers/companyVerificationController').setCompanyVerified);
 
 router.get('/jobs', getJobs);
 router.delete('/jobs/:id', deleteJob);
