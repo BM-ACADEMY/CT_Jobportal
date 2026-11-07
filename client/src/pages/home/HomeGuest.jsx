@@ -410,7 +410,7 @@ const HomeGuest = () => {
                     Ready to Hire India's <span className="text-[#10213D]">Best Talent?</span>
                   </h2>
                   <p className="text-white/90 text-base font-medium mb-8 max-w-xl leading-relaxed">
-                    Post a job in minutes and reach millions of qualified candidates.
+                    Post a job in minutes and reach job seekers across Tamil Nadu and Puducherry.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-start">
                     <Link to="/register">

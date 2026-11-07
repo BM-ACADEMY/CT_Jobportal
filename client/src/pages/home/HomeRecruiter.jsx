@@ -83,7 +83,7 @@ const HomeRecruiter = () => {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Best Talent</span>
             </h1>
             <p className="text-slate-400 text-lg md:text-xl font-normal mb-10 max-w-xl leading-relaxed">
-              Post a job in minutes and reach millions of qualified candidates with AI-powered matching.
+              Post a job in minutes and reach job seekers across Tamil Nadu and Puducherry.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/company/jobs/new">

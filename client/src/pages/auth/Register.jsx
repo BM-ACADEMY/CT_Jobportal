@@ -256,7 +256,7 @@ const RegisterPage = () => {
                   Create your account
                 </h1>
                 <p className="text-slate-500 text-sm">
-                  Join millions of professionals on Velaivaaipu
+                  Join job seekers and employers on Velaivaaipu
                 </p>
               </div>
 

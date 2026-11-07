@@ -27,7 +27,7 @@ const FLOWS = [
     shortLabel: 'Recruiter',
     steps: [
       { icon: Building2, title: 'Set Up Company Profile', desc: 'Showcase your brand to candidates.', tags: ['Brand page', 'Culture', 'Benefits'], cta: 'Register company', to: '/register', anim: 'bounce' },
-      { icon: Briefcase, title: 'Post Jobs', desc: 'Publish roles in minutes, reach millions.', tags: ['Job templates', 'Screening questions'], cta: 'Post a job', to: '/register', anim: 'wiggle' },
+      { icon: Briefcase, title: 'Post Jobs', desc: 'Publish roles in minutes and reach local job seekers.', tags: ['Job templates', 'Screening questions'], cta: 'Post a job', to: '/register', anim: 'wiggle' },
       { icon: UserCheck, title: 'Review Candidates', desc: 'AI-ranked applicants, ATS pipeline.', tags: ['AI ranking', 'ATS pipeline', 'Notes'], cta: 'Company login', to: '/company-login', anim: 'pop' },
       { icon: Handshake, title: 'Hire With Confidence', desc: 'Schedule interviews, extend offers.', tags: ['Interviews', 'Offer letters'], cta: 'Start hiring', to: '/register', anim: 'tilt' },
     ],

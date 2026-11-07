@@ -569,7 +569,7 @@ const Companies = () => {
             <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-[60px] -mr-16 -mt-16" />
             <div className="relative z-10">
               <h2 className="text-2xl font-bold text-white mb-3">Is your company hiring?</h2>
-              <p className="text-emerald-50 font-medium mb-6 max-w-md mx-auto">List your company and reach millions of qualified candidates across India.</p>
+              <p className="text-emerald-50 font-medium mb-6 max-w-md mx-auto">List your company and reach job seekers across Tamil Nadu and Puducherry.</p>
               <Link to="/register">
                 <Button className="h-12 px-10 rounded-2xl bg-white text-emerald-700 font-bold hover:bg-white/90 shadow-lg transition-all hover:scale-105">
                   Register Your Company
