@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const DURATION_ORDER = ['Monthly', 'Quarterly', 'Yearly', 'Lifetime'];
+const DURATION_ORDER = ['Daily', 'Monthly', 'Quarterly', 'Yearly', 'Lifetime'];
 
 const fmt = (n) =>
   `₹${Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const getDurationLabel = (duration, qty) => {
+  if (duration === 'Daily') return qty === 1 ? '1 Day' : `${qty} Days`;
   if (duration === 'Monthly') return qty === 1 ? '1 Month' : `${qty} Months`;
   if (duration === 'Quarterly') return qty === 1 ? '1 Quarter' : `${qty} Quarters`;
   if (duration === 'Yearly') return qty === 1 ? '1 Year' : `${qty} Years`;

@@ -571,7 +571,7 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
             { quantity: 12, price: Math.round((editingPlan.price || 0) * 12 * 0.80) }
           ];
       setForm({ ...DEFAULT_FORM, ...editingPlan, pricingOptions: opts, features: editingPlan.features || [] });
-      setIsCustomDuration(!['Monthly', 'Quarterly', 'Yearly', 'Lifetime'].includes(editingPlan.duration));
+      setIsCustomDuration(!['Daily', 'Monthly', 'Quarterly', 'Yearly', 'Lifetime'].includes(editingPlan.duration));
     } else {
       setForm(DEFAULT_FORM);
       setIsCustomDuration(false);
@@ -667,6 +667,7 @@ const PlanEditorModal = ({ open, onClose, editingPlan, onSaved, allFeatures }) =
                 }}>
                   <SelectTrigger className="h-11 rounded-xl border-slate-200 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="Daily">Daily (1 day)</SelectItem>
                     <SelectItem value="Monthly">Monthly</SelectItem>
                     <SelectItem value="Quarterly">Quarterly</SelectItem>
                     <SelectItem value="Yearly">Yearly</SelectItem>

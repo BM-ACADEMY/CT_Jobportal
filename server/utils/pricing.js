@@ -30,7 +30,9 @@ const getPricingOption = (item, quantity) => {
 // When a one-time plan bought for `quantity` billing periods runs out.
 const computeExpiry = (plan, quantity) => {
   const expiryDate = new Date();
-  if (plan.duration === 'Monthly') {
+  if (plan.duration === 'Daily') {
+    expiryDate.setDate(expiryDate.getDate() + quantity);
+  } else if (plan.duration === 'Monthly') {
     expiryDate.setMonth(expiryDate.getMonth() + quantity);
   } else if (plan.duration === 'Quarterly') {
     expiryDate.setMonth(expiryDate.getMonth() + (3 * quantity));
@@ -45,7 +47,8 @@ const computeExpiry = (plan, quantity) => {
 // Next charge date of a recurring (auto-renewing) plan.
 const computeNextRenewalDate = (duration, from = new Date()) => {
   const d = new Date(from);
-  if (duration === 'Monthly') d.setMonth(d.getMonth() + 1);
+  if (duration === 'Daily') d.setDate(d.getDate() + 1);
+  else if (duration === 'Monthly') d.setMonth(d.getMonth() + 1);
   else if (duration === 'Quarterly') d.setMonth(d.getMonth() + 3);
   else if (duration === 'Yearly') d.setFullYear(d.getFullYear() + 1);
   else d.setFullYear(d.getFullYear() + 100);
