@@ -29,7 +29,7 @@ const refundAtGateway = async (razorpay, payment) => {
       receipt: `refund_${payment._id}`,
       notes: { paymentRecord: String(payment._id), reason: String(payment.refundReason || '').slice(0, 200) },
     });
-    return { refundId: refund?.id || null, alreadyRefunded: false };
+    return { refundId: refund?.id || null, status: String(refund?.status || '').toLowerCase(), alreadyRefunded: false };
   } catch (err) {
     if (isAlreadyRefunded(err)) return { refundId: null, alreadyRefunded: true };
     const wrapped = new Error(describeError(err));

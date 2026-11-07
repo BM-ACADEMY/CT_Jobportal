@@ -73,6 +73,9 @@ const paymentSchema = new mongoose.Schema({
   refundReason: { type: String, default: '' },
   // Razorpay's id for the refund sent when an admin approved it (empty for free items or when it was already refunded).
   razorpay_refund_id: { type: String, default: '' },
+  // Razorpay's own status for that refund (pending, processed or failed), refreshed from Razorpay (utils/refundStatus.js).
+  refundGatewayStatus: { type: String, default: '' },
+  refundStatusCheckedAt: { type: Date, default: null },
   refundRequestedAt: { type: Date, default: null },
   refundDuplicate: { type: Boolean, default: false },
   // True for an automatic charge of an existing recurring subscription (as opposed to a purchase).

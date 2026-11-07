@@ -21,7 +21,14 @@ const STATUS_CONFIG = {
   pending:    { label: 'Pending',      badge: 'bg-amber-50 text-amber-600',     icon: Clock },
   cancelled:  { label: 'Cancelled',    badge: 'bg-rose-50 text-rose-400',       icon: XCircle },
   refund_pending: { label: 'Refund requested', badge: 'bg-amber-50 text-amber-600', icon: Clock },
-  refunded:   { label: 'Refunded',     badge: 'bg-emerald-50 text-emerald-600', icon: CheckCircle2 },
+  refunded:   { label: 'Refund accepted', badge: 'bg-emerald-50 text-emerald-600', icon: CheckCircle2 },
+};
+
+// Razorpay's own words for a refund, shown to the buyer under "Refund accepted".
+const RAZORPAY_REFUND = {
+  pending:   { label: 'Razorpay: Pending',   badge: 'bg-amber-50 text-amber-700',     hint: 'Razorpay is sending the money back. It reaches you in 5 to 7 working days.' },
+  processed: { label: 'Razorpay: Processed', badge: 'bg-emerald-50 text-emerald-700', hint: 'Razorpay has sent the money to your bank. It can take a few working days to show.' },
+  failed:    { label: 'Razorpay: Failed',    badge: 'bg-rose-50 text-rose-700',       hint: 'The refund could not be completed. Please contact support.' },
 };
 
 const FILTER_OPTIONS = [
@@ -32,7 +39,7 @@ const FILTER_OPTIONS = [
   { key: 'pending',   label: 'Pending' },
   { key: 'cancelled', label: 'Cancelled' },
   { key: 'refund_pending', label: 'Refund requested' },
-  { key: 'refunded',  label: 'Refunded' },
+  { key: 'refunded',  label: 'Refund accepted' },
 ];
 
 // The server decides every refund (10 days, once per account/email/phone, college plans by our team, duplicates always).
@@ -390,6 +397,15 @@ const PaymentHistory = () => {
                         <Badge className={`${cfg.badge} border-none px-2.5 py-0.5 rounded-none flex items-center gap-1 w-fit shadow-none text-[10px] font-semibold`}>
                           <StatusIcon size={9} /> {cfg.label}
                         </Badge>
+                        {payment.status === 'refunded' && payment.razorpay_refund_id && (() => {
+                          const gw = RAZORPAY_REFUND[payment.refundGatewayStatus] || RAZORPAY_REFUND.pending;
+                          return (
+                            <div className="mt-1.5">
+                              <Badge className={`${gw.badge} border-none px-2.5 py-0.5 rounded-none w-fit shadow-none text-[10px] font-semibold`}>{gw.label}</Badge>
+                              <p className="text-[9px] text-slate-400 font-medium mt-1 max-w-[190px] leading-snug">{gw.hint}</p>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button

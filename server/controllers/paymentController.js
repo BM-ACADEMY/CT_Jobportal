@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const getRazorpay = require('../config/razorpay');
 const { refundAtGateway } = require('../utils/refundGateway');
 const { cancelRecurringMandates } = require('../utils/cancelRecurring');
+const { syncRefundStatuses } = require('../utils/refundStatus');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Payment = require('../models/Payment');
@@ -441,6 +442,9 @@ const getPaymentHistory = async (req, res) => {
       .populate('payPerFeature', 'name cost days usageCount')
       .sort({ createdAt: -1 });
 
+    // Show the refund status exactly as Razorpay has it (pending, processed, failed).
+    await syncRefundStatuses(getRazorpay(), payments);
+
     res.json(payments);
   } catch (err) {
     console.error('Get Payment History Error:', err.message);
@@ -639,6 +643,7 @@ const approveRefund = async (req, res) => {
 
     payment.status = 'refunded';
     if (gateway.refundId) payment.razorpay_refund_id = gateway.refundId;
+    if (gateway.status) { payment.refundGatewayStatus = gateway.status; payment.refundStatusCheckedAt = new Date(); }
     await payment.save();
 
     // Revoke the user's subscription, but only when the refunded payment was for a plan. Refunding a
