@@ -47,7 +47,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Total Revenue', value: loading ? '...' : `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
-          { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'hover:border-emerald-200' },
+          { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, sub: loading ? '' : Object.entries(stats.usersByRole || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${k.replace(/_/g, ' ')}`).join(' · '), color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'hover:border-emerald-200' },
           { label: 'Jobs', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'hover:border-blue-200' },
           { label: 'Organizations', value: loading ? '...' : stats.companies, color: 'text-violet-600', bg: 'bg-violet-50', icon: Building2, border: 'hover:border-violet-200' }
         ].map((stat, i) => (
@@ -61,6 +61,7 @@ const AdminDashboard = () => {
                 <div>
                   <p className={`text-4xl font-black tracking-tight tabular-nums ${stat.color}`}>{stat.value}</p>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
+                  {stat.sub ? <p className="text-[11px] text-slate-500 mt-2 leading-snug">{stat.sub}</p> : null}
                 </div>
               </div>
             </CardContent>

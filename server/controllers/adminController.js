@@ -13,6 +13,7 @@ const sendEmail = require('../utils/sendEmail');
 const { notifyUser } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved } = require('../utils/jobNotifications');
 const { emailWrapper } = require('../utils/emailTemplates');
+const { REVENUE_START, chartStart } = require('../utils/revenueWindow');
 
 const generateToken = (id, roleName) => {
   return jwt.sign(
@@ -128,18 +129,24 @@ const getDashboardStats = async (req, res) => {
     const companyCount = await Company.countDocuments();
     const jobCount = await Job.countDocuments();
 
-    // 1. Total Revenue (sum of all completed payments)
+    // Users split by role name (job seekers, recruiters, colleges, staff) so the total can be read honestly
+    const roleRows = await User.aggregate([
+      { $group: { _id: '$role', count: { $sum: 1 } } },
+      { $lookup: { from: 'roles', localField: '_id', foreignField: '_id', as: 'r' } },
+      { $project: { name: { $ifNull: [{ $arrayElemAt: ['$r.name', 0] }, 'other'] }, count: 1, _id: 0 } }
+    ]);
+    const usersByRole = {};
+    roleRows.forEach(({ name, count }) => { usersByRole[name] = (usersByRole[name] || 0) + count; });
+
+    // 1. Total Revenue (completed payments from launch day; earlier ones are test data)
     const revenueResult = await Payment.aggregate([
-      { $match: { status: 'completed' } },
+      { $match: { status: 'completed', createdAt: { $gte: REVENUE_START } } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
     const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
 
     // 2. Revenue Data (Last 4 months)
-    const fourMonthsAgo = new Date();
-    fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 3);
-    fourMonthsAgo.setDate(1);
-    fourMonthsAgo.setHours(0,0,0,0);
+    const fourMonthsAgo = chartStart();
 
     const revenueDataResult = await Payment.aggregate([
       { 
@@ -204,6 +211,7 @@ const getDashboardStats = async (req, res) => {
       users: userCount,
       companies: companyCount,
       jobs: jobCount,
+      usersByRole,
       totalRevenue,
       revenueData,
       subscriptionData: subscriptionResult
