@@ -215,7 +215,7 @@ const getDashboardStats = async (req, res) => {
     // Real counts of things waiting for an admin. A failed count shows 0 rather than breaking the page.
     const count = (model, filter) => model.countDocuments(filter).catch(() => 0);
     const [collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending] = await Promise.all([
-      count(require('../models/College'), { verificationStatus: 'pending' }),
+      count(require('../models/College'), { verificationStatus: 'pending', isTest: { $ne: true } }),
       count(require('../models/Ticket'), { status: { $in: ['open', 'in_progress'] } }),
       count(require('../models/ContactMessage'), { status: 'new' }),
       count(Review, { status: 'pending' }),

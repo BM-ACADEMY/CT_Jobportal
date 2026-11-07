@@ -154,6 +154,7 @@ router.post('/public/company-drive/:token/sign-file', signCompanyDriveFile);
 // Admin, or a staff member with the matching permission (college verifier role).
 router.get('/admin/all-colleges', verifyToken, requireAdminOr('colleges_view'), getAllCollegesForAdmin);
 router.get('/admin/colleges/:collegeId', verifyToken, requireAdminOr('colleges_view'), getCollegeByIdForAdmin);
+router.put('/admin/colleges/:collegeId/test', verifyToken, requireAdminOr('colleges_verify'), require('../controllers/collegeTestFlagController').setCollegeTestFlag);
 router.put('/admin/verify/:collegeId', verifyToken, requireAdminOr('colleges_verify'), adminVerifyCollege);
 
 // ── TPO authenticated routes ────────────────────────────────────────────────

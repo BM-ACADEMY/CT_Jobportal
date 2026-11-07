@@ -2158,8 +2158,9 @@ const uploadProofDocument = async (req, res) => {
 // @route   GET /api/college/admin/all-colleges
 const getAllCollegesForAdmin = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
+    const { page = 1, limit = 20, search, includeTest } = req.query;
     const filter = {};
+    if (includeTest !== 'true') filter.isTest = { $ne: true };
     if (search) {
       const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       filter.$or = [{ name: regex }, { code: regex }];

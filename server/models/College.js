@@ -118,6 +118,9 @@ const collegeSchema = new mongoose.Schema({
     enum: ['pending', 'verified', 'rejected'],
     default: 'pending'
   },
+  // Set by an admin for test or demo colleges. They stay in the database but are hidden from the
+  // verification list by default and are not counted in admin totals.
+  isTest: { type: Boolean, default: false, index: true },
   verifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
