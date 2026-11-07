@@ -200,20 +200,20 @@ const RegisterPage = () => {
           </h2>
           <p className="text-white/80 text-sm font-medium leading-relaxed mb-10 max-w-xs">
             {isRecruiter
-              ? 'Post jobs for free and connect with 50L+ active job seekers across India.'
+              ? 'Post jobs for free and connect with job seekers in Tamil Nadu and Puducherry.'
               : 'Whether you\'re looking for your next role or next hire — we\'ve got you.'}
           </p>
 
           <div className="flex flex-col gap-3">
             {(isRecruiter ? [
-              'Post unlimited jobs for free',
-              'Access 50L+ candidate profiles',
-              'AI-powered candidate matching',
+              'Post jobs free on the Free plan',
+              'Search candidate profiles',
+              'Find candidates by skills and location',
               'Real-time application tracking',
             ] : [
               'Free account, always',
-              'AI-powered resume builder',
-              'One-click apply to 2L+ jobs',
+              'Free resume builder',
+              'Apply to jobs in a few taps',
               'Real-time application tracking',
             ]).map((text, i) => (
               <div key={i} className="flex items-center gap-3">
