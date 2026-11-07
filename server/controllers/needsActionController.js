@@ -1,34 +1,17 @@
 const User = require('../models/User');
 const Role = require('../models/Role');
-const College = require('../models/College');
-const Ticket = require('../models/Ticket');
-const ContactMessage = require('../models/ContactMessage');
-const Review = require('../models/Review');
-const AdminRequest = require('../models/AdminRequest');
-const Job = require('../models/Job');
 const AdminAssignment = require('../models/AdminAssignment');
-const { buildNeedsAction } = require('../utils/needsAction');
+const AdminRoutingRule = require('../models/AdminRoutingRule');
+const { loadNeedsAction } = require('../utils/needsActionLoader');
 
 const KINDS = ['college', 'ticket', 'message', 'review', 'request', 'job'];
 const HEX = /^[0-9a-fA-F]{24}$/;
-const PER_SOURCE = 100;
-
-const load = (query) => query.sort({ createdAt: 1 }).limit(PER_SOURCE).lean().catch(() => []);
-
 // @route GET /api/admin/needs-action
 // Everything waiting for an admin in one list, with its owner and how long it has waited. Super admin only.
 const getNeedsAction = async (req, res) => {
   try {
-    const groups = {
-      colleges: await load(College.find({ verificationStatus: 'pending', isTest: { $ne: true } }).select('name code collegeEmail collegePhone createdAt')),
-      tickets: await load(Ticket.find({ status: { $in: ['open', 'in_progress'] } }).select('category accountIdentity createdAt')),
-      messages: await load(ContactMessage.find({ status: 'new' }).select('name email subject createdAt')),
-      reviews: await load(Review.find({ status: 'pending' }).select('rating comment createdAt')),
-      requests: await load(AdminRequest.find({ status: 'pending' }).select('type bookingName bookingEmail createdAt')),
-      jobs: await load(Job.find({ 'scamFlags.0': { $exists: true }, scamReviewed: { $ne: true }, status: { $ne: 'closed' } }).select('title scamFlags createdAt'))
-    };
-    const assignments = await AdminAssignment.find({}).lean();
-    const result = buildNeedsAction(groups, assignments, new Date());
+    const result = await loadNeedsAction(new Date());
+    const rules = (await AdminRoutingRule.find({}).lean().catch(() => [])).map((r) => ({ kind: r.kind, ownerId: r.ownerId, ownerName: r.ownerName }));
 
     let owners = [];
     try {
@@ -39,7 +22,7 @@ const getNeedsAction = async (req, res) => {
       console.error('Needs-action owners failed:', e.message);
     }
     owners.unshift({ id: String(req.user.id), name: 'Me' });
-    res.json({ ...result, owners });
+    res.json({ ...result, owners, rules });
   } catch (err) {
     console.error('Needs-action error:', err.message);
     res.status(500).json({ msg: 'Server error' });
@@ -71,4 +54,24 @@ const assignItem = async (req, res) => {
   }
 };
 
-module.exports = { getNeedsAction, assignItem };
+// @route PUT /api/admin/needs-action/rules   Body: { kind, ownerId, ownerName }  (ownerId null removes the rule)
+const setRule = async (req, res) => {
+  try {
+    const { kind, ownerId, ownerName } = req.body || {};
+    if (!KINDS.includes(kind)) return res.status(400).json({ msg: 'Unknown item type' });
+    if (ownerId === null || ownerId === undefined || ownerId === '') {
+      await AdminRoutingRule.deleteOne({ kind });
+      return res.json({ msg: 'Rule removed' });
+    }
+    if (!HEX.test(String(ownerId))) return res.status(400).json({ msg: 'Invalid owner' });
+    const name = String(ownerName || '').trim().slice(0, 80);
+    if (!name) return res.status(400).json({ msg: 'Owner name is required' });
+    await AdminRoutingRule.findOneAndUpdate({ kind }, { $set: { ownerId: String(ownerId), ownerName: name } }, { upsert: true, setDefaultsOnInsert: true });
+    res.json({ msg: 'Rule saved' });
+  } catch (err) {
+    console.error('Routing rule error:', err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+module.exports = { getNeedsAction, assignItem, setRule };

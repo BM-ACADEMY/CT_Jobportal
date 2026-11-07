@@ -4,6 +4,7 @@ const { runScheduledPlacementReports } = require('./reportScheduler');
 const expireJobs = require('./expireJobs');
 const runCourseFollowUps = require('./courseFollowUps');
 const runLifecycleMails = require('./lifecycleMails');
+const { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts } = require('./adminFollowUp');
 
 // Called once after the Mongo connection is established (see server/index.js).
 const startCronJobs = () => {
@@ -24,6 +25,11 @@ const startCronJobs = () => {
   // Lifecycle mails (profile nudges, job alerts, employer tips, college batch report) once a day at 10:00 India time.
   // Off unless LIFECYCLE_EMAILS_ENABLED=true.
   cron.schedule('0 10 * * *', runLifecycleMails, { timezone: 'Asia/Kolkata' });
+
+  // Admin follow-up (off with ADMIN_FOLLOWUP_ENABLED=false): auto-assign, 24h reminders, 48h escalation, daily summary, failed-payment alert.
+  cron.schedule('*/15 * * * *', runAutoAssignAndReminders);
+  cron.schedule('0 9 * * *', runDailyDigest, { timezone: 'Asia/Kolkata' });
+  cron.schedule('*/30 * * * *', runPaymentAlerts);
 
   console.log('[Cron] Scheduled jobs started: interview reminders (every 15m), placement reports (daily 07:00), job expiry (hourly)');
 };

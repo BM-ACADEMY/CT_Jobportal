@@ -74,6 +74,7 @@ router.patch('/companies/:id/verify', require('../controllers/companyVerificatio
 
 router.get('/needs-action', require('../controllers/needsActionController').getNeedsAction);
 router.put('/needs-action/assign', require('../controllers/needsActionController').assignItem);
+router.put('/needs-action/rules', require('../controllers/needsActionController').setRule);
 router.get('/jobs', getJobs);
 router.patch('/jobs/:id/scam-review', require('../controllers/jobScamReviewController').setJobScamReviewed);
 router.delete('/jobs/:id', deleteJob);

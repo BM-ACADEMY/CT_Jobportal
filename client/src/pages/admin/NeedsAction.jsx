@@ -20,8 +20,13 @@ const LEVEL_STYLE = {
   ok: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
+const RULE_LABELS = {
+  college: 'College verifications', ticket: 'Support tickets', message: 'Contact messages',
+  review: 'Reviews', request: 'Requests', job: 'Possible scam jobs',
+};
+
 const NeedsAction = () => {
-  const [data, setData] = useState({ items: [], summary: { total: 0, overdue: 0, late: 0, unassigned: 0 }, owners: [] });
+  const [data, setData] = useState({ items: [], summary: { total: 0, overdue: 0, late: 0, unassigned: 0 }, owners: [], rules: [] });
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -53,6 +58,17 @@ const NeedsAction = () => {
     }
   };
 
+  const setRule = async (kind, ownerId) => {
+    const owner = data.owners.find((o) => o.id === ownerId);
+    try {
+      await axios.put(`${API}/admin/needs-action/rules`, { kind, ownerId: owner ? owner.id : null, ownerName: owner ? owner.name : '' });
+      toast.success(owner ? `New ${RULE_LABELS[kind].toLowerCase()} go to ${owner.name}` : 'Rule removed');
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to save the rule');
+    }
+  };
+
   const shown = data.items.filter((i) => (filter === 'all' ? true : filter === 'unassigned' ? !i.owner : i.level === filter));
   const { summary } = data;
 
@@ -79,6 +95,30 @@ const NeedsAction = () => {
           </button>
         ))}
       </div>
+
+      <details className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <summary className="cursor-pointer select-none p-4 text-sm font-bold text-slate-700">
+          Auto-assign: who gets each new item
+        </summary>
+        <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {Object.entries(RULE_LABELS).map(([kind, label]) => (
+            <label key={kind} className="flex items-center justify-between gap-3 text-xs font-bold text-slate-600">
+              {label}
+              <select
+                value={data.rules?.find((r) => r.kind === kind)?.ownerId || ''}
+                onChange={(e) => setRule(kind, e.target.value)}
+                className="h-9 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 px-2 bg-white"
+              >
+                <option value="">Nobody (I assign)</option>
+                {data.owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
+            </label>
+          ))}
+          <p className="sm:col-span-2 text-[11px] text-slate-400 font-medium">
+            The system checks every 15 minutes. Owners are reminded after 24 hours. After 48 hours you get an email. A daily summary arrives at 9 am.
+          </p>
+        </div>
+      </details>
 
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="animate-spin text-emerald-600" /></div>
