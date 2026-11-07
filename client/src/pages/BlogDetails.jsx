@@ -432,6 +432,7 @@ const BLOG_UI_OVERRIDES = `
 // Internal links from each post to the matching job pages (candidate posts) or to the
 // employer tools (employer posts). Keys are blog slugs; anything not listed gets the default.
 const BLOG_JOB_LINKS = {
+  'deepavali-job-search-tips-tamil-nadu': [['/jobs', 'Latest jobs in Tamil Nadu'], ['/free-assessment', 'Take the free skill test'], ['/jobs/chennai', 'Jobs in Chennai'], ['/jobs/pondicherry', 'Jobs in Pondicherry']],
   'jobs-in-cuddalore': [['/jobs/cuddalore', 'Latest jobs in Cuddalore'], ['/jobs/pondicherry', 'Jobs in Pondicherry'], ['/jobs/villupuram', 'Jobs in Villupuram']],
   'jobs-in-villupuram': [['/jobs/villupuram', 'Latest jobs in Villupuram'], ['/jobs/pondicherry', 'Jobs in Pondicherry'], ['/jobs/cuddalore', 'Jobs in Cuddalore']],
   'jobs-in-tindivanam': [['/jobs/tindivanam', 'Latest jobs in Tindivanam'], ['/jobs/villupuram', 'Jobs in Villupuram'], ['/jobs/pondicherry', 'Jobs in Pondicherry']],
