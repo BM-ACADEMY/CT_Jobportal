@@ -9,11 +9,13 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Payment = require('../models/Payment');
 const Subscription = require('../models/Subscription');
+const Review = require('../models/Review');
 const sendEmail = require('../utils/sendEmail');
 const { notifyUser } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved } = require('../utils/jobNotifications');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { REVENUE_START, chartStart } = require('../utils/revenueWindow');
+const { mergePlanTotals } = require('../utils/planTotals');
 
 const generateToken = (id, roleName) => {
   return jwt.sign(
@@ -207,14 +209,28 @@ const getDashboardStats = async (req, res) => {
       { $project: { name: "$subDetails.name", value: "$count" } }
     ]);
 
+    // One plan can appear several times (one row per plan document); show each plan name once
+    const subscriptionMerged = mergePlanTotals(subscriptionResult);
+
+    // Real counts of things waiting for an admin. A failed count shows 0 rather than breaking the page.
+    const count = (model, filter) => model.countDocuments(filter).catch(() => 0);
+    const [collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending] = await Promise.all([
+      count(require('../models/College'), { verificationStatus: 'pending' }),
+      count(require('../models/Ticket'), { status: { $in: ['open', 'in_progress'] } }),
+      count(require('../models/ContactMessage'), { status: 'new' }),
+      count(Review, { status: 'pending' }),
+      count(require('../models/AdminRequest'), { status: 'pending' })
+    ]);
+
     res.json({
       users: userCount,
       companies: companyCount,
       jobs: jobCount,
+      needsAction: { collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending },
       usersByRole,
       totalRevenue,
       revenueData,
-      subscriptionData: subscriptionResult
+      subscriptionData: subscriptionMerged
     });
   } catch (err) {
     console.error('Stats Error:', err.message);

@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Users, Building2, Briefcase, TrendingUp, ShieldCheck, Activity, ChevronRight, DollarSign, PieChart as PieChartIcon } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444', '#ec4899'];
@@ -180,101 +179,43 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* System Telemetry Section */}
-      <div className="flex flex-col xl:flex-row gap-8 mt-8">
-        {/* Audit Logs */}
-        <div className="flex-1 min-w-0">
-          <section className="bg-white p-8 rounded-[24px] border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-               <div className="flex items-center gap-3">
-                  <Activity size={18} className="text-emerald-600" />
-                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">System Telemetry</h2>
-               </div>
-               <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
-                  Live Audit
-               </div>
-            </div>
+      {/* Waiting on you: real counts only */}
+      <section className="bg-white p-8 rounded-[24px] border border-slate-200 shadow-sm mt-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <Activity size={18} className="text-emerald-600" />
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Waiting on you</h2>
+          </div>
+          <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
+            Live counts
+          </div>
+        </div>
 
-            <div className="space-y-4">
-              {[
-                { msg: 'Global system synchronization finalized', time: '12:30 PM', status: 'SUCCESS' },
-                { msg: 'Administrative session authorized: Root Admin', time: '11:45 AM', status: 'SECURITY' },
-                { msg: 'Relational database integrity verified', time: '10:15 AM', status: 'STABLE' },
-                { msg: 'New organization registration request: TechCorp', time: '09:30 AM', status: 'PENDING' },
-                { msg: 'Automated backup sequence initiated', time: '08:00 AM', status: 'SYSTEM' },
-              ].map((log, i) => (
-                <div key={i} className="p-4 bg-slate-50/50 hover:bg-slate-50 rounded-xl transition-all flex items-center justify-between group border border-transparent hover:border-slate-100">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                       <ShieldCheck size={16} className="text-slate-400" />
-                    </div>
-                    <div>
-                       <p className="text-sm font-bold text-slate-800">{log.msg}</p>
-                       <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">{log.time}</p>
-                    </div>
-                  </div>
-                  <span className={`text-[9px] font-bold uppercase tracking-tight px-2 py-0.5 rounded-md border ${
-                    log.status === 'SECURITY' ? 'bg-red-50 text-red-600 border-red-100' : 
-                    log.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                    'bg-slate-100 text-slate-500 border-slate-200'
-                  }`}>
-                    {log.status}
-                  </span>
+        <div className="space-y-3">
+          {[
+            { label: 'Colleges waiting for verification', count: stats.needsAction?.collegesPending, to: '/admin/colleges' },
+            { label: 'Support tickets open', count: stats.needsAction?.ticketsOpen, to: '/admin/tickets' },
+            { label: 'New contact messages', count: stats.needsAction?.messagesNew, to: '/admin/messages' },
+            { label: 'Reviews waiting for approval', count: stats.needsAction?.reviewsPending, to: '/admin/reviews' },
+            { label: 'Requests waiting', count: stats.needsAction?.requestsPending, to: '/admin/requests' },
+          ].map((row) => (
+            <Link key={row.to} to={row.to} className="p-4 bg-slate-50/50 hover:bg-slate-50 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-slate-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                  <ShieldCheck size={16} className="text-slate-400" />
                 </div>
-              ))}
-            </div>
-            
-            <Button variant="ghost" className="w-full mt-6 text-emerald-600 font-bold uppercase tracking-widest text-[10px] hover:bg-emerald-50 rounded-xl">
-               Access Full Audit History <ChevronRight size={14} className="ml-1" />
-            </Button>
-          </section>
+                <p className="text-sm font-bold text-slate-800">{row.label}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`text-sm font-black tabular-nums px-2.5 py-0.5 rounded-md border ${row.count > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                  {loading ? '...' : (row.count ?? 0)}
+                </span>
+                <ChevronRight size={14} className="text-slate-400" />
+              </div>
+            </Link>
+          ))}
         </div>
-
-        {/* Sidebar Widgets */}
-        <div className="xl:w-[380px] flex flex-col gap-8">
-            <Card className="rounded-[32px] bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8 relative overflow-hidden group h-64 flex flex-col justify-end shadow-2xl shadow-slate-900/10 border-none hover:-translate-y-1 transition-transform duration-500">
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
-                 <TrendingUp size={120} />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent opacity-80" />
-              <div className="relative z-10 space-y-4">
-                 <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-xl backdrop-blur-md">Platform Integrity</Badge>
-                 <h3 className="text-2xl font-black leading-tight tracking-tight">Infrastructure status is currently Optimal.</h3>
-                 <div className="flex items-center gap-4 mt-6">
-                    <div className="flex -space-x-3">
-                       {[1,2,3].map(i => (
-                         <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700/80 backdrop-blur-md shadow-sm" />
-                       ))}
-                    </div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">99.99% Uptime</span>
-                 </div>
-              </div>
-           </Card>
-
-           <section className="bg-white p-8 rounded-[32px] border border-slate-200/60 shadow-sm hover:shadow-lg hover:border-slate-300 transition-all duration-500">
-              <div className="flex items-center justify-between mb-8">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Activity size={12} /> Resource telemetry</h4>
-              </div>
-              <div className="space-y-6">
-                 {[
-                   { label: 'Compute capacity', val: 78, color: 'bg-indigo-500', bg: 'bg-indigo-100' },
-                   { label: 'Storage metrics', val: 42, color: 'bg-emerald-500', bg: 'bg-emerald-100' },
-                   { label: 'Network throughput', val: 12, color: 'bg-blue-400', bg: 'bg-blue-100' }
-                 ].map((item, i) => (
-                   <div key={i} className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                         <span>{item.label}</span>
-                         <span className="text-slate-900 font-black">{item.val}%</span>
-                      </div>
-                      <div className={`h-2.5 ${item.bg} rounded-full overflow-hidden`}>
-                         <div className={`h-full ${item.color} rounded-full transition-all duration-1000 shadow-sm`} style={{ width: `${item.val}%` }} />
-                      </div>
-                   </div>
-                 ))}
-              </div>
-           </section>
-        </div>
-      </div>
+      </section>
     </div>
   );
 };
