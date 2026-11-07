@@ -30,9 +30,10 @@ const itemsHtml = (items) => `<ul style="padding-left:18px;margin:8px 0">${items
 
 const escalationBody = (items) => `<p>${items.length} item${items.length === 1 ? ' has' : 's have'} waited more than 48 hours:</p>${itemsHtml(items.slice(0, 15))}${items.length > 15 ? `<p>and ${items.length - 15} more.</p>` : ''}`;
 
-const digestBody = ({ summary, items, failedPayments = 0, newUsers = 0, revenue = 0 }) => `
+const digestBody = ({ summary, items, failedPayments = 0, newUsers = 0, revenue = 0, budget = null }) => `
   <p><strong>${summary.total}</strong> waiting, <strong>${summary.overdue}</strong> overdue, <strong>${summary.late}</strong> late, <strong>${summary.unassigned}</strong> with no owner.</p>
   <p>Last 24 hours: <strong>${newUsers}</strong> new users, <strong>₹${Number(revenue || 0).toLocaleString('en-IN')}</strong> in completed payments, <strong>${failedPayments}</strong> failed payment${failedPayments === 1 ? '' : 's'}.</p>
+  ${budget ? `<p>Marketing budget: <strong>${budget.pct}%</strong> used (₹${Number(budget.spent).toLocaleString('en-IN')} of ₹${Number(budget.cap).toLocaleString('en-IN')})${budget.alert ? '. <strong>Over 80%: slow down or decide.</strong>' : '.'}</p>` : ''}
   ${items.length ? `<p>Oldest first:</p>${itemsHtml(items.slice(0, 10))}` : '<p>Nothing is waiting.</p>'}`;
 
 const paymentAlertBody = (rows) => `<p>${rows.length} payment${rows.length === 1 ? '' : 's'} failed:</p><ul style="padding-left:18px;margin:8px 0">${rows.map((p) =>

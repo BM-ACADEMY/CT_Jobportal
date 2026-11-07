@@ -33,5 +33,7 @@ test('email bodies escape text and read clearly', () => {
   assert.ok(html.includes('2d 4h'));
   const digest = digestBody({ summary: { total: 0, overdue: 0, late: 0, unassigned: 0 }, items: [], failedPayments: 1, newUsers: 3, revenue: 1200 });
   assert.ok(digest.includes('Nothing is waiting.') && digest.includes('1</strong> failed payment'));
+  const withBudget = digestBody({ summary: { total: 1, overdue: 0, late: 0, unassigned: 1 }, items: [], budget: { pct: 85, spent: 29750, cap: 35000, alert: true } });
+  assert.ok(withBudget.includes('85%') && withBudget.includes('Over 80%'));
   assert.ok(paymentAlertBody([{ amount: 588.82, email: 'a@x.com', createdAt: '2026-11-07T07:00:00Z' }]).includes('588.82'));
 });

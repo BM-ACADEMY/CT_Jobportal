@@ -8,6 +8,8 @@ const AdminAssignment = require('../models/AdminAssignment');
 const AdminRoutingRule = require('../models/AdminRoutingRule');
 const AdminAlertLog = require('../models/AdminAlertLog');
 const Payment = require('../models/Payment');
+const SpendEntry = require('../models/SpendEntry');
+const { buildSpendSummary } = require('../utils/spendSummary');
 const User = require('../models/User');
 const { loadNeedsAction } = require('../utils/needsActionLoader');
 const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
@@ -70,10 +72,12 @@ const runDailyDigest = async () => {
       User.countDocuments({ createdAt: { $gte: since } }),
       Payment.aggregate([{ $match: { status: 'completed', createdAt: { $gte: since } } }, { $group: { _id: null, total: { $sum: '$amount' } } }])
     ]);
+    const spendEntries = await SpendEntry.find({ voided: { $ne: true } }).select('date line amount').lean().catch(() => []);
+    const { budget } = buildSpendSummary({ entries: spendEntries, days: 1 });
     await notifyRoles({
       roles: ['admin'], title: `Velaivaaipu daily summary: ${summary.total} waiting, ${summary.overdue} overdue`,
       message: `${newUsers} new users, ${failedPayments} failed payments in the last 24 hours.`, type: 'admin_digest', link: LINK,
-      emailBody: digestBody({ summary, items, failedPayments, newUsers, revenue: paid[0]?.total || 0 })
+      emailBody: digestBody({ summary, items, failedPayments, newUsers, revenue: paid[0]?.total || 0, budget })
     });
   } catch (err) {
     console.error('[Admin follow-up] digest failed:', err.message);
