@@ -36,3 +36,10 @@ test('non-completed and free payments are rejected', async () => {
   assert.equal((await checkRefundEligibility(mk({ status: 'refunded' }), deps(), ctx)).code, 'not_completed');
   assert.equal((await checkRefundEligibility(mk({ amount: 0 }), deps(), ctx)).code, 'free');
 });
+
+test('a payment the buyer cancelled (Cancel plan) is still refundable inside the window, and only inside it', async () => {
+  assert.equal((await checkRefundEligibility(mk({ status: 'cancelled' }), deps(), ctx)).eligible, true);
+  assert.equal((await checkRefundEligibility(mk({ status: 'cancelled', createdAt: new Date(NOW - 30 * HOUR) }), deps(), ctx)).code, 'window_closed');
+  assert.equal((await checkRefundEligibility(mk({ status: 'refund_pending' }), deps(), ctx)).code, 'not_completed');
+  assert.equal((await checkRefundEligibility(mk({ status: 'failed' }), deps(), ctx)).code, 'not_completed');
+});

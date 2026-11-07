@@ -18,7 +18,10 @@ const checkRefundEligibility = async (payment, deps, context = {}) => {
   const now = deps.now ? deps.now() : Date.now();
   const { user, planRole } = context;
 
-  if (payment.status !== 'completed') {
+  // 'cancelled' is what a payment becomes when the buyer presses "Cancel plan" after paying. The money was still taken and
+  // nothing was refunded, so it stays refundable (same 24-hour window and one-refund rules). Pressing Cancel plan must never
+  // lock a customer out of the refund they are entitled to. 'refunded', 'refund_pending', 'failed' etc. are still rejected.
+  if (payment.status !== 'completed' && payment.status !== 'cancelled') {
     return { eligible: false, code: 'not_completed', msg: 'Only completed payments can be refunded' };
   }
   if (!(Number(payment.amount) > 0)) {
