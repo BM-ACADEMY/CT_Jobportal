@@ -3869,10 +3869,24 @@ const BANK = {
   ]
 };
 
-// Returns a normalized set of 10 questions for a category
-const getCuratedSet = (categoryKey, setIndex = 0) => {
-  const pool = BANK[categoryKey];
-  if (!pool || pool.length < QUESTIONS_PER_SET) return null;
+const LEVEL_POOLS = require('./questionBank');
+
+// The questions for one skill and level. The original 50 questions of each core skill are the medium level.
+const poolFor = (categoryKey, level = 'medium') => {
+  if (level === 'medium' && BANK[categoryKey]) return BANK[categoryKey].concat(LEVEL_POOLS[categoryKey]?.medium || []);
+  return LEVEL_POOLS[categoryKey]?.[level] || [];
+};
+
+// Levels that have enough questions for a full test, for the skill list.
+const levelsFor = (categoryKey) => ['easy', 'medium', 'hard'].filter((l) => poolFor(categoryKey, l).length >= QUESTIONS_PER_SET);
+
+// How many different 10-question sets this skill and level can make.
+const setCount = (categoryKey, level = 'medium') => Math.floor(poolFor(categoryKey, level).length / QUESTIONS_PER_SET);
+
+// Returns a normalized set of 10 questions for a skill and level (setIndex picks which slice of the pool).
+const getCuratedSet = (categoryKey, setIndex = 0, level = 'medium') => {
+  const pool = poolFor(categoryKey, level);
+  if (pool.length < QUESTIONS_PER_SET) return null;
 
   const start = (setIndex * QUESTIONS_PER_SET) % pool.length;
   let slice = pool.slice(start, start + QUESTIONS_PER_SET);
@@ -3891,4 +3905,4 @@ const getCuratedSet = (categoryKey, setIndex = 0) => {
   return normalizeSet(raw);
 };
 
-module.exports = { BANK, getCuratedSet };
+module.exports = { BANK, getCuratedSet, levelsFor, setCount, poolFor };
