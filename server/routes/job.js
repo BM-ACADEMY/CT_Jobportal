@@ -7,6 +7,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getJobById, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getTopCandidates, getAICandidateMatches, getJobQuota, cloneJob, importPipeline, bulkAiMatch, markJobApplicantsViewed } = require('../controllers/jobController');
 const { scoreJobPost } = require('../utils/jobQuality');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
+const { rateLimit } = require('../middlewares/rateLimit');
 const { requireTeamPermission } = require('../middlewares/teamPermission');
 const { JOB_LIST_KEYS } = require('../config/teamPermissions');
 const { aiDailyCap } = require('../middlewares/aiDailyCap');
@@ -38,6 +39,7 @@ router.delete('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_e
 
 // --- Public / General Routes ---
 router.get('/', optionalVerifyToken, getAllJobs);
+router.post('/:id/report', verifyToken, rateLimit({ windowMs: 60 * 60 * 1000, max: 10, message: 'You have sent several reports. Please try again later.' }), require('../controllers/jobReportController').reportJob);
 router.get('/:id', optionalVerifyToken, getJobById);
 
 module.exports = router;
