@@ -1,110 +1,120 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight, Code2, Stethoscope, BarChart2, Palette, ShoppingBag, Cpu, GraduationCap, HeartHandshake,
+  ArrowRight, Code2, Stethoscope, BarChart2, Palette, Megaphone, Cpu, GraduationCap, HeartHandshake,
+  ShoppingBag, Star, Layers, Factory, Building2, Headphones, Briefcase, Users,
 } from 'lucide-react';
 import MotionIcon from './MotionIcon';
+import { JOB_CATEGORIES } from '../../data/jobCategories';
 
 // Full class strings per tint so Tailwind can see them at build time.
 const TINTS = {
-  sky: { panel: 'bg-sky-50', icon: 'text-sky-600', chip: 'hover:border-sky-400 hover:text-sky-700', btn: 'group-hover:bg-sky-600', hint: 'text-sky-700', glow: 'hover:shadow-sky-500/15' },
-  rose: { panel: 'bg-rose-50', icon: 'text-rose-600', chip: 'hover:border-rose-400 hover:text-rose-700', btn: 'group-hover:bg-rose-600', hint: 'text-rose-700', glow: 'hover:shadow-rose-500/15' },
-  amber: { panel: 'bg-amber-50', icon: 'text-amber-600', chip: 'hover:border-amber-400 hover:text-amber-700', btn: 'group-hover:bg-amber-600', hint: 'text-amber-700', glow: 'hover:shadow-amber-500/15' },
-  violet: { panel: 'bg-violet-50', icon: 'text-violet-600', chip: 'hover:border-violet-400 hover:text-violet-700', btn: 'group-hover:bg-violet-600', hint: 'text-violet-700', glow: 'hover:shadow-violet-500/15' },
-  orange: { panel: 'bg-orange-50', icon: 'text-orange-600', chip: 'hover:border-orange-400 hover:text-orange-700', btn: 'group-hover:bg-orange-600', hint: 'text-orange-700', glow: 'hover:shadow-orange-500/15' },
-  teal: { panel: 'bg-teal-50', icon: 'text-teal-600', chip: 'hover:border-teal-400 hover:text-teal-700', btn: 'group-hover:bg-teal-600', hint: 'text-teal-700', glow: 'hover:shadow-teal-500/15' },
-  indigo: { panel: 'bg-indigo-50', icon: 'text-indigo-600', chip: 'hover:border-indigo-400 hover:text-indigo-700', btn: 'group-hover:bg-indigo-600', hint: 'text-indigo-700', glow: 'hover:shadow-indigo-500/15' },
-  emerald: { panel: 'bg-emerald-50', icon: 'text-emerald-600', chip: 'hover:border-emerald-400 hover:text-emerald-700', btn: 'group-hover:bg-emerald-600', hint: 'text-emerald-700', glow: 'hover:shadow-emerald-500/15' },
+  sky: { panel: 'bg-sky-50', icon: 'text-sky-600', btn: 'group-hover:bg-sky-600', glow: 'hover:shadow-sky-500/15' },
+  rose: { panel: 'bg-rose-50', icon: 'text-rose-600', btn: 'group-hover:bg-rose-600', glow: 'hover:shadow-rose-500/15' },
+  amber: { panel: 'bg-amber-50', icon: 'text-amber-600', btn: 'group-hover:bg-amber-600', glow: 'hover:shadow-amber-500/15' },
+  violet: { panel: 'bg-violet-50', icon: 'text-violet-600', btn: 'group-hover:bg-violet-600', glow: 'hover:shadow-violet-500/15' },
+  orange: { panel: 'bg-orange-50', icon: 'text-orange-600', btn: 'group-hover:bg-orange-600', glow: 'hover:shadow-orange-500/15' },
+  teal: { panel: 'bg-teal-50', icon: 'text-teal-600', btn: 'group-hover:bg-teal-600', glow: 'hover:shadow-teal-500/15' },
+  indigo: { panel: 'bg-indigo-50', icon: 'text-indigo-600', btn: 'group-hover:bg-indigo-600', glow: 'hover:shadow-indigo-500/15' },
+  emerald: { panel: 'bg-emerald-50', icon: 'text-emerald-600', btn: 'group-hover:bg-emerald-600', glow: 'hover:shadow-emerald-500/15' },
+  pink: { panel: 'bg-pink-50', icon: 'text-pink-600', btn: 'group-hover:bg-pink-600', glow: 'hover:shadow-pink-500/15' },
+  cyan: { panel: 'bg-cyan-50', icon: 'text-cyan-600', btn: 'group-hover:bg-cyan-600', glow: 'hover:shadow-cyan-500/15' },
+  stone: { panel: 'bg-stone-100', icon: 'text-stone-600', btn: 'group-hover:bg-stone-600', glow: 'hover:shadow-stone-500/15' },
+  lime: { panel: 'bg-lime-50', icon: 'text-lime-700', btn: 'group-hover:bg-lime-600', glow: 'hover:shadow-lime-500/15' },
+  fuchsia: { panel: 'bg-fuchsia-50', icon: 'text-fuchsia-600', btn: 'group-hover:bg-fuchsia-600', glow: 'hover:shadow-fuchsia-500/15' },
+  slate: { panel: 'bg-slate-100', icon: 'text-slate-600', btn: 'group-hover:bg-slate-600', glow: 'hover:shadow-slate-500/15' },
 };
 
-const CATEGORIES = [
-  { label: 'IT & Software', count: '45K', icon: Code2, tint: 'sky', anim: 'pulse', desc: 'Build products, apps and the systems behind them.', roles: ['Frontend', 'Backend', 'Full Stack', 'DevOps'] },
-  { label: 'Healthcare', count: '15K', icon: Stethoscope, tint: 'rose', anim: 'bounce', desc: 'Care for patients across hospitals, clinics and labs.', roles: ['Staff Nurse', 'Pharmacist', 'Lab Technician', 'Medical Coder'] },
-  { label: 'Finance', count: '18K', icon: BarChart2, tint: 'amber', anim: 'tilt', desc: 'Manage money, risk and reporting for growing businesses.', roles: ['Accountant', 'Financial Analyst', 'Auditor'] },
-  { label: 'Design', count: '9K', icon: Palette, tint: 'violet', anim: 'wiggle', desc: 'Shape how products look, feel and work.', roles: ['UI/UX Designer', 'Graphic Designer', 'Motion Designer'] },
-  { label: 'Sales', count: '22K', icon: ShoppingBag, tint: 'orange', anim: 'bounce', desc: 'Find customers and grow revenue in every region.', roles: ['Sales Executive', 'Business Development', 'Inside Sales'] },
-  { label: 'Engineering', count: '30K', icon: Cpu, tint: 'teal', anim: 'spin', desc: 'Design, build and maintain plants, sites and machines.', roles: ['Mechanical', 'Civil', 'Electrical', 'Quality'] },
-  { label: 'Education', count: '8K', icon: GraduationCap, tint: 'indigo', anim: 'tilt', desc: 'Teach, train and support learners of every age.', roles: ['School Teacher', 'Lecturer', 'Corporate Trainer'] },
-  { label: 'Non-Profit', count: '5K', icon: HeartHandshake, tint: 'emerald', anim: 'pulse', desc: 'Work on causes that strengthen communities.', roles: ['Program Officer', 'Social Worker', 'CSR Executive'] },
-];
-
-const grid = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
+// Look of each category (the words live in data/jobCategories.js).
+const LOOK = {
+  'it-software': { icon: Code2, tint: 'sky', anim: 'pulse' },
+  healthcare: { icon: Stethoscope, tint: 'rose', anim: 'bounce' },
+  'finance-accounts': { icon: BarChart2, tint: 'amber', anim: 'tilt' },
+  'design-creative': { icon: Palette, tint: 'violet', anim: 'wiggle' },
+  'sales-marketing': { icon: Megaphone, tint: 'orange', anim: 'bounce' },
+  engineering: { icon: Cpu, tint: 'teal', anim: 'spin' },
+  'education-training': { icon: GraduationCap, tint: 'indigo', anim: 'tilt' },
+  'retail-shops': { icon: ShoppingBag, tint: 'pink', anim: 'bounce' },
+  'hospitality-tourism': { icon: Star, tint: 'amber', anim: 'pulse' },
+  'logistics-delivery': { icon: Layers, tint: 'cyan', anim: 'tilt' },
+  manufacturing: { icon: Factory, tint: 'stone', anim: 'spin' },
+  'construction-realestate': { icon: Building2, tint: 'lime', anim: 'pulse' },
+  'bpo-support': { icon: Headphones, tint: 'fuchsia', anim: 'wiggle' },
+  'admin-office': { icon: Briefcase, tint: 'slate', anim: 'tilt' },
+  'hr-recruitment': { icon: Users, tint: 'sky', anim: 'bounce' },
+  'non-profit': { icon: HeartHandshake, tint: 'emerald', anim: 'pulse' },
 };
+
+const PHONE_FIRST = 8; // on a phone the first 8 show; "Show all" reveals the rest
+
+const grid = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const item = {
-  hidden: { opacity: 0, y: 28 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
 };
 
-// One card: tinted panel (title, description, role chips) above a white "Explore" footer.
-// The footer link is stretched over the whole card; role chips sit above it as their own links.
-const CategoryCard = ({ cat }) => {
-  const t = TINTS[cat.tint];
+// One tile: the whole tile is a link to the Jobs page, searched by the category's keyword.
+const CategoryTile = ({ cat, hiddenOnPhone }) => {
+  const look = LOOK[cat.key] || LOOK['admin-office'];
+  const t = TINTS[look.tint];
   return (
-    <motion.article
-      variants={item}
-      className={`group relative flex flex-col w-[82%] shrink-0 snap-start sm:w-auto rounded-[22px] bg-white border border-zinc-200/80 p-2 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-xl ${t.glow}`}
-    >
-      <div className={`flex-1 rounded-2xl ${t.panel} p-5`}>
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-xl font-bold text-zinc-900 leading-tight">{cat.label}</h3>
-          <span className={`w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${t.icon}`}>
-            <MotionIcon icon={cat.icon} animation={cat.anim} trigger="hover" size={19} />
+    <motion.div variants={item} className={hiddenOnPhone ? 'hidden sm:block' : ''}>
+      <Link
+        to={`/jobs?q=${encodeURIComponent(cat.q)}`}
+        className={`group flex h-full flex-col rounded-[22px] bg-white border border-zinc-200/80 p-1.5 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${t.glow}`}
+      >
+        <div className={`flex-1 rounded-2xl ${t.panel} p-4`}>
+          <span className={`w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${t.icon}`}>
+            <MotionIcon icon={look.icon} animation={look.anim} trigger="hover" size={19} />
+          </span>
+          <h3 className="mt-3 text-[15px] sm:text-base font-bold text-zinc-900 leading-tight">{cat.label}</h3>
+          <p className="mt-1 text-xs text-zinc-600 leading-snug hidden sm:block">{cat.desc}</p>
+          <p className="mt-2 text-[11px] font-medium text-zinc-500 leading-snug">{cat.roles.join(' · ')}</p>
+        </div>
+        <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+          <span className="text-sm font-semibold text-zinc-900">View jobs</span>
+          <span className={`w-8 h-8 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center transition-colors duration-300 group-hover:text-white ${t.btn}`}>
+            <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={15} />
           </span>
         </div>
-        <p className="mt-2 text-sm text-zinc-600 leading-snug">{cat.desc}</p>
-        <ul className="mt-4 flex flex-wrap gap-1.5">
-          {cat.roles.map(role => (
-            <li key={role}>
-              <Link
-                to={`/jobs?q=${encodeURIComponent(role)}`}
-                className={`relative z-10 inline-block rounded-full bg-white/90 border border-zinc-200/80 px-2.5 py-1 text-[11px] font-medium text-zinc-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${t.chip}`}
-              >
-                {role}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
-        <Link
-          to={`/jobs?category=${encodeURIComponent(cat.label)}`}
-          aria-label={`Explore ${cat.count} ${cat.label} jobs`}
-          className="text-sm font-semibold text-zinc-900 after:absolute after:inset-0 after:rounded-[22px] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-emerald-500"
-        >
-          {/* "Explore" slides up and the live count slides in on hover */}
-          <span className="block h-5 overflow-hidden">
-            <span className="flex flex-col transition-transform duration-300 ease-out group-hover:-translate-y-5">
-              <span className="h-5 leading-5">Explore</span>
-              <span className={`h-5 leading-5 ${t.hint}`}>View {cat.count} jobs</span>
-            </span>
-          </span>
-        </Link>
-        <span className={`w-9 h-9 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center transition-colors duration-300 group-hover:text-white ${t.btn}`}>
-          <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={16} />
-        </span>
-      </div>
-    </motion.article>
+      </Link>
+    </motion.div>
   );
 };
 
-// Swipeable snap row on phones, 2 / 4 column grid from sm / lg.
-const CategoryCards = () => (
-  <>
-    <motion.div
-      variants={grid}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: '-80px' }}
-      className="no-scrollbar -mx-6 px-6 pb-4 flex gap-4 overflow-x-auto snap-x snap-mandatory sm:mx-0 sm:px-0 sm:pb-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5 sm:overflow-visible"
-    >
-      {CATEGORIES.map(cat => <CategoryCard key={cat.label} cat={cat} />)}
-    </motion.div>
-    <p className="sm:hidden mt-2 text-center text-xs text-zinc-500">Swipe to see more categories</p>
-  </>
-);
+// 2 columns on phones, 3 from sm, 4 from lg. Every field of work is shown; no made-up job counts.
+const CategoryCards = () => {
+  const [showAll, setShowAll] = useState(false);
+  return (
+    <>
+      <motion.div
+        variants={grid}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-80px' }}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5"
+      >
+        {JOB_CATEGORIES.map((cat, i) => (
+          <CategoryTile key={cat.key} cat={cat} hiddenOnPhone={!showAll && i >= PHONE_FIRST} />
+        ))}
+      </motion.div>
+      {!showAll && (
+        <div className="sm:hidden mt-5 text-center">
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="h-11 px-6 rounded-full border border-zinc-300 bg-white text-sm font-semibold text-zinc-800"
+          >
+            Show all {JOB_CATEGORIES.length} categories
+          </button>
+        </div>
+      )}
+      <p className="mt-6 text-center text-sm text-zinc-500">
+        Do not see your field? <Link to="/jobs" className="font-semibold text-emerald-700 hover:underline">Browse all jobs</Link>
+      </p>
+    </>
+  );
+};
 
 export default CategoryCards;

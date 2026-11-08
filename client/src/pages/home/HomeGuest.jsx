@@ -344,8 +344,8 @@ const HomeGuest = () => {
           <div className="max-w-6xl mx-auto px-6">
             <Reveal className="text-center mb-16">
               <SectionEyebrow>Browse by Domain</SectionEyebrow>
-              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Explore Job Categories</h2>
-              <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">Find opportunities across diverse industries and domains.</p>
+              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Find Work in Every Field</h2>
+              <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">Healthcare, hotels, shops, factories, offices and more. Pick your field and see who is hiring.</p>
             </Reveal>
             <CategoryCards />
           </div>
