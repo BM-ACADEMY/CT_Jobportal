@@ -32,6 +32,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { toast } from 'sonner';
 import JobApplicationModal from '../components/jobs/JobApplicationModal';
 import ShareModal from '../components/jobs/ShareModal';
+import ReportJobButton from '../components/jobs/ReportJobButton';
 import SEOHead from '../components/seo/SEOHead';
 import { jobIdFromParam, jobPath } from '../utils/jobUrl';
 import { trackEvent } from '../utils/analytics';
@@ -609,6 +610,10 @@ const JobDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <div className="max-w-6xl mx-auto px-6 pb-10">
+        <ReportJobButton jobId={job._id} posterId={job.recruiter?._id || job.recruiter} />
+      </div>
 
       <JobApplicationModal 
         isOpen={isApplyModalOpen} 

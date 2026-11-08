@@ -166,7 +166,7 @@ const ManageJobs = () => {
                             {job.scamFlags?.length > 0 && !job.scamReviewed && (
                               <div className="flex items-center gap-2 pt-1">
                                 <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
-                                  Possible scam: {job.scamFlags.map((f) => ({ asks_for_money: 'asks for money', private_chat_or_otp: 'asks for OTP or private chat', pay_too_good: 'pay looks too good' }[f] || f)).join(', ')}
+                                  Possible scam: {job.scamFlags.map((f) => ({ asks_for_money: 'asks for money', private_chat_or_otp: 'asks for OTP or private chat', pay_too_good: 'pay looks too good', reported_by_users: `reported by ${job.reportCount || 1} user${(job.reportCount || 1) > 1 ? 's' : ''}` }[f] || f)).join(', ')}
                                 </span>
                                 <button type="button" onClick={() => markChecked(job._id)} className="text-[10px] font-bold text-emerald-600 hover:underline">Looks fine</button>
                               </div>
