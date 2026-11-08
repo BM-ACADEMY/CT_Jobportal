@@ -17,6 +17,8 @@ router.post('/mine/:id/thanks', ...org, c.sendThanks);
 router.get('/mine/:id/report', ...org, c.report);
 
 // Public
+const cfg = require('../config/driveConfig');
+router.get('/plans', (req, res) => res.json({ gstRate: cfg.GST_RATE, plans: Object.values(cfg.PLANS).map((p) => ({ ...p, withGst: cfg.priceWithGst(p.price) })), addons: Object.values(cfg.ADDONS).map((a) => ({ key: a.key, label: a.label, price: a.price, withGst: cfg.priceWithGst(a.price) })) }));
 router.get('/registration/:code', c.getRegistration);
 router.get('/registration/:code/qr.png', c.registrationQr);
 router.get('/', c.listDrives);

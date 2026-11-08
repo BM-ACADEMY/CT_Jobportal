@@ -114,6 +114,12 @@ const AdminSkillTests = page('admin/SkillTests');
 const AdminNeedsAction = page('admin/NeedsAction');
 const AdminSpendIncome = page('admin/SpendIncome');
 const AdminFeedback = page('admin/ManageFeedback');
+const AdminWalkInDrives = page('admin/WalkInDrivesAdmin');
+const PublicDrives = page('drives/Drives');
+const PublicDriveDetail = page('drives/DriveDetail');
+const DrivePass = page('drives/DrivePass');
+const WalkInDrives = page('company/WalkInDrives');
+const WalkInManage = page('company/WalkInManage');
 const AdminCollegeVerification = page('admin/CollegeVerification');
 const CollegeKycDetails = page('admin/CollegeKycDetails');
 const CollegeDashboard = page('college/Dashboard');
@@ -162,6 +168,9 @@ const AppRoutes = () => {
         <Route path="/principal/executive-summary/:passkey" element={<PrincipalExecutiveSummary />} />
         <Route path="/company-drive/:token" element={<CompanyDriveView />} />
         <Route path="/incharge/accept/:driveId/:token" element={<AcceptInchargeInvite />} />
+        <Route path="/drives" element={<PublicDrives />} />
+        <Route path="/drives/:slug" element={<PublicDriveDetail />} />
+        <Route path="/drive-pass/:code" element={<DrivePass />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/jobs/:location" element={<Jobs />} />
         <Route path="/job/:id" element={<JobDetails />} />
@@ -357,6 +366,8 @@ const AppRoutes = () => {
         />
         <Route path="/company/jobs" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="my_jobs"><MyJobs /></PrivateRoute>} />
         <Route path="/company/candidates" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="candidate_search"><CandidateSearch /></PrivateRoute>} />
+        <Route path="/company/drives" element={<PrivateRoute roles={['recruiter', 'company']}><WalkInDrives /></PrivateRoute>} />
+        <Route path="/company/drives/:id" element={<PrivateRoute roles={['recruiter', 'company']}><WalkInManage /></PrivateRoute>} />
         <Route path="/company/requests" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><AssignedRequests /></PrivateRoute>} />
         <Route path="/company/ats-pipeline" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="ats_pipeline"><FeatureGate featureKey="hasATSPipeline" subscriptionPath="/company/subscription"><AtsPipeline /></FeatureGate></PrivateRoute>} />
         <Route path="/company/analytics" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="analytics"><FeatureGate featureKey="hasAnalyticsDashboard" subscriptionPath="/company/subscription"><Analytics /></FeatureGate></PrivateRoute>} />
@@ -587,6 +598,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManageReviews />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/drives"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminWalkInDrives />
             </PrivateRoute>
           }
         />
