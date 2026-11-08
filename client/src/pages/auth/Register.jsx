@@ -1,3 +1,4 @@
+import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -116,7 +117,11 @@ const RegisterPage = () => {
 
   const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company';
 
+  const [botToken, setBotToken] = useState('');
+  const [botReset, setBotReset] = useState(0);
+
   const onSubmit = async (values) => {
+    if (turnstileEnabled() && !botToken) { setError('Please complete the "I am human" check.'); return; }
     if (selectedRole === 'college') {
       if (!values.collegeName?.trim() || !values.collegeEmail?.trim() || !values.collegePhone?.trim()) {
         setError('Please fill in College Name, College Email, and College Phone.');
@@ -131,6 +136,7 @@ const RegisterPage = () => {
       phone: `${values.countryCode}${values.mobileNumber}`,
       password: values.password,
       role: selectedRole,
+      ...(botToken ? { turnstileToken: botToken } : {}),
       ...(selectedRole === 'college' ? {
         collegeName: values.collegeName,
         collegeEmail: values.collegeEmail,
@@ -139,6 +145,8 @@ const RegisterPage = () => {
       } : {}),
     });
     setLoading(false);
+    if (!result.success) setBotReset((n) => n + 1); // a used token cannot be used twice
+    
     
     if (result.success) {
       if (result.requireOtp) {
@@ -500,6 +508,9 @@ const RegisterPage = () => {
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
                     <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
                   </p>
+
+                  <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
+
 
                   <Button
                     type="submit"

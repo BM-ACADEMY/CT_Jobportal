@@ -355,7 +355,7 @@ router.get('/pay-per-features', async (req, res) => {
 
 // @desc  POST /api/public/contact
 //        Saves a contact form submission and sends an email notification.
-router.post('/contact', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many messages. Please try again later.' }), honeypot(), rateLimitBy({ fields: ['email'], windowMs: 60 * 60 * 1000, max: 5, message: 'Too many messages from this email. Please try again later.' }), async (req, res) => {
+router.post('/contact', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many messages. Please try again later.' }), honeypot(), require('../middlewares/turnstile').turnstile(), rateLimitBy({ fields: ['email'], windowMs: 60 * 60 * 1000, max: 5, message: 'Too many messages from this email. Please try again later.' }), async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
 

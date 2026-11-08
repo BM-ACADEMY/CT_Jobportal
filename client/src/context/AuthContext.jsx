@@ -86,9 +86,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email, password, turnstileToken) => {
     try {
-      const res = await axios.post(`${API_URL}/login`, { email, password });
+      const res = await axios.post(`${API_URL}/login`, { email, password, ...(turnstileToken ? { turnstileToken } : {}) });
       
       if (res.data.requireOtp) {
         return { success: true, requireOtp: true, email: res.data.email, msg: res.data.msg };

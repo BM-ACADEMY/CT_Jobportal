@@ -1,3 +1,4 @@
+import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -73,8 +74,15 @@ const Contact = () => {
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+  const [botToken, setBotToken] = useState('');
+  const [botReset, setBotReset] = useState(0);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (turnstileEnabled() && !botToken) {
+      toast.error('Please complete the "I am human" check.');
+      return;
+    }
     if (!form.name || !form.email || !form.message) {
       toast.error('Please fill in all required fields.');
       return;
@@ -82,12 +90,13 @@ const Contact = () => {
     setSubmitting(true);
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      await axios.post(`${apiUrl}/public/contact`, form);
+      await axios.post(`${apiUrl}/public/contact`, { ...form, ...(botToken ? { turnstileToken: botToken } : {}) });
       setSubmitted(true);
       toast.success('Message sent! We\'ll get back to you soon.');
     } catch (err) {
       console.error('Contact Form Error:', err);
       toast.error(err.response?.data?.msg || 'Failed to send message. Please try again.');
+      setBotReset((n) => n + 1);
     } finally {
       setSubmitting(false);
     }
@@ -254,6 +263,9 @@ const Contact = () => {
                         className="w-full px-4 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-850 font-medium text-sm outline-none focus:border-[#00D492] focus:ring-4 focus:ring-[#00D492]/10 transition-all placeholder:text-zinc-400 resize-none"
                       />
                     </div>
+
+                    <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
+
 
                     <Button
                       type="submit"

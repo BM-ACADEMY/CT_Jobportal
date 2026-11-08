@@ -1,3 +1,4 @@
+import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -38,11 +39,16 @@ const LoginPage = () => {
     },
   });
 
+  const [botToken, setBotToken] = useState('');
+  const [botReset, setBotReset] = useState(0);
+
   const onSubmit = async (values) => {
+    if (turnstileEnabled() && !botToken) { setError('Please complete the "I am human" check.'); return; }
     setLoading(true);
     setError('');
-    const result = await login(values.email, values.password);
+    const result = await login(values.email, values.password, botToken);
     setLoading(false);
+    if (!result.success) setBotReset((n) => n + 1); // a used token cannot be used twice
     if (result.success) {
       if (result.requireOtp) {
         navigate('/verify-otp', { state: { email: result.email, msg: result.msg } });
@@ -203,6 +209,9 @@ const LoginPage = () => {
                   </FormItem>
                 )}
               />
+
+              <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
+
 
               <Button
                 type="submit"

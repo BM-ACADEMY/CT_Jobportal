@@ -1,4 +1,5 @@
 const express = require('express');
+const { turnstile } = require('../middlewares/turnstile');
 const router = express.Router();
 const {
   registerUser,
@@ -28,9 +29,9 @@ const registerLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 20, message: 
 const perEmailOtp = rateLimitBy({ fields: ['email'], windowMs: 60 * 60 * 1000, max: 8, message: 'Too many requests for this email. Please try again in an hour.' });
 const perEmailRegister = rateLimitBy({ fields: ['email'], windowMs: 60 * 60 * 1000, max: 5, message: 'Too many sign-up attempts for this email. Please try again later.' });
 
-router.post('/register', registerLimiter, perEmailRegister, registerUser);
+router.post('/register', registerLimiter, turnstile(), perEmailRegister, registerUser);
 router.post('/verify-otp', otpLimiter, perEmailOtp, verifyOtp);
-router.post('/login', loginLimiter, loginUser);
+router.post('/login', loginLimiter, turnstile(), loginUser);
 router.post('/logout', verifyToken, logoutUser);
 router.post('/forgot-password', otpLimiter, perEmailOtp, forgotPassword);
 router.post('/reset-password', otpLimiter, resetPassword);
