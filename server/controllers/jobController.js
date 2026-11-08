@@ -1,4 +1,5 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
+const { cleanCategory, guessCategory } = require('../config/jobCategories');
 const Job = require('../models/Job');
 const User = require('../models/User');
 const Application = require('../models/Application');
@@ -82,7 +83,8 @@ const createJob = async (req, res) => {
       shifts,
       skillsRequired,
       additionalDetails,
-      status
+      status,
+      category
     } = req.body;
     
     // Conditional validation: Only require title/description if not a draft
@@ -104,6 +106,7 @@ const createJob = async (req, res) => {
       shifts,
       skillsRequired,
       additionalDetails,
+      category: cleanCategory(category) || guessCategory({ title, skillsRequired }),
       status: status || 'active',
       postedAs: finalPostedAs,
       company: user.company || undefined,
@@ -306,6 +309,7 @@ const updateJob = async (req, res) => {
 
     const previousStatus = job.status;
     delete req.body.scamFlags; delete req.body.scamReviewed; // only the server and admin set these
+    if (req.body.category !== undefined) req.body.category = cleanCategory(req.body.category); // an unknown value clears it
     const flagUpdate = (req.body.title !== undefined || req.body.description !== undefined)
       ? { scamFlags: jobScamFlags({ title: req.body.title ?? job.title, description: req.body.description ?? job.description }), scamReviewed: false }
       : {};
@@ -408,6 +412,7 @@ const getAllJobs = async (req, res) => {
     // Add isPriority flag
     const result = sorted.map(j => ({
       ...j.toObject(),
+      category: j.category || guessCategory({ title: j.title, skillsRequired: j.skillsRequired }), // old jobs get a guess, nothing is saved
       isPriority: !!j.recruiter?.subscription?.hasPriorityListing
     }));
 

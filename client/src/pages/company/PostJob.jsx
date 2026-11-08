@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { Link } from 'react-router-dom';
+import { JOB_CATEGORIES } from '@/data/jobCategories';
 import { 
   Form, Input, Button, Card, Select, InputNumber, 
   Switch, Space, Typography, Tag, Tooltip, Row, Col, Alert, Spin, Checkbox
@@ -66,6 +67,7 @@ const PostJob = () => {
                             description: jobToEdit.description,
                             vacancies: jobToEdit.vacancies,
                             postedAs: jobToEdit.postedAs || 'company',
+                            category: jobToEdit.category || undefined,
                             jobType: jobToEdit.jobType || 'Full-time',
                             workMode: jobToEdit.workMode || 'On-site',
                             location: jobToEdit.location,
@@ -125,6 +127,7 @@ const PostJob = () => {
                 description: values.description,
                 vacancies: values.vacancies,
                 experience: { min: values.minExperience || 0, max: values.maxExperience || 0 },
+                category: values.category || '',
                 jobType: values.jobType,
                 workMode: values.workMode,
                 location: values.location,
@@ -370,6 +373,11 @@ const PostJob = () => {
                             className="shadow-sm rounded-xl overflow-hidden"
                             headStyle={{ borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' }}
                         >
+                            <Form.Item label="Field of work" name="category" extra="Pick the closest field. Candidates browsing that field will see your job.">
+                                <Select size="large" allowClear showSearch optionFilterProp="label" placeholder="Choose a field"
+                                    options={JOB_CATEGORIES.map((c) => ({ value: c.key, label: c.label }))} />
+                            </Form.Item>
+
                             <Form.Item label="Job Type" name="jobType" rules={[{ required: true }]}>
                                 <Select size="large">
                                     <Option value="Full-time">Full-time</Option>

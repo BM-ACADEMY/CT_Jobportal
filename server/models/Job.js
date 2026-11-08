@@ -34,6 +34,12 @@ const jobSchema = new mongoose.Schema({
     min: { type: Number, default: 0 },
     max: { type: Number, default: 0 }
   },
+  // Field of work (config/jobCategories.js). Empty on jobs posted before categories existed.
+  category: {
+    type: String,
+    default: '',
+    index: true
+  },
   jobType: {
     type: String,
     default: 'Full-time'

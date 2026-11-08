@@ -15,6 +15,7 @@ import HighlightText from '../components/shared/HighlightText';
 import SEOHead from '../components/seo/SEOHead';
 import { jobPath } from '../utils/jobUrl';
 import { getCityIntro, CITY_LINKS } from '../data/cityJobIntros';
+import { JOB_CATEGORIES } from '../data/jobCategories';
 
 const SEARCH_FIELD_LABELS = {
   title: 'Job Title',
@@ -119,6 +120,7 @@ const Jobs = () => {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [locationTerm, setLocationTerm] = useState(searchParams.get('loc') || (routeLocation ? decodeURIComponent(routeLocation).replace(/-/g, ' ') : ''));
+  const [selectedCategory, setSelectedCategory] = useState(JOB_CATEGORIES.some((c) => c.key === searchParams.get('category')) ? searchParams.get('category') : '');
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedSalary, setSelectedSalary] = useState(0);
   const [selectedExperience, setSelectedExperience] = useState(0);
@@ -195,7 +197,10 @@ const Jobs = () => {
       const matchesExperience = selectedExperience === 0 ||
         (jobExpMin <= expRange.max && (jobExpMax >= expRange.min || jobExpMax === 0 || !jobExpMax));
 
-      return matchesType && matchesSalary && matchesExperience;
+      // The "For You" list comes without guessed categories, so jobs with none are kept there rather than hidden.
+      const matchesCategory = !selectedCategory || job.category === selectedCategory || (activeTab === 'matched' && !job.category);
+
+      return matchesType && matchesSalary && matchesExperience && matchesCategory;
     });
 
     // A search term implies relevance ranking already did the ordering (best match first);
@@ -212,7 +217,7 @@ const Jobs = () => {
     }
 
     return result;
-  }, [jobs, searchTerm, locationTerm, selectedTypes, selectedSalary, selectedExperience, sortBy]);
+  }, [jobs, activeTab, searchTerm, locationTerm, selectedCategory, selectedTypes, selectedSalary, selectedExperience, sortBy]);
 
   const toggleType = (type) => {
     setSelectedTypes(prev =>
@@ -223,13 +228,14 @@ const Jobs = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setLocationTerm('');
+    setSelectedCategory('');
     setSelectedTypes([]);
     setSelectedSalary(0);
     setSelectedExperience(0);
     setSortBy('newest');
   };
 
-  const hasActiveFilters = searchTerm || locationTerm || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0;
+  const hasActiveFilters = searchTerm || locationTerm || selectedCategory || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0;
 
   const searchedLocation = locationTerm.trim()
     .replace(/\s+/g, ' ')
@@ -475,6 +481,20 @@ const Jobs = () => {
             )}
 
             {/* Sort + Mobile Filter bar */}
+            {/* Field of work: tap one to narrow the list, tap it again to clear */}
+            <div className="no-scrollbar -mx-4 px-4 mb-4 flex gap-2 overflow-x-auto sm:mx-0 sm:px-0 sm:flex-wrap" role="group" aria-label="Field of work">
+              {JOB_CATEGORIES.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  aria-pressed={selectedCategory === c.key}
+                  onClick={() => setSelectedCategory(selectedCategory === c.key ? '' : c.key)}
+                  className={`shrink-0 h-9 px-3.5 rounded-full border text-xs font-bold transition-colors ${selectedCategory === c.key ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-4">
                 {user && user.role === 'jobseeker' && (

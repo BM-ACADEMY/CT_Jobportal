@@ -1,5 +1,5 @@
 // The fields of work shown on the home page. The same list will feed signup and job posting later.
-// `q` is the search word used on the Jobs page until jobs carry a category of their own.
+// Keys match server/config/jobCategories.js. `q` is a plain search word, kept for places that cannot filter by field.
 export const JOB_CATEGORIES = [
   { key: 'it-software', label: 'IT & Software', q: 'developer', desc: 'Apps, websites and the systems behind them.', roles: ['Developer', 'Tester', 'Support Engineer'] },
   { key: 'healthcare', label: 'Healthcare', q: 'nurse', desc: 'Hospitals, clinics, pharmacies and labs.', roles: ['Staff Nurse', 'Pharmacist', 'Lab Technician'] },

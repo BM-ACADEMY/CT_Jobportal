@@ -54,14 +54,14 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
 };
 
-// One tile: the whole tile is a link to the Jobs page, searched by the category's keyword.
+// One tile: the whole tile is a link to the Jobs page, filtered to that field.
 const CategoryTile = ({ cat, hiddenOnPhone }) => {
   const look = LOOK[cat.key] || LOOK['admin-office'];
   const t = TINTS[look.tint];
   return (
     <motion.div variants={item} className={hiddenOnPhone ? 'hidden sm:block' : ''}>
       <Link
-        to={`/jobs?q=${encodeURIComponent(cat.q)}`}
+        to={`/jobs?category=${cat.key}`}
         className={`group flex h-full flex-col rounded-[22px] bg-white border border-zinc-200/80 p-1.5 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${t.glow}`}
       >
         <div className={`flex-1 rounded-2xl ${t.panel} p-4`}>
