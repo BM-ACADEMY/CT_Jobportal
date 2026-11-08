@@ -94,6 +94,8 @@ const userSchema = new mongoose.Schema({
     interestedDomain: [{ type: String }],
     shifts: [{ type: String }],
     preferredRole: { type: String, default: '' },
+    // Up to 3 fields of work the person is interested in (config/jobCategories.js keys); gives matching a small boost.
+    interestedCategories: [{ type: String }],
     resumeUrl: { type: String, default: '' },
     resumeName: { type: String, default: '' },
     portfolioUrl: { type: String, default: '' },

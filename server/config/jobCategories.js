@@ -27,6 +27,13 @@ const cleanCategory = (raw) => {
   return KEYS.has(k) ? k : '';
 };
 
+// A job seeker's fields of interest: valid keys only, no repeats, at most 3. Anything that is not a list gives [].
+const MAX_INTERESTS = 3;
+const cleanInterestedCategories = (raw) => {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.map(cleanCategory).filter(Boolean))].slice(0, MAX_INTERESTS);
+};
+
 // Best guess from the title (first, it counts most) and required skills. '' when nothing fits.
 const guessCategory = ({ title = '', skillsRequired = [] } = {}) => {
   const t = ` ${String(title).toLowerCase()} `;
@@ -43,4 +50,4 @@ const guessCategory = ({ title = '', skillsRequired = [] } = {}) => {
   return best;
 };
 
-module.exports = { JOB_CATEGORIES, cleanCategory, guessCategory };
+module.exports = { JOB_CATEGORIES, cleanCategory, cleanInterestedCategories, guessCategory, MAX_INTERESTS };

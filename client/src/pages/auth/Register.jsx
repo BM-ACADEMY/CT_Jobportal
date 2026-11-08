@@ -1,3 +1,4 @@
+import { JOB_CATEGORIES } from '@/data/jobCategories';
 import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -117,6 +118,7 @@ const RegisterPage = () => {
 
   const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company';
 
+  const [interests, setInterests] = useState([]); // job seekers: up to 3 fields of work (optional)
   const [botToken, setBotToken] = useState('');
   const [botReset, setBotReset] = useState(0);
 
@@ -137,6 +139,7 @@ const RegisterPage = () => {
       password: values.password,
       role: selectedRole,
       ...(botToken ? { turnstileToken: botToken } : {}),
+      ...(selectedRole === 'jobseeker' && interests.length ? { interestedCategories: interests } : {}),
       ...(selectedRole === 'college' ? {
         collegeName: values.collegeName,
         collegeEmail: values.collegeEmail,
@@ -508,6 +511,49 @@ const RegisterPage = () => {
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
                     <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
                   </p>
+
+                  {selectedRole === 'jobseeker' && (
+
+                    <div>
+
+                      <p className="text-xs font-bold text-slate-500 mb-2">Which fields do you want to work in? (optional, up to 3)</p>
+
+                      <div className="flex flex-wrap gap-2" role="group" aria-label="Fields of work">
+
+                        {JOB_CATEGORIES.map((c) => {
+
+                          const picked = interests.includes(c.key);
+
+                          return (
+
+                            <button
+
+                              key={c.key}
+
+                              type="button"
+
+                              aria-pressed={picked}
+
+                              onClick={() => setInterests((cur) => (picked ? cur.filter((k) => k !== c.key) : cur.length >= 3 ? cur : [...cur, c.key]))}
+
+                              className={`h-9 px-3 rounded-full border text-xs font-bold transition-colors ${picked ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}
+
+                            >
+
+                              {c.label}
+
+                            </button>
+
+                          );
+
+                        })}
+
+                      </div>
+
+                    </div>
+
+                  )}
+
 
                   <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
 

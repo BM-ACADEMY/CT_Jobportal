@@ -62,6 +62,7 @@ import PageSOPBanner from '@/components/common/PageSOPBanner';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import { signUploadUrl } from "@/utils/signedFiles";
+import { JOB_CATEGORIES } from "@/data/jobCategories";
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
 const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
@@ -156,6 +157,7 @@ const Settings = () => {
             interestedDomain: user?.profile?.interestedDomain || [],
             shifts: user?.profile?.shifts || [],
             preferredRole: user?.profile?.preferredRole || '',
+            interestedCategories: user?.profile?.interestedCategories || [],
             resumeUrl: user?.profile?.resumeUrl || '',
             resumeName: user?.profile?.resumeName || '',
             documents: user?.profile?.documents || [],
@@ -384,6 +386,7 @@ const Settings = () => {
                     interestedDomain: user?.profile?.interestedDomain || [],
                     shifts: user?.profile?.shifts || [],
                     preferredRole: user?.profile?.preferredRole || '',
+            interestedCategories: user?.profile?.interestedCategories || [],
                     resumeUrl: user?.profile?.resumeUrl || '',
                     resumeName: user?.profile?.resumeName || '',
                     documents: user?.profile?.documents || [],
@@ -435,6 +438,7 @@ const Settings = () => {
                 interestedDomain: user?.profile?.interestedDomain || [],
                 shifts: user?.profile?.shifts || [],
                 preferredRole: user?.profile?.preferredRole || '',
+            interestedCategories: user?.profile?.interestedCategories || [],
                 resumeUrl: user?.profile?.resumeUrl || '',
                 resumeName: user?.profile?.resumeName || '',
                 documents: user?.profile?.documents || [],
@@ -1753,6 +1757,34 @@ const Settings = () => {
                         </CardHeader>
                         <CardContent className="p-8 space-y-10">
                             
+                            {/* Fields of work (up to 3): a small boost in "For You" matching */}
+                            <div className="space-y-4">
+                                <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Fields I want to work in (pick up to 3)</Label>
+                                <div className="flex flex-wrap gap-2.5" role="group" aria-label="Fields of work">
+                                    {JOB_CATEGORIES.filter((c) => isEditing || (formData.profile.interestedCategories || []).includes(c.key)).map((c) => {
+                                        const picked = (formData.profile.interestedCategories || []).includes(c.key);
+                                        return (
+                                            <button
+                                                key={c.key}
+                                                type="button"
+                                                aria-pressed={picked}
+                                                disabled={!isEditing}
+                                                onClick={() => {
+                                                    const current = formData.profile.interestedCategories || [];
+                                                    if (!picked && current.length >= 3) { toast.error('Pick up to 3 fields'); return; }
+                                                    const next = picked ? current.filter((k) => k !== c.key) : [...current, c.key];
+                                                    setFormData({ ...formData, profile: { ...formData.profile, interestedCategories: next } });
+                                                }}
+                                                className={`h-9 px-3.5 rounded-full border text-[11px] font-bold transition-colors ${picked ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-200'} ${isEditing ? 'hover:border-emerald-300' : 'cursor-default'}`}
+                                            >
+                                                {c.label}
+                                            </button>
+                                        );
+                                    })}
+                                    {!isEditing && (formData.profile.interestedCategories || []).length === 0 && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
+                                </div>
+                            </div>
+
                             {/* Job Titles */}
                             <div className="space-y-4">
                                 <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Preferred Professional Designations</Label>

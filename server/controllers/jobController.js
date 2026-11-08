@@ -1,5 +1,5 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
-const { cleanCategory, guessCategory } = require('../config/jobCategories');
+const { cleanCategory, cleanInterestedCategories, guessCategory } = require('../config/jobCategories');
 const Job = require('../models/Job');
 const User = require('../models/User');
 const Application = require('../models/Application');
@@ -507,6 +507,10 @@ const getMatchingJobs = async (req, res) => {
       const skillRegexes = skills.map(skill => new RegExp(skill.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
       orConditions.push({ skillsRequired: { $in: skillRegexes } });
     }
+
+    // 1b. Fields of work the person picked
+    const interested = cleanInterestedCategories(profile.interestedCategories);
+    if (interested.length > 0) orConditions.push({ category: { $in: interested } });
 
     // 2. Match by Job Titles / Preferred Role (flexible keyword match)
     const titles = [];

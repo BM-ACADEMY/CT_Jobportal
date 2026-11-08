@@ -9,8 +9,9 @@
 // the priority flag. It never reads name, gender, age, religion, caste, photo, marital status or any other personal
 // field (see the test that changes those and checks the score does not move).
 const { canonicalSkill, canonicalSet } = require('./skillAliases');
+const { cleanInterestedCategories, guessCategory } = require('../config/jobCategories');
 
-const WEIGHTS = { skills: 35, title: 25, location: 15, experience: 10, freshness: 10, priorityBonus: 5 };
+const WEIGHTS = { skills: 35, title: 25, location: 15, experience: 10, freshness: 10, priorityBonus: 5, category: 10 };
 const FRESH_DAYS = 30;
 const PRIORITY_MIN_BASE = 20; // a priority job that matches nothing must not rise
 const THIN_PROFILE_BELOW = 40; // profile completion percent
@@ -39,6 +40,7 @@ const userSignals = (user) => {
     skills: canonicalSet(profile.skills),
     titleWords: new Set(titles.flatMap(words)),
     cities,
+    categories: new Set(cleanInterestedCategories(profile.interestedCategories)),
     modes: new Set((prefs.locationTypes || []).map(norm)),
     years: experienceYears(profile),
     hasQualification: (profile.qualification || []).length > 0,
@@ -78,7 +80,7 @@ const isExcluded = (job, user, { appliedJobIds = [], now = new Date() } = {}) =>
 const scoreJobForSeeker = (user, job, { now = new Date() } = {}) => {
   const sig = userSignals(user);
   const reasons = [];
-  const parts = { skills: 0, title: 0, location: 0, experience: 0, freshness: 0 };
+  const parts = { skills: 0, title: 0, location: 0, category: 0, experience: 0, freshness: 0 };
   let possible = WEIGHTS.freshness + WEIGHTS.experience; // always applicable
 
   // skills (35): share of the job's required skills that the person has
@@ -116,6 +118,16 @@ const scoreJobForSeeker = (user, job, { now = new Date() } = {}) => {
     else if (cityOk) reasons.push(`In ${job.location}`);
   }
 
+  // field of work (10): only when the person picked fields of interest and the job's field is known (or guessable)
+  const jobCategory = job.category || guessCategory({ title: job.title, skillsRequired: job.skillsRequired });
+  if (sig.categories.size && jobCategory) {
+    possible += WEIGHTS.category;
+    if (sig.categories.has(jobCategory)) {
+      parts.category = WEIGHTS.category;
+      reasons.push('In a field you picked');
+    }
+  }
+
   // experience and education (10): freshers are never hidden from entry-level jobs
   const minExp = Number(job.experience?.min) || 0;
   const maxExp = Number(job.experience?.max) || 0;
@@ -131,7 +143,7 @@ const scoreJobForSeeker = (user, job, { now = new Date() } = {}) => {
 
   const earned = Object.values(parts).reduce((a, b) => a + b, 0);
   // Freshness and experience are context, not relevance: with no skill, title or location evidence a job stays low.
-  const content = parts.skills + parts.title + parts.location;
+  const content = parts.skills + parts.title + parts.location + parts.category;
   const raw = Math.round((earned / possible) * 100);
   const base = content === 0 ? Math.min(raw, 12) : raw;
 

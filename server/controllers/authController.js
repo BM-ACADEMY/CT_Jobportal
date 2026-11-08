@@ -10,6 +10,7 @@ const Subscription = require('../models/Subscription');
 const CampusDrive = require('../models/CampusDrive');
 const sendEmail = require('../utils/sendEmail');
 const { hasCompanyAccess } = require('../utils/companyAccess');
+const { cleanInterestedCategories } = require('../config/jobCategories');
 const { isSelfServeRole } = require('../utils/selfServeRoles');
 const { sendWelcomeEmail } = require('../utils/lifecycleEmails');
 
@@ -143,7 +144,8 @@ const registerUser = async (req, res) => {
       otp,
       otpExpiry,
       profile: {
-        phone: phone || (role === 'college' && tpoPhone ? tpoPhone : '')
+        phone: phone || (role === 'college' && tpoPhone ? tpoPhone : ''),
+        interestedCategories: role === 'jobseeker' ? cleanInterestedCategories(req.body.interestedCategories) : []
       },
       ...(role === 'college' && tpoPhone ? {} : {}), // Keep college-specific profile logic as needed or handle above
     });

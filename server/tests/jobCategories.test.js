@@ -30,3 +30,12 @@ test('every category has a unique key and a label', () => {
   assert.equal(new Set(keys).size, keys.length);
   assert.ok(JOB_CATEGORIES.every((c) => c.label && c.words.length));
 });
+
+test('interests: valid keys only, no repeats, at most three', () => {
+  const { cleanInterestedCategories } = require('../config/jobCategories');
+  assert.deepEqual(cleanInterestedCategories(['healthcare', 'healthcare', 'nope', 'engineering']), ['healthcare', 'engineering']);
+  assert.deepEqual(cleanInterestedCategories(['healthcare', 'engineering', 'manufacturing', 'non-profit']), ['healthcare', 'engineering', 'manufacturing']);
+  assert.deepEqual(cleanInterestedCategories('healthcare'), []);
+  assert.deepEqual(cleanInterestedCategories(undefined), []);
+  assert.deepEqual(cleanInterestedCategories([{ $gt: '' }, 5, null]), []);
+});
