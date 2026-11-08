@@ -120,14 +120,14 @@ const AdminLogin = () => {
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
                   2FA OTP Verification
                 </label>
-                <p className="text-xs text-slate-500 mb-2 ml-1">Enter the 4-digit OTP sent to your email.</p>
+                <p className="text-xs text-slate-500 mb-2 ml-1">Enter the 6-digit code sent to your email.</p>
                 <div className="mt-1">
                   <input
                     type="text"
                     required
-                    maxLength={4}
+                    maxLength={6}
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} inputMode="numeric" autoComplete="one-time-code"
                     className="appearance-none block w-full px-4 h-12 border border-slate-200 bg-white rounded-xl shadow-sm placeholder-slate-300 text-slate-900 focus:outline-none focus:ring-0 focus:border-emerald-600 sm:text-lg text-center tracking-widest font-mono transition-all font-bold"
                     placeholder="0000"
                   />

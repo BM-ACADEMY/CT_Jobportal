@@ -28,8 +28,9 @@ const { listStaff, addStaff, updateStaff, removeStaff } = require('../controller
 const { listJobLimits, grantJobLimits } = require('../controllers/adminJobLimitController');
 
 // Public route for admin login
-router.post('/login', loginAdmin);
-router.post('/login-verify-otp', verifyAdminLoginOTP);
+const { rateLimit: adminRateLimit } = require('../middlewares/rateLimit');
+router.post('/login', adminRateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many login attempts. Please wait a few minutes.' }), loginAdmin);
+router.post('/login-verify-otp', adminRateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many attempts. Please wait a few minutes.' }), verifyAdminLoginOTP);
 
 // Protected routes (Admin only)
 router.use(verifyToken);

@@ -16,6 +16,7 @@ const { notifyJobClosedOrRemoved } = require('../utils/jobNotifications');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { REVENUE_START, chartStart } = require('../utils/revenueWindow');
 const { mergePlanTotals } = require('../utils/planTotals');
+const { newOtp, hashOtp, twoFactorRequired, checkOtp, OTP_TTL_MS } = require('../utils/adminOtp');
 
 const generateToken = (id, roleName) => {
   return jwt.sign(
@@ -41,21 +42,19 @@ const loginAdmin = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid Credentials' });
     }
 
-    if (admin.twoFactorAuth && admin.twoFactorAuth.enabled) {
-      // Generate 4-digit OTP
-      const otp = Math.floor(1000 + Math.random() * 9000).toString();
-      
-      admin.twoFactorAuth.otp = otp;
-      admin.twoFactorAuth.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    if (twoFactorRequired(admin)) {
+      const otp = newOtp();
+      if (!admin.twoFactorAuth) admin.twoFactorAuth = {};
+      admin.twoFactorAuth.loginOtp = hashOtp(otp); // only the hash is stored (the email-change code uses its own fields)
+      admin.twoFactorAuth.loginOtpExpires = new Date(Date.now() + OTP_TTL_MS);
+      admin.twoFactorAuth.otpAttempts = 0;
       await admin.save();
 
-      // Send Email
-      const emailOptions = {
+      await sendEmail({
         email: admin.email,
-        subject: 'Admin Login 2FA OTP',
-        html: `<p>Your 4-digit Admin Login OTP is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
-      };
-      await sendEmail(emailOptions);
+        subject: 'Admin Login Code',
+        html: `<p>Your 6-digit admin login code is: <strong>${otp}</strong>. It expires in 10 minutes. If this was not you, change your password.</p>`
+      });
 
       return res.json({ require2FA: true, adminId: admin._id });
     }
@@ -73,7 +72,7 @@ const loginAdmin = async (req, res) => {
         role: admin.role,
         avatar: admin.profilePicture,
         admin_id: admin.admin_id,
-        twoFactorAuth: admin.twoFactorAuth
+        twoFactorAuth: { enabled: !!admin.twoFactorAuth?.enabled }
       }
     });
   } catch (err) {
@@ -93,13 +92,22 @@ const verifyAdminLoginOTP = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid Admin' });
     }
 
-    if (!admin.twoFactorAuth || admin.twoFactorAuth.otp !== otp || admin.twoFactorAuth.otpExpires < new Date()) {
-      return res.status(400).json({ msg: 'Invalid or expired OTP' });
+    const tf = admin.twoFactorAuth || {};
+    const check = checkOtp({ storedHash: tf.loginOtp, expires: tf.loginOtpExpires, attempts: tf.otpAttempts || 0 }, otp);
+    if (check.status !== 'ok') {
+      if (check.status === 'wrong' || check.status === 'locked') {
+        admin.twoFactorAuth.otpAttempts = check.nextAttempts;
+        if (check.status === 'locked') { admin.twoFactorAuth.loginOtp = undefined; admin.twoFactorAuth.loginOtpExpires = undefined; }
+        await admin.save();
+      }
+      const msg = check.status === 'locked' ? 'Too many wrong codes. Please log in again.' : 'Invalid or expired code';
+      return res.status(400).json({ msg });
     }
 
     // Clear OTP
-    admin.twoFactorAuth.otp = undefined;
-    admin.twoFactorAuth.otpExpires = undefined;
+    admin.twoFactorAuth.loginOtp = undefined;
+    admin.twoFactorAuth.loginOtpExpires = undefined;
+    admin.twoFactorAuth.otpAttempts = 0;
     admin.lastLogin = new Date();
     await admin.save();
 
@@ -114,7 +122,7 @@ const verifyAdminLoginOTP = async (req, res) => {
         role: admin.role,
         avatar: admin.profilePicture,
         admin_id: admin.admin_id,
-        twoFactorAuth: admin.twoFactorAuth
+        twoFactorAuth: { enabled: !!admin.twoFactorAuth?.enabled }
       }
     });
   } catch (err) {

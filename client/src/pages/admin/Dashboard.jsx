@@ -10,6 +10,23 @@ const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444'
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ users: 0, jobs: 0, companies: 0, totalRevenue: 0, revenueData: [], subscriptionData: [] });
   const [loading, setLoading] = useState(true);
+  const [health, setHealth] = useState(null); // null = checking, then { ok, db, time }
+
+  // Real site check (GET /api/health), repeated every minute while this page is open.
+  useEffect(() => {
+    let stop = false;
+    const check = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/health`, { timeout: 8000 });
+        if (!stop) setHealth(res.data);
+      } catch {
+        if (!stop) setHealth({ ok: false, db: 'down', time: new Date().toISOString() });
+      }
+    };
+    check();
+    const id = setInterval(check, 60000);
+    return () => { stop = true; clearInterval(id); };
+  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -178,6 +195,25 @@ const AdminDashboard = () => {
            </section>
         </div>
       </div>
+
+      {/* Site status: a real check of the server and database */}
+      <section
+        className={`rounded-[24px] border p-5 flex items-center justify-between gap-4 ${health === null ? 'bg-white border-slate-200' : health.ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-300'}`}
+        role="status"
+        aria-live="polite"
+      >
+        <div className="flex items-center gap-3">
+          <span className={`w-3 h-3 rounded-full ${health === null ? 'bg-slate-300' : health.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`} />
+          <div>
+            <p className="text-sm font-bold text-slate-900">
+              {health === null ? 'Checking the site...' : health.ok ? 'Site and database are up' : 'The site cannot reach its database'}
+            </p>
+            <p className="text-xs text-slate-500">
+              {health === null ? ' ' : health.ok ? 'Checked just now, repeats every minute.' : 'Tell Sneha now. New sign-ups and payments may fail.'}
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Waiting on you: real counts only */}
       <section className="bg-white p-8 rounded-[24px] border border-slate-200 shadow-sm mt-8">

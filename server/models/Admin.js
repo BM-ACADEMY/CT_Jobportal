@@ -25,7 +25,10 @@ const adminSchema = new mongoose.Schema({
     secret: { type: String },
     backupCodes: [{ type: String }],
     otp: { type: String },
-    otpExpires: { type: Date }
+    otpExpires: { type: Date },
+    loginOtp: { type: String }, // hash of the login code, never the code itself
+    loginOtpExpires: { type: Date },
+    otpAttempts: { type: Number, default: 0 }
   },
   profilePicture: {
     type: String,
