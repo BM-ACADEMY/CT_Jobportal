@@ -44,6 +44,10 @@ router.get('/roles', requireAdminOr('users_view'), getRoles);
 router.use(authorizeRoles('admin'));
 
 // Employers' active-job limits: see them and raise them without a payment (Super Admin only).
+// Walk-in drives: approve, reject and mark paid by hand (Super Admin only; no Razorpay).
+router.get('/drives', require('../controllers/walkInDriveController').adminListDrives);
+router.post('/drives/:id/review', require('../controllers/walkInDriveController').reviewDrive);
+router.post('/drives/:id/mark-paid', require('../controllers/walkInDriveController').markPaid);
 router.get('/skill-tests', require('../controllers/skillTestAdminController').getSkillTestSummary);
 router.get('/job-limits', listJobLimits);
 router.post('/job-limits/grant', grantJobLimits);

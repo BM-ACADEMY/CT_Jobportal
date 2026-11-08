@@ -250,6 +250,7 @@ app.use('/api/assistant', assistantRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
+app.use('/api/drives', require('./routes/drives'));
 // Public status check for the admin dashboard and uptime monitors. Answers 503 when the database is down.
 app.get('/api/health', async (req, res) => {
   const result = await require('./utils/health').checkHealth(mongoose);
