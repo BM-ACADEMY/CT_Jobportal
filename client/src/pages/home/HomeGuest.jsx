@@ -23,6 +23,7 @@ import MotionIcon from '@/components/home/MotionIcon';
 import CategoryCards from '@/components/home/CategoryCards';
 import UpcomingDrives from '@/components/home/UpcomingDrives';
 import HomeInternships from '@/components/home/HomeInternships';
+import WhoAreYou from '@/components/home/WhoAreYou';
 import LogoStrips from '@/components/home/LogoStrips';
 import { popularTerms, MIN_POPULAR_TERMS } from '@/utils/popularSearches';
 import { trackEvent } from '@/utils/analytics';
@@ -353,6 +354,7 @@ const HomeGuest = () => {
               <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">Healthcare, hotels, shops, factories, offices and more. Pick your field and see who is hiring.</p>
             </Reveal>
             <CategoryCards />
+        <WhoAreYou />
         <HomeInternships />
         <UpcomingDrives />
         <LogoStrips />

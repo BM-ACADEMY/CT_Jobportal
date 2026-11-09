@@ -117,6 +117,7 @@ const AdminFeedback = page('admin/ManageFeedback');
 const AdminWalkInDrives = page('admin/WalkInDrivesAdmin');
 const AdminAdvisor = page('admin/Advisor');
 const InternshipsPage = page('Internships');
+const AudienceLanding = page('AudienceLanding');
 const AdminServices = page('admin/Services');
 const AdminBrandLeads = page('admin/BrandLeads');
 const CollegeInternships = page('college/Internships');
@@ -186,6 +187,8 @@ const AppRoutes = () => {
         <Route path="/companies/:id" element={<CompanyProfilePage />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/for-colleges" element={<ForColleges />} />
+        <Route path="/for-companies" element={<AudienceLanding kind="companies" />} />
+        <Route path="/for-recruiters" element={<AudienceLanding kind="recruiters" />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/plans" element={<Plans />} />
         <Route path="/terms" element={<TermsAndConditions />} />
