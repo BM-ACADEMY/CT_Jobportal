@@ -1,6 +1,7 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
 const { withPromotion } = require('../utils/jobPromotion');
 const { cleanInternship, freeInternshipSlot } = require('../utils/internship');
+const { cleanFacets, cleanSalary } = require('../utils/jobFacets');
 const Company = require('../models/Company');
 const { publicJobConditions, publicCompanyConditions, hideUnverified } = require('../utils/publicVisibility');
 const { cleanCategory, cleanInterestedCategories, guessCategory } = require('../config/jobCategories');
@@ -120,7 +121,8 @@ const createJob = async (req, res) => {
       jobType,
       workMode,
       location,
-      salary,
+      salary: cleanSalary(salary),
+      ...cleanFacets(req.body),
       timings,
       shifts,
       skillsRequired,
@@ -341,6 +343,12 @@ const updateJob = async (req, res) => {
       }
     }
     if (req.body.category !== undefined) req.body.category = cleanCategory(req.body.category); // an unknown value clears it
+    if (req.body.salary !== undefined) req.body.salary = cleanSalary(req.body.salary);
+    if (['education', 'freshersWelcome', 'contractMonths', 'partTime', 'jobType'].some((k) => req.body[k] !== undefined)) {
+      // Fields not sent keep their saved value; the rest are cleaned for the job type that will be saved.
+      const merged = { jobType: job.jobType, education: job.education, freshersWelcome: job.freshersWelcome, contractMonths: job.contractMonths, partTime: job.partTime, ...req.body };
+      Object.assign(req.body, cleanFacets(merged));
+    }
     const flagUpdate = (req.body.title !== undefined || req.body.description !== undefined)
       ? { scamFlags: jobScamFlags({ title: req.body.title ?? job.title, description: req.body.description ?? job.description }), scamReviewed: false }
       : {};

@@ -16,5 +16,6 @@ export const JOB_CATEGORIES = [
   { key: 'bpo-support', label: 'BPO & Customer Support', q: 'customer support', desc: 'Calls, chat and customer care.', roles: ['Telecaller', 'Chat Support', 'Back Office'] },
   { key: 'admin-office', label: 'Admin & Office', q: 'admin', desc: 'Offices, records and coordination.', roles: ['Office Admin', 'Data Entry', 'Receptionist'] },
   { key: 'hr-recruitment', label: 'HR & Recruitment', q: 'hr', desc: 'Hire, onboard and look after people.', roles: ['HR Executive', 'Recruiter', 'Payroll'] },
+  { key: 'skilled-trades', label: 'Skilled Trades & Technicians', q: 'technician', desc: 'Hands-on work: repair, install, build, stitch, drive.', roles: ['Electrician', 'Plumber', 'Tailor'] },
   { key: 'non-profit', label: 'Non-Profit', q: 'social', desc: 'Causes that strengthen communities.', roles: ['Program Officer', 'Social Worker', 'CSR'] },
 ];

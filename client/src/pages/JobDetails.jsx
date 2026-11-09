@@ -36,6 +36,7 @@ import ReportJobButton from '../components/jobs/ReportJobButton';
 import SEOHead from '../components/seo/SEOHead';
 import { jobIdFromParam, jobPath } from '../utils/jobUrl';
 import { trackEvent } from '../utils/analytics';
+import { formatPay, jobFacts } from '../data/jobFacets';
 
 const JobDetails = () => {
   const { id: routeParam } = useParams();
@@ -200,14 +201,7 @@ const JobDetails = () => {
 
   const isJobSaved = user?.savedJobs?.some(savedId => String(savedId) === String(id));
 
-  const formatSalary = (salary) => {
-    if (!salary || salary.isRangeHidden) return "Not Disclosed";
-    if (salary.min && salary.max) {
-      return `₹${(salary.min / 100000).toFixed(1)}-${(salary.max / 100000).toFixed(1)} LPA`;
-    }
-    if (salary.min) return `₹${(salary.min / 100000).toFixed(1)}+ LPA`;
-    return "Competitive";
-  };
+  const formatSalary = (salary) => formatPay(salary);
 
   if (loading) {
     return (
@@ -258,7 +252,7 @@ const JobDetails = () => {
     jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: city, addressRegion: 'Tamil Nadu', addressCountry: 'IN' } },
     directApply: true,
     ...(job.workMode === 'Remote' ? { jobLocationType: 'TELECOMMUTE', applicantLocationRequirements: { '@type': 'Country', name: 'IN' } } : {}),
-    ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
+    ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: ({ month: 'MONTH', day: 'DAY', hour: 'HOUR' })[job.salary.unit] || 'YEAR' } } } : {}),
   };
 
   return (
@@ -412,6 +406,14 @@ const JobDetails = () => {
               <p className="text-sm text-slate-700">{job.internship.durationMonths} {job.internship.durationMonths === 1 ? 'month' : 'months'} · {job.internship.stipendType === 'paid' ? `Stipend ₹${Number(job.internship.stipendAmount).toLocaleString('en-IN')} per month` : 'Unpaid'} · {({ onsite: 'On-site', remote: 'Remote', hybrid: 'Hybrid' })[job.internship.mode] || ''}</p>
               <p className="text-sm text-emerald-700">{[job.internship.certificate && 'Completion certificate', job.internship.ppo && 'Pre-placement job offer possible'].filter(Boolean).join(' · ')}</p>
               <p className="text-xs text-slate-500">A real internship never asks you for money. If it does, use Report this job.</p>
+            </div>
+          )}
+
+          {jobFacts(job).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {jobFacts(job).map((f) => (
+                <span key={f} className="inline-flex items-center rounded-full bg-amber-50 text-amber-800 border border-amber-100 px-3 py-1 text-xs font-semibold">{f}</span>
+              ))}
             </div>
           )}
 

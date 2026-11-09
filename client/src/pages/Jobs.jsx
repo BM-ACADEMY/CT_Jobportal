@@ -16,6 +16,7 @@ import SEOHead from '../components/seo/SEOHead';
 import { jobPath } from '../utils/jobUrl';
 import { getCityIntro, CITY_LINKS } from '../data/cityJobIntros';
 import { JOB_CATEGORIES } from '../data/jobCategories';
+import { EDUCATION_LEVELS, MONTHLY_PAY_RANGES, POSTED_WITHIN, WORK_MODES, monthlyPay, educationFits, postedWithinDays, formatPay, jobFacts } from '../data/jobFacets';
 
 const SEARCH_FIELD_LABELS = {
   title: 'Job Title',
@@ -26,14 +27,7 @@ const SEARCH_FIELD_LABELS = {
 };
 
 const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote', 'Freelance'];
-const SALARY_RANGES = [
-  { label: 'Any', min: 0, max: Infinity },
-  { label: 'Under ₹3 LPA', min: 0, max: 300000 },
-  { label: '₹3–6 LPA', min: 300000, max: 600000 },
-  { label: '₹6–12 LPA', min: 600000, max: 1200000 },
-  { label: '₹12–20 LPA', min: 1200000, max: 2000000 },
-  { label: '₹20 LPA+', min: 2000000, max: Infinity },
-];
+const SALARY_RANGES = MONTHLY_PAY_RANGES; // pay is compared per month, whatever unit the job quotes
 const EXPERIENCE_RANGES = [
   { label: 'Any', min: 0, max: Infinity },
   { label: 'Fresher (0 Years)', min: 0, max: 0 },
@@ -124,6 +118,10 @@ const Jobs = () => {
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedSalary, setSelectedSalary] = useState(0);
   const [selectedExperience, setSelectedExperience] = useState(0);
+  const [selectedEducation, setSelectedEducation] = useState(EDUCATION_LEVELS.some((e) => e.key === searchParams.get('education')) ? searchParams.get('education') : '');
+  const [selectedModes, setSelectedModes] = useState([]);
+  const [postedDays, setPostedDays] = useState(0);
+  const [noExperience, setNoExperience] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [showAllTypes, setShowAllTypes] = useState(false);
@@ -188,9 +186,9 @@ const Jobs = () => {
       const matchesType = selectedTypes.length === 0 ||
         selectedTypes.some(type => job.jobType?.includes(type));
 
-      const jobMin = job.salary?.min || 0;
+      const jobPay = monthlyPay(job);
       const matchesSalary = selectedSalary === 0 ||
-        (jobMin >= salaryRange.min && jobMin <= salaryRange.max);
+        (jobPay > 0 && jobPay >= salaryRange.min && jobPay < salaryRange.max);
 
       const jobExpMin = job.experience?.min || 0;
       const jobExpMax = job.experience?.max || 0;
@@ -200,7 +198,12 @@ const Jobs = () => {
       // The "For You" list comes without guessed categories, so jobs with none are kept there rather than hidden.
       const matchesCategory = !selectedCategory || job.category === selectedCategory || (activeTab === 'matched' && !job.category);
 
-      return matchesType && matchesSalary && matchesExperience && matchesCategory;
+      const matchesEducation = educationFits(job, selectedEducation);
+      const matchesMode = selectedModes.length === 0 || selectedModes.includes(job.workMode) || (selectedModes.includes('Remote') && job.jobType === 'Remote');
+      const matchesPosted = postedWithinDays(job, postedDays);
+      const matchesNoExp = !noExperience || job.freshersWelcome === true || !(job.experience?.min > 0);
+
+      return matchesType && matchesSalary && matchesExperience && matchesCategory && matchesEducation && matchesMode && matchesPosted && matchesNoExp;
     });
 
     // A search term implies relevance ranking already did the ordering (best match first);
@@ -210,14 +213,14 @@ const Jobs = () => {
         if (sortBy === 'relevance') return 0; // keep the server's order (stable sort)
         if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
         if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-        if (sortBy === 'salary_desc') return (b.salary?.min || 0) - (a.salary?.min || 0);
-        if (sortBy === 'salary_asc') return (a.salary?.min || 0) - (b.salary?.min || 0);
+        if (sortBy === 'salary_desc') return monthlyPay(b) - monthlyPay(a);
+        if (sortBy === 'salary_asc') return monthlyPay(a) - monthlyPay(b);
         return 0;
       });
     }
 
     return result;
-  }, [jobs, activeTab, searchTerm, locationTerm, selectedCategory, selectedTypes, selectedSalary, selectedExperience, sortBy]);
+  }, [jobs, activeTab, searchTerm, locationTerm, selectedCategory, selectedTypes, selectedSalary, selectedExperience, selectedEducation, selectedModes, postedDays, noExperience, sortBy]);
 
   const toggleType = (type) => {
     setSelectedTypes(prev =>
@@ -232,10 +235,16 @@ const Jobs = () => {
     setSelectedTypes([]);
     setSelectedSalary(0);
     setSelectedExperience(0);
+    setSelectedEducation('');
+    setSelectedModes([]);
+    setPostedDays(0);
+    setNoExperience(false);
     setSortBy('newest');
   };
 
-  const hasActiveFilters = searchTerm || locationTerm || selectedCategory || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0;
+  const toggleMode = (m) => setSelectedModes((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
+  const extraFilterCount = (selectedEducation ? 1 : 0) + selectedModes.length + (postedDays ? 1 : 0) + (noExperience ? 1 : 0);
+  const hasActiveFilters = searchTerm || locationTerm || selectedCategory || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0 || extraFilterCount > 0;
 
   const searchedLocation = locationTerm.trim()
     .replace(/\s+/g, ' ')
@@ -259,10 +268,7 @@ const Jobs = () => {
 
   const formatSalary = (salary, job) => {
     if (job?.jobType === 'Internship' && job.internship) return job.internship.stipendType === 'paid' ? `₹${Number(job.internship.stipendAmount).toLocaleString('en-IN')}/month` : 'Unpaid';
-    if (!salary || salary.isRangeHidden) return 'Not Disclosed';
-    if (salary.min && salary.max) return `₹${(salary.min / 100000).toFixed(1)}–${(salary.max / 100000).toFixed(1)} LPA`;
-    if (salary.min) return `₹${(salary.min / 100000).toFixed(1)}+ LPA`;
-    return 'Competitive';
+    return formatPay(salary);
   };
 
   const FilterPanel = () => (
@@ -299,7 +305,7 @@ const Jobs = () => {
 
       {/* Salary Range */}
       <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Salary Range</p>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Pay per month</p>
         <div className="flex flex-col gap-1">
           {SALARY_RANGES.map((range, i) => (
             <button
@@ -334,6 +340,54 @@ const Jobs = () => {
               }`}
             >
               {range.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-px bg-slate-100" />
+
+      {/* Education: shows jobs that accept this level or lower */}
+      <div>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-1">My education</p>
+        <p className="text-[11px] text-slate-400 mb-3">Jobs that accept this level</p>
+        <div className="flex flex-wrap gap-2">
+          {EDUCATION_LEVELS.filter((e) => e.key !== 'any').map((e) => (
+            <button key={e.key} onClick={() => setSelectedEducation(selectedEducation === e.key ? '' : e.key)}
+              className={`px-3.5 py-1.5 rounded-none text-xs font-semibold border transition-all ${selectedEducation === e.key ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
+              {e.label}
+            </button>
+          ))}
+        </div>
+        <label className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-600 cursor-pointer">
+          <input type="checkbox" checked={noExperience} onChange={(e) => setNoExperience(e.target.checked)} className="accent-emerald-600" />
+          No experience needed
+        </label>
+      </div>
+
+      <div className="h-px bg-slate-100" />
+
+      <div>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Work mode</p>
+        <div className="flex flex-wrap gap-2">
+          {WORK_MODES.map((m) => (
+            <button key={m} onClick={() => toggleMode(m)}
+              className={`px-3.5 py-1.5 rounded-none text-xs font-semibold border transition-all ${selectedModes.includes(m) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
+              {m === 'Remote' ? 'Work from home' : m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-px bg-slate-100" />
+
+      <div>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Posted</p>
+        <div className="flex flex-col gap-1">
+          {POSTED_WITHIN.map((p) => (
+            <button key={p.days} onClick={() => setPostedDays(p.days)}
+              className={`text-left px-3 py-2 rounded-none text-sm font-medium transition-all ${postedDays === p.days ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}>
+              {p.label}
             </button>
           ))}
         </div>
@@ -461,7 +515,7 @@ const Jobs = () => {
           <div className="flex-1 pt-8 min-w-0">
 
             {/* Active filter chips */}
-            {(selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0) && (
+            {(selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0 || extraFilterCount > 0) && (
               <div className="flex flex-wrap gap-2 mb-5">
                 {selectedTypes.map(t => (
                   <Badge key={t} className="bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-none px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-emerald-100 transition-colors" onClick={() => toggleType(t)}>
@@ -471,6 +525,26 @@ const Jobs = () => {
                 {selectedSalary > 0 && (
                   <Badge className="bg-amber-50 text-amber-700 border border-amber-200 rounded-none px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-amber-100 transition-colors" onClick={() => setSelectedSalary(0)}>
                     {SALARY_RANGES[selectedSalary].label} <X size={11} className="ml-1.5" />
+                  </Badge>
+                )}
+                {selectedEducation && (
+                  <Badge className="bg-violet-50 text-violet-700 border border-violet-200 rounded-none px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-violet-100 transition-colors" onClick={() => setSelectedEducation('')}>
+                    {EDUCATION_LEVELS.find((e) => e.key === selectedEducation)?.label} <X size={11} className="ml-1.5" />
+                  </Badge>
+                )}
+                {selectedModes.map((m) => (
+                  <Badge key={m} className="bg-sky-50 text-sky-700 border border-sky-200 rounded-none px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-sky-100 transition-colors" onClick={() => toggleMode(m)}>
+                    {m === 'Remote' ? 'Work from home' : m} <X size={11} className="ml-1.5" />
+                  </Badge>
+                ))}
+                {postedDays > 0 && (
+                  <Badge className="bg-sky-50 text-sky-700 border border-sky-200 rounded-none px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-sky-100 transition-colors" onClick={() => setPostedDays(0)}>
+                    {POSTED_WITHIN.find((p) => p.days === postedDays)?.label} <X size={11} className="ml-1.5" />
+                  </Badge>
+                )}
+                {noExperience && (
+                  <Badge className="bg-blue-50 text-blue-700 border border-blue-200 rounded-none px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => setNoExperience(false)}>
+                    No experience needed <X size={11} className="ml-1.5" />
                   </Badge>
                 )}
                 {selectedExperience > 0 && (
@@ -483,6 +557,22 @@ const Jobs = () => {
 
             {/* Sort + Mobile Filter bar */}
             {/* Field of work: tap one to narrow the list, tap it again to clear */}
+            {/* Quick filters for the most common local searches */}
+            <div className="no-scrollbar -mx-4 px-4 mb-3 flex gap-2 overflow-x-auto sm:mx-0 sm:px-0 sm:flex-wrap" role="group" aria-label="Quick filters">
+              {[
+                { label: 'No degree needed', on: selectedEducation === 'iti-diploma', toggle: () => setSelectedEducation(selectedEducation === 'iti-diploma' ? '' : 'iti-diploma') },
+                { label: 'Part-time', on: selectedTypes.includes('Part-time'), toggle: () => toggleType('Part-time') },
+                { label: 'Contract', on: selectedTypes.includes('Contract'), toggle: () => toggleType('Contract') },
+                { label: 'Work from home', on: selectedModes.includes('Remote'), toggle: () => toggleMode('Remote') },
+                { label: 'No experience needed', on: noExperience, toggle: () => setNoExperience(!noExperience) },
+                { label: 'New this week', on: postedDays === 7, toggle: () => setPostedDays(postedDays === 7 ? 0 : 7) },
+              ].map((q) => (
+                <button key={q.label} type="button" aria-pressed={q.on} onClick={q.toggle}
+                  className={`shrink-0 h-9 px-3.5 rounded-full border text-xs font-bold transition-colors ${q.on ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-400'}`}>
+                  {q.label}
+                </button>
+              ))}
+            </div>
             <div className="no-scrollbar -mx-4 px-4 mb-4 flex gap-2 overflow-x-auto sm:mx-0 sm:px-0 sm:flex-wrap" role="group" aria-label="Field of work">
               {JOB_CATEGORIES.map((c) => (
                 <button
@@ -525,7 +615,7 @@ const Jobs = () => {
                   className="lg:hidden flex items-center gap-2 h-9 px-4 rounded-none bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:border-emerald-300 transition-colors"
                 >
                   <SlidersHorizontal size={14} /> Filters
-                  {hasActiveFilters && <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center font-bold">{selectedTypes.length + (selectedSalary > 0 ? 1 : 0) + (selectedExperience > 0 ? 1 : 0)}</span>}
+                  {hasActiveFilters && <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center font-bold">{selectedTypes.length + (selectedSalary > 0 ? 1 : 0) + (selectedExperience > 0 ? 1 : 0) + extraFilterCount}</span>}
                 </button>
                 <select
                   value={sortBy}
@@ -628,6 +718,9 @@ const Jobs = () => {
                                   {job.jobType}
                                 </Badge>
                               )}
+                              {jobFacts(job).map((f) => (
+                                <Badge key={f} className="bg-amber-50 text-amber-800 border-none text-[11px] font-semibold px-3 py-1 rounded-lg hover:bg-amber-50">{f}</Badge>
+                              ))}
                               {job.experienceLevel && (
                                 <Badge className="bg-violet-50 text-violet-700 border-none text-[11px] font-semibold px-3 py-1 rounded-lg hover:bg-violet-50">
                                   {job.experienceLevel}

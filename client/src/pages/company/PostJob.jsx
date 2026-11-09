@@ -5,6 +5,7 @@ import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { Link } from 'react-router-dom';
 import { JOB_CATEGORIES } from '@/data/jobCategories';
+import { EDUCATION_LEVELS, PAY_UNITS, PART_TIME_SCHEDULES } from '@/data/jobFacets';
 import { 
   Form, Input, Button, Card, Select, InputNumber, 
   Switch, Space, Typography, Tag, Tooltip, Row, Col, Alert, Spin, Checkbox
@@ -28,6 +29,7 @@ const PostJob = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [form] = Form.useForm();
     const watchedJobType = Form.useWatch('jobType', form);
+    const watchedPayUnit = Form.useWatch('payUnit', form) || 'year';
     
     const [loading, setLoading] = useState(false);
     const [draftLoading, setDraftLoading] = useState(false);
@@ -75,8 +77,13 @@ const PostJob = () => {
                             location: jobToEdit.location,
                             minExperience: jobToEdit.experience?.min || 0,
                             maxExperience: jobToEdit.experience?.max || 0,
-                            minSalary: jobToEdit.salary?.min ? jobToEdit.salary.min / 100000 : null,
-                            maxSalary: jobToEdit.salary?.max ? jobToEdit.salary.max / 100000 : null,
+                            payUnit: jobToEdit.salary?.unit || 'year',
+                            minSalary: jobToEdit.salary?.min ? (jobToEdit.salary?.unit && jobToEdit.salary.unit !== 'year' ? jobToEdit.salary.min : jobToEdit.salary.min / 100000) : null,
+                            maxSalary: jobToEdit.salary?.max ? (jobToEdit.salary?.unit && jobToEdit.salary.unit !== 'year' ? jobToEdit.salary.max : jobToEdit.salary.max / 100000) : null,
+                            education: jobToEdit.education || undefined,
+                            freshersWelcome: !!jobToEdit.freshersWelcome,
+                            contractMonths: jobToEdit.contractMonths || undefined,
+                            partTime: jobToEdit.partTime ? { ...jobToEdit.partTime, schedule: jobToEdit.partTime.schedule || undefined, hoursPerDay: jobToEdit.partTime.hoursPerDay || undefined } : undefined,
                             isRangeHidden: jobToEdit.salary?.isRangeHidden,
                             additionalDetails: jobToEdit.additionalDetails || [],
                             applicationQuestions: jobToEdit.applicationQuestions || []
@@ -88,6 +95,7 @@ const PostJob = () => {
                         postedAs: user?.company ? 'company' : 'recruiter',
                         jobType: 'Full-time',
                         workMode: 'On-site',
+                        payUnit: 'year',
                         vacancies: 1,
                         isRangeHidden: false,
                         applicationQuestions: [
@@ -141,9 +149,15 @@ const PostJob = () => {
                 } } : {}),
                 workMode: values.workMode,
                 location: values.location,
+                education: values.education || '',
+                freshersWelcome: !!values.freshersWelcome,
+                ...(values.jobType === 'Contract' ? { contractMonths: values.contractMonths || null } : {}),
+                ...(values.jobType === 'Part-time' ? { partTime: { hoursPerDay: values.partTime?.hoursPerDay || null, schedule: values.partTime?.schedule || '' } } : {}),
                 salary: {
-                    min: values.minSalary ? Number(values.minSalary) * 100000 : 0,
-                    max: values.maxSalary ? Number(values.maxSalary) * 100000 : 0,
+                    // LPA is typed for yearly pay; monthly, daily and hourly pay are typed in rupees.
+                    min: values.minSalary ? Number(values.minSalary) * (values.payUnit && values.payUnit !== 'year' ? 1 : 100000) : 0,
+                    max: values.maxSalary ? Number(values.maxSalary) * (values.payUnit && values.payUnit !== 'year' ? 1 : 100000) : 0,
+                    unit: values.payUnit || 'year',
                     currency: 'INR',
                     isRangeHidden: isRangeHidden
                 },
@@ -398,6 +412,33 @@ const PostJob = () => {
                                 </Select>
                             </Form.Item>
 
+                            {watchedJobType === 'Contract' && (
+                                <Form.Item label="Contract length (months)" name="contractMonths" extra="Job seekers see this on the job card.">
+                                    <InputNumber min={1} max={36} className="w-full" size="large" placeholder="e.g. 6" />
+                                </Form.Item>
+                            )}
+                            {watchedJobType === 'Part-time' && (
+                                <Row gutter={16}>
+                                    <Col xs={12}>
+                                        <Form.Item label="Hours per day" name={['partTime', 'hoursPerDay']}>
+                                            <InputNumber min={1} max={8} className="w-full" size="large" placeholder="e.g. 4" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={12}>
+                                        <Form.Item label="When" name={['partTime', 'schedule']}>
+                                            <Select size="large" allowClear placeholder="Choose">{PART_TIME_SCHEDULES.map((x) => <Option key={x.key} value={x.key}>{x.label}</Option>)}</Select>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                            )}
+
+                            <Form.Item label="Minimum education" name="education" extra="Pick the lowest level that can apply. Many good jobs need no degree.">
+                                <Select size="large" allowClear placeholder="Choose">{EDUCATION_LEVELS.map((x) => <Option key={x.key} value={x.key}>{x.label}</Option>)}</Select>
+                            </Form.Item>
+                            <Form.Item name="freshersWelcome" valuePropName="checked">
+                                <Checkbox>Freshers are welcome</Checkbox>
+                            </Form.Item>
+
                             {watchedJobType === 'Internship' && (
                                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 mb-4">
                                     <p className="font-bold text-slate-800 mb-1">Internship details</p>
@@ -441,21 +482,24 @@ const PostJob = () => {
                         </Card>
 
                         <Card 
-                            title={<span className="font-semibold flex items-center gap-2"><IndianRupee className="text-emerald-500" size={20} /> Compensation (LPA)</span>} 
+                            title={<span className="font-semibold flex items-center gap-2"><IndianRupee className="text-emerald-500" size={20} /> Compensation</span>} 
                             bordered={false}
                             className="shadow-sm rounded-xl overflow-hidden"
                             style={{ marginTop: '24px' }}
                             headStyle={{ borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' }}
                         >
+                            <Form.Item label="Pay is quoted" name="payUnit">
+                                <Select size="large">{PAY_UNITS.map((x) => <Option key={x.key} value={x.key}>{x.label}</Option>)}</Select>
+                            </Form.Item>
                             <Row gutter={16}>
                                 <Col xs={12}>
-                                    <Form.Item label="Min Salary" name="minSalary">
-                                        <InputNumber min={0} step={0.1} className="w-full" size="large" disabled={isRangeHidden} placeholder="e.g. 3.5" />
+                                    <Form.Item label={watchedPayUnit === 'year' ? 'Min Salary (LPA)' : 'Min pay (₹)'} name="minSalary">
+                                        <InputNumber min={0} step={watchedPayUnit === 'year' ? 0.1 : 50} className="w-full" size="large" disabled={isRangeHidden} placeholder={watchedPayUnit === 'year' ? 'e.g. 3.5' : watchedPayUnit === 'month' ? 'e.g. 15000' : watchedPayUnit === 'day' ? 'e.g. 600' : 'e.g. 150'} />
                                     </Form.Item>
                                 </Col>
                                 <Col xs={12}>
-                                    <Form.Item label="Max Salary" name="maxSalary">
-                                        <InputNumber min={0} step={0.1} className="w-full" size="large" disabled={isRangeHidden} placeholder="e.g. 6.0" />
+                                    <Form.Item label={watchedPayUnit === 'year' ? 'Max Salary (LPA)' : 'Max pay (₹)'} name="maxSalary">
+                                        <InputNumber min={0} step={watchedPayUnit === 'year' ? 0.1 : 50} className="w-full" size="large" disabled={isRangeHidden} placeholder={watchedPayUnit === 'year' ? 'e.g. 6.0' : watchedPayUnit === 'month' ? 'e.g. 25000' : watchedPayUnit === 'day' ? 'e.g. 900' : 'e.g. 250'} />
                                     </Form.Item>
                                 </Col>
                             </Row>

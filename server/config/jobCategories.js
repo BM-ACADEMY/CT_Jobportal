@@ -16,6 +16,7 @@ const JOB_CATEGORIES = [
   { key: 'bpo-support', label: 'BPO & Customer Support', words: ['telecaller', 'tele caller', 'customer support', 'customer care', 'call center', 'bpo', 'chat support', 'voice process', 'back office'] },
   { key: 'admin-office', label: 'Admin & Office', words: ['admin', 'receptionist', 'data entry', 'office', 'secretary', 'coordinator', 'executive assistant'] },
   { key: 'hr-recruitment', label: 'HR & Recruitment', words: ['hr ', 'human resource', 'recruiter', 'recruitment', 'payroll', 'talent'] },
+  { key: 'skilled-trades', label: 'Skilled Trades & Technicians', words: ['electrician', 'plumber', 'carpenter', 'painter', 'tailor', 'mechanic', 'technician', 'ac repair', 'beautician', 'security guard', 'helper', 'cleaner'] },
   { key: 'non-profit', label: 'Non-Profit', words: ['ngo', 'non-profit', 'nonprofit', 'social worker', 'program officer', 'csr', 'volunteer'] },
 ];
 

@@ -78,7 +78,16 @@ const jobSchema = new mongoose.Schema({
     min: { type: Number },
     max: { type: Number },
     currency: { type: String, default: 'INR' },
-    isRangeHidden: { type: Boolean, default: false }
+    isRangeHidden: { type: Boolean, default: false },
+    unit: { type: String, enum: ['year', 'month', 'day', 'hour'], default: 'year' } // min/max are in rupees per this unit (year = the old LPA jobs)
+  },
+  // Who can apply and how the job is worked (utils/jobFacets.js). Empty on jobs posted before these existed.
+  education: { type: String, enum: ['', 'any', '10th', '12th', 'iti-diploma', 'graduate', 'postgraduate'], default: '', index: true },
+  freshersWelcome: { type: Boolean, default: false },
+  contractMonths: { type: Number, default: null },
+  partTime: {
+    hoursPerDay: { type: Number, default: null },
+    schedule: { type: String, enum: ['', 'flexible', 'mornings', 'evenings', 'weekdays', 'weekends'], default: '' }
   },
   timings: {
     type: String,
