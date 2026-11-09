@@ -1,9 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { RECENT_BLOGS } from '../../data/blogs';
+import { BLOGS } from '../../data/blogs';
+import { useAdminBlogCards } from '../../data/useBlogPosts';
 
-const RecentBlogs = ({ compact = false }) => (
+const RecentBlogs = ({ compact = false }) => {
+  const newPosts = useAdminBlogCards();
+  const RECENT_BLOGS = [...newPosts, ...BLOGS].slice(0, 2);
+  return (
   <section className={compact ? '' : 'max-w-7xl mx-auto px-6 py-14'} aria-labelledby="recent-blogs-title">
     <div className={compact ? 'mb-4' : 'flex items-end justify-between gap-4 mb-7'}>
       <div>
@@ -37,6 +41,7 @@ const RecentBlogs = ({ compact = false }) => (
     </div>
     {compact && <Link to="/blog" className="mt-4 inline-flex text-xs font-bold text-emerald-600 hover:text-emerald-700">See all articles →</Link>}
   </section>
-);
+  );
+};
 
 export default RecentBlogs;

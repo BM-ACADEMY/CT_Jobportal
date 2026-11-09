@@ -2,6 +2,7 @@
 const express = require('express');
 const Job = require('../models/Job');
 const Company = require('../models/Company');
+const BlogPost = require('../models/BlogPost');
 const { buildJobResponse, buildSitemap, getShell, jobIdFromSlug } = require('../utils/seoPages');
 
 const router = express.Router();
@@ -30,12 +31,13 @@ router.get('/job/:slug', async (req, res) => {
 router.get('/sitemap.xml', async (req, res) => {
   try {
     const now = new Date();
-    const [jobs, companies] = await Promise.all([
+    const [jobs, companies, posts] = await Promise.all([
       Job.find({ status: 'active', $or: [{ validThrough: { $gte: now } }, { validThrough: null }] }).select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
       Company.find({}).select('updatedAt').sort({ updatedAt: -1 }).limit(2000).lean(),
+      BlogPost.find({ status: 'published', publishedAt: { $lte: now } }).select('slug updatedAt').sort({ publishedAt: -1 }).limit(1000).lean().catch(() => []),
     ]);
     res.set('Content-Type', 'application/xml; charset=utf-8').set('Cache-Control', 'public, s-maxage=900');
-    return res.send(buildSitemap({ jobs, companies }));
+    return res.send(buildSitemap({ jobs, companies, posts }));
   } catch (err) {
     console.error('[SEO] sitemap failed, serving the static pages:', err.message);
     res.set('Content-Type', 'application/xml; charset=utf-8');

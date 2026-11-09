@@ -102,6 +102,7 @@ const coreMenus = {
     { icon: Users,           label: 'Brand Leads',      path: '/admin/brand-leads', group: 'Growth' },
     { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews', group: 'Growth' },
     { icon: MessageSquareHeart, label: 'Feedback',   path: '/admin/feedback', group: 'Growth' },
+    { icon: BookOpen,        label: 'Blog posts',     path: '/admin/blog', group: 'Growth' },
     { icon: BadgeCheck,      label: 'Skill tests',    path: '/admin/skill-tests', group: 'Growth' },
     { icon: ListChecks,      label: 'All Services',     path: '/admin/services', group: 'Setup' },
     { icon: UserCog,         label: 'Staff',          path: '/admin/staff', group: 'Setup' },

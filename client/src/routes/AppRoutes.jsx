@@ -113,6 +113,7 @@ const ManageReviews = page('admin/ManageReviews');
 const AdminSkillTests = page('admin/SkillTests');
 const AdminNeedsAction = page('admin/NeedsAction');
 const AdminWhatsAppInbox = page('admin/WhatsAppInbox');
+const AdminManageBlog = page('admin/ManageBlog');
 const AdminSpendIncome = page('admin/SpendIncome');
 const AdminFeedback = page('admin/ManageFeedback');
 const AdminWalkInDrives = page('admin/WalkInDrivesAdmin');
@@ -643,6 +644,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminSpendIncome />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/blog"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminManageBlog />
             </PrivateRoute>
           }
         />

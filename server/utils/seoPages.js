@@ -140,11 +140,12 @@ const STATIC_PAGES = [
 ];
 const urlEntry = (loc, lastmod, priority) =>
   `  <url><loc>${escapeHtml(loc)}</loc>${lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${priority ? `<priority>${priority}</priority>` : ''}</url>`;
-const buildSitemap = ({ jobs = [], companies = [] }) => {
+const buildSitemap = ({ jobs = [], companies = [], posts = [] }) => {
   const entries = [...STATIC_PAGES, ...blogSlugs().map((s) => `/blog/${s}`)].map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, null, p === '/' ? '1.0' : '0.8'));
+  posts.forEach((p) => entries.push(urlEntry(`${SITE_URL()}/blog/${p.slug}`, p.updatedAt, '0.8')));
   jobs.forEach((j) => entries.push(urlEntry(jobUrl(j), j.updatedAt, '0.7')));
   companies.forEach((c) => entries.push(urlEntry(`${SITE_URL()}/companies/${c._id}`, c.updatedAt, '0.5')));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>\n`;
 };
 
-module.exports = { buildJobResponse, buildSitemap, getShell, resetShellCache, injectHead, jobIdFromSlug, jobSlug, jobUrl, slugify, STATIC_PAGES };
+module.exports = { blogSlugs, buildJobResponse, buildSitemap, getShell, resetShellCache, injectHead, jobIdFromSlug, jobSlug, jobUrl, slugify, STATIC_PAGES };

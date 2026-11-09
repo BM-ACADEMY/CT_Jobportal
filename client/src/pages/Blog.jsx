@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { BLOGS } from '../data/blogs';
 import SEOHead from '../components/seo/SEOHead';
+import { useAdminBlogCards } from '../data/useBlogPosts';
 
-const Blog = () => (
+const Blog = () => {
+  const newPosts = useAdminBlogCards();
+  const allPosts = [...newPosts, ...BLOGS.filter((b) => !newPosts.some((n) => n.slug === b.slug))];
+  return (
   <div className="bg-slate-50 min-h-screen">
     <SEOHead title="Job search and hiring advice, Tamil Nadu | Velaivaaipu Blog" description="Clear advice on finding work, spotting fake job offers, growing your skills and hiring in Puducherry and Tamil Nadu." path="/blog" />
     <header className="relative bg-slate-950 px-6 py-16 md:py-20 text-center overflow-hidden">
@@ -25,7 +29,7 @@ const Blog = () => (
       </div>
     </header>
     <main className="max-w-7xl mx-auto px-6 py-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
-      {BLOGS.map((blog) => (
+      {allPosts.map((blog) => (
         <article key={blog.slug} className="flex flex-col rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:-translate-y-1 hover:shadow-xl transition-all">
           <img src={blog.image} alt={blog.imageAlt || ""} loading="lazy" decoding="async" className="h-48 w-full object-cover" />
           <div className="flex flex-1 flex-col p-6">
@@ -45,6 +49,7 @@ const Blog = () => (
       ))}
     </main>
   </div>
-);
+  );
+};
 
 export default Blog;

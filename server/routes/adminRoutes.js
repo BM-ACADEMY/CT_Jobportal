@@ -92,6 +92,14 @@ router.patch('/companies/:id/verify', require('../controllers/companyVerificatio
 router.get('/spend', require('../controllers/spendController').getSpend);
 router.post('/spend', require('../controllers/spendController').addSpend);
 router.patch('/spend/:id/void', require('../controllers/spendController').voidSpend);
+const blogCtl = require('../controllers/blogController');
+const blogImageUpload = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 }, fileFilter: (req, file, cb) => cb(null, /^image\/(jpeg|png|webp)$/.test(file.mimetype)) });
+router.get('/blog-posts', blogCtl.listAdmin);
+router.post('/blog-posts', blogCtl.createPost);
+router.get('/blog-posts/:id', blogCtl.getAdmin);
+router.put('/blog-posts/:id', blogCtl.updatePost);
+router.delete('/blog-posts/:id', blogCtl.deletePost);
+router.post('/blog-images', blogImageUpload.single('image'), blogCtl.uploadImage);
 router.get('/whatsapp', require('../controllers/whatsappInboxController').getInbox);
 router.post('/whatsapp/reply', require('../controllers/whatsappInboxController').replyToThread);
 router.put('/whatsapp/:phone/done', require('../controllers/whatsappInboxController').markDone);
