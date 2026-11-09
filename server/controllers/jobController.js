@@ -469,7 +469,7 @@ const getJobById = async (req, res) => {
       return res.status(404).json({ msg: 'Job not found' });
     }
     const job = await Job.findById(req.params.id)
-      .populate('company', 'name logo location website')
+      .populate('company', 'name logo location website description is_verified')
       .populate('recruiter', 'name email');
 
     if (!job) {

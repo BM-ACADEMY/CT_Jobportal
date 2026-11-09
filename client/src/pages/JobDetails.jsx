@@ -420,7 +420,7 @@ const JobDetails = () => {
             {[
               { label: 'Job Type', value: job.jobType, icon: <Briefcase size={20} /> },
               { label: 'Experience', value: `${job.experience?.min}-${job.experience?.max} Yrs`, icon: <Clock size={20} /> },
-              { label: 'Salary (LPA)', value: formatSalary(job.salary), icon: <IndianRupee size={20} /> },
+              { label: 'Salary', value: formatSalary(job.salary), icon: <IndianRupee size={20} /> },
               { label: 'Work Mode', value: job.workMode || 'In-office', icon: <Building2 size={20} /> },
             ].map((item, i) => (
               <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-lg p-6 hover:border-primary/20 transition-colors flex flex-col justify-between">
@@ -431,7 +431,7 @@ const JobDetails = () => {
                   <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wide mb-1">{item.label}</p>
                   <p className="text-slate-900 font-semibold tracking-tight">{item.value}</p>
                 </div>
-                {item.label === 'Salary (LPA)' && user?.role === 'jobseeker' && (
+                {item.label === 'Salary' && user?.role === 'jobseeker' && (
                   <Button 
                     onClick={handleSalaryBenchmarking} 
                     variant="outline"
@@ -451,9 +451,16 @@ const JobDetails = () => {
               <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Job Description</h2>
             </div>
             <div className="prose prose-slate max-w-none">
-              <div className="text-slate-600 leading-[1.8] font-medium text-lg whitespace-pre-wrap">
-                {job.description}
-              </div>
+              {(() => {
+                // A description written as "- point" lines reads better as a list.
+                const lines = String(job.description || '').split('\n').map((l) => l.trim()).filter(Boolean);
+                const bullet = /^[-•*]\s+/;
+                if (lines.length > 1 && lines.every((l) => bullet.test(l))) {
+                  return <ul className="list-disc pl-6 space-y-2 text-slate-600 leading-[1.8] font-medium text-lg">{lines.map((l, i) => <li key={i}>{l.replace(bullet, '')}</li>)}</ul>;
+                }
+                return <div className="text-slate-600 leading-[1.8] font-medium text-lg whitespace-pre-wrap">{job.description}</div>;
+              })()}
+              <p className="mt-6 text-xs text-slate-500">A real employer never asks you for money to apply or to join. If this job asks you to pay, report it.</p>
             </div>
           </section>
 
@@ -560,13 +567,13 @@ const JobDetails = () => {
                   )}
                 </div>
                 <div>
-                  <p className="text-slate-900 font-semibold tracking-tight">{job.company?.name}</p>
+                  <p className="text-slate-900 font-semibold tracking-tight">{job.company?.name}{job.company?.is_verified && <span className="ml-2 align-middle text-[10px] font-bold uppercase text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">Verified</span>}</p>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{job.company?.location || 'India'}</p>
                 </div>
               </div>
-              <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">
-                Leading provider of innovative solutions in the industry, focused on growth and employee excellence.
-              </p>
+              {job.company?.description && (
+                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6 line-clamp-6">{job.company.description}</p>
+              )}
               <div className="space-y-3">
                 {job.company?.website && (
                   <a 
