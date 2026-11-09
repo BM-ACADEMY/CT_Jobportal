@@ -22,6 +22,8 @@ const benefits = [
   { icon: FileSpreadsheet, title: 'Bring your existing student list', desc: 'Bulk-upload a CSV by department and batch. Accounts are created for you.' },
   { icon: FileBarChart, title: 'Reports for your principal', desc: 'Placement numbers by drive and department, plus a one-link executive summary you can share with management.' },
   { icon: Building2, title: 'Company drives in one place', desc: 'Invite companies to a drive, track who accepted, and keep every round and result together.' },
+  { icon: GraduationCap, title: 'Student internships in one view', desc: 'See which internships your students applied to, and who was shortlisted or selected, without chasing them.' },
+  { icon: Building2, title: 'Free internships and walk-in drives', desc: 'Your students can find paid and unpaid internships from verified companies and join walk-in hiring drives near them, all free to apply.' },
   { icon: MessageCircle, title: 'WhatsApp updates', desc: 'Students hear about new rounds and interview schedules on the app they already use.' },
 ];
 
