@@ -135,7 +135,7 @@ const blogSlugs = () => {
   } catch { return FALLBACK_BLOGS; }
 };
 const STATIC_PAGES = [
-  '/', '/jobs', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/free-assessment', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
+  '/', '/jobs', '/internships', '/drives', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/free-assessment', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
   '/jobs/pondicherry', '/jobs/chennai', '/jobs/villupuram', '/jobs/cuddalore',
 ];
 const urlEntry = (loc, lastmod, priority) =>

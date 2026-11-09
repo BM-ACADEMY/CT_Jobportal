@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEOHead from '../../components/seo/SEOHead';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -32,7 +33,8 @@ const DriveDetail = () => {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8 space-y-5">
-      <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
+
+      <SEOHead title={`${d.title} | Walk-in drive`} description={`Walk-in drive by ${d.organiserName || 'a company'}. See date, venue and roles, and register free on Velaivaaipu.`} path={window.location.pathname} />      <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
         <h1 className="text-xl font-black text-slate-900">{d.title}</h1>
         <p className="text-xs text-slate-500">{d.organiserName}</p>
         <p className="text-sm text-slate-800 font-semibold">{fmtDate(d.date)}</p>

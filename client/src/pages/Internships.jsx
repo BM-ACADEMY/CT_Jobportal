@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import SEOHead from '../components/seo/SEOHead';
 import axios from 'axios';
 import { Loader2, GraduationCap } from 'lucide-react';
 import { JOB_CATEGORIES } from '@/data/jobCategories';
@@ -27,7 +28,8 @@ const Internships = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
-      <div>
+
+      <SEOHead title="Internships in Tamil Nadu, free to apply | Velaivaaipu" description="Paid and unpaid internships from verified companies, with certificates. Apply free on Velaivaaipu." path="/internships" />      <div>
         <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2"><GraduationCap className="text-emerald-600" /> Internships</h1>
         <p className="text-sm text-slate-500 mt-1">Real internships from verified companies. You never pay to apply.</p>
       </div>

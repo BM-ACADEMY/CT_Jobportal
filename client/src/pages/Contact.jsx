@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import SEOHead from '../components/seo/SEOHead';
 import { motion as Motion } from 'framer-motion';
 
 const CONTACT_CARDS = [
@@ -105,6 +106,7 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-zinc-100/60">
 
+      <SEOHead title="Contact Velaivaaipu" description="Contact the Velaivaaipu team for help with jobs, hiring, plans or your account." path="/contact" />
       {/* Hero section with clean light office background image and soft black overlay */}
       <div className="bg-zinc-950 py-24 px-6 relative overflow-hidden border-b border-zinc-900">
         <div

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEOHead from '../../components/seo/SEOHead';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
@@ -14,7 +15,8 @@ const DrivePass = () => {
   if (!p) return <div className="flex justify-center py-24"><Loader2 className="animate-spin text-emerald-600" /></div>;
   return (
     <div className="max-w-sm mx-auto px-4 py-8">
-      <div className="bg-white rounded-3xl border border-slate-100 p-5 text-center space-y-3">
+
+      <SEOHead title="Your drive pass | Velaivaaipu" description="Your walk-in drive pass." path={window.location.pathname} robots="noindex, nofollow" />      <div className="bg-white rounded-3xl border border-slate-100 p-5 text-center space-y-3">
         <p className="text-xs font-bold uppercase text-emerald-700">Your drive pass</p>
         <h1 className="text-lg font-black text-slate-900">{p.drive.title}</h1>
         <p className="text-sm text-slate-700">{fmtDate(p.drive.date)} · {p.slot}</p>

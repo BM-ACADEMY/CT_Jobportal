@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEOHead from '../../components/seo/SEOHead';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { CalendarDays, Loader2, Users } from 'lucide-react';
@@ -11,7 +12,8 @@ const Drives = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
-      <div>
+
+      <SEOHead title="Walk-in drives in Tamil Nadu | Velaivaaipu" description="Upcoming walk-in hiring drives with venue, date and roles. Register free and get a pass." path="/drives" />      <div>
         <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2"><CalendarDays className="text-emerald-600" /> Walk-in Drives</h1>
         <p className="text-sm text-slate-500 mt-1">Register for free, get your pass, and walk in on the day.</p>
       </div>

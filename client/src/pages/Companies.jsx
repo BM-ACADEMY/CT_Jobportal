@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { jobPath } from '../utils/jobUrl';
+import SEOHead from '../components/seo/SEOHead';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const DOMAIN = import.meta.env.VITE_API_DOMAIN;
@@ -413,6 +414,7 @@ const Companies = () => {
   return (
     <div className="min-h-screen bg-slate-50">
 
+      <SEOHead title="Companies hiring in Tamil Nadu | Velaivaaipu" description="See companies and recruiters hiring in Puducherry, Tamil Nadu and beyond, and their open jobs on Velaivaaipu." path="/companies" />
       {/* Hero */}
       <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 pt-12 pb-24 px-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] -mr-48 -mt-48 pointer-events-none" />
@@ -425,13 +427,13 @@ const Companies = () => {
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 tracking-tight">
-              Discover Top Companies<br />
+              Companies hiring<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
                 & Recruiters
               </span>
             </h1>
             <p className="text-slate-400 text-lg font-medium max-w-xl mb-8">
-              Explore employers and connect with recruiters who are actively hiring across India.
+              Explore employers and connect with recruiters who are hiring in Tamil Nadu and beyond.
             </p>
 
             {/* Search */}
