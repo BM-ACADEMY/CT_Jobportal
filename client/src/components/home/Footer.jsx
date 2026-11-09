@@ -28,7 +28,7 @@ const SOCIALS = [
   { label: 'YouTube', href: 'https://www.youtube.com/@velaivaaipuu', icon: YouTubeIcon, bg: 'bg-[#FF0000]' },
 ];
 
-const PLATFORM = [{ to: '/jobs', label: 'Find Jobs' }, { to: '/companies', label: 'Companies' }, { to: '/register', label: 'Post a Job' }, { to: '/plans', label: 'Plans & Pricing' }, { to: '/how-it-works', label: 'How It Works' }, { to: '/contact', label: 'Contact Us' }];
+const PLATFORM = [{ to: '/jobs', label: 'Find Jobs' }, { to: '/internships', label: 'Internships' }, { to: '/drives', label: 'Walk-in Drives' }, { to: '/companies', label: 'Companies' }, { to: '/register', label: 'Post a Job' }, { to: '/plans', label: 'Plans & Pricing' }, { to: '/how-it-works', label: 'How It Works' }, { to: '/contact', label: 'Contact Us' }];
 const ACCOUNT = [{ to: '/login', label: 'Job Seeker Login' }, { to: '/company-login', label: 'Company Login' }, { to: '/register', label: 'Create Account' }];
 
 const LinkColumn = ({ title, links }) => (

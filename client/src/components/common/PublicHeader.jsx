@@ -28,6 +28,10 @@ const NAV_LINKS = [
   { to: '/contact', label: 'Contact', icon: Mail },
 ];
 
+// On a wide screen Walk-in Drives and Internships sit inside the Find Jobs menu so the bar does not overflow. The phone menu lists everything.
+const JOBS_MENU = [{ to: '/jobs', label: 'All jobs' }, { to: '/internships', label: 'Internships' }, { to: '/drives', label: 'Walk-in Drives' }];
+const IN_JOBS_MENU = ['/internships', '/drives'];
+
 const PublicHeader = () => {
   const { user, logout } = useAuth();
   const socket = useSocket();
@@ -150,10 +154,22 @@ const PublicHeader = () => {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6">
-            {NAV_LINKS.filter(link => !(link.label === 'Find Jobs' && (user?.role === 'recruiter' || user?.role === 'company'))).map((link, index) => {
-              // Add orange 'New' badge to some nav items to match Apna theme
-              const hasBadge = link.label === 'Companies' || link.label === 'Blog';
-              const hasChevron = link.label === 'Find Jobs';
+            {NAV_LINKS.filter(link => !IN_JOBS_MENU.includes(link.to) && !(link.label === 'Find Jobs' && (user?.role === 'recruiter' || user?.role === 'company'))).map((link) => {
+              const hasBadge = false; // the "New" tags were removed after launch (5 Nov)
+              if (link.label === 'Find Jobs') {
+                return (
+                  <DropdownMenu key={link.to}>
+                    <DropdownMenuTrigger className={`flex items-center gap-1.5 py-2 text-sm font-semibold outline-none ${isActive('/jobs') || isActive('/internships') || isActive('/drives') ? navActiveColor : navColor}`}>
+                      Find Jobs <ChevronDown size={14} className="text-slate-500" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="rounded-xl p-1 min-w-[180px] bg-white z-50">
+                      {JOBS_MENU.map((m) => (
+                        <DropdownMenuItem key={m.to} onClick={() => navigate(m.to)} className="cursor-pointer text-sm font-semibold">{m.label}</DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
               return (
                 <Link
                   key={link.to}
@@ -163,7 +179,6 @@ const PublicHeader = () => {
                   }`}
                 >
                   {link.label}
-                  {hasChevron && <ChevronDown size={14} className="text-slate-500" />}
                   {hasBadge && (
                     <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded ml-1 uppercase tracking-wider scale-90">
                       New
