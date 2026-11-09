@@ -18,12 +18,13 @@ const buildSpendSummary = ({ entries = [], payments = [], now = new Date(), days
   const today = istDate(now);
   const live = entries.filter((e) => !e.voided);
   const rows = new Map();
-  const row = (date) => { if (!rows.has(date)) rows.set(date, { date, moneyIn: 0, razorpayFee: 0, spent: 0, byLine: {} }); return rows.get(date); };
+  const row = (date) => { if (!rows.has(date)) rows.set(date, { date, moneyIn: 0, gst: 0, razorpayFee: 0, spent: 0, byLine: {} }); return rows.get(date); };
 
   for (let i = 0; i < days; i++) row(addDays(today, -i));
   payments.filter((p) => p.status === 'completed').forEach((p) => {
     const r = row(istDate(p.createdAt));
     r.moneyIn += moneyIn(p);
+    r.gst += Math.max(0, Number(p.amount || 0) - moneyIn(p)); // the GST part of what was paid: collected for the government, not ours
     if (!p.manual) r.razorpayFee += Number(p.amount || 0) * RAZORPAY_FEE_RATE; // money paid by hand has no gateway fee
   });
   live.forEach((e) => {
@@ -33,7 +34,7 @@ const buildSpendSummary = ({ entries = [], payments = [], now = new Date(), days
   });
 
   const daily = [...rows.values()].filter((r) => r.date >= addDays(today, -(days - 1))).sort((a, b) => (a.date < b.date ? 1 : -1))
-    .map((r) => ({ ...r, moneyIn: round(r.moneyIn), razorpayFee: round(r.razorpayFee), net: round(r.moneyIn - r.razorpayFee - r.spent) }));
+    .map((r) => ({ ...r, moneyIn: round(r.moneyIn), gst: round(r.gst), razorpayFee: round(r.razorpayFee), net: round(r.moneyIn - r.razorpayFee - r.spent) }));
 
   const sum = (k) => round(daily.reduce((t, r) => t + r[k], 0));
   const end = addDays(budget.start, budget.days - 1);
@@ -45,7 +46,7 @@ const buildSpendSummary = ({ entries = [], payments = [], now = new Date(), days
 
   return {
     daily,
-    totals: { moneyIn: sum('moneyIn'), razorpayFee: sum('razorpayFee'), spent: sum('spent'), net: sum('net'), days },
+    totals: { moneyIn: sum('moneyIn'), gst: sum('gst'), received: round(daily.reduce((t, r) => t + r.moneyIn + r.gst, 0)), razorpayFee: sum('razorpayFee'), spent: sum('spent'), net: sum('net'), days },
     budget: {
       cap: budget.cap, spent: capSpent, remaining, pct: Math.min(100, Math.round((capSpent / budget.cap) * 100)),
       burnPerDay, daysLeftAtThisRate, runsOutOn: daysLeftAtThisRate === null ? null : addDays(today, daysLeftAtThisRate),

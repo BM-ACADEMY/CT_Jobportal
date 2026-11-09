@@ -65,15 +65,17 @@ const SpendIncome = () => {
         <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
           <Wallet size={20} className="text-emerald-600" /> Spend and income
         </h1>
-        <p className="text-xs text-slate-500 mt-1 font-medium">Money in comes from completed payments, before GST. Razorpay fees are estimated at 2.36%. Spend is what you enter.</p>
+        <p className="text-xs text-slate-500 mt-1 font-medium">Customers pay the price plus 18% GST. The GST part is collected for the government, so it is shown on its own and is not counted as profit. Net is money in before GST, less Razorpay fees, less what you spent. It is before income tax.</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {[
-          { label: `Money in, ${totals.days} days`, value: rupees(totals.moneyIn) },
+          { label: `Received from customers, ${totals.days} days`, value: rupees(totals.received) },
+          { label: 'GST in it (to pay)', value: rupees(totals.gst) },
+          { label: 'Money in, before GST', value: rupees(totals.moneyIn) },
           { label: 'Spent', value: rupees(totals.spent) },
           { label: 'Razorpay fees (est.)', value: rupees(totals.razorpayFee) },
-          { label: 'Net', value: rupees(totals.net), tone: totals.net < 0 ? 'text-red-600' : 'text-emerald-600' },
+          { label: 'Net profit after all spend', value: rupees(totals.net), tone: totals.net < 0 ? 'text-red-600' : 'text-emerald-600' },
         ].map((c) => (
           <div key={c.label} className="p-4 rounded-2xl border border-slate-100 shadow-sm bg-white">
             <p className={`text-2xl font-black tabular-nums ${c.tone || 'text-slate-900'}`}>{c.value}</p>
