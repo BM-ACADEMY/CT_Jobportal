@@ -36,6 +36,18 @@ const CollegeKycDetails = () => {
 
   useEffect(() => { fetchCollege(); }, [id]);
 
+  const setLogo = async (show) => {
+    const note = show ? window.prompt('How did the college agree? (for example: agreed by phone, 9 Nov)') : '';
+    if (show && !note) return;
+    try {
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/colleges/${college._id}/logo`, { show, note });
+      setCollege({ ...college, showLogo: show });
+      toast.success(show ? 'Logo will show in Partner colleges' : 'Logo removed');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to update');
+    }
+  };
+
   const act = async (status) => {
     setActing(true);
     try {
@@ -128,6 +140,13 @@ const CollegeKycDetails = () => {
             </div>
           )}
         </div>
+
+        {canVerify && college.verificationStatus === 'verified' && (
+          <div className="pt-6 border-t border-slate-50 flex items-center gap-3">
+            <p className="text-sm text-slate-600 flex-1">Partner colleges strip on the home page: <b>{college.showLogo ? 'Showing' : 'Not showing'}</b>. Only after the college has agreed.</p>
+            <Button variant="outline" onClick={() => setLogo(!college.showLogo)} className="rounded-xl text-sm font-bold h-11">{college.showLogo ? 'Remove logo' : 'Show logo'}</Button>
+          </div>
+        )}
 
         {canVerify && <div className="pt-6 border-t border-slate-50 flex items-center gap-3">
           <Button disabled={acting || college.verificationStatus === 'verified'} onClick={() => act('verified')} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold gap-2 px-6 h-11">

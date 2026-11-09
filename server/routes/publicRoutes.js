@@ -55,6 +55,13 @@ router.get('/sitemap-feed', async (req, res) => {
   }
 });
 
+// @desc  GET /api/public/logos : logo strips for the home page (real, agreed, approved; cached about 10 minutes).
+const logosCache = createCache();
+router.get('/logos', async (req, res) => {
+  try { res.json(await logosCache.get(() => require('../controllers/logoController').publicLogos())); }
+  catch (err) { console.error('Public logos:', err.message); res.json({ hiring: [], colleges: [] }); }
+});
+
 // @desc  GET /api/public/stats
 //        Real, aggregate platform counts for the public home page.
 //        No placement/success-rate figures are returned — the platform

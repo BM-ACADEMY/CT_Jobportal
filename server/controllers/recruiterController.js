@@ -104,6 +104,7 @@ const updateRecruiterProfile = async (req, res) => {
       // Handle logo upload
       if (req.files && req.files['logo']) {
         company.logo = `/uploads/${req.files['logo'][0].filename}`;
+        company.logoApproved = false; // a new file must be checked again before it shows on the home page
       }
 
       // Handle gallery images from companyData

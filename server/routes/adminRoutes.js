@@ -80,6 +80,8 @@ router.patch('/users/:id/block', toggleBlockUser);
 
 router.get('/companies', getCompanies);
 router.delete('/companies/:id', deleteCompany);
+router.patch('/companies/:id/logo-approval', require('../controllers/logoController').approveCompanyLogo);
+router.patch('/colleges/:id/logo', require('../controllers/logoController').setCollegeLogo);
 router.patch('/companies/:id/verify', require('../controllers/companyVerificationController').setCompanyVerified);
 
 router.get('/spend', require('../controllers/spendController').getSpend);

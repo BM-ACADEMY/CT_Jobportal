@@ -105,6 +105,16 @@ const ManageCompanies = () => {
     }
   };
 
+  const handleLogo = async (approved) => {
+    try {
+      const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/companies/${selectedCompany._id}/logo-approval`, { approved });
+      setSelectedCompany((prev) => ({ ...prev, logoApproved: res.data.logoApproved }));
+      toast.success(approved ? 'Logo approved for the home page' : 'Logo removed from the home page');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not update the logo');
+    }
+  };
+
   const handleDelete = (id) => setDeleteTarget(id);
 
   const confirmDelete = async () => {
@@ -359,6 +369,17 @@ const ManageCompanies = () => {
                         {verifying ? <Loader2 size={16} className="animate-spin" /> : 'Remove verified badge'}
                       </Button>
                     )}
+                  </div>
+                </Card>
+
+                <Card className="p-8 rounded-[20px] border-slate-100 shadow-sm bg-white space-y-3">
+                  <h3 className="text-base font-bold text-slate-900">Logo on the home page</h3>
+                  <p className="text-xs text-slate-500">The company must have agreed (their own tick in settings), be verified, and have a PNG, JPG or WebP logo. Look at the logo first.</p>
+                  <p className="text-xs text-slate-600">Company agreed: <b>{selectedCompany.showLogo ? 'Yes' : 'No'}</b> · Approved: <b>{selectedCompany.logoApproved ? 'Yes' : 'No'}</b></p>
+                  <div className="flex gap-3">
+                    {!selectedCompany.logoApproved
+                      ? <Button onClick={() => handleLogo(true)} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white">Approve logo</Button>
+                      : <Button onClick={() => handleLogo(false)} variant="outline" className="rounded-xl">Remove from home page</Button>}
                   </div>
                 </Card>
 

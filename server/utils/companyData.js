@@ -3,7 +3,7 @@
 // Anything that is not a whole number is dropped instead of becoming NaN (which failed validation
 // with a 500). An empty slug is dropped so the sparse unique index is not hit.
 // Fields only an admin may change. A company must never be able to send these from its own profile form.
-const ADMIN_ONLY_FIELDS = ['is_verified', 'verifiedAt', 'verifiedBy', 'verification_note'];
+const ADMIN_ONLY_FIELDS = ['is_verified', 'verifiedAt', 'verifiedBy', 'verification_note', 'logoApproved'];
 
 const sanitizeCompanyData = (companyData = {}) => {
   const out = { ...companyData };

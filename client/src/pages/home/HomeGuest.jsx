@@ -22,6 +22,7 @@ import SkillAssessment from '@/components/home/SkillAssessment';
 import MotionIcon from '@/components/home/MotionIcon';
 import CategoryCards from '@/components/home/CategoryCards';
 import UpcomingDrives from '@/components/home/UpcomingDrives';
+import LogoStrips from '@/components/home/LogoStrips';
 import { popularTerms, MIN_POPULAR_TERMS } from '@/utils/popularSearches';
 import { trackEvent } from '@/utils/analytics';
 
@@ -350,6 +351,7 @@ const HomeGuest = () => {
             </Reveal>
             <CategoryCards />
         <UpcomingDrives />
+        <LogoStrips />
           </div>
         </section>
 

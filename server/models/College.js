@@ -27,6 +27,10 @@ const collegeSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Partner colleges strip: set by an admin after the college agreed (written or by phone, noted).
+  showLogo: { type: Boolean, default: false },
+  logoApproved: { type: Boolean, default: false },
+  logoConsentNote: { type: String, default: '', maxlength: 200 },
   principalName: {
     type: String,
     trim: true,
