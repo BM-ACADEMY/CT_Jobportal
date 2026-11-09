@@ -12,6 +12,16 @@ const jobSchema = new mongoose.Schema({
   scamFlags: { type: [String], default: [] },
   reportCount: { type: Number, default: 0 }, // user reports (controllers/jobReportController.js)
   scamReviewed: { type: Boolean, default: false },
+  // Only for jobType 'Internship' (utils/internship.js). free = does not use a paid job slot (verified company, up to 3 live).
+  internship: {
+    durationMonths: { type: Number },
+    stipendType: { type: String, enum: ['paid', 'unpaid'] },
+    stipendAmount: { type: Number, default: 0 },
+    mode: { type: String, enum: ['onsite', 'remote', 'hybrid'] },
+    certificate: { type: Boolean, default: false },
+    ppo: { type: Boolean, default: false },
+    free: { type: Boolean, default: false }
+  },
   // Set by an admin after payment is received by hand (controllers/jobPromotionController.js). Shown with a clear label.
   sponsoredUntil: { type: Date, default: null },
   sponsoredNote: { type: String, default: '', maxlength: 200, select: false }, // payment note: never sent to the public

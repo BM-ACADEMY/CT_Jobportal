@@ -406,6 +406,15 @@ const JobDetails = () => {
             </div>
           )}
           
+          {job.internship && job.jobType === 'Internship' && (
+            <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-5 space-y-1">
+              <p className="font-bold text-slate-900">Internship details</p>
+              <p className="text-sm text-slate-700">{job.internship.durationMonths} {job.internship.durationMonths === 1 ? 'month' : 'months'} · {job.internship.stipendType === 'paid' ? `Stipend ₹${Number(job.internship.stipendAmount).toLocaleString('en-IN')} per month` : 'Unpaid'} · {({ onsite: 'On-site', remote: 'Remote', hybrid: 'Hybrid' })[job.internship.mode] || ''}</p>
+              <p className="text-sm text-emerald-700">{[job.internship.certificate && 'Completion certificate', job.internship.ppo && 'Pre-placement job offer possible'].filter(Boolean).join(' · ')}</p>
+              <p className="text-xs text-slate-500">A real internship never asks you for money. If it does, use Report this job.</p>
+            </div>
+          )}
+
           {/* Quick Info Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[

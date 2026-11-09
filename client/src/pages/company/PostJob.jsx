@@ -27,6 +27,7 @@ const PostJob = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [form] = Form.useForm();
+    const watchedJobType = Form.useWatch('jobType', form);
     
     const [loading, setLoading] = useState(false);
     const [draftLoading, setDraftLoading] = useState(false);
@@ -69,6 +70,7 @@ const PostJob = () => {
                             postedAs: jobToEdit.postedAs || 'company',
                             category: jobToEdit.category || undefined,
                             jobType: jobToEdit.jobType || 'Full-time',
+                            internship: jobToEdit.internship ? { ...jobToEdit.internship } : undefined,
                             workMode: jobToEdit.workMode || 'On-site',
                             location: jobToEdit.location,
                             minExperience: jobToEdit.experience?.min || 0,
@@ -129,6 +131,14 @@ const PostJob = () => {
                 experience: { min: values.minExperience || 0, max: values.maxExperience || 0 },
                 category: values.category || '',
                 jobType: values.jobType,
+                ...(values.jobType === 'Internship' && values.internship ? { internship: {
+                    durationMonths: Number(values.internship.durationMonths),
+                    stipendType: values.internship.stipendType,
+                    stipendAmount: values.internship.stipendType === 'paid' ? Number(values.internship.stipendAmount) : 0,
+                    mode: values.internship.mode,
+                    certificate: !!values.internship.certificate,
+                    ppo: !!values.internship.ppo
+                } } : {}),
                 workMode: values.workMode,
                 location: values.location,
                 salary: {
@@ -387,6 +397,31 @@ const PostJob = () => {
                                     <Option value="Freelance">Freelance</Option>
                                 </Select>
                             </Form.Item>
+
+                            {watchedJobType === 'Internship' && (
+                                <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 mb-4">
+                                    <p className="font-bold text-slate-800 mb-1">Internship details</p>
+                                    <p className="text-xs text-slate-500 mb-3">Verified companies can keep up to 3 internships live free of charge. Never ask students for any fee.</p>
+                                    <Form.Item label="Duration (months)" name={['internship', 'durationMonths']} rules={[{ required: true, message: 'Choose 1 to 12 months' }]}>
+                                        <Select size="large">{[1, 2, 3, 4, 5, 6, 9, 12].map((m) => <Option key={m} value={m}>{m} {m === 1 ? 'month' : 'months'}</Option>)}</Select>
+                                    </Form.Item>
+                                    <Form.Item label="Stipend" name={['internship', 'stipendType']} rules={[{ required: true, message: 'Say whether it is paid or unpaid' }]}>
+                                        <Select size="large"><Option value="paid">Paid</Option><Option value="unpaid">Unpaid</Option></Select>
+                                    </Form.Item>
+                                    <Form.Item noStyle shouldUpdate={(a, b) => a.internship?.stipendType !== b.internship?.stipendType}>
+                                        {({ getFieldValue }) => getFieldValue(['internship', 'stipendType']) === 'paid' && (
+                                            <Form.Item label="Stipend per month (₹)" name={['internship', 'stipendAmount']} rules={[{ required: true, message: 'Enter the monthly stipend' }]}>
+                                                <Input size="large" type="number" min={1} />
+                                            </Form.Item>
+                                        )}
+                                    </Form.Item>
+                                    <Form.Item label="Where" name={['internship', 'mode']} rules={[{ required: true, message: 'Choose one' }]}>
+                                        <Select size="large"><Option value="onsite">On-site</Option><Option value="remote">Remote</Option><Option value="hybrid">Hybrid</Option></Select>
+                                    </Form.Item>
+                                    <Form.Item name={['internship', 'certificate']} valuePropName="checked" className="mb-1"><Checkbox>Completion certificate given</Checkbox></Form.Item>
+                                    <Form.Item name={['internship', 'ppo']} valuePropName="checked" className="mb-0"><Checkbox>Pre-placement job offer possible</Checkbox></Form.Item>
+                                </div>
+                            )}
 
                             <Form.Item label="Work Mode" name="workMode" rules={[{ required: true }]}>
                                 <Select size="large">

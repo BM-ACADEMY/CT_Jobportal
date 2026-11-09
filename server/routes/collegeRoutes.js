@@ -211,6 +211,7 @@ router.post('/drives/incharge/link/:driveId/:token', verifyToken, linkInchargeIn
 // Students
 router.get('/academic-years', verifyToken, authorizeRoles('college'), getAcademicYears);
 router.get('/students', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), getStudents);
+router.get('/internships', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), require('../controllers/collegeInternshipController').getCollegeInternships);
 router.get('/students-profile-completion', verifyToken, authorizeRoles('college'), getProfileCompletionDashboard);
 router.get('/students/csv-template', verifyToken, authorizeRoles('college'), getCsvTemplate);
 router.get('/students/credentials-export', verifyToken, authorizeRoles('college'), exportCredentialsSheet);

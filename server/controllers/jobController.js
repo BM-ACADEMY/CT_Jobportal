@@ -1,5 +1,7 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
 const { withPromotion } = require('../utils/jobPromotion');
+const { cleanInternship, freeInternshipSlot } = require('../utils/internship');
+const Company = require('../models/Company');
 const { cleanCategory, cleanInterestedCategories, guessCategory } = require('../config/jobCategories');
 const Job = require('../models/Job');
 const User = require('../models/User');
@@ -31,44 +33,59 @@ const createJob = async (req, res) => {
       return res.status(400).json({ msg: 'You must be associated with a company to post jobs as a company' });
     }
 
-    // Enforce job posting limit
-    const roleName = user.role?.name || 'recruiter';
-
-    // 1. Get limit from active plan (falls back to Free plan if paid plan expired)
-    const planLimit = await getEffectivePlanLimit(user, roleName);
-
-    // 2. Add limits from Pay-Per-Feature add-ons
-    let payPerLimit = 0;
-    if (Array.isArray(user.purchasedFeatures)) {
-      user.purchasedFeatures.forEach(f => {
-        if (f.isActive && f.featureKey === 'activeJobPostings' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) {
-          payPerLimit += f.usageLeft;
-        }
-      });
+    // Internships: details are required, and a verified company's first 3 live internships are free (no paid slot used).
+    let internshipData = null; let freeInternship = false;
+    if (req.body.jobType === 'Internship' && req.body.status !== 'draft') {
+      const r = cleanInternship(req.body.internship);
+      if (r.error) return res.status(400).json({ msg: r.error });
+      internshipData = r.data;
+      if (user.company) {
+        const company = await Company.findById(user.company).select('is_verified');
+        const liveFree = await Job.countDocuments({ company: user.company, status: 'active', 'internship.free': true });
+        freeInternship = freeInternshipSlot({ isInternship: true, companyVerified: company?.is_verified, liveFree });
+      }
     }
 
-    const isUnlimited = planLimit === 0;
-    const totalAllowed = planLimit + payPerLimit;
+    // Enforce job posting limit (skipped for a free internship)
+    if (!freeInternship) {
+      const roleName = user.role?.name || 'recruiter';
 
-    if (!isUnlimited && totalAllowed <= 0) {
-      return res.status(403).json({
-        msg: "You don't have active plan to post the job. Please purchase a plan or add-on.",
-        requiresUpgrade: true,
-        limit: 0,
-        used: 0
-      });
-    }
+      // 1. Get limit from active plan (falls back to Free plan if paid plan expired)
+      const planLimit = await getEffectivePlanLimit(user, roleName);
 
-    // Own jobs for a recruiter or anyone without a company yet; the company's jobs otherwise (utils/jobCountQuery.js)
-    const activeCount = await Job.countDocuments(activeJobCountQuery(user, userId));
+      // 2. Add limits from Pay-Per-Feature add-ons
+      let payPerLimit = 0;
+      if (Array.isArray(user.purchasedFeatures)) {
+        user.purchasedFeatures.forEach(f => {
+          if (f.isActive && f.featureKey === 'activeJobPostings' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) {
+            payPerLimit += f.usageLeft;
+          }
+        });
+      }
 
-    if (!isUnlimited && activeCount >= totalAllowed) {
-      return res.status(403).json({
-        msg: `Job posting limit reached. Your allowed limit is ${totalAllowed} job postings. Please upgrade your plan or purchase an add-on to post more.`,
-        requiresUpgrade: true,
-        limit: totalAllowed,
-        used: activeCount
-      });
+      const isUnlimited = planLimit === 0;
+      const totalAllowed = planLimit + payPerLimit;
+
+      if (!isUnlimited && totalAllowed <= 0) {
+        return res.status(403).json({
+          msg: "You don't have active plan to post the job. Please purchase a plan or add-on.",
+          requiresUpgrade: true,
+          limit: 0,
+          used: 0
+        });
+      }
+
+      // Own jobs for a recruiter or anyone without a company yet; the company's jobs otherwise (utils/jobCountQuery.js)
+      const activeCount = await Job.countDocuments(activeJobCountQuery(user, userId));
+
+      if (!isUnlimited && activeCount >= totalAllowed) {
+        return res.status(403).json({
+          msg: `Job posting limit reached. Your allowed limit is ${totalAllowed} job postings. Please upgrade your plan or purchase an add-on to post more.`,
+          requiresUpgrade: true,
+          limit: totalAllowed,
+          used: activeCount
+        });
+      }
     }
 
     const {
@@ -108,6 +125,7 @@ const createJob = async (req, res) => {
       skillsRequired,
       additionalDetails,
       category: cleanCategory(category) || guessCategory({ title, skillsRequired }),
+      ...(internshipData ? { internship: { ...internshipData, free: freeInternship } } : {}),
       status: status || 'active',
       postedAs: finalPostedAs,
       company: user.company || undefined,
@@ -284,7 +302,7 @@ const updateJob = async (req, res) => {
       }
       const totalAllowed = planLimit + payPerLimit;
 
-      let activeCountQuery = { company: fullUser.company, status: { $in: ['active', 'closed'] } };
+      let activeCountQuery = { company: fullUser.company, status: { $in: ['active', 'closed'] }, 'internship.free': { $ne: true } };
       if (fullUser.role && fullUser.role.name === 'recruiter') {
         activeCountQuery.recruiter = userId;
       }
@@ -310,6 +328,17 @@ const updateJob = async (req, res) => {
 
     const previousStatus = job.status;
     delete req.body.scamFlags; delete req.body.scamReviewed; // only the server and admin set these
+    // Paid and counted fields are never set from the posting form: only an admin (sponsored, urgent) or the server (reports, free internship) can.
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount'].forEach((k) => { delete req.body[k]; });
+    Object.keys(req.body).forEach((k) => { if (k.includes('.') || k.startsWith('$')) delete req.body[k]; });   // no dotted paths such as 'internship.free'
+    if (req.body.internship !== undefined) {
+      if (job.jobType !== 'Internship' && req.body.jobType !== 'Internship') { delete req.body.internship; }
+      else {
+        const r = cleanInternship(req.body.internship);
+        if (r.error) return res.status(400).json({ msg: r.error });
+        req.body.internship = { ...r.data, free: !!job.internship?.free };   // free is never taken from the form
+      }
+    }
     if (req.body.category !== undefined) req.body.category = cleanCategory(req.body.category); // an unknown value clears it
     const flagUpdate = (req.body.title !== undefined || req.body.description !== undefined)
       ? { scamFlags: jobScamFlags({ title: req.body.title ?? job.title, description: req.body.description ?? job.description }), scamReviewed: false }

@@ -58,6 +58,7 @@ const coreMenus = {
   college: [
     { icon: LayoutDashboard, label: 'Dashboard',          path: '/college/dashboard' },
     { icon: Users,           label: 'Students',          path: '/college/students' },
+    { icon: GraduationCap,   label: 'Internships',       path: '/college/internships' },
     { icon: Activity,        label: 'Campus Drives',     path: '/college/drives' },
     { icon: ShieldCheck,     label: 'Student Verification',   path: '/college/verification' },
     { icon: Layers,          label: 'Placement Tools',    path: '/college/placement-tools' },

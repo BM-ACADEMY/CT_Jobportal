@@ -116,6 +116,8 @@ const AdminSpendIncome = page('admin/SpendIncome');
 const AdminFeedback = page('admin/ManageFeedback');
 const AdminWalkInDrives = page('admin/WalkInDrivesAdmin');
 const AdminAdvisor = page('admin/Advisor');
+const InternshipsPage = page('Internships');
+const CollegeInternships = page('college/Internships');
 const PublicDrives = page('drives/Drives');
 const PublicDriveDetail = page('drives/DriveDetail');
 const DrivePass = page('drives/DrivePass');
@@ -172,6 +174,7 @@ const AppRoutes = () => {
         <Route path="/drives" element={<PublicDrives />} />
         <Route path="/drives/:slug" element={<PublicDriveDetail />} />
         <Route path="/drive-pass/:code" element={<DrivePass />} />
+        <Route path="/internships" element={<InternshipsPage />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/jobs/:location" element={<Jobs />} />
         <Route path="/job/:id" element={<JobDetails />} />
@@ -408,6 +411,7 @@ const AppRoutes = () => {
         {/* College (TPO) */}
         <Route path="/college/dashboard" element={<PrivateRoute roles={['college']}><CollegeDashboard /></PrivateRoute>} />
         <Route path="/college" element={<Navigate to="/college/dashboard" replace />} />
+        <Route path="/college/internships" element={<PrivateRoute roles={['college']}><CollegeInternships /></PrivateRoute>} />
         <Route path="/college/students" element={<PrivateRoute roles={['college']}><CollegeStudents /></PrivateRoute>} />
         <Route path="/college/drives" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
         <Route path="/college/drives/new" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
