@@ -52,6 +52,8 @@ const adminRequestSchema = new mongoose.Schema({
   // The user who ultimately accepted the request
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   assignedAt: { type: Date, default: null },
+  // Set when the one-time "how was your session?" message was sent.
+  reviewAskedAt: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('AdminRequest', adminRequestSchema);

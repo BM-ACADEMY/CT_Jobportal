@@ -5,6 +5,7 @@ const Role = require('../models/Role');
 const mongoose = require('mongoose');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const { notifyUser, notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
+const { receivedMessage, askForReviewOnce } = require('../utils/serviceRequestMessages');
 
 const notifyAdminsOfServiceRequest = (req, request, user) => notifyRoles({
   io: req.io,
@@ -87,6 +88,8 @@ const submitCounsellingRequest = async (req, res) => {
     });
     await request.save();
     notifyAdminsOfServiceRequest(req, request, user);
+    notifyUser({ io: req.io, recipientId: user._id, ...receivedMessage('counselling', user.name), type: 'service_received', metadata: { requestId: request._id } })
+      .catch(err => console.error('Counselling received message failed:', err.message));
 
     if (source === 'plan' && limit > 0) {
       user.counsellingSessionsUsed = (user.counsellingSessionsUsed || 0) + 1;
@@ -171,6 +174,8 @@ const submitMockInterviewRequest = async (req, res) => {
     });
     await request.save();
     notifyAdminsOfServiceRequest(req, request, user);
+    notifyUser({ io: req.io, recipientId: user._id, ...receivedMessage('mock_interview', user.name), type: 'service_received', metadata: { requestId: request._id } })
+      .catch(err => console.error('Mock interview received message failed:', err.message));
 
     if (source === 'plan' && limit > 0) {
       user.mockInterviewsUsed = (user.mockInterviewsUsed || 0) + 1;
@@ -703,6 +708,7 @@ const updateRequestStatus = async (req, res) => {
 
     await request.save();
     res.json({ msg: 'Request updated successfully', request });
+    askForReviewOnce({ request, notify: notifyUser, io: req.io }).catch(err => console.error('Review ask failed:', err.message));
 
     notifyUser({
       io: req.io,
@@ -851,7 +857,7 @@ const updateAssignedRequest = async (req, res) => {
       if (slot2EndTime) request.slot2EndTime = slot2EndTime;
       
       // Default to native link if not provided
-      request.meetingLink = meetingLink ? meetingLink : `http://localhost:5173/meeting/${request._id}`;
+      request.meetingLink = meetingLink ? meetingLink : `${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/meeting/${request._id}`;
     }
     
     if (status === 'approved' && previousStatus === 'pending') {
@@ -895,6 +901,7 @@ const updateAssignedRequest = async (req, res) => {
     }
 
     res.json({ msg: 'Request updated successfully', request });
+    askForReviewOnce({ request, notify: notifyUser, io: req.io }).catch(err => console.error('Review ask failed:', err.message));
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }
