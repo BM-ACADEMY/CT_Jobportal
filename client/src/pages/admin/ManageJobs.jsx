@@ -27,7 +27,10 @@ const ManageJobs = () => {
     const days = window.prompt(kind === 'sponsor' ? 'Sponsor for how many days? (1 to 30)' : 'Urgent hiring tag for how many days? (1 to 14, or 0 to remove)');
     if (days === null || days === '') return;
     const body = { days: Number(days) };
-    if (kind === 'sponsor') { body.note = window.prompt('How was it paid? (for example the UPI reference)') || ''; }
+    if (kind === 'sponsor') {
+      body.note = window.prompt('How was it paid? (for example the UPI reference)') || '';
+      body.amount = window.prompt('Amount received in rupees, GST included. Leave empty only if you will note it elsewhere.') || '';
+    }
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${jobId}/${kind}`, body);
       const until = new Date(Date.now() + body.days * 86400000).toISOString();

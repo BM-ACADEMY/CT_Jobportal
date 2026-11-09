@@ -1,5 +1,6 @@
 const Job = require('../models/Job');
 const { checkSponsor, checkUrgent } = require('../utils/jobPromotion');
+const SponsorPayment = require('../models/SponsorPayment');
 
 const HEX = /^[0-9a-fA-F]{24}$/;
 const load = async (id) => (HEX.test(id || '') ? Job.findById(id).populate('company', 'is_verified name') : null);
@@ -9,10 +10,12 @@ const sponsorJob = async (req, res) => {
   try {
     const job = await load(req.params.id); if (!job) return res.status(404).json({ msg: 'Job not found' });
     const activeOthers = await Job.countDocuments({ _id: { $ne: job._id }, status: 'active', sponsoredUntil: { $gt: new Date() } });
-    const r = checkSponsor({ job, days: req.body?.days, note: req.body?.note, activeOthers });
+    const r = checkSponsor({ job, days: req.body?.days, note: req.body?.note, amount: req.body?.amount, activeOthers });
     if (r.error) return res.status(400).json({ msg: r.error });
     job.sponsoredUntil = r.until; job.sponsoredNote = r.note; await job.save();
-    res.json({ sponsoredUntil: job.sponsoredUntil });
+    // Keep the money so Total Revenue, Spend and income and the advisor can count it.
+    if (r.amount) await SponsorPayment.create({ job: job._id, amount: r.amount, days: r.days, note: r.note, by: req.user?.name || '' });
+    res.json({ sponsoredUntil: job.sponsoredUntil, amountRecorded: r.amount || null });
   } catch (err) { console.error('Sponsor job:', err.message); res.status(500).json({ msg: 'Server error' }); }
 };
 

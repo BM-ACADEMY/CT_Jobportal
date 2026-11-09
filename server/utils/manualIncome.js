@@ -1,6 +1,6 @@
 // Money received BY HAND (UPI or bank, marked paid by an admin) for walk-in drives: the plan and every paid add-on.
 // These never create a Razorpay Payment record, so the dashboard and the money page add them from here.
-// Pure functions: no database. Sponsored jobs are not included: their amount is not recorded (only a note).
+// Pure functions: no database. Sponsored jobs are added by sponsorRows when the admin typed the amount received.
 const { PLANS, ADDONS, GST_RATE } = require('../config/driveConfig');
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -29,9 +29,22 @@ const manualPaymentRows = (drives = [], { from = null, to = null } = {}) => {
   return rows;
 };
 
+// Sponsored-job payments (amount is what the company paid, GST included). Same row shape as above.
+const sponsorRows = (entries = [], { from = null, to = null } = {}) => {
+  const rows = [];
+  for (const e of entries || []) {
+    const at = asDate(e?.receivedAt);
+    const total = Number(e?.amount);
+    if (!at || !Number.isFinite(total) || total <= 0) continue;
+    if ((from && at < from) || (to && at >= to)) continue;
+    rows.push({ at, base: round2(total / (1 + GST_RATE)), total: round2(total), label: 'Sponsored job', drive: null });
+  }
+  return rows;
+};
+
 const sumRows = (rows) => ({ count: rows.length, base: round2(rows.reduce((s, r) => s + r.base, 0)), total: round2(rows.reduce((s, r) => s + r.total, 0)) });
 
 // Shaped like completed payments, for the money page. manual: true means there is no payment-gateway fee.
 const asPayments = (rows) => rows.map((r) => ({ status: 'completed', amount: r.total, baseAmount: r.base, createdAt: r.at || new Date(0), manual: true }));
 
-module.exports = { manualPaymentRows, sumRows, asPayments };
+module.exports = { manualPaymentRows, sponsorRows, sumRows, asPayments };

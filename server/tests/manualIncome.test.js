@@ -48,3 +48,40 @@ test('IST day start is midnight India time', () => {
   assert.equal(istDayStart(new Date('2026-11-09T20:00:00Z')).toISOString(), '2026-11-09T18:30:00.000Z'); // 01:30 IST on the 10th -> midnight of the 10th = 18:30 UTC on the 9th
   assert.equal(istDayStart(new Date('2026-11-09T10:00:00Z')).toISOString(), '2026-11-08T18:30:00.000Z');
 });
+
+// ── sponsored jobs ──
+const { sponsorRows } = require('../utils/manualIncome');
+const { checkSponsor } = require('../utils/jobPromotion');
+
+test('a sponsored-job payment is counted with its GST taken out of the base', () => {
+  const rows = sponsorRows([{ amount: 1180, receivedAt: new Date('2026-11-10T05:00:00Z') }]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].total, 1180);
+  assert.equal(rows[0].base, 1000);
+});
+
+test('sponsor rows respect the date window and skip bad rows', () => {
+  const entries = [
+    { amount: 590, receivedAt: new Date('2026-11-05T00:00:00Z') },
+    { amount: 590, receivedAt: new Date('2026-11-20T00:00:00Z') },
+    { amount: 0, receivedAt: new Date('2026-11-10T00:00:00Z') },
+    { amount: 'abc', receivedAt: new Date('2026-11-10T00:00:00Z') },
+    { amount: 590 },
+    null
+  ];
+  assert.equal(sponsorRows(entries, { from: new Date('2026-11-01'), to: new Date('2026-11-15') }).length, 1);
+  assert.equal(sponsorRows(entries).length, 2);
+  assert.deepEqual(sponsorRows(undefined), []);
+});
+
+test('sponsoring accepts an optional amount and refuses nonsense', () => {
+  const job = { status: 'active', company: { is_verified: true } };
+  const ok = checkSponsor({ job, days: 7, note: 'UPI 123', amount: '1,180', activeOthers: 0 });
+  assert.equal(ok.amount, 1180);
+  assert.equal(ok.days, 7);
+  assert.equal(checkSponsor({ job, days: 7, note: 'UPI 123', activeOthers: 0 }).amount, null);
+  assert.equal(checkSponsor({ job, days: 7, note: 'UPI 123', amount: '', activeOthers: 0 }).amount, null);
+  assert.ok(checkSponsor({ job, days: 7, note: 'UPI 123', amount: 'abc', activeOthers: 0 }).error);
+  assert.ok(checkSponsor({ job, days: 7, note: 'UPI 123', amount: -5, activeOthers: 0 }).error);
+  assert.ok(checkSponsor({ job, days: 7, note: 'UPI 123', amount: 9999999, activeOthers: 0 }).error);
+});

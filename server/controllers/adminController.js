@@ -11,7 +11,8 @@ const Payment = require('../models/Payment');
 const Subscription = require('../models/Subscription');
 const Review = require('../models/Review');
 const WalkInDrive = require('../models/WalkInDrive');
-const { manualPaymentRows, sumRows } = require('../utils/manualIncome');
+const SponsorPayment = require('../models/SponsorPayment');
+const { manualPaymentRows, sponsorRows, sumRows } = require('../utils/manualIncome');
 const { istDayStart } = require('../utils/istDay');
 const sendEmail = require('../utils/sendEmail');
 const { notifyUser } = require('../utils/inAppNotifications');
@@ -160,7 +161,8 @@ const getDashboardStats = async (req, res) => {
 
     // Money received by hand (walk-in drive plans and add-ons marked paid) is not a Razorpay payment, so it is added here
     const drives = await WalkInDrive.find({ $or: [{ paid: true }, { 'addons.paid': true }] }).select('plan paid paidAt addons').lean().catch(() => []);
-    const manualRows = manualPaymentRows(drives, { from: REVENUE_START });
+    const sponsorPays = await SponsorPayment.find({ receivedAt: { $gte: REVENUE_START } }).select('amount receivedAt').lean().catch(() => []);
+    const manualRows = [...manualPaymentRows(drives, { from: REVENUE_START }), ...sponsorRows(sponsorPays, { from: REVENUE_START })];
     const manual = sumRows(manualRows);
     const totalRevenue = onlineRevenue + manual.total;
 
