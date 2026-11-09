@@ -4,7 +4,7 @@ import { hasStaffPermission } from '../../config/staffPermissions';
 import axios from 'axios';
 import { toast } from 'sonner';
 import {
-  X, UserCheck, Loader2, AlertCircle, CheckCircle2, Send, Clock, Layout, Users, Star, Mic, ClipboardList,
+  X, UserCheck, Loader2, AlertCircle, CheckCircle2, Send, Clock, Layout, Users, Star, Mic, ClipboardList, GraduationCap,
   RefreshCw, Search, ChevronLeft, ChevronRight, Eye
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ const PAGE_SIZE = 10;
 const TYPE_CONFIG = {
   counselling:    { label: 'Career Counselling', icon: Star,         color: 'bg-rose-50 text-rose-700 border-rose-200' },
   mock_interview: { label: 'Mock Interview',     icon: Mic,          color: 'bg-teal-50 text-teal-700 border-teal-200' },
+  student_pack:   { label: 'Student Pack',       icon: GraduationCap, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
 };
 
 const STATUS_CONFIG = {
@@ -104,6 +105,14 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
               <p><span className="font-bold text-slate-700">Skills:</span> {request.skills}</p>
               <p><span className="font-bold text-slate-700">Goal:</span> {request.careerGoal}</p>
               <p><span className="font-bold text-slate-700">Date:</span> {request.mockInterviewDate} at {request.mockInterviewTime}</p>
+            </>
+          )}
+          {request.type === 'student_pack' && (
+            <>
+              <p><span className="font-bold text-slate-700">Packs:</span> {request.packs} (250 students each)</p>
+              <p><span className="font-bold text-slate-700">Phone:</span> {request.bookingPhone || '—'}</p>
+              {request.notes && <p><span className="font-bold text-slate-700">Details:</span> {request.notes}</p>}
+              <p className="pt-1 text-slate-500">After payment arrives, record it on the college page (Student packs). That adds the students.</p>
             </>
           )}
           {request.type === 'website_request' && (
@@ -273,6 +282,7 @@ const TABS = [
   { key: 'all',             label: 'All' },
   { key: 'counselling',     label: 'Career Counselling' },
   { key: 'mock_interview',  label: 'Mock Interviews' },
+  { key: 'student_pack',    label: 'Student Packs' },
 ];
 
 const STATUS_TABS = [
@@ -604,6 +614,9 @@ const ManageRequests = () => {
                         )}
                         {r.type === 'mock_interview' && (
                           <span className="truncate block">{r.skills} - {r.mockInterviewDate} {r.mockInterviewTime}</span>
+                        )}
+                        {r.type === 'student_pack' && (
+                          <span className="truncate block">{r.packs} pack(s) — {r.notes}</span>
                         )}
                         {r.type === 'website_request' && (
                           <span className="truncate block">{r.websiteDetails}</span>

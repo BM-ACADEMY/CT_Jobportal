@@ -23,4 +23,12 @@ const planPack = (college, packs, now = new Date()) => {
   return { packs: n, students: PACK.students * n, base, total: round2(base * (1 + GST_RATE)), extraStudents: haveStudents + PACK.students * n, extraUntil };
 };
 
-module.exports = { UNLIMITED, activeExtra, effectiveStudentLimit, planPack };
+// Checks a request from the college side. No money is recorded here; only a request is raised.
+// `hasPending` is true when this college already has an open request, so the team is not flooded.
+const checkRequest = (college, packs, hasPending, now = new Date()) => {
+  if (hasPending) return { error: 'You already have a pack request open. Our team will contact you soon.' };
+  const plan = planPack(college, packs, now);
+  return plan.error ? { error: plan.error } : { packs: plan.packs, students: plan.students, total: plan.total };
+};
+
+module.exports = { UNLIMITED, activeExtra, effectiveStudentLimit, planPack, checkRequest };

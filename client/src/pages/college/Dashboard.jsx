@@ -10,7 +10,7 @@ import {
   Award, UserCheck, Building2, ArrowRight, BookOpen, QrCode,
   ShieldCheck, BarChart2, Clock, Send, Plus
 } from 'lucide-react';
-import { Button, Card, Tag, Typography } from 'antd';
+import { Button, Card, Tag, Typography, Modal, Input } from 'antd';
 const { Title, Text } = Typography;
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -41,6 +41,28 @@ const CollegeDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ department: '', batchYear: '' });
+  const [pack, setPack] = useState(null);
+  const [packOpen, setPackOpen] = useState(false);
+  const [packN, setPackN] = useState(1);
+  const [packNote, setPackNote] = useState('');
+  const [packBusy, setPackBusy] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/college/me/student-pack`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => setPack(r.data)).catch(() => setPack(null));
+  }, []);
+
+  const sendPackRequest = async () => {
+    setPackBusy(true);
+    try {
+      const r = await axios.post(`${API}/college/me/student-pack-request`, { packs: packN, note: packNote }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(r.data?.msg || 'Request sent');
+      setPackOpen(false); setPackNote('');
+      setPack(p => (p ? { ...p, pending: true, canRequest: false } : p));
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not send the request');
+    } finally { setPackBusy(false); }
+  };
 
   useEffect(() => {
     fetchDashboard();
@@ -143,10 +165,30 @@ const CollegeDashboard = () => {
               >
                 Students
               </Button>
+              {pack && (pack.canRequest || pack.pending) && (
+                <Button
+                  ghost
+                  disabled={!pack.canRequest}
+                  onClick={() => setPackOpen(true)}
+                  icon={<Plus size={16} />}
+                  style={{ borderRadius: 0, height: 44, padding: '0 24px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1, borderColor: 'rgba(255,255,255,0.15)', color: '#fff' }}
+                >
+                  {pack.pending ? 'Pack requested' : `Add ${pack.students} students`}
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </Card>
+      <Modal open={packOpen} onCancel={() => setPackOpen(false)} onOk={sendPackRequest} confirmLoading={packBusy} okText="Send request" title={`Add ${pack?.students || 250} students`}>
+        <p style={{ marginBottom: 8 }}>Each pack adds {pack?.students} students for a year. Price: ₹{pack?.price?.toLocaleString('en-IN')} + 18% GST per pack. You can have up to {pack?.maxPacks} packs.</p>
+        <p style={{ marginBottom: 4 }}>How many packs?</p>
+        <select value={packN} onChange={e => setPackN(Number(e.target.value))} style={{ border: '1px solid #d9d9d9', padding: '6px 10px', marginBottom: 12 }}>
+          {Array.from({ length: Math.max(1, (pack?.maxPacks || 3) - (pack?.havePacks || 0)) }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n} pack{n > 1 ? 's' : ''}: ₹{(n * (pack?.price || 0) * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })} with GST</option>)}
+        </select>
+        <Input.TextArea value={packNote} onChange={e => setPackNote(e.target.value)} maxLength={300} rows={2} placeholder="Anything we should know (optional)" />
+        <p style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Our team will contact you within 24 hours with payment details. The students are added once payment is confirmed.</p>
+      </Modal>
 
       {/* Title & Filters Row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">

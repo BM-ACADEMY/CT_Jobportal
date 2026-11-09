@@ -3,10 +3,14 @@
 //  - when the session is marked completed: one ask for a short review (feeds the home-page reviews after approval)
 
 const SESSION_TYPES = ['counselling', 'mock_interview'];
-const label = (type) => (type === 'mock_interview' ? 'mock interview' : 'career counselling');
-const link = (type) => (type === 'mock_interview' ? '/candidate/mock-interviews' : '/candidate/career-counselling');
+const label = (type) => (type === 'mock_interview' ? 'mock interview' : type === 'student_pack' ? 'student pack' : 'career counselling');
+const link = (type) => (type === 'mock_interview' ? '/candidate/mock-interviews' : type === 'student_pack' ? '/college/dashboard' : '/candidate/career-counselling');
 
-const receivedMessage = (type, name) => ({
+const receivedMessage = (type, name) => type === 'student_pack' ? ({
+  title: 'We received your student pack request',
+  message: `Thanks${name ? `, ${name}` : ''}. Our team will contact you within 24 hours with payment details. The extra students are added once payment is confirmed.`,
+  link: link(type)
+}) : ({
   title: `We received your ${label(type)} request`,
   message: `Thanks${name ? `, ${name}` : ''}. Our team will contact you within 24 hours to confirm your ${label(type)} session. You can follow it on your dashboard.`,
   link: link(type)

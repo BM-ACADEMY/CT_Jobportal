@@ -730,7 +730,7 @@ const updateRequestStatus = async (req, res) => {
       title: 'Service request updated',
       message: `Your ${request.type.replaceAll('_', ' ')} request is now ${request.status}.`,
       type: 'service_status',
-      link: request.type === 'mock_interview' ? '/candidate/mock-interviews' : '/candidate/career-counselling',
+      link: request.type === 'mock_interview' ? '/candidate/mock-interviews' : request.type === 'student_pack' ? '/college/dashboard' : '/candidate/career-counselling',
       metadata: { requestId: request._id, status: request.status }
     }).catch(err => console.error('Service status notification failed:', err.message));
   } catch (err) {

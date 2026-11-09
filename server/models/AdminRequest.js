@@ -5,7 +5,7 @@ const adminRequestSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['counselling', 'mock_interview', 'website_request', 'ai_resume_review']
+    enum: ['counselling', 'mock_interview', 'website_request', 'ai_resume_review', 'student_pack']
   },
   status: {
     type: String,
@@ -31,6 +31,9 @@ const adminRequestSchema = new mongoose.Schema({
   websiteDetails: String,
   websiteGoal: String,
   targetAudience: String,
+  // Student pack request (college dashboard)
+  packs: Number,
+  college: { type: mongoose.Schema.Types.ObjectId, ref: 'College', default: null },
   // Admin notes
   adminNotes: String,
   // Scheduled Meeting Details (set by recruiter upon accept)

@@ -161,6 +161,8 @@ router.post('/admin/ask-info/:collegeId', verifyToken, requireAdminOr('colleges_
 
 // ── TPO authenticated routes ────────────────────────────────────────────────
 router.get('/dashboard', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), getDashboard);
+router.get('/me/student-pack', verifyToken, authorizeRoles('college'), require('../controllers/collegePackController').myPackStatus);
+router.post('/me/student-pack-request', verifyToken, authorizeRoles('college'), require('../controllers/collegePackController').requestPack);
 router.get('/me/dashboard-stats', verifyToken, authorizeRoles('college'), getDashboardStats);
 router.get('/profile', verifyToken, authorizeRoles('college'), getProfile);
 router.put('/profile', verifyToken, authorizeRoles('college'), updateProfile);

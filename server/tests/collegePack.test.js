@@ -37,3 +37,18 @@ test('pack payments count as money with GST taken out, like other by-hand income
   const rows = packRows([{ amount: 5898.82, receivedAt: NOW }, { amount: 0, receivedAt: NOW }, { amount: 100 }]);
   assert.equal(rows.length, 1); assert.equal(rows[0].base, 4999); assert.equal(rows[0].label, 'College student pack');
 });
+
+const { checkRequest } = require('../utils/collegePack');
+const { receivedMessage, askForReviewOnce } = require('../utils/serviceRequestMessages');
+test('a college can ask for packs within its allowance, one request at a time', () => {
+  const c = { studentLimit: 100 };
+  assert.deepEqual(checkRequest(c, 2, false, NOW), { packs: 2, students: 500, total: 11797.64 });
+  assert.match(checkRequest(c, 1, true, NOW).error, /already have a pack request/);
+  assert.match(checkRequest({ studentLimit: 1000, extraStudents: 500, extraUntil: FUTURE }, 2, false, NOW).error, /at most 3/);
+  assert.ok(checkRequest(c, 0, false, NOW).error);
+});
+test('the college gets a receipt in its own words and no review ask', async () => {
+  assert.match(receivedMessage('student_pack', 'Asha').message, /payment details/);
+  assert.equal(receivedMessage('student_pack', 'Asha').link, '/college/dashboard');
+  assert.equal(await askForReviewOnce({ request: { type: 'student_pack', status: 'completed' }, notify: async () => assert.fail('no ask'), io: null }), false);
+});
