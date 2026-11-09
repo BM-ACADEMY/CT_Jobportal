@@ -2216,7 +2216,7 @@ const adminVerifyCollege = async (req, res) => {
     if (status === 'verified' && !college.proofDocumentUrl && note.length < 10) {
       return res.status(400).json({
         code: 'PROOF_OR_NOTE_REQUIRED',
-        msg: 'No proof document is uploaded. Add a note (at least 10 characters) saying how you checked this college, for example: called the principal office on 9 Nov.'
+        msg: 'Add a note (at least 10 characters) saying how you checked this college, for example: called the principal office on 9 Nov.'
       });
     }
 
@@ -2255,7 +2255,7 @@ const adminVerifyCollege = async (req, res) => {
           <p>Hi ${escapeHtml(college.tpoUser?.name || college.principalName || 'there')},</p>
           ${approved
             ? `<p>Great news — <strong>${escapeHtml(college.name)}</strong> has been verified on Velaivaaipu. You now have full access to campus placement features.</p>`
-            : `<p>Your college verification submission for <strong>${escapeHtml(college.name)}</strong> was rejected.${note ? ` Reason: <strong>${escapeHtml(note)}</strong>.` : ''} Please review and re-upload your authorization proof document in Settings.</p>`}
+            : `<p>Your college verification submission for <strong>${escapeHtml(college.name)}</strong> was rejected.${note ? ` Reason: <strong>${escapeHtml(note)}</strong>.` : ''} Please review your details in Settings and register again, or reply to this email.</p>`}
         `)
       }).catch(() => {});
     }
@@ -2269,7 +2269,7 @@ const adminVerifyCollege = async (req, res) => {
           college.tpoUser?.name || college.principalName || 'there',
           'College Verification',
           approved ? 'Approved' : 'Rejected',
-          approved ? 'Verification successful! Your college now has full access to campus placement features.' : 'Please re-upload your authorization proof document',
+          approved ? 'Verification successful! Your college now has full access to campus placement features.' : 'Please review your details and reply to us',
           `${FRONTEND_URL}/college/settings`
         ]
       }).catch(() => {});
@@ -2316,9 +2316,9 @@ const adminAskCollegeInfo = async (req, res) => {
         subject: `[Velaivaaipu] ${college.name}: we need one more detail to verify you`,
         html: emailWrapper('One more detail needed', `
           <p>Hi ${escapeHtml(college.tpoUser?.name || college.principalName || 'there')},</p>
-          <p>To finish verifying <strong>${escapeHtml(college.name)}</strong> we need the following:</p>
+          <p>To finish verifying <strong>${escapeHtml(college.name)}</strong> we need a quick detail from you:</p>
           <p style="padding:12px;background:#f1f5f9;border-radius:8px">${escapeHtml(message)}</p>
-          <p>Please upload it in <a href="${FRONTEND_URL}/college/settings">College Settings</a>, or reply to this email.</p>
+          <p>Please reply to this email, or update it in <a href="${FRONTEND_URL}/college/settings">College Settings</a>.</p>
         `)
       }).catch(() => {});
     }

@@ -157,7 +157,7 @@ const CollegeKycDetails = () => {
             </div>
           ) : (
             <div className="text-sm text-slate-500 italic bg-slate-50 p-8 rounded-xl text-center border border-dashed border-slate-200">
-              No proof document uploaded yet
+              No document uploaded (not required)
             </div>
           )}
         </div>
@@ -183,8 +183,8 @@ const CollegeKycDetails = () => {
             <Button disabled={acting || college.verificationStatus === 'verified'} onClick={onVerify} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold gap-2 px-6 h-11">
               <CheckCircle2 size={16} /> Verify College
             </Button>
-            <Button variant="outline" disabled={acting} onClick={() => openPanel('ask', college.proofDocumentUrl ? '' : 'Please upload your college authorization proof (principal letter or registration certificate) in College Settings.')} className="rounded-xl text-sm font-bold gap-2 px-6 h-11">
-              <MessageSquare size={16} /> {college.proofDocumentUrl ? 'Ask for details' : 'Ask for proof'}
+            <Button variant="outline" disabled={acting} onClick={() => openPanel('ask', 'Please reply with your name and role at the college (TPO, Principal or other), and the best phone number to reach you.')} className="rounded-xl text-sm font-bold gap-2 px-6 h-11">
+              <MessageSquare size={16} /> Ask for role / details
             </Button>
             <Button variant="outline" disabled={acting || college.verificationStatus === 'rejected'} onClick={() => openPanel('reject')} className="rounded-xl text-sm font-bold gap-2 px-6 h-11 border-red-200 text-red-600 hover:bg-red-50">
               <XCircle size={16} /> Reject
@@ -200,7 +200,7 @@ const CollegeKycDetails = () => {
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
               <p className="text-sm font-semibold text-slate-700">
                 {panel === 'ask' && 'Message to the college. It goes by email and as an alert. The college stays Pending.'}
-                {panel === 'verify' && 'No proof document is uploaded. Write how you checked this college (for example: called the principal office, 9 Nov).'}
+                {panel === 'verify' && 'Write how you checked this college (for example: called the principal office, 9 Nov).'}
                 {panel === 'reject' && 'Optional reason. It is sent to the college so they can fix it.'}
               </p>
               <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} maxLength={500} className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm" placeholder={panel === 'verify' ? 'How you checked this college' : 'Write here'} />
