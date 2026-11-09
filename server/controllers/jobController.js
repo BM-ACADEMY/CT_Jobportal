@@ -2,6 +2,7 @@ const { jobScamFlags } = require('../utils/jobScamFlags');
 const { withPromotion } = require('../utils/jobPromotion');
 const { cleanInternship, freeInternshipSlot } = require('../utils/internship');
 const Company = require('../models/Company');
+const { publicJobConditions, publicCompanyConditions, hideUnverified } = require('../utils/publicVisibility');
 const { cleanCategory, cleanInterestedCategories, guessCategory } = require('../config/jobCategories');
 const Job = require('../models/Job');
 const User = require('../models/User');
@@ -329,7 +330,7 @@ const updateJob = async (req, res) => {
     const previousStatus = job.status;
     delete req.body.scamFlags; delete req.body.scamReviewed; // only the server and admin set these
     // Paid and counted fields are never set from the posting form: only an admin (sponsored, urgent) or the server (reports, free internship) can.
-    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount'].forEach((k) => { delete req.body[k]; });
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'hiddenFromPublic'].forEach((k) => { delete req.body[k]; });
     Object.keys(req.body).forEach((k) => { if (k.includes('.') || k.startsWith('$')) delete req.body[k]; });   // no dotted paths such as 'internship.free'
     if (req.body.internship !== undefined) {
       if (job.jobType !== 'Internship' && req.body.jobType !== 'Internship') { delete req.body.internship; }
@@ -417,13 +418,18 @@ const getAllJobs = async (req, res) => {
 
     // 3. Find jobs where recruiter is NOT in blockedIds and company is NOT in blockedIds
     // Note: We also check if the company exists and status is active
+    const strict = hideUnverified();
+    const companyIds = (await Company.find(strict ? publicCompanyConditions() : { hiddenFromPublic: true }).select('_id').lean()).map((x) => x._id);
     const jobs = await Job.find({
       status: 'active',
       recruiter: { $nin: blockedIds },
-      $or: [
-        { company: null },
-        { company: { $exists: false } },
-        { company: { $nin: blockedIds } }
+      $and: [
+        { $or: [
+          { company: null },
+          { company: { $exists: false } },
+          { company: { $nin: blockedIds } }
+        ] },
+        ...publicJobConditions(strict ? { verifiedCompanyIds: companyIds } : { hiddenCompanyIds: companyIds })
       ]
     })
       .populate('company', 'name logo location website')

@@ -37,6 +37,15 @@ const ManageJobs = () => {
       toast.error(err.response?.data?.msg || 'Failed to update');
     }
   };
+  const toggleHide = async (job) => {
+    try {
+      const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${job._id}/hide`, { hidden: !job.hiddenFromPublic });
+      setJobs((prev) => (Array.isArray(prev) ? prev.map((x) => (x._id === job._id ? { ...x, hiddenFromPublic: res.data.hiddenFromPublic } : x)) : prev));
+      toast.success(res.data.hiddenFromPublic ? 'Hidden from public pages' : 'Shown on public pages');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update');
+    }
+  };
   const stopSponsor = async (jobId) => {
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${jobId}/unsponsor`);
@@ -193,6 +202,7 @@ const ManageJobs = () => {
                                 ? <button type="button" onClick={() => stopSponsor(job._id)} className="text-[10px] font-bold text-amber-700 hover:underline">Sponsored until {new Date(job.sponsoredUntil).toLocaleDateString('en-IN')} (stop)</button>
                                 : <button type="button" onClick={() => promote(job._id, 'sponsor')} className="text-[10px] font-bold text-emerald-600 hover:underline">Sponsor</button>}
                               <button type="button" onClick={() => promote(job._id, 'urgent')} className="text-[10px] font-bold text-rose-600 hover:underline">{job.urgentUntil && new Date(job.urgentUntil) > new Date() ? 'Urgent (change)' : 'Mark urgent'}</button>
+                              <button type="button" onClick={() => toggleHide(job)} className="text-[10px] font-bold text-slate-600 hover:underline">{job.hiddenFromPublic ? 'Hidden (show)' : 'Hide from public'}</button>
                             </div>
                             {job.scamFlags?.length > 0 && !job.scamReviewed && (
                               <div className="flex items-center gap-2 pt-1">

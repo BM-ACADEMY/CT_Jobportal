@@ -383,6 +383,18 @@ const ManageCompanies = () => {
                   </div>
                 </Card>
 
+                <Card className="p-8 rounded-[20px] border-slate-100 shadow-sm bg-white space-y-3">
+                  <h3 className="text-base font-bold text-slate-900">Public pages</h3>
+                  <p className="text-xs text-slate-500">Only verified companies show on the public Companies and Jobs pages. Hide a test or doubtful company here.</p>
+                  <p className="text-xs text-slate-600">Verified: <b>{selectedCompany.is_verified ? 'Yes' : 'No'}</b> · Hidden: <b>{selectedCompany.hiddenFromPublic ? 'Yes' : 'No'}</b></p>
+                  <Button onClick={async () => {
+                    try {
+                      const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/companies/${selectedCompany._id}/hide`, { hidden: !selectedCompany.hiddenFromPublic });
+                      setSelectedCompany((prev) => ({ ...prev, hiddenFromPublic: res.data.hiddenFromPublic }));
+                    } catch { /* keep old value */ }
+                  }} variant="outline" className="rounded-xl">{selectedCompany.hiddenFromPublic ? 'Show on public pages' : 'Hide from public pages'}</Button>
+                </Card>
+
                 {/* Information Card - Mimicking reference image */}
                 <Card className="p-8 rounded-[20px] border-slate-100 shadow-sm bg-white space-y-8">
                    <div className="flex items-center justify-between">

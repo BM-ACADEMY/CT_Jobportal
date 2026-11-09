@@ -47,6 +47,8 @@ router.use(authorizeRoles('admin'));
 // Business advisor: weekly numbers, AI notes and ideas (Super Admin only).
 router.get('/brand-leads', require('../controllers/brandLeadController').listBrandLeads);
 router.patch('/brand-leads/:userId', require('../controllers/brandLeadController').updateBrandLead);
+router.patch('/jobs/:id/hide', require('../controllers/visibilityController').hideJob);
+router.patch('/companies/:id/hide', require('../controllers/visibilityController').hideCompany);
 router.get('/services-overview', require('../controllers/adminServicesController').getServicesOverview);
 router.get('/advisor', require('../controllers/advisorController').getAdvisor);
 router.post('/advisor/generate', require('../controllers/advisorController').generate);

@@ -26,6 +26,8 @@ const jobSchema = new mongoose.Schema({
   sponsoredUntil: { type: Date, default: null },
   sponsoredNote: { type: String, default: '', maxlength: 200, select: false }, // payment note: never sent to the public
   urgentUntil: { type: Date, default: null },
+  renewedAt: { type: Date, default: null }, // the company pressed Renew: keeps an old job on the public list for 45 more days
+  hiddenFromPublic: { type: Boolean, default: false }, // Super Admin switch
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'

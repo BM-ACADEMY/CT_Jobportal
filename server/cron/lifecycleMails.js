@@ -176,6 +176,20 @@ const companyProfileNudge = async (state) => {
   }
 };
 
+// Unverified companies with a live job: one mail, then one more a week later (max two). Their jobs stay hidden from the public until verified.
+const companyVerifyNudge = async (state) => {
+  const roles = await Role.find({ name: { $in: ['recruiter', 'company'] } }).select('_id');
+  const users = await User.find({ ...baseUserFilter, role: { $in: roles.map((r) => r._id) }, company: { $ne: null } }).limit(BATCH);
+  for (const u of users) {
+    const co = await Company.findById(u.company).select('is_verified hiddenFromPublic createdAt').lean();
+    if (!co || co.is_verified || co.hiddenFromPublic) continue;
+    if (!(await Job.exists({ recruiter: u._id, status: 'active' }))) continue;
+    const first = await EmailLog.findOne({ user: u._id, key: 'co_verify_d1' }).select('sentAt').lean();
+    if (!first) { await deliver(state, u, 'co_verify_d1', mails.wrap(mails.companyVerify(u, 'first'), u._id), 'company'); continue; }
+    if (Date.now() - new Date(first.sentAt).getTime() >= 7 * DAY) await deliver(state, u, 'co_verify_d7', mails.wrap(mails.companyVerify(u, 'second'), u._id), 'company');
+  }
+};
+
 // New colleges: verify (day 3), create a first drive (day 4), share the QR when a drive has no students (day 7).
 const collegeOnboarding = async (state) => {
   const colleges = await College.find({ createdAt: { $gte: ago(45), $lte: ago(3) } }).populate('tpoUser', 'name email emailPrefs').limit(BATCH);
@@ -207,7 +221,7 @@ const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, companyVerifyNudge, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

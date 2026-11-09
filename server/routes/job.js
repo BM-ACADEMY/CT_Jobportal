@@ -33,6 +33,7 @@ router.get('/candidates/:candidateId/profile', verifyToken, authorizeRoles('recr
 router.get('/:jobId/matched-candidates', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ai_candidate_matching'), getAICandidateMatches);
 router.post('/:jobId/bulk-ai-match', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ai_candidate_matching', 'ats_pipeline'), bulkAiMatch);
 router.post('/:id/clone', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), cloneJob);
+router.post('/:id/renew', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), require('../controllers/visibilityController').renewJob);
 router.put('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), updateJob);
 router.patch('/:id/mark-viewed', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs', 'ats_pipeline'), markJobApplicantsViewed);
 router.delete('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), deleteJob);

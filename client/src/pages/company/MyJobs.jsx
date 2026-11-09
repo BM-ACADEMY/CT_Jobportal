@@ -84,6 +84,15 @@ const MyJobs = () => {
     });
   };
 
+  const handleRenew = async (jobId) => {
+    try {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}/renew`, {}, { headers });
+      message.success('Renewed. This job stays on the public page for 45 more days.');
+    } catch (err) {
+      message.error(err.response?.data?.msg || 'Failed to renew');
+    }
+  };
+
   const handleClone = async (jobId) => {
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}/clone`, {}, { headers });
@@ -132,6 +141,7 @@ const MyJobs = () => {
       <Menu.Item key="2" icon={<EditOutlined />} onClick={() => navigate(`/company/jobs/new?edit=${job._id}`)}>
         Edit Job
       </Menu.Item>
+      {job.status === 'active' && <Menu.Item key="renew" onClick={() => handleRenew(job._id)}>Renew (45 days)</Menu.Item>}
       <Menu.Item key="3" icon={<CopyOutlined />} onClick={() => handleClone(job._id)}>
         Clone Job
       </Menu.Item>

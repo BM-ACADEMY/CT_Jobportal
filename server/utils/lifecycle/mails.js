@@ -119,6 +119,16 @@ const companyProfileIncomplete = (user) => ({
     ${button(link('/company/profile-management', 'company_profile_incomplete'), 'Complete my company page')}`,
 });
 
+// Company not yet verified: its jobs are hidden from the public pages until our team verifies it. Honest ask: complete the page, keep the phone free.
+const companyVerify = (user, stage) => ({
+  subject: stage === 'first' ? 'Your jobs are not public yet. Get your company verified' : 'Still waiting: verify your company to show your jobs',
+  title: 'Get your company verified',
+  html: `<p>Hi ${first(user)},</p>
+    <p>Candidates see jobs only from verified companies, so your jobs are not on the public page yet.</p>
+    <p>Add your logo, website and a short description, and keep your phone free. Our team will call to verify you. It is free.</p>
+    ${button(link('/company/profile-management', 'company_verify_' + stage), 'Complete my company page')}`,
+});
+
 const collegeVerify = (user, college) => ({
   subject: `Get ${college.name} verified on Velaivaaipu`,
   title: 'Verify your college',
@@ -145,4 +155,4 @@ const collegeFirstStudents = (user, college) => ({
 
 const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
-module.exports = { companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };
+module.exports = { companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };

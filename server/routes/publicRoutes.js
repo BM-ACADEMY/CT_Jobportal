@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const axios = require('axios');
+const { publicCompanyConditions } = require('../utils/publicVisibility');
 const Company = require('../models/Company');
 const User = require('../models/User');
 const Job = require('../models/Job');
@@ -162,7 +163,7 @@ router.get('/companies', async (req, res) => {
 
     // ── Company profiles ──────────────────────────────────────────────────
     if (type === 'all' || type === 'company') {
-      const companyQuery = {};
+      const companyQuery = { ...publicCompanyConditions() };
       if (search) {
         companyQuery.$or = [
           { name: { $regex: search, $options: 'i' } },
@@ -183,7 +184,7 @@ router.get('/companies', async (req, res) => {
 
       // Attach open job count per company
       const jobCounts = await Job.aggregate([
-        { $match: { company: { $in: companies.map(c => c._id) }, status: { $ne: 'Closed' } } },
+        { $match: { company: { $in: companies.map(c => c._id) }, status: 'active', hiddenFromPublic: { $ne: true } } },
         { $group: { _id: '$company', count: { $sum: 1 } } },
       ]);
       const countMap = Object.fromEntries(jobCounts.map(j => [j._id.toString(), j.count]));
