@@ -15,6 +15,8 @@ const mails = require('../utils/lifecycle/mails');
 const { getTopCandidatesForJob, engineEnabled } = require('../utils/matchingJobs');
 const { rankForMail, alertFrequency, ALERT_PERIOD_DAYS } = require('../utils/lifecycle/jobMatch');
 const Application = require('../models/Application');
+const Payment = require('../models/Payment');
+const { expiryStage, failedPaymentDue } = require('../utils/lifecycle/billing');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
 const { getCategory, PASS_RATIO } = require('../config/courseMap');
 
@@ -190,6 +192,24 @@ const companyVerifyNudge = async (state) => {
   }
 };
 
+// Plan ending (7 days, 1 day, just ended) and a retry mail after a failed payment. Mails only: payments and Razorpay are not touched.
+const billingMails = async (state) => {
+  const soon = await User.find({ ...baseUserFilter, subscription: { $ne: null }, subscriptionExpiry: { $gte: ago(3), $lte: new Date(Date.now() + 8 * DAY) } }).populate('subscription', 'name price').limit(BATCH);
+  for (const u of soon) {
+    if (!(u.subscription && u.subscription.price > 0)) continue; // free plans do not end
+    const s = expiryStage(u.subscriptionExpiry);
+    if (s) await deliver(state, u, s.key, mails.wrap(mails.planEnding(u, s.stage, u.subscription.name), u._id), 'company');
+  }
+  const failed = await Payment.find({ status: 'failed', createdAt: { $gte: ago(2) } }).select('user').lean();
+  for (const uid of [...new Set(failed.map((p) => String(p.user)))].slice(0, BATCH)) {
+    const user = await User.findOne({ ...baseUserFilter, _id: uid });
+    if (!user) continue;
+    const recent = await Payment.find({ user: uid, createdAt: { $gte: ago(2) } }).populate('plan', 'name').select('status createdAt plan').lean();
+    const due = failedPaymentDue(recent);
+    if (due) await deliver(state, user, due.key, mails.wrap(mails.paymentRetry(user, recent.find((p) => p.status === 'failed')?.plan?.name), user._id), 'company');
+  }
+};
+
 // New colleges: verify (day 3), create a first drive (day 4), share the QR when a drive has no students (day 7).
 const collegeOnboarding = async (state) => {
   const colleges = await College.find({ createdAt: { $gte: ago(45), $lte: ago(3) } }).populate('tpoUser', 'name email emailPrefs').limit(BATCH);
@@ -221,7 +241,7 @@ const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, companyVerifyNudge, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

@@ -129,6 +129,24 @@ const companyVerify = (user, stage) => ({
     ${button(link('/company/profile-management', 'company_verify_' + stage), 'Complete my company page')}`,
 });
 
+const planEnding = (user, stage, planName) => ({
+  subject: stage === 'expired' ? 'Your plan has ended' : stage === 'd1' ? 'Your plan ends tomorrow' : 'Your plan ends in a few days',
+  title: stage === 'expired' ? 'Your plan has ended' : 'Your plan is ending',
+  html: `<p>Hi ${first(user)},</p>
+    <p>${stage === 'expired' ? `Your ${esc(planName || 'plan')} has ended, so paid features are switched off.` : `Your ${esc(planName || 'plan')} ends ${stage === 'd1' ? 'tomorrow' : 'soon'}.`}</p>
+    <p>Renew to keep your jobs, candidate access and reports working without a break.</p>
+    ${button(link('/plans', 'plan_' + stage), 'Renew my plan')}`,
+});
+
+const paymentRetry = (user, planName) => ({
+  subject: 'Your payment did not go through',
+  title: 'Your payment did not go through',
+  html: `<p>Hi ${first(user)},</p>
+    <p>Your payment${planName ? ` for ${esc(planName)}` : ''} did not complete. If money left your account, your bank usually returns it within a few working days.</p>
+    <p>You can try again in a minute. If it keeps failing, reply to this mail and our team will help.</p>
+    ${button(link('/plans', 'payment_retry'), 'Try again')}`,
+});
+
 const collegeVerify = (user, college) => ({
   subject: `Get ${college.name} verified on Velaivaaipu`,
   title: 'Verify your college',
@@ -155,4 +173,4 @@ const collegeFirstStudents = (user, college) => ({
 
 const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
-module.exports = { companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };
+module.exports = { planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };
