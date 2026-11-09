@@ -11,6 +11,7 @@ const stub = (name, exports) => {
 stub('Payment', {});
 stub('WalkInDrive', {});
 stub('SponsorPayment', {});
+stub('CollegePackPayment', {});
 stub('SpendEntry', {
   create: async (doc) => { created.push(doc); return { _id: 'e1', ...doc }; },
   findByIdAndUpdate: async (id, u) => { updates.push({ id, u }); return id === 'a'.repeat(24) ? { _id: id } : null; }

@@ -148,7 +148,7 @@ const getDashboard = async (req, res) => {
         status: college.subscriptionTier,
         nextRenewalDate: college.nextRenewalDate,
         autoRenewEnabled: college.autoRenewEnabled,
-        studentLimit: college.studentLimit || 100
+        studentLimit: require('../utils/collegePack').effectiveStudentLimit(college)
       },
       stats,
       totalStudents,
@@ -272,7 +272,7 @@ const getDashboardStats = async (req, res) => {
         planId: college.subscription || null,
         nextRenewalDate: college.nextRenewalDate,
         autoRenewEnabled: college.autoRenewEnabled,
-        studentLimit: college.studentLimit || 100
+        studentLimit: require('../utils/collegePack').effectiveStudentLimit(college)
       },
       filters: { department: department || null, batchYear: batchYear ? parseInt(batchYear) : null },
       stats,
@@ -1370,7 +1370,7 @@ const csvImport = async (req, res) => {
 
     // Get current total students for limit check
     const currentStudentCount = await CollegeStudent.countDocuments({ college: college._id });
-    const studentLimit = college.studentLimit || 100;
+    const studentLimit = require('../utils/collegePack').effectiveStudentLimit(college);
 
     for (let i = 0; i < records.length; i++) {
       if (currentStudentCount + results.imported >= studentLimit) {
@@ -1901,7 +1901,7 @@ const publicRegister = async (req, res) => {
     // Enforce the college's plan-driven student capacity — this is the self-registration path,
     // so unlike CSV import there's no admin around to see a partial-import error; block cleanly.
     const currentStudentCount = await CollegeStudent.countDocuments({ college: drive.college._id });
-    const studentLimit = drive.college.studentLimit || 100;
+    const studentLimit = require('../utils/collegePack').effectiveStudentLimit(drive.college);
     if (currentStudentCount >= studentLimit) {
       return res.status(403).json({ msg: 'This college has reached its student capacity for the current plan. Please contact your placement officer.' });
     }

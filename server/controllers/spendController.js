@@ -3,7 +3,8 @@ const Payment = require('../models/Payment');
 const { buildSpendSummary, LINES, istDate } = require('../utils/spendSummary');
 const WalkInDrive = require('../models/WalkInDrive');
 const SponsorPayment = require('../models/SponsorPayment');
-const { manualPaymentRows, sponsorRows, asPayments } = require('../utils/manualIncome');
+const CollegePackPayment = require('../models/CollegePackPayment');
+const { manualPaymentRows, sponsorRows, packRows, asPayments } = require('../utils/manualIncome');
 
 const HEX = /^[0-9a-fA-F]{24}$/;
 
@@ -13,13 +14,14 @@ const getSpend = async (req, res) => {
     const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 14));
     const now = new Date();
     const since = new Date(now.getTime() - 120 * 86400000);
-    const [entries, onlinePayments, drives, sponsorPays] = await Promise.all([
+    const [entries, onlinePayments, drives, sponsorPays, packPays] = await Promise.all([
       SpendEntry.find({ createdAt: { $gte: since } }).sort({ date: -1, createdAt: -1 }).limit(1000).lean(),
       Payment.find({ status: 'completed', createdAt: { $gte: since } }).select('amount baseAmount status createdAt').lean(),
       WalkInDrive.find({ $or: [{ paid: true }, { 'addons.paid': true }] }).select('plan paid paidAt addons').lean().catch(() => []),
-      SponsorPayment.find({ receivedAt: { $gte: since } }).select('amount receivedAt').lean().catch(() => [])
+      SponsorPayment.find({ receivedAt: { $gte: since } }).select('amount receivedAt').lean().catch(() => []),
+      CollegePackPayment.find({ receivedAt: { $gte: since } }).select('amount receivedAt').lean().catch(() => [])
     ]);
-    const payments = [...onlinePayments, ...asPayments([...manualPaymentRows(drives, { from: since }), ...sponsorRows(sponsorPays, { from: since })])]; // online plus paid-by-hand
+    const payments = [...onlinePayments, ...asPayments([...manualPaymentRows(drives, { from: since }), ...sponsorRows(sponsorPays, { from: since }), ...packRows(packPays, { from: since })])]; // online plus paid-by-hand
     const summary = buildSpendSummary({ entries, payments, now, days });
     res.json({
       ...summary,

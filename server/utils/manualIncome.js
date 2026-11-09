@@ -42,9 +42,12 @@ const sponsorRows = (entries = [], { from = null, to = null } = {}) => {
   return rows;
 };
 
+// College student packs recorded by hand (amount is what the college paid, GST included).
+const packRows = (entries = [], { from = null, to = null } = {}) => sponsorRows((entries || []).map((e) => ({ amount: e?.amount, receivedAt: e?.receivedAt })), { from, to }).map((r) => ({ ...r, label: 'College student pack' }));
+
 const sumRows = (rows) => ({ count: rows.length, base: round2(rows.reduce((s, r) => s + r.base, 0)), total: round2(rows.reduce((s, r) => s + r.total, 0)) });
 
 // Shaped like completed payments, for the money page. manual: true means there is no payment-gateway fee.
 const asPayments = (rows) => rows.map((r) => ({ status: 'completed', amount: r.total, baseAmount: r.base, createdAt: r.at || new Date(0), manual: true }));
 
-module.exports = { manualPaymentRows, sponsorRows, sumRows, asPayments };
+module.exports = { manualPaymentRows, sponsorRows, packRows, sumRows, asPayments };

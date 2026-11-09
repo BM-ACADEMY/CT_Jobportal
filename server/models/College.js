@@ -88,6 +88,9 @@ const collegeSchema = new mongoose.Schema({
     type: Number,
     default: 100 // matches the Campus Free plan's Student Capacity — see scripts/seedCampusPlans.js
   },
+  // Student packs bought on top of the plan (see utils/collegePack.js). They count only until extraUntil.
+  extraStudents: { type: Number, default: 0 },
+  extraUntil: { type: Date, default: null },
   subscriptionExpiry: {
     type: Date
   },

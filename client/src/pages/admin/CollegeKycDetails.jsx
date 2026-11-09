@@ -24,6 +24,10 @@ const CollegeKycDetails = () => {
   // 'ask' = message the college, 'verify' = verify with a written note, 'reject' = reject with a reason
   const [panel, setPanel] = useState(null);
   const [text, setText] = useState('');
+  // Student packs (Super Admin only): record a pack after the college has paid by UPI or bank.
+  const [packs, setPacks] = useState(1);
+  const [packNote, setPackNote] = useState('');
+  const [packBusy, setPackBusy] = useState(false);
 
   const fetchCollege = async () => {
     try {
@@ -76,6 +80,20 @@ const CollegeKycDetails = () => {
       toast.error(err.response?.data?.msg || 'Failed to send');
     } finally {
       setActing(false);
+    }
+  };
+
+  const recordPack = async () => {
+    setPackBusy(true);
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/colleges/${college._id}/student-pack`, { packs: Number(packs), note: packNote });
+      toast.success(`${res.data.msg} Student limit is now ${res.data.studentLimit}.`);
+      setCollege({ ...college, extraStudents: res.data.extraStudents, extraUntil: res.data.extraUntil });
+      setPackNote(''); setPacks(1);
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to save');
+    } finally {
+      setPackBusy(false);
     }
   };
 
@@ -168,6 +186,33 @@ const CollegeKycDetails = () => {
             <Button variant="outline" onClick={() => setLogo(!college.showLogo)} className="rounded-xl text-sm font-bold h-11">{college.showLogo ? 'Remove logo' : 'Show logo'}</Button>
           </div>
         )}
+
+        {me?.role === 'admin' && college.verificationStatus === 'verified' && (() => {
+          const extra = college.extraStudents > 0 && college.extraUntil && new Date(college.extraUntil) > new Date() ? college.extraStudents : 0;
+          const have = Math.round(extra / 250);
+          const price = 4999 * packs;
+          return (
+            <div className="pt-6 border-t border-slate-50 space-y-3">
+              <h3 className="text-sm font-bold text-slate-800">Student packs (+250 students each)</h3>
+              <p className="text-sm text-slate-600">Plan capacity <b>{college.studentLimit || 100}</b>{extra > 0 && <>, plus <b>{extra}</b> from {have} pack{have > 1 ? 's' : ''} until {new Date(college.extraUntil).toLocaleDateString('en-IN')}</>}. One pack is ₹4,999 plus 18% GST (₹5,898.82), lasts a year, and a college can have at most 3. Record it only after the money has arrived.</p>
+              {have < 3 ? (
+                <div className="flex flex-wrap items-end gap-3">
+                  <label className="text-xs font-bold text-slate-500 flex flex-col gap-1">Packs
+                    <select value={packs} onChange={(e) => setPacks(Number(e.target.value))} className="h-11 rounded-lg border border-slate-200 px-3 text-sm bg-white">
+                      {Array.from({ length: 3 - have }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </label>
+                  <label className="text-xs font-bold text-slate-500 flex flex-col gap-1 flex-1 min-w-[200px]">How it was paid
+                    <input value={packNote} maxLength={200} onChange={(e) => setPackNote(e.target.value)} placeholder="For example: UPI, 12 Nov" className="h-11 rounded-lg border border-slate-200 px-3 text-sm" />
+                  </label>
+                  <Button disabled={packBusy || packNote.trim().length < 5} onClick={recordPack} className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold h-11 px-5">
+                    Add {250 * packs} students (₹{(price * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })} received)
+                  </Button>
+                </div>
+              ) : <p className="text-sm text-amber-700">This college has all 3 packs. A bigger plan is better value now.</p>}
+            </div>
+          );
+        })()}
 
         {(college.verificationNote || (college.infoRequests || []).length > 0) && (
           <div className="pt-6 border-t border-slate-50 space-y-2 text-sm text-slate-600">

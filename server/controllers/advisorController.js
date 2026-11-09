@@ -14,7 +14,7 @@ const M = require('../utils/advisorMetrics');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 
 const HEX = /^[0-9a-fA-F]{24}$/;
-const deps = { AdvisorReport, AdvisorIdea, User, Role, Job, Application, Payment, Ticket, College, WalkInDrive, SponsorPayment, TicketDraftUse: require('../models/TicketDraftUse') };
+const deps = { AdvisorReport, AdvisorIdea, User, Role, Job, Application, Payment, Ticket, College, WalkInDrive, SponsorPayment, CollegePackPayment: require('../models/CollegePackPayment'), TicketDraftUse: require('../models/TicketDraftUse') };
 
 const callAI = async (prompt) => {
   const model = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY).getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { responseMimeType: 'application/json', temperature: 0.3 } });
