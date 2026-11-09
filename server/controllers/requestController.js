@@ -97,6 +97,8 @@ const submitCounsellingRequest = async (req, res) => {
       notes,
     });
     await request.save();
+    // Only a ticked box counts as consent. Unticked or missing changes nothing.
+    require('../utils/brandConsentGrant').grantFromForm(user, req.body);
     notifyAdminsOfServiceRequest(req, request, user);
     notifyUser({ io: req.io, recipientId: user._id, ...receivedMessage('counselling', user.name), type: 'service_received', metadata: { requestId: request._id } })
       .catch(err => console.error('Counselling received message failed:', err.message));

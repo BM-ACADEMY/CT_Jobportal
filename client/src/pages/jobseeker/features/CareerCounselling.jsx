@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Star, Calendar, Clock, Video, CheckCircle2, Send, Loader2, AlertCircle, RefreshCw, X } from 'lucide-react';
-import { Card, Typography, Button, Tag, Table, Modal, Form, Input } from 'antd';
+import { Card, Typography, Button, Tag, Table, Modal, Form, Input, Checkbox } from 'antd';
 import { Link } from 'react-router-dom';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
@@ -150,6 +150,11 @@ const RequestModal = ({ visible, onClose, onSuccess, sessionsLeft, unlimited, in
             <Form.Item name="notes" label="Specific questions / Goals" className="sm:col-span-2">
               <TextArea placeholder="What would you like to discuss during the session?" rows={3} size="large" />
             </Form.Item>
+            {!initialData && (
+              <Form.Item name="brandContact" valuePropName="checked" className="sm:col-span-2">
+                <Checkbox>Optional: BM Academy (our training partner) may contact me about courses that can help my career. I can withdraw any time in Settings.</Checkbox>
+              </Form.Item>
+            )}
           </div>
 
           {isReadOnly && initialData?.status === 'approved' && !initialData?.selectedSlot && (
