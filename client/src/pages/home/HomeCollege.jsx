@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import HomeSummaryCard from '@/components/home/HomeSummaryCard';
 import OnboardingStrip from '@/components/onboarding/OnboardingStrip';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -57,6 +58,7 @@ const HomeCollege = () => {
   return (
     <div className="w-full overflow-x-hidden bg-white">
       <OnboardingStrip />
+      <HomeSummaryCard />
 
       <HeroShell>
         <div className="grid lg:grid-cols-12 gap-16 items-center">
