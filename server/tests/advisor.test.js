@@ -88,3 +88,10 @@ test('the weekly job is off by default', async () => {
   const { deps } = makeDeps();
   assert.ok((await runWeekly({ env: { ADVISOR_ENABLED: 'true' }, deps, callAI: good })).id);
 });
+
+test('AI ticket drafts use the same monthly limit as the advisor', async () => {
+  const { usedThisMonth } = require('../utils/advisorService');
+  const deps = { AdvisorReport: { countDocuments: async () => 3 }, TicketDraftUse: { countDocuments: async () => 4 } };
+  assert.equal(await usedThisMonth(deps), 7);
+  assert.equal(await usedThisMonth({ AdvisorReport: deps.AdvisorReport }), 3);
+});

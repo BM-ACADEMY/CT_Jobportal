@@ -192,4 +192,30 @@ const getSupportContact = async (req, res) => {
   }
 };
 
-module.exports = { createTicket, getMyTickets, getAllTickets, updateTicket, getTicketById, getSupportContact };
+// @desc  AI drafts a reply for the admin to read, edit and send. It sends and saves nothing.
+// @route POST /api/tickets/admin/:id/draft-reply
+const draftReply = async (req, res) => {
+  try {
+    const { buildMessages, cleanDraft } = require('../utils/ticketDraft');
+    const { resolveProvider, chatCompletion } = require('../utils/aiHelper');
+    const { monthlyCap, capReached } = require('../utils/advisorMetrics');
+    const { usedThisMonth } = require('../utils/advisorService');
+    const TicketDraftUse = require('../models/TicketDraftUse');
+    const ticket = await Ticket.findById(req.params.id).lean();
+    if (!ticket) return res.status(404).json({ msg: 'Ticket not found' });
+    const used = await usedThisMonth({ AdvisorReport: require('../models/AdvisorReport'), TicketDraftUse });
+    if (capReached(used, monthlyCap())) return res.status(429).json({ code: 'AI_CAP', msg: 'The monthly AI limit is reached. Please write this reply yourself.' });
+    const provider = resolveProvider('ASSISTANT');
+    if (provider.error) return res.status(503).json({ code: 'AI_OFF', msg: 'AI drafts are not switched on. Please write this reply yourself.' });
+    const out = await chatCompletion({ provider, messages: buildMessages(ticket), maxTokens: 300 });
+    const draft = cleanDraft(out.text);
+    if (!draft) return res.status(502).json({ msg: 'The AI gave no usable reply. Please write it yourself.' });
+    await TicketDraftUse.create({ ticket: ticket._id, by: req.user.id });
+    res.json({ draft });
+  } catch (err) {
+    console.error('Ticket draft error:', err.message);
+    res.status(502).json({ msg: 'Could not get a draft right now. Please write it yourself.' });
+  }
+};
+
+module.exports = { draftReply, createTicket, getMyTickets, getAllTickets, updateTicket, getTicketById, getSupportContact };

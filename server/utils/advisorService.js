@@ -32,7 +32,13 @@ const collectCounts = async ({ User, Role, Job, Application, Payment, Ticket, Co
   return { cur, prev };
 };
 
-const usedThisMonth = (AdvisorReport, now) => AdvisorReport.countDocuments({ aiUsed: true, createdAt: { $gte: istMonthStart(now) } });
+// One monthly AI limit is shared by the Advisor and AI ticket drafts.
+const usedThisMonth = async (deps, now = new Date()) => {
+  const since = { $gte: istMonthStart(now) };
+  const a = await deps.AdvisorReport.countDocuments({ aiUsed: true, createdAt: since });
+  const t = deps.TicketDraftUse ? await deps.TicketDraftUse.countDocuments({ createdAt: since }) : 0;
+  return a + t;
+};
 
 // Builds and saves one note. `question` makes it an answer instead of the weekly report.
 // Never throws for an AI problem: the numbers are saved either way and the error is recorded.
@@ -42,7 +48,7 @@ const runAdvisor = async ({ deps, callAI, question = '', now = new Date(), env =
   const metrics = M.buildMetrics(cur, prev);
   const base = { kind: question ? 'question' : 'weekly', question, metrics };
 
-  if (M.capReached(await usedThisMonth(AdvisorReport, now), M.monthlyCap(env))) {
+  if (M.capReached(await usedThisMonth(deps, now), M.monthlyCap(env))) {
     const report = await AdvisorReport.create({ ...base, aiError: 'Monthly AI limit reached. The numbers above are still correct.' });
     return { report, ideas: [], capped: true };
   }
@@ -56,4 +62,4 @@ const runAdvisor = async ({ deps, callAI, question = '', now = new Date(), env =
   return { report, ideas, capped: false };
 };
 
-module.exports = { collectCounts, runAdvisor };
+module.exports = { collectCounts, runAdvisor, usedThisMonth };
