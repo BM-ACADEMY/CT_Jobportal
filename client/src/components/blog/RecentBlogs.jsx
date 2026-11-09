@@ -27,7 +27,7 @@ const RecentBlogs = ({ compact = false }) => (
             <div className={`${compact ? 'mt-3 pt-3' : 'mt-5 pt-4'} flex items-center gap-2.5 border-t border-slate-100`}>
               <div className={`${compact ? 'h-8 w-8 text-[10px]' : 'h-9 w-9 text-xs'} flex shrink-0 items-center justify-center rounded-none bg-emerald-500 font-black text-white`} aria-hidden="true">V</div>
               <div className="min-w-0">
-                <p className={`${compact ? 'text-xs' : 'text-sm'} truncate font-bold text-slate-900`}>{blog.author || 'Velai Vaaipu'}</p>
+                <p className={`${compact ? 'text-xs' : 'text-sm'} truncate font-bold text-slate-900`}>{blog.author || 'Velaivaaipu'}</p>
                 <time dateTime={blog.date} className="block text-[11px] text-slate-500">{blog.date}</time>
               </div>
             </div>

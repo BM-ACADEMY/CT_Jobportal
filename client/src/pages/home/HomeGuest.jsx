@@ -241,6 +241,8 @@ const HomeGuest = () => {
                     { label: "I'm looking for a job", to: '/jobs', audience: 'job_seeker' },
                     { label: "I'm hiring", to: '/company-login', audience: 'company' },
                     { label: "I'm a college", to: '/for-colleges', audience: 'college' },
+                    { label: 'Internships (free)', to: '/internships', audience: 'internships' },
+                    { label: 'Walk-in drives', to: '/drives', audience: 'drives' },
                   ].map(item => (
                     <Link
                       key={item.audience}

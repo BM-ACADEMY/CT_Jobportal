@@ -2,9 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { BLOGS } from '../data/blogs';
+import SEOHead from '../components/seo/SEOHead';
 
 const Blog = () => (
   <div className="bg-slate-50 min-h-screen">
+    <SEOHead title="Job search and hiring advice, Tamil Nadu | Velaivaaipu Blog" description="Clear advice on finding work, spotting fake job offers, growing your skills and hiring in Puducherry and Tamil Nadu." path="/blog" />
     <header className="relative bg-slate-950 px-6 py-16 md:py-20 text-center overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#34b678]/20 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />

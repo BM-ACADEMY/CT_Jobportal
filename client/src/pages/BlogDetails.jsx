@@ -517,7 +517,7 @@ const HtmlBlog = ({ blog }) => {
     const footer = root.querySelector('footer');
     if (footer) {
       footer.innerHTML = `<div class="footer-inner">
-        <div class="footer-brand">Velai Vaaipu</div>
+        <div class="footer-brand">Velaivaaipu</div>
         <div class="footer-tagline">Find. Apply. Grow.</div>
         <div class="footer-contact">
           <h4>Contact Us</h4>
@@ -525,7 +525,7 @@ const HtmlBlog = ({ blog }) => {
           <p>📍 Puducherry, Tamil Nadu, India</p>
         </div>
         <hr class="footer-divider">
-        <div class="copyright">© 2026 Velai Vaaipu. All rights reserved.</div>
+        <div class="copyright">© 2026 Velaivaaipu. All rights reserved.</div>
       </div>`;
     }
 
