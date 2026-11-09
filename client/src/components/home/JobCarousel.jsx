@@ -103,6 +103,12 @@ const JobCard = ({ job, badgeText, anim }) => {
           )}
         </div>
         <div className="flex-1 min-w-0">
+          {(job.isSponsored || job.isUrgent) && (
+            <div className="flex gap-1.5 mb-1">
+              {job.isSponsored && <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-800 rounded-full px-2 py-0.5">Sponsored</span>}
+              {job.isUrgent && <span className="text-[10px] font-bold uppercase bg-rose-50 text-rose-700 rounded-full px-2 py-0.5">Urgent hiring</span>}
+            </div>
+          )}
           <h3 className="text-[17px] font-bold leading-snug text-zinc-900 line-clamp-2">
             <Link to={jobPath(job)} className="hover:text-[#138060] transition-colors focus-visible:outline-none focus-visible:underline">{job.title}</Link>
           </h3>

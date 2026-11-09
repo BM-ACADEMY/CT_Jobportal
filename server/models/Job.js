@@ -12,6 +12,10 @@ const jobSchema = new mongoose.Schema({
   scamFlags: { type: [String], default: [] },
   reportCount: { type: Number, default: 0 }, // user reports (controllers/jobReportController.js)
   scamReviewed: { type: Boolean, default: false },
+  // Set by an admin after payment is received by hand (controllers/jobPromotionController.js). Shown with a clear label.
+  sponsoredUntil: { type: Date, default: null },
+  sponsoredNote: { type: String, default: '', maxlength: 200, select: false }, // payment note: never sent to the public
+  urgentUntil: { type: Date, default: null },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'

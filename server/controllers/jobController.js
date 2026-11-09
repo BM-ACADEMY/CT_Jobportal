@@ -1,4 +1,5 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
+const { withPromotion } = require('../utils/jobPromotion');
 const { cleanCategory, cleanInterestedCategories, guessCategory } = require('../config/jobCategories');
 const Job = require('../models/Job');
 const User = require('../models/User');
@@ -416,7 +417,7 @@ const getAllJobs = async (req, res) => {
       isPriority: !!j.recruiter?.subscription?.hasPriorityListing
     }));
 
-    res.json(result);
+    res.json(withPromotion(result));
   } catch (err) {
     console.error('Get All Jobs Error:', err);
     res.status(500).json({ msg: 'Server error while fetching jobs' });

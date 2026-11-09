@@ -103,7 +103,7 @@ const HomeGuest = () => {
   const trendingSearches = useMemo(() => popularTerms(jobs), [jobs]);
 
   const recentJobs = useMemo(
-    () => [...jobs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3),
+    () => [...jobs].sort((a, b) => (Number(!!b.isSponsored) - Number(!!a.isSponsored)) || (new Date(b.createdAt) - new Date(a.createdAt))).slice(0, 3),
     [jobs]
   );
 

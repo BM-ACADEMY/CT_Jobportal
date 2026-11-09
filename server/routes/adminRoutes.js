@@ -91,5 +91,8 @@ router.put('/needs-action/rules', require('../controllers/needsActionController'
 router.get('/jobs', getJobs);
 router.patch('/jobs/:id/scam-review', require('../controllers/jobScamReviewController').setJobScamReviewed);
 router.delete('/jobs/:id', deleteJob);
+router.post('/jobs/:id/sponsor', require('../controllers/jobPromotionController').sponsorJob);
+router.post('/jobs/:id/unsponsor', require('../controllers/jobPromotionController').unsponsorJob);
+router.post('/jobs/:id/urgent', require('../controllers/jobPromotionController').urgentJob);
 
 module.exports = router;

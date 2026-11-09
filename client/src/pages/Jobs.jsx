@@ -592,6 +592,8 @@ const Jobs = () => {
                                   <h3 className="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition-colors">
                                     <HighlightText text={job.title} ranges={matchesForKey(job._fuzzyMatches, 'title')} />
                                   </h3>
+                                  {job.isSponsored && <span className="inline-flex items-center text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full shrink-0 uppercase">Sponsored</span>}
+                                  {job.isUrgent && <span className="inline-flex items-center text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full shrink-0 uppercase">Urgent hiring</span>}
                                   {job.isPriority && (
                                     <span title="Priority Hiring Partner" className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
                                       <Star size={9} className="fill-amber-500 text-amber-500" /> Priority
