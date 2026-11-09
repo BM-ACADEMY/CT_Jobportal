@@ -45,6 +45,7 @@ router.use(authorizeRoles('admin'));
 
 // Employers' active-job limits: see them and raise them without a payment (Super Admin only).
 // Business advisor: weekly numbers, AI notes and ideas (Super Admin only).
+router.get('/growth/sources', require('../controllers/growthController').getSources);
 router.get('/brand-leads', require('../controllers/brandLeadController').listBrandLeads);
 router.patch('/brand-leads/:userId', require('../controllers/brandLeadController').updateBrandLead);
 router.patch('/jobs/:id/hide', require('../controllers/visibilityController').hideJob);

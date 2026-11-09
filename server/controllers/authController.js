@@ -155,6 +155,8 @@ const registerUser = async (req, res) => {
     // Optional tick at sign-up: allow sister brands to contact about training and hiring.
     if (req.body.brandConsent === true) user.brandConsent = { contact: true, at: new Date(), withdrawnAt: null, source: 'signup' };
 
+    user.signupSource = require('../utils/signupSource').cleanUtm(req.body.utm);
+
     // Invite link: remember who invited this person, only if that account really exists.
     const inviter = cleanReferrer(req.body.ref);
     if (inviter && role === 'jobseeker' && await User.exists({ _id: inviter })) user.referredBy = inviter;
