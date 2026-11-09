@@ -257,7 +257,8 @@ const Jobs = () => {
     }
   }
 
-  const formatSalary = (salary) => {
+  const formatSalary = (salary, job) => {
+    if (job?.jobType === 'Internship' && job.internship) return job.internship.stipendType === 'paid' ? `₹${Number(job.internship.stipendAmount).toLocaleString('en-IN')}/month` : 'Unpaid';
     if (!salary || salary.isRangeHidden) return 'Not Disclosed';
     if (salary.min && salary.max) return `₹${(salary.min / 100000).toFixed(1)}–${(salary.max / 100000).toFixed(1)} LPA`;
     if (salary.min) return `₹${(salary.min / 100000).toFixed(1)}+ LPA`;
@@ -384,7 +385,7 @@ const Jobs = () => {
           </nav>
 
           <p className="text-sm font-semibold text-[#00D492] tracking-wide mb-3">
-            {loading ? 'Loading opportunities...' : `${jobs.length} open positions from top companies`}
+            {loading ? 'Loading opportunities...' : `${jobs.length} open ${jobs.length === 1 ? 'position' : 'positions'}`}
           </p>
           <h1 className="text-3xl md:text-5xl font-bold text-zinc-900 mb-3 tracking-tight leading-[1.12]">
             Find your next <span className="text-[#00D492]">opportunity</span>
@@ -602,7 +603,7 @@ const Jobs = () => {
                                 </div>
                                 <p className="text-slate-500 text-sm font-medium mt-0.5 flex items-center gap-1.5">
                                   <Building2 size={13} className="text-slate-400" />
-                                  <HighlightText text={job.company?.name} ranges={matchesForKey(job._fuzzyMatches, 'company.name')} />
+                                  <HighlightText text={job.company?.name || 'Employer on Velaivaaipu'} ranges={matchesForKey(job._fuzzyMatches, 'company.name')} />
                                 </p>
                                 {job.relevance?.reasons?.length > 0 && (
                                   <p className="text-emerald-700 text-xs font-semibold mt-1.5 flex items-center gap-1">
@@ -612,7 +613,7 @@ const Jobs = () => {
                               </div>
                               <div className="shrink-0 flex items-center gap-2">
                                 <span className="inline-flex items-center gap-1 text-emerald-700 font-bold text-sm bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl">
-                                  <IndianRupee size={13} />{formatSalary(job.salary)}
+                                  <IndianRupee size={13} />{formatSalary(job.salary, job)}
                                 </span>
                               </div>
                             </div>
