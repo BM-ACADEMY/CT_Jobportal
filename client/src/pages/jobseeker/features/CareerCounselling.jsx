@@ -354,6 +354,8 @@ const CareerCounselling = () => {
   const [sessions, setSessions] = useState([]);
   const [counts, setCounts] = useState({ booked: 0, accepted: 0, upcoming: 0, completed: 0, rejected: 0 });
   const [sessionsLoading, setSessionsLoading] = useState(true);
+  // The first session is free for everyone (server decides; this is the number it reports).
+  const [freeLeft, setFreeLeft] = useState(0);
 
   const planLimit = user?.subscription?.careerCounsellingCount || 0;
   const hasPlanFeature = !!user?.subscription?.hasCareerCounselling || (Array.isArray(user?.subscription?.features) && user.subscription.features.some(f => f.isActive && (f.name?.toLowerCase() === 'career counselling' || f.name?.toLowerCase() === 'career counseling')));
@@ -366,7 +368,7 @@ const CareerCounselling = () => {
   const payPerFeature = Array.isArray(user?.purchasedFeatures) ? user.purchasedFeatures.find(f => f.featureKey === 'hasCareerCounselling' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) : null;
   const payPerLeft = payPerFeature ? payPerFeature.usageLeft : 0;
 
-  const sessionsLeft = unlimited ? Infinity : planLeft + payPerLeft;
+  const sessionsLeft = unlimited ? Infinity : planLeft + payPerLeft + freeLeft;
   const atLimit = !unlimited && sessionsLeft <= 0;
 
   const fetchSessions = useCallback(async () => {
@@ -376,6 +378,7 @@ const CareerCounselling = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setSessions(res.data.sessions || []);
+      setFreeLeft(res.data.freeSessionsLeft || 0);
       setCounts(res.data.counts || { booked: 0, accepted: 0, upcoming: 0, completed: 0, rejected: 0 });
     } catch {
       // silently fail
@@ -425,7 +428,7 @@ const CareerCounselling = () => {
           
           <div className="flex items-center gap-3 shrink-0">
             <Tag color="error" className="px-3 py-1.5 rounded-md font-bold m-0 border-rose-200 bg-rose-50 text-rose-600 text-xs">
-              {unlimited ? 'Unlimited' : `${sessionsLeft} Left`}
+              {unlimited ? 'Unlimited' : (freeLeft > 0 && planLeft + payPerLeft === 0 ? 'First session free' : `${sessionsLeft} Left`)}
             </Tag>
             <Button
               type="primary"

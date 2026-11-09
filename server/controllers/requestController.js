@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const { notifyUser, notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
 const { receivedMessage, askForReviewOnce } = require('../utils/serviceRequestMessages');
+const { freeLeft } = require('../utils/freeCounselling');
 
 const notifyAdminsOfServiceRequest = (req, request, user) => notifyRoles({
   io: req.io,
@@ -61,6 +62,15 @@ const submitCounsellingRequest = async (req, res) => {
         hasFeature = true;
         source = 'payper';
         payPerFeatureIndex = ppFeatureIndex;
+      }
+    }
+
+    // Nothing else covers it: the free first session.
+    if (!hasFeature) {
+      const counted = await AdminRequest.countDocuments({ user: req.user.id, type: 'counselling', status: { $ne: 'cancelled' } });
+      if (freeLeft(counted) > 0) {
+        hasFeature = true;
+        source = 'free';
       }
     }
 
@@ -488,6 +498,8 @@ const getMySessions = async (req, res) => {
 
     res.json({
       counsellingSessionsUsed: user?.counsellingSessionsUsed || 0,
+      // The free first session left (0 once one request is booked and not cancelled).
+      freeSessionsLeft: freeLeft(sessions.filter(s => s.status !== 'cancelled').length),
       sessions,
       counts,
     });
