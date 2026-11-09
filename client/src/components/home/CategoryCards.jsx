@@ -19,14 +19,14 @@ const TINTS = {
 };
 
 const CATEGORIES = [
-  { label: 'IT & Software', count: '45K', icon: Code2, tint: 'sky', anim: 'pulse', desc: 'Build products, apps and the systems behind them.', roles: ['Frontend', 'Backend', 'Full Stack', 'DevOps'] },
-  { label: 'Healthcare', count: '15K', icon: Stethoscope, tint: 'rose', anim: 'bounce', desc: 'Care for patients across hospitals, clinics and labs.', roles: ['Staff Nurse', 'Pharmacist', 'Lab Technician', 'Medical Coder'] },
-  { label: 'Finance', count: '18K', icon: BarChart2, tint: 'amber', anim: 'tilt', desc: 'Manage money, risk and reporting for growing businesses.', roles: ['Accountant', 'Financial Analyst', 'Auditor'] },
-  { label: 'Design', count: '9K', icon: Palette, tint: 'violet', anim: 'wiggle', desc: 'Shape how products look, feel and work.', roles: ['UI/UX Designer', 'Graphic Designer', 'Motion Designer'] },
-  { label: 'Sales', count: '22K', icon: ShoppingBag, tint: 'orange', anim: 'bounce', desc: 'Find customers and grow revenue in every region.', roles: ['Sales Executive', 'Business Development', 'Inside Sales'] },
-  { label: 'Engineering', count: '30K', icon: Cpu, tint: 'teal', anim: 'spin', desc: 'Design, build and maintain plants, sites and machines.', roles: ['Mechanical', 'Civil', 'Electrical', 'Quality'] },
-  { label: 'Education', count: '8K', icon: GraduationCap, tint: 'indigo', anim: 'tilt', desc: 'Teach, train and support learners of every age.', roles: ['School Teacher', 'Lecturer', 'Corporate Trainer'] },
-  { label: 'Non-Profit', count: '5K', icon: HeartHandshake, tint: 'emerald', anim: 'pulse', desc: 'Work on causes that strengthen communities.', roles: ['Program Officer', 'Social Worker', 'CSR Executive'] },
+  { label: 'IT & Software', icon: Code2, tint: 'sky', anim: 'pulse', desc: 'Build products, apps and the systems behind them.', roles: ['Frontend', 'Backend', 'Full Stack', 'DevOps'] },
+  { label: 'Healthcare', icon: Stethoscope, tint: 'rose', anim: 'bounce', desc: 'Care for patients across hospitals, clinics and labs.', roles: ['Staff Nurse', 'Pharmacist', 'Lab Technician', 'Medical Coder'] },
+  { label: 'Finance', icon: BarChart2, tint: 'amber', anim: 'tilt', desc: 'Manage money, risk and reporting for growing businesses.', roles: ['Accountant', 'Financial Analyst', 'Auditor'] },
+  { label: 'Design', icon: Palette, tint: 'violet', anim: 'wiggle', desc: 'Shape how products look, feel and work.', roles: ['UI/UX Designer', 'Graphic Designer', 'Motion Designer'] },
+  { label: 'Sales', icon: ShoppingBag, tint: 'orange', anim: 'bounce', desc: 'Find customers and grow revenue in every region.', roles: ['Sales Executive', 'Business Development', 'Inside Sales'] },
+  { label: 'Engineering', icon: Cpu, tint: 'teal', anim: 'spin', desc: 'Design, build and maintain plants, sites and machines.', roles: ['Mechanical', 'Civil', 'Electrical', 'Quality'] },
+  { label: 'Education', icon: GraduationCap, tint: 'indigo', anim: 'tilt', desc: 'Teach, train and support learners of every age.', roles: ['School Teacher', 'Lecturer', 'Corporate Trainer'] },
+  { label: 'Non-Profit', icon: HeartHandshake, tint: 'emerald', anim: 'pulse', desc: 'Work on causes that strengthen communities.', roles: ['Program Officer', 'Social Worker', 'CSR Executive'] },
 ];
 
 const grid = {
@@ -72,14 +72,14 @@ const CategoryCard = ({ cat }) => {
       <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
         <Link
           to={`/jobs?category=${encodeURIComponent(cat.label)}`}
-          aria-label={`Explore ${cat.count} ${cat.label} jobs`}
+          aria-label={`Explore ${cat.label} jobs`}
           className="text-sm font-semibold text-zinc-900 after:absolute after:inset-0 after:rounded-[22px] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-emerald-500"
         >
-          {/* "Explore" slides up and the live count slides in on hover */}
+          {/* "Explore" slides up and "View jobs" slides in on hover. No made-up job counts. */}
           <span className="block h-5 overflow-hidden">
             <span className="flex flex-col transition-transform duration-300 ease-out group-hover:-translate-y-5">
               <span className="h-5 leading-5">Explore</span>
-              <span className={`h-5 leading-5 ${t.hint}`}>View {cat.count} jobs</span>
+              <span className={`h-5 leading-5 ${t.hint}`}>View jobs</span>
             </span>
           </span>
         </Link>
