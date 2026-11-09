@@ -15,6 +15,8 @@ const Growth = () => {
   const [camp, setCamp] = useState('');
   const [page, setPage] = useState(PAGES[1][0]);
   const [copied, setCopied] = useState(false);
+  const [ai, setAi] = useState(null);
+  useEffect(() => { axios.get(`${API}/admin/free-ai`).then((r) => setAi(r.data)).catch(() => setAi(null)); }, []);
 
   useEffect(() => { setData(null); axios.get(`${API}/admin/growth/sources`, { params: { days } }).then((r) => setData(r.data)).catch(() => setData({ rows: [], total: 0 })); }, [days]);
 
@@ -48,6 +50,17 @@ const Growth = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {ai && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
+          <h2 className="font-bold text-slate-800">Free AI given to candidates this month</h2>
+          <p className="text-sm text-slate-600">Counted as marketing spend. <b>{ai.total}</b> free uses so far{ai.ceiling > 0 ? <> of a ceiling of <b>{ai.ceiling}</b>. Free AI pauses when it is reached.</> : '. No ceiling is set.'}{ai.estimatedCost != null && <> Estimated cost <b>₹{ai.estimatedCost}</b> at ₹{ai.costPerCall} a use.</>} Resets {new Date(ai.resetsOn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}.</p>
+          <ul className="text-sm text-slate-700 space-y-1">
+            {ai.features.map((f) => <li key={f.kind}>{f.label}: <b>{f.used}</b> used, {f.perPerson} free per person a month</li>)}
+          </ul>
+          <p className="text-xs text-slate-500">Paid plans are not counted. The limits are settings: FREE_AI_RESUME_BUILD, FREE_AI_RESUME_CHECK, FREE_AI_JOB_MATCH, FREE_AI_MONTHLY_CEILING and FREE_AI_COST_PER_CALL.</p>
         </div>
       )}
 

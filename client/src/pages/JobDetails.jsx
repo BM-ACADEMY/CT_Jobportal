@@ -144,7 +144,7 @@ const JobDetails = () => {
       toast.success("Match score calculated!");
     } catch (error) {
       console.error('Error calculating match:', error);
-      toast.error("Failed to calculate AI match score");
+      toast.error(error.response?.status === 429 ? error.response.data?.msg : "Failed to calculate AI match score");
     } finally {
       setIsCalculatingMatch(false);
     }
