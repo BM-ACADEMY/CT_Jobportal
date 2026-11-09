@@ -10,6 +10,9 @@ const Application = require('../models/Application');
 const Payment = require('../models/Payment');
 const Subscription = require('../models/Subscription');
 const Review = require('../models/Review');
+const WalkInDrive = require('../models/WalkInDrive');
+const { manualPaymentRows, sumRows } = require('../utils/manualIncome');
+const { istDayStart } = require('../utils/istDay');
 const sendEmail = require('../utils/sendEmail');
 const { notifyUser } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved } = require('../utils/jobNotifications');
@@ -153,7 +156,21 @@ const getDashboardStats = async (req, res) => {
       { $match: { status: 'completed', createdAt: { $gte: REVENUE_START } } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
-    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+    const onlineRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+
+    // Money received by hand (walk-in drive plans and add-ons marked paid) is not a Razorpay payment, so it is added here
+    const drives = await WalkInDrive.find({ $or: [{ paid: true }, { 'addons.paid': true }] }).select('plan paid paidAt addons').lean().catch(() => []);
+    const manualRows = manualPaymentRows(drives, { from: REVENUE_START });
+    const manual = sumRows(manualRows);
+    const totalRevenue = onlineRevenue + manual.total;
+
+    // Today (India time): what changed since midnight
+    const dayStart = istDayStart();
+    const [newUsersToday, newJobsToday, applicationsToday] = await Promise.all([
+      User.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0),
+      Job.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0),
+      Application.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0)
+    ]);
 
     // 2. Revenue Data (Last 4 months)
     const fourMonthsAgo = chartStart();
@@ -198,6 +215,11 @@ const getDashboardStats = async (req, res) => {
         match.revenue = r.revenue;
       }
     });
+    manualRows.forEach(r => {
+      if (!r.at) return;
+      const match = last4MonthsData.find(m => m.year === r.at.getFullYear() && m.month === r.at.getMonth() + 1);
+      if (match) match.revenue += r.total;
+    });
 
     const revenueData = last4MonthsData.map(m => ({ name: m.name, revenue: m.revenue }));
 
@@ -238,6 +260,9 @@ const getDashboardStats = async (req, res) => {
       needsAction: { collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending, jobsFlagged },
       usersByRole,
       totalRevenue,
+      onlineRevenue,
+      manualRevenue: { total: manual.total, count: manual.count },
+      today: { newUsers: newUsersToday, newJobs: newJobsToday, applications: applicationsToday },
       revenueData,
       subscriptionData: subscriptionMerged
     });

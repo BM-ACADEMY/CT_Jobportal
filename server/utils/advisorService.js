@@ -1,22 +1,26 @@
 // Collects the weekly numbers, asks the AI to explain them, saves the note. Dependencies are passed in so it can be tested.
 const M = require('./advisorMetrics');
 const { istMonthStart } = require('../config/driveConfig');
+const { manualPaymentRows, sumRows } = require('./manualIncome');
 
 const DAY = 86400000;
 
 // Counts only. No names, emails or other personal details ever leave the database here.
-const collectCounts = async ({ User, Role, Job, Application, Payment, Ticket, College }, now = new Date()) => {
+const collectCounts = async ({ User, Role, Job, Application, Payment, Ticket, College, WalkInDrive }, now = new Date()) => {
   const w1 = new Date(now.getTime() - 7 * DAY); const w0 = new Date(now.getTime() - 14 * DAY);
   const between = (from, to) => ({ $gte: from, $lt: to });
   const [seeker, employers] = await Promise.all([Role.findOne({ name: 'jobseeker' }), Role.find({ name: { $in: ['recruiter', 'company'] } })]);
   const roleIds = employers.map((r) => r._id);
+  // Money received by hand for walk-in drives (not a Razorpay payment). Skipped when the model is not passed in.
+  const drives = WalkInDrive ? await WalkInDrive.find({ $or: [{ paid: true }, { 'addons.paid': true }] }).select('plan paid paidAt addons').lean().catch(() => []) : [];
+  const byHand = (from, to) => sumRows(manualPaymentRows(drives, { from, to }));
   const window = async (from, to) => ({
     newJobSeekers: seeker ? await User.countDocuments({ role: seeker._id, createdAt: between(from, to) }) : 0,
     newEmployers: roleIds.length ? await User.countDocuments({ role: { $in: roleIds }, createdAt: between(from, to) }) : 0,
     newJobs: await Job.countDocuments({ createdAt: between(from, to) }),
     applications: await Application.countDocuments({ createdAt: between(from, to) }),
-    paidPlans: await Payment.countDocuments({ status: 'completed', amount: { $gt: 0 }, createdAt: between(from, to) }),
-    revenue: ((await Payment.aggregate([{ $match: { status: 'completed', amount: { $gt: 0 }, createdAt: between(from, to) } }, { $group: { _id: null, total: { $sum: '$amount' } } }]))[0]?.total) || 0,
+    paidPlans: (await Payment.countDocuments({ status: 'completed', amount: { $gt: 0 }, createdAt: between(from, to) })) + byHand(from, to).count,
+    revenue: (((await Payment.aggregate([{ $match: { status: 'completed', amount: { $gt: 0 }, createdAt: between(from, to) } }, { $group: { _id: null, total: { $sum: '$amount' } } }]))[0]?.total) || 0) + byHand(from, to).total,
     failedPayments: await Payment.countDocuments({ status: 'failed', createdAt: between(from, to) }),
   });
   const [cur, prev] = [await window(w1, now), await window(w0, w1)];

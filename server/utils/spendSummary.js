@@ -24,7 +24,7 @@ const buildSpendSummary = ({ entries = [], payments = [], now = new Date(), days
   payments.filter((p) => p.status === 'completed').forEach((p) => {
     const r = row(istDate(p.createdAt));
     r.moneyIn += moneyIn(p);
-    r.razorpayFee += Number(p.amount || 0) * RAZORPAY_FEE_RATE;
+    if (!p.manual) r.razorpayFee += Number(p.amount || 0) * RAZORPAY_FEE_RATE; // money paid by hand has no gateway fee
   });
   live.forEach((e) => {
     const r = row(e.date);

@@ -6,13 +6,14 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Payment = require('../models/Payment');
 const Ticket = require('../models/Ticket');
+const WalkInDrive = require('../models/WalkInDrive');
 const College = require('../models/College');
 const { runAdvisor } = require('../utils/advisorService');
 const M = require('../utils/advisorMetrics');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 
 const HEX = /^[0-9a-fA-F]{24}$/;
-const deps = { AdvisorReport, AdvisorIdea, User, Role, Job, Application, Payment, Ticket, College };
+const deps = { AdvisorReport, AdvisorIdea, User, Role, Job, Application, Payment, Ticket, College, WalkInDrive };
 
 const callAI = async (prompt) => {
   const model = new GoogleGenerativeAI(process.env.OPENROUTER_API_KEY).getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { responseMimeType: 'application/json', temperature: 0.3 } });
