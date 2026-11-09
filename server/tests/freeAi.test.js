@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { factorFrom, effectiveLimit, factorFor, takeFree, peek, allowanceFor, windowMs, ceilingFrom, limitsOn, isPaid, messages, dayKey, tomorrow, when } = require('../utils/freeAi');
+const { factorFrom, effectiveLimit, factorFor, takeFree, refundFree, peek, allowanceFor, windowMs, ceilingFrom, limitsOn, isPaid, messages, dayKey, tomorrow, when } = require('../utils/freeAi');
 
 // A small stand-in for the counter collection (keys, regex find, create, upsert, "at its limit" -> duplicate key).
 const fakeUsage = () => {
@@ -16,7 +16,8 @@ const fakeUsage = () => {
       if (row) { if (f.count && f.count.$lt !== undefined && !(row.count < f.count.$lt)) { const e = new Error('dup'); e.code = 11000; throw e; } row.count += u.$inc.count; return row; }
       m.set(f.key, { count: u.$inc.count }); return m.get(f.key);
     },
-    async updateOne(f, u) { const r = m.get(f.key) || { count: 0 }; r.count += u.$inc.count; m.set(f.key, r); },
+    async deleteOne(f) { return { deletedCount: m.delete(f.key) ? 1 : 0 }; },
+    async updateOne(f, u) { if (f.count && f.count.$gt !== undefined && !((m.get(f.key)?.count || 0) > f.count.$gt)) return; const r = m.get(f.key) || { count: 0 }; r.count += u.$inc.count; m.set(f.key, r); },
   };
 };
 const T0 = new Date('2026-11-12T06:00:00Z');
@@ -99,4 +100,14 @@ test('a quiet site gives people more than the base number, a busy one a little l
   assert.equal((await peek(u, { userId: 'a', kind: 'resume_build', now, env })).limit, 10);
   for (let i = 1; i <= 7; i++) u.m.set(`fa:day:${dayKey(new Date(now.getTime() - i * 86400000))}`, { count: 125 });
   assert.equal((await peek(u, { userId: 'a', kind: 'resume_build', now, env })).limit, 4);
+});
+
+test('a failed request gives its free use back, once, and the day counter too', async () => {
+  const U = fakeUsage(); const env = {};
+  const a = await takeFree(U, { userId: 'u1', kind: 'resume_check', now: T0, env });
+  assert.equal(a.ok, true); assert.equal(U.m.get(`fa:day:${dayKey(T0)}`).count, 1);
+  await refundFree(U, { rowKey: a.rowKey, dayKeyUsed: a.dayKeyUsed, kind: 'resume_check', now: T0 });
+  await refundFree(U, { rowKey: a.rowKey, dayKeyUsed: a.dayKeyUsed, kind: 'resume_check', now: T0 }); // second call changes nothing
+  assert.equal(U.m.get(`fa:day:${dayKey(T0)}`).count, 0);
+  assert.equal((await peek(U, { userId: 'u1', kind: 'resume_check', now: T0, env })).left, 10);
 });

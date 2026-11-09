@@ -751,6 +751,7 @@ const adminAssignRequest = async (req, res) => {
     const request = await AdminRequest.findById(req.params.id).populate('user', 'name');
     if (!request) return res.status(404).json({ msg: 'Request not found' });
     if (!staffMayTouchRequestType(req, request.type)) return res.status(403).json({ msg: 'Staff accounts cannot assign this type of request.' });
+    if (request.type === 'student_pack') return res.status(400).json({ msg: 'Student pack requests are handled by contacting the college, not assigned.' });
 
     request.assignedToPool = assignedToPool || [];
     request.assignedTo = null;

@@ -74,9 +74,21 @@ const takeFree = async (Usage, { userId, kind, now = new Date(), env = process.e
     throw e;
   }
   const ts = now.getTime();
-  await Usage.create({ key: `${prefix(kind, userId)}${ts}-${Math.random().toString(36).slice(2, 6)}`, count: 1, expireAt: new Date(ts + windowMs(env) + DAY) });
+  const rowKey = `${prefix(kind, userId)}${ts}-${Math.random().toString(36).slice(2, 6)}`;
+  await Usage.create({ key: rowKey, count: 1, expireAt: new Date(ts + windowMs(env) + DAY) });
   await Usage.updateOne({ key: `fa:f:${kind}:${monthKey(now)}` }, { $inc: { count: 1 }, $setOnInsert: { expireAt: new Date(ts + 40 * DAY) } }, { upsert: true }).catch(() => {});
-  return { ok: true, left: p.left - 1, limit: p.limit };
+  return { ok: true, left: p.left - 1, limit: p.limit, rowKey, dayKeyUsed: dayKey(now) };
+};
+
+// Gives a use back when the request failed before any AI work (bad file, daily safety stop). Never throws.
+const refundFree = async (Usage, { rowKey, dayKeyUsed, kind, now = new Date() }) => {
+  try {
+    if (!rowKey) return;
+    const del = await Usage.deleteOne({ key: rowKey });
+    if (!del.deletedCount) return;
+    await Usage.updateOne({ key: `fa:day:${dayKeyUsed}`, count: { $gt: 0 } }, { $inc: { count: -1 } });
+    await Usage.updateOne({ key: `fa:f:${kind}:${monthKey(now)}`, count: { $gt: 0 } }, { $inc: { count: -1 } });
+  } catch (e) { /* best effort */ }
 };
 
 const messages = {
@@ -84,4 +96,4 @@ const messages = {
   paused: (nextAt) => `Free AI has reached its limit for today because many people used it. It opens again on ${when(nextAt)}. Everything else on the site still works, and paid plans are not affected.`,
 };
 
-module.exports = { factorFrom, effectiveLimit, factorFor, KINDS, limitsOn, allowanceFor, windowMs, ceilingFrom, dayKey, monthKey, tomorrow, when, isPaid, peek, takeFree, messages };
+module.exports = { factorFrom, effectiveLimit, factorFor, KINDS, limitsOn, allowanceFor, windowMs, ceilingFrom, dayKey, monthKey, tomorrow, when, isPaid, peek, takeFree, refundFree, messages };

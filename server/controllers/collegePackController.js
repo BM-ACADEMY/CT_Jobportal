@@ -22,6 +22,8 @@ const recordPack = async (req, res) => {
     const plan = planPack(college, req.body?.packs);
     if (plan.error) return res.status(400).json({ msg: plan.error });
     await CollegePackPayment.create({ college: college._id, packs: plan.packs, students: plan.students, amount: plan.total, note, by: String(req.user?.id || '') });
+    // The college's open request is now dealt with, so its dashboard button comes back.
+    await AdminRequest.updateMany({ type: 'student_pack', college: college._id, status: { $in: ['pending', 'approved'] } }, { $set: { status: 'completed' } }).catch(() => {});
     college.extraStudents = plan.extraStudents;
     college.extraUntil = plan.extraUntil;
     await college.save();

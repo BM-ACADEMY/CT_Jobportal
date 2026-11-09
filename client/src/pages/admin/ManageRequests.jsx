@@ -654,7 +654,7 @@ const ManageRequests = () => {
                           >
                             <Eye size={11} /> View
                           </button>
-                          {canAssign && r.status !== 'cancelled' && r.status !== 'completed' && (
+                          {canAssign && r.type !== 'student_pack' && r.status !== 'cancelled' && r.status !== 'completed' && (
                             <button
                               onClick={() => setAssignTarget(r)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"

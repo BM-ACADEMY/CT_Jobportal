@@ -22,7 +22,7 @@ const collectCounts = async ({ User, Role, Job, Application, Payment, Ticket, Co
     newJobs: await Job.countDocuments({ createdAt: between(from, to) }),
     applications: await Application.countDocuments({ createdAt: between(from, to) }),
     paidPlans: (await Payment.countDocuments({ status: 'completed', amount: { $gt: 0 }, createdAt: between(from, to) })) + byHand(from, to).count,
-    revenue: (((await Payment.aggregate([{ $match: { status: 'completed', amount: { $gt: 0 }, createdAt: between(from, to) } }, { $group: { _id: null, total: { $sum: '$amount' } } }]))[0]?.total) || 0) + byHand(from, to).total,
+    revenue: (((await Payment.aggregate([{ $match: { status: 'completed', amount: { $gt: 0 }, createdAt: between(from, to) } }, { $group: { _id: null, total: { $sum: { $ifNull: ['$baseAmount', { $divide: ['$amount', 1.18] }] } } } }]))[0]?.total) || 0) + byHand(from, to).base,
     failedPayments: await Payment.countDocuments({ status: 'failed', createdAt: between(from, to) }),
   });
   const [cur, prev] = [await window(w1, now), await window(w0, w1)];
