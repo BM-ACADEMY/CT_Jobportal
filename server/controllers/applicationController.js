@@ -1,4 +1,5 @@
 const Application = require('../models/Application');
+const { cleanQuickDetails, fillMissing } = require('../utils/quickApply');
 const Job = require('../models/Job');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
@@ -142,7 +143,7 @@ exports.getMyApplications = async (req, res) => {
 
 exports.applyJob = async (req, res) => {
   try {
-    const { jobId, answers } = req.body;
+    const { jobId, answers, quick } = req.body;
     const applicantId = req.user.id;
     const User = require('../models/User');
 
@@ -219,6 +220,10 @@ exports.applyJob = async (req, res) => {
 
     await application.save();
     trackOutcome('applied', applicantId, jobId);
+
+    // Quick apply: save the basics the person gave, only into empty profile fields.
+    const quickSet = fillMissing(user, cleanQuickDetails(quick));
+    if (quickSet) User.updateOne({ _id: applicantId }, { $set: quickSet }).catch((e) => console.error('Quick apply save failed:', e.message));
 
     if (isPriority) {
       if (source === 'plan' && limit > 0) {

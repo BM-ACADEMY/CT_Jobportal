@@ -96,6 +96,8 @@ const userSchema = new mongoose.Schema({
     preferredRole: { type: String, default: '' },
     // Up to 3 fields of work the person is interested in (config/jobCategories.js keys); gives matching a small boost.
     interestedCategories: [{ type: String }],
+    // Filled by quick apply: fresher, under_2_years, 2_to_5_years, over_5_years.
+    experienceLevel: { type: String, enum: ['', 'fresher', 'under_2_years', '2_to_5_years', 'over_5_years'], default: '' },
     resumeUrl: { type: String, default: '' },
     resumeName: { type: String, default: '' },
     portfolioUrl: { type: String, default: '' },

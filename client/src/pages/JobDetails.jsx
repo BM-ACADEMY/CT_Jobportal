@@ -97,10 +97,6 @@ const JobDetails = () => {
     }
 
     // Gentle nudge, never a block: a thin profile lowers the chance of being shortlisted.
-    if (user.role === 'jobseeker' && (user.profile?.profileCompletion ?? 100) < 60) {
-      setShowProfileNudge(true);
-      return;
-    }
 
     setIsApplyModalOpen(true);
   };
