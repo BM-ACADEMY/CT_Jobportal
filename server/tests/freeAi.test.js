@@ -1,13 +1,15 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { takeFree, peek, allowanceFor, windowMs, ceilingFrom, limitsOn, isPaid, messages, dayKey, tomorrow, when } = require('../utils/freeAi');
+const { factorFrom, effectiveLimit, factorFor, takeFree, peek, allowanceFor, windowMs, ceilingFrom, limitsOn, isPaid, messages, dayKey, tomorrow, when } = require('../utils/freeAi');
 
 // A small stand-in for the counter collection (keys, regex find, create, upsert, "at its limit" -> duplicate key).
 const fakeUsage = () => {
   const m = new Map();
   return {
     m,
-    find(q) { const re = new RegExp(q.key.$regex); const rows = [...m.keys()].filter((k) => re.test(k)).map((key) => ({ key })); return { select: () => ({ lean: async () => rows }) }; },
+    find(q) {
+      if (q.key.$in) { const rows = q.key.$in.filter((k) => m.has(k)).map((key) => ({ key, count: m.get(key).count })); return { lean: async () => rows }; }
+      const re = new RegExp(q.key.$regex); const rows = [...m.keys()].filter((k) => re.test(k)).map((key) => ({ key })); return { select: () => ({ lean: async () => rows }) }; },
     async create(d) { m.set(d.key, { count: d.count }); },
     async findOneAndUpdate(f, u, o = {}) {
       const row = m.get(f.key);
@@ -76,4 +78,25 @@ test('paid means an active plan with a price; free, none and expired do not coun
   assert.equal(isPaid({ price: 999 }, new Date('2026-10-01'), now), false);
   assert.equal(isPaid({ price: 0 }, null, now), false);
   assert.equal(isPaid(null, null, now), false);
+});
+
+test('the scale follows real use: quiet is generous, busy tightens, never below half or above double', () => {
+  assert.equal(factorFrom(0, 100), 2); assert.equal(factorFrom(20, 100), 2); assert.equal(factorFrom(100, 100), 1);
+  assert.equal(factorFrom(125, 100), 0.8); assert.equal(factorFrom(1000, 100), 0.5); assert.equal(factorFrom(50, 0), 1);
+  assert.equal(effectiveLimit('resume_build', 2, {}), 10); assert.equal(effectiveLimit('resume_build', 0.5, {}), 3); assert.equal(effectiveLimit('resume_check', 0.5, { FREE_AI_RESUME_CHECK: '1' }), 1);
+  assert.equal(effectiveLimit('resume_build', 2, { FREE_AI_RESUME_BUILD: '0' }), 0);
+});
+test('with no target set the limits stay fixed; with a target, the last 7 days decide', async () => {
+  const u = fakeUsage(); const now = new Date('2026-11-20T06:00:00Z');
+  assert.equal((await factorFor(u, { now, env: {} })).factor, 1);
+  assert.equal((await factorFor(u, { now, env: { FREE_AI_TARGET_PER_DAY: '100' } })).factor, 2);
+  for (let i = 1; i <= 7; i++) u.m.set(`fa:day:${dayKey(new Date(now.getTime() - i * 86400000))}`, { count: 200 });
+  const busy = await factorFor(u, { now, env: { FREE_AI_TARGET_PER_DAY: '100' } });
+  assert.equal(busy.factor, 0.5); assert.equal(busy.avg, 200);
+});
+test('a quiet site gives people more than the base number, a busy one a little less', async () => {
+  const u = fakeUsage(); const now = new Date('2026-11-20T06:00:00Z'); const env = { FREE_AI_TARGET_PER_DAY: '100' };
+  assert.equal((await peek(u, { userId: 'a', kind: 'resume_build', now, env })).limit, 10);
+  for (let i = 1; i <= 7; i++) u.m.set(`fa:day:${dayKey(new Date(now.getTime() - i * 86400000))}`, { count: 125 });
+  assert.equal((await peek(u, { userId: 'a', kind: 'resume_build', now, env })).limit, 4);
 });

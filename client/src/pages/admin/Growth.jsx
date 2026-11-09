@@ -57,11 +57,16 @@ const Growth = () => {
         <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
           <h2 className="font-bold text-slate-800">Free AI given to candidates</h2>
           <p className="text-sm text-slate-600">Counted as marketing spend. Only the resume builder and resume checker are limited, and only for free-plan people. Job match checks and skill tests are not limited. {ai.limited ? <>Each free use comes back after <b>{ai.windowDays} days</b>.</> : <b>All limits are switched off.</b>}</p>
+          {ai.target > 0 ? (
+            <p className="text-sm text-slate-700">The system adjusts itself. Your target is <b>{ai.target}</b> free uses a day. The last 7 days averaged <b>{ai.avgPerDay}</b>, so free limits are now <b>{Math.round(ai.factor * 100)}%</b> of the normal number{ai.factor < 1 ? '. Use is above your target, so the limits are tightening gently.' : ai.factor > 1 ? '. Use is below your target, so people get more.' : '.'}</p>
+          ) : (
+            <p className="text-sm text-slate-700">Limits are fixed. Set FREE_AI_TARGET_PER_DAY and the system will adjust them from real use: more generous when quiet, a little tighter when busy, never below half.</p>
+          )}
           <p className="text-sm text-slate-700">Today: <b>{ai.today}</b> free uses{ai.ceiling > 0 ? <> of a daily ceiling of <b>{ai.ceiling}</b>. Free AI pauses when it is reached and opens again tomorrow.</> : '. No daily ceiling is set.'} This month: <b>{ai.month}</b>{ai.estimatedCost != null && <>, about <b>₹{ai.estimatedCost}</b> at ₹{ai.costPerCall} a use</>}.</p>
           <ul className="text-sm text-slate-700 space-y-1">
-            {ai.features.map((f) => <li key={f.kind}>{f.label}: <b>{f.used}</b> used this month, {f.perPerson} free per person every {ai.windowDays} days</li>)}
+            {ai.features.map((f) => <li key={f.kind}>{f.label}: <b>{f.used}</b> used this month, {f.perPerson} free per person every {ai.windowDays} days{f.perPerson !== f.basePerPerson ? ` (normal ${f.basePerPerson})` : ''}</li>)}
           </ul>
-          <p className="text-xs text-slate-500">Settings: FREE_AI_RESUME_BUILD, FREE_AI_RESUME_CHECK, FREE_AI_WINDOW_DAYS, FREE_AI_DAILY_CEILING, FREE_AI_LIMITS (off switches everything off) and FREE_AI_COST_PER_CALL.</p>
+          <p className="text-xs text-slate-500">Settings: FREE_AI_TARGET_PER_DAY, FREE_AI_RESUME_BUILD, FREE_AI_RESUME_CHECK, FREE_AI_WINDOW_DAYS, FREE_AI_DAILY_CEILING, FREE_AI_LIMITS (off switches everything off) and FREE_AI_COST_PER_CALL.</p>
         </div>
       )}
 

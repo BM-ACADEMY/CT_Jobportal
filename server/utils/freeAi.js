@@ -4,6 +4,7 @@
 //   FREE_AI_RESUME_BUILD, FREE_AI_RESUME_CHECK   free uses per window (defaults 5 and 10)
 //   FREE_AI_WINDOW_DAYS                          days before a used one comes back (default 7)
 //   FREE_AI_DAILY_CEILING                        all free uses on the site per day (0 or unset = no ceiling)
+//   FREE_AI_TARGET_PER_DAY                       the free uses a day you are happy to give away (0 or unset = limits stay fixed)
 //   FREE_AI_LIMITS=off                           switches every limit above off
 //   FREE_AI_COST_PER_CALL                        rupees, only used to show an estimated cost in admin
 // Counters hold numbers and times only, never content.
@@ -12,6 +13,9 @@ const KINDS = {
   resume_check: { label: 'resume checker', env: 'FREE_AI_RESUME_CHECK', def: 10 },
 };
 const DAY = 86400000;
+// The limits are not fixed once a target is set. The system looks at the last 7 days of free use and scales every
+// person's allowance between half and double the base number: quiet weeks are generous, busy weeks tighten a little.
+// It changes slowly (a 7-day average), never goes below half, and a person is never cut off in the middle of a use.
 const num = (v, d, min = 0) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= min ? n : d; };
 
 const limitsOn = (env = process.env) => String(env.FREE_AI_LIMITS || '').toLowerCase() !== 'off';
@@ -29,9 +33,27 @@ const isPaid = (plan, expiry, now = new Date()) => !!plan && Number(plan.price) 
 
 const prefix = (kind, userId) => `fa:r:${kind}:${userId}:`;
 
+// Pure: the scale from the average free uses a day over the last 7 days and the target per day.
+const factorFrom = (avgPerDay, target) => {
+  if (!(target > 0)) return 1;
+  if (!(avgPerDay > 0)) return 2;
+  return Math.round(Math.min(2, Math.max(0.5, target / avgPerDay)) * 100) / 100;
+};
+const effectiveLimit = (kind, factor, env = process.env) => { const base = allowanceFor(kind, env); return base === 0 ? 0 : Math.max(1, Math.round(base * factor)); };
+
+const factorFor = async (Usage, { now = new Date(), env = process.env } = {}) => {
+  const target = num(env.FREE_AI_TARGET_PER_DAY, 0);
+  if (!target) return { factor: 1, target: 0, avg: 0 };
+  const keys = Array.from({ length: 7 }, (_, i) => `fa:day:${dayKey(new Date(now.getTime() - (i + 1) * DAY))}`);
+  const rows = await Usage.find({ key: { $in: keys } }).lean();
+  const avg = rows.reduce((a, r) => a + (r.count || 0), 0) / 7;
+  return { factor: factorFrom(avg, target), target, avg: Math.round(avg * 10) / 10 };
+};
+
 // What one person has left right now, and when the next one comes back.
 const peek = async (Usage, { userId, kind, now = new Date(), env = process.env }) => {
-  const limit = allowanceFor(kind, env); const w = windowMs(env);
+  const { factor } = await factorFor(Usage, { now, env });
+  const limit = effectiveLimit(kind, factor, env); const w = windowMs(env);
   const rows = await Usage.find({ key: { $regex: `^${prefix(kind, userId)}` } }).select('key').lean();
   const times = rows.map((r) => parseInt(String(r.key).split(':')[4], 10)).filter((t) => Number.isFinite(t) && t > now.getTime() - w).sort((a, b) => a - b);
   const used = times.length; const left = Math.max(0, limit - used);
@@ -46,7 +68,7 @@ const takeFree = async (Usage, { userId, kind, now = new Date(), env = process.e
   const ceiling = ceilingFrom(env);
   try {
     const filter = ceiling > 0 ? { key: `fa:day:${dayKey(now)}`, count: { $lt: ceiling } } : { key: `fa:day:${dayKey(now)}` };
-    await Usage.findOneAndUpdate(filter, { $inc: { count: 1 }, $setOnInsert: { expireAt: new Date(now.getTime() + 3 * DAY) } }, { upsert: true, new: true });
+    await Usage.findOneAndUpdate(filter, { $inc: { count: 1 }, $setOnInsert: { expireAt: new Date(now.getTime() + 10 * DAY) } }, { upsert: true, new: true });
   } catch (e) {
     if (e.code === 11000) return { ok: false, reason: 'paused', limit: p.limit, nextAt: tomorrow(now) };
     throw e;
@@ -62,4 +84,4 @@ const messages = {
   paused: (nextAt) => `Free AI has reached its limit for today because many people used it. It opens again on ${when(nextAt)}. Everything else on the site still works, and paid plans are not affected.`,
 };
 
-module.exports = { KINDS, limitsOn, allowanceFor, windowMs, ceilingFrom, dayKey, monthKey, tomorrow, when, isPaid, peek, takeFree, messages };
+module.exports = { factorFrom, effectiveLimit, factorFor, KINDS, limitsOn, allowanceFor, windowMs, ceilingFrom, dayKey, monthKey, tomorrow, when, isPaid, peek, takeFree, messages };
