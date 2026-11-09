@@ -74,6 +74,7 @@ const coreMenus = {
     { icon: LayoutDashboard, label: 'Command Center', path: '/admin/dashboard', group: 'Daily' },
     { icon: ListChecks,      label: 'Needs action',   path: '/admin/needs-action', group: 'Daily' },
     { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests', group: 'Daily' },
+    { icon: MessageCircle,   label: 'WhatsApp', path: '/admin/whatsapp', group: 'Daily' },
     { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets', group: 'Daily' },
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages', group: 'Daily' },
     { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges', group: 'Daily' },

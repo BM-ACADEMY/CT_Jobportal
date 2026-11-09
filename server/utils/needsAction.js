@@ -26,6 +26,8 @@ const SOURCES = [
     title: (x) => text(x.title || 'Untitled drive'), detail: (x) => text(`${x.organiserName || ''} · ${x.plan || 'free'}`) },
   { key: 'ideas', kind: 'idea', label: 'Accepted advisor idea', link: '/admin/advisor',
     title: (x) => text(x.title || 'Idea'), detail: (x) => text(x.numbers) },
+  { key: 'whatsapp', kind: 'whatsapp', label: 'WhatsApp message', link: '/admin/whatsapp',
+    title: (x) => text(x.body || 'Message'), detail: (x) => text(x.name || x.phone) },
   { key: 'jobs', kind: 'job', label: 'Possible scam job', link: '/admin/jobs',
     title: (x) => text(x.title || 'Untitled job'), detail: (x) => text((x.scamFlags || []).join(', ').replace(/_/g, ' ')) }
 ];

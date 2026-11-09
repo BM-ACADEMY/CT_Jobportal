@@ -55,10 +55,35 @@ const sendWhatsAppTemplate = async ({ to, template, params = [], languageCode = 
   }
 };
 
+// Free-text message. Meta only accepts these within 24 hours of the person's last message to us.
+const sendWhatsAppText = async ({ to, text }) => {
+  const phoneNumberId = process.env.WA_PHONE_NUMBER_ID;
+  const token = process.env.META_PAGE_ACCESS_TOKEN;
+  const toNumber = normalizePhone(to);
+  if (!toNumber) return { skipped: true, reason: 'no_phone' };
+  if (!phoneNumberId || !token) return { skipped: true, reason: 'not_configured' };
+  try {
+    const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: toNumber, type: 'text', text: { body: String(text || '').slice(0, 1000), preview_url: false } })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error(`[WhatsApp] Text to ${toNumber} failed:`, JSON.stringify(data));
+      return { ok: false, error: data };
+    }
+    return { ok: true, data };
+  } catch (err) {
+    console.error(`[WhatsApp] Text send error:`, err.message);
+    return { ok: false, error: err.message };
+  }
+};
+
 // User has no top-level `phone` field — only role-specific sub-objects carry one
 // (profile.phone for jobseekers, recruiterProfile.phone / companyProfile.phone for
 // recruiters and company owners). Only one is ever populated per account, so chaining
 // all three is safe regardless of the caller's role.
 const getUserPhone = (user) => user?.profile?.phone || user?.recruiterProfile?.phone || user?.companyProfile?.phone || '';
 
-module.exports = { sendWhatsAppTemplate, normalizePhone, getUserPhone };
+module.exports = { sendWhatsAppTemplate, sendWhatsAppText, normalizePhone, getUserPhone };

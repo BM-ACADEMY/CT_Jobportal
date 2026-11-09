@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
 const CollegeStudent = require('../models/CollegeStudent');
+const { extractInbound, recordInbound } = require('../utils/whatsappInbox');
 
 // Meta webhook verification handshake — register this URL in the App Dashboard.
 router.get('/webhook', (req, res) => {
@@ -44,6 +45,10 @@ router.post('/webhook', express.json({ verify: (req, _res, buf) => { req.rawBody
         await CollegeStudent.updateMany({ whatsappNumber: new RegExp(`${digits}$`) }, { $set: { whatsappOptOut: true } });
       }
     }
+    // Every other message is saved for the admin inbox. A STOP is handled above and is not saved or answered.
+    const toSave = extractInbound(req.body).filter((m) => !isStopMessage(m.body));
+    if (toSave.length) await recordInbound(toSave, { findMatch: require('../utils/whatsappMatch').findMatch });
+
   } catch (err) {
     console.error('[WhatsApp] Webhook error:', err.message);
   }

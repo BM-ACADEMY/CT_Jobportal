@@ -92,6 +92,9 @@ router.patch('/companies/:id/verify', require('../controllers/companyVerificatio
 router.get('/spend', require('../controllers/spendController').getSpend);
 router.post('/spend', require('../controllers/spendController').addSpend);
 router.patch('/spend/:id/void', require('../controllers/spendController').voidSpend);
+router.get('/whatsapp', require('../controllers/whatsappInboxController').getInbox);
+router.post('/whatsapp/reply', require('../controllers/whatsappInboxController').replyToThread);
+router.put('/whatsapp/:phone/done', require('../controllers/whatsappInboxController').markDone);
 router.get('/needs-action', require('../controllers/needsActionController').getNeedsAction);
 router.put('/needs-action/assign', require('../controllers/needsActionController').assignItem);
 router.put('/needs-action/rules', require('../controllers/needsActionController').setRule);

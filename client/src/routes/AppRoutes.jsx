@@ -112,6 +112,7 @@ const WriteReview = page('shared/WriteReview');
 const ManageReviews = page('admin/ManageReviews');
 const AdminSkillTests = page('admin/SkillTests');
 const AdminNeedsAction = page('admin/NeedsAction');
+const AdminWhatsAppInbox = page('admin/WhatsAppInbox');
 const AdminSpendIncome = page('admin/SpendIncome');
 const AdminFeedback = page('admin/ManageFeedback');
 const AdminWalkInDrives = page('admin/WalkInDrivesAdmin');
@@ -642,6 +643,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminSpendIncome />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/whatsapp"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminWhatsAppInbox />
             </PrivateRoute>
           }
         />
