@@ -63,6 +63,7 @@ const RegisterPage = () => {
   const [searchParams] = useSearchParams();
   const requestedRole = searchParams.get('role');
   const [selectedRole, setSelectedRole] = useState(['jobseeker', 'recruiter', 'company', 'college'].includes(requestedRole) ? requestedRole : 'jobseeker');
+  const [brandConsent, setBrandConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
@@ -140,6 +141,7 @@ const RegisterPage = () => {
       role: selectedRole,
       ...(botToken ? { turnstileToken: botToken } : {}),
       ...(searchParams.get('ref') ? { ref: searchParams.get('ref') } : {}),
+      ...(brandConsent ? { brandConsent: true } : {}),
       ...(selectedRole === 'jobseeker' && interests.length ? { interestedCategories: interests } : {}),
       ...(selectedRole === 'college' ? {
         collegeName: values.collegeName,
@@ -512,6 +514,11 @@ const RegisterPage = () => {
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
                     <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
                   </p>
+
+                  <label className="flex items-start gap-2 text-xs text-slate-600 font-medium leading-relaxed mb-4 cursor-pointer">
+                    <input type="checkbox" className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600" checked={brandConsent} onChange={(e) => setBrandConsent(e.target.checked)} />
+                    <span>Optional: allow Velaivaaipu and its sister brands (BM Academy, CoreTalents) to contact me about training and hiring services. You can change this any time in Settings.</span>
+                  </label>
 
                   {selectedRole === 'jobseeker' && (
 

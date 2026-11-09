@@ -36,6 +36,8 @@ router.post('/generate-resume', aiDailyCap('other'), generateAIResume);
 router.post('/analyze-resume', aiDailyCap('other'), upload.single('resume'), analyzeResume);
 router.put('/profile', updateProfile);
 router.put('/whatsapp-optin', setWhatsAppOptIn);
+router.put('/brand-consent', require('../controllers/brandLeadController').setBrandConsent);
+router.get('/brand-consent', require('../controllers/brandLeadController').getBrandConsent);
 router.get('/referrals', getReferrals);
 router.post('/resume', upload.single('resume'), uploadResume);
 router.post('/documents', upload.array('documents', 20), upload.convertImagesToWebp, uploadDocuments);

@@ -100,6 +100,7 @@ const coreMenus = {
     { icon: CalendarDays, label: 'Walk-in Drives',   path: '/admin/drives' },
     { icon: Sparkles, label: 'Business Advisor',   path: '/admin/advisor' },
     { icon: ListChecks, label: 'All Services',     path: '/admin/services' },
+    { icon: Users, label: 'Brand Leads',      path: '/admin/brand-leads' },
     { icon: BadgeCheck,    label: 'Skill tests',    path: '/admin/skill-tests' },
     { icon: UserCog,        label: 'Staff',          path: '/admin/staff' },
     { icon: Settings,       label: 'Settings',       path: '/admin/settings' },

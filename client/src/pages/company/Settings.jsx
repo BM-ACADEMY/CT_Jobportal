@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import ImageCropperModal from "@/components/shared/ImageCropperModal";
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import BrandConsent from '@/components/profile/BrandConsent';
 
 const getApiUrl = (role) => {
     if (role === 'company') return `${import.meta.env.VITE_API_BASE_URL}/company`;
@@ -425,6 +426,8 @@ const RecruiterSettings = () => {
         <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex-1 min-w-0 space-y-10">
                 <PageSOPBanner pageKey="recruiterSettings" />
+
+                <BrandConsent />
 
                 <div className="border border-slate-200 bg-white p-4 flex items-start gap-3">
                     <input id="show-logo" type="checkbox" className="w-5 h-5 mt-0.5 rounded-md border-slate-300 text-emerald-600" checked={!!formData.companyData.showLogo}

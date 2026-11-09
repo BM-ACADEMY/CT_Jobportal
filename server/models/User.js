@@ -336,6 +336,13 @@ const userSchema = new mongoose.Schema({
     optInAt: { type: Date, default: null },
     optOutAt: { type: Date, default: null }
   },
+  // Agreed (optionally) to be contacted by sister brands about training and hiring. Only these people can appear as brand leads.
+  brandConsent: {
+    contact: { type: Boolean, default: false },
+    at: { type: Date, default: null },
+    withdrawnAt: { type: Date, default: null },
+    source: { type: String, default: '' }
+  },
   // Who invited this person (set at sign-up from an invite link).
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
   // Marketing / lifecycle mail preference. Receipts and security mails are never affected.
