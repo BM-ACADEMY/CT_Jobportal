@@ -329,6 +329,15 @@ const userSchema = new mongoose.Schema({
   onboarding: {
     tourSeenAt: { type: Date, default: null }
   },
+  // WhatsApp alerts consent. Recorded now; messages are sent only once a WhatsApp Business account is connected.
+  whatsapp: {
+    optIn: { type: Boolean, default: false },
+    number: { type: String, default: '' },
+    optInAt: { type: Date, default: null },
+    optOutAt: { type: Date, default: null }
+  },
+  // Who invited this person (set at sign-up from an invite link).
+  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
   // Marketing / lifecycle mail preference. Receipts and security mails are never affected.
   emailPrefs: {
     marketingOptOut: { type: Boolean, default: false },

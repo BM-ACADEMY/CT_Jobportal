@@ -91,6 +91,8 @@ const { notifyRoles } = require('../utils/inAppNotifications');
 
 // @desc    Register a new user (sends OTP)
 // @route   POST /api/auth/register
+const { cleanReferrer } = require('../utils/referral');
+
 const registerUser = async (req, res) => {
   try {
     const { name, password, role, collegeName, collegeEmail, collegePhone, tpoPhone, phone } = req.body;
@@ -149,6 +151,10 @@ const registerUser = async (req, res) => {
       },
       ...(role === 'college' && tpoPhone ? {} : {}), // Keep college-specific profile logic as needed or handle above
     });
+
+    // Invite link: remember who invited this person, only if that account really exists.
+    const inviter = cleanReferrer(req.body.ref);
+    if (inviter && role === 'jobseeker' && await User.exists({ _id: inviter })) user.referredBy = inviter;
 
     await user.save();
 

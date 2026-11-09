@@ -139,6 +139,7 @@ const RegisterPage = () => {
       password: values.password,
       role: selectedRole,
       ...(botToken ? { turnstileToken: botToken } : {}),
+      ...(searchParams.get('ref') ? { ref: searchParams.get('ref') } : {}),
       ...(selectedRole === 'jobseeker' && interests.length ? { interestedCategories: interests } : {}),
       ...(selectedRole === 'college' ? {
         collegeName: values.collegeName,

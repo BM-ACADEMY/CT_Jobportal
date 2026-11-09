@@ -63,6 +63,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import { signUploadUrl } from "@/utils/signedFiles";
 import { JOB_CATEGORIES } from "@/data/jobCategories";
+import WhatsAppAndInvite from "@/components/profile/WhatsAppAndInvite";
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
 const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
@@ -982,6 +983,7 @@ const Settings = () => {
     return (
         <div className="max-w-5xl mx-auto space-y-10 py-8 px-4 animate-in fade-in duration-500">
             <PageSOPBanner pageKey="jobseekerSettings" />
+            <WhatsAppAndInvite />
             {/* Header Section */}
             <div className="bg-white rounded-[24px] border border-slate-200 p-6 md:p-8 shadow-sm mb-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/4 pointer-events-none" />

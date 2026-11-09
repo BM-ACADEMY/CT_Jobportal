@@ -23,6 +23,7 @@ const {
   deleteDocument,
   deleteMyAccount
 } = require('../controllers/userController');
+const { setWhatsAppOptIn, getReferrals } = require('../controllers/whatsappReferralController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { aiDailyCap } = require('../middlewares/aiDailyCap');
 const upload = require('../middleware/upload');
@@ -34,6 +35,8 @@ router.delete('/me', deleteMyAccount);
 router.post('/generate-resume', aiDailyCap('other'), generateAIResume);
 router.post('/analyze-resume', aiDailyCap('other'), upload.single('resume'), analyzeResume);
 router.put('/profile', updateProfile);
+router.put('/whatsapp-optin', setWhatsAppOptIn);
+router.get('/referrals', getReferrals);
 router.post('/resume', upload.single('resume'), uploadResume);
 router.post('/documents', upload.array('documents', 20), upload.convertImagesToWebp, uploadDocuments);
 router.put('/documents/:docId', updateDocument);
