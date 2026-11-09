@@ -43,6 +43,14 @@ const createTicket = async (req, res) => {
       metadata: { ticketId: ticket._id, severity, category }
     }).catch(err => console.error('Ticket notification failed:', err.message));
 
+    // Acknowledge straight away so the person knows it arrived (alert plus mail).
+    notifyUser({
+      io: req.io, recipientId: req.user.id,
+      title: 'We received your support ticket',
+      message: `Your ticket #${String(ticket._id).slice(-6).toUpperCase()} is with our team. We reply within 24 hours.`,
+      type: 'ticket_received', link: '/tickets/my', metadata: { ticketId: ticket._id }
+    }).catch(err => console.error('Ticket acknowledgement failed:', err.message));
+
     res.status(201).json(ticket);
   } catch (err) {
     console.error('Create Ticket Error:', err.message);

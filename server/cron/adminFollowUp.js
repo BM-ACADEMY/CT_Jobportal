@@ -13,6 +13,10 @@ const { buildSpendSummary } = require('../utils/spendSummary');
 const User = require('../models/User');
 const { loadNeedsAction } = require('../utils/needsActionLoader');
 const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
+const College = require('../models/College');
+const sendEmail = require('../utils/sendEmail');
+const { emailWrapper } = require('../utils/emailTemplates');
+const { pickCollegesToAsk, keyFor: collegeAskKey, ROLE_ASK } = require('../utils/collegeReminder');
 const { planAutoAssign, planReminders, escalationBody, digestBody, paymentAlertBody } = require('../utils/adminFollowUp');
 
 const enabled = () => process.env.ADMIN_FOLLOWUP_ENABLED !== 'false';
@@ -104,4 +108,29 @@ const runPaymentAlerts = async () => {
   }
 };
 
-module.exports = { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts };
+// Once a day: colleges still pending after 2 days get one mail asking for name, role and phone. Never asked twice.
+const escape = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const runCollegeRoleReminders = async () => {
+  if (!enabled()) return;
+  try {
+    const pending = await College.find({ verificationStatus: 'pending', isTest: { $ne: true }, createdAt: { $lte: new Date(Date.now() - 2 * 86400000) } })
+      .populate('tpoUser', 'name email').limit(50);
+    const sent = await alreadySent(pending.map(collegeAskKey));
+    for (const c of pickCollegesToAsk(pending, sent)) {
+      const to = c.principalEmail || c.tpoUser?.email || c.collegeEmail;
+      const ok = await sendEmail({
+        email: to, subject: `[Velaivaaipu] ${c.name}: one quick detail to finish verification`,
+        html: emailWrapper('One quick detail', `<p>Hi ${escape(c.tpoUser?.name || c.principalName || 'there')},</p><p>${escape(ROLE_ASK)}</p>`)
+      }).catch(() => false);
+      if (ok === false) continue;
+      c.infoRequests = [...(c.infoRequests || []), { message: ROLE_ASK, askedAt: new Date() }];
+      await c.save().catch(() => {});
+      if (c.tpoUser?._id) notifyUser({ recipientId: c.tpoUser._id, title: 'One quick detail to finish verification', message: ROLE_ASK, type: 'college_verification', link: '/college/settings', email: false }).catch(() => {});
+      await remember([collegeAskKey(c)]);
+    }
+  } catch (err) {
+    console.error('[Admin follow-up] college reminders failed:', err.message);
+  }
+};
+
+module.exports = { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts, runCollegeRoleReminders };
