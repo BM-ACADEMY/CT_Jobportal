@@ -24,6 +24,8 @@ const SOURCES = [
     title: (x) => text(`${x.rating || ''} star${x.text ? `: ${x.text}` : ''}`), detail: (x) => text(x.role) },
   { key: 'drives', kind: 'drive', label: 'Walk-in drive to approve', link: '/admin/drives',
     title: (x) => text(x.title || 'Untitled drive'), detail: (x) => text(`${x.organiserName || ''} · ${x.plan || 'free'}`) },
+  { key: 'ideas', kind: 'idea', label: 'Accepted advisor idea', link: '/admin/advisor',
+    title: (x) => text(x.title || 'Idea'), detail: (x) => text(x.numbers) },
   { key: 'jobs', kind: 'job', label: 'Possible scam job', link: '/admin/jobs',
     title: (x) => text(x.title || 'Untitled job'), detail: (x) => text((x.scamFlags || []).join(', ').replace(/_/g, ' ')) }
 ];

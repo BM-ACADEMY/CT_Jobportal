@@ -115,6 +115,7 @@ const AdminNeedsAction = page('admin/NeedsAction');
 const AdminSpendIncome = page('admin/SpendIncome');
 const AdminFeedback = page('admin/ManageFeedback');
 const AdminWalkInDrives = page('admin/WalkInDrivesAdmin');
+const AdminAdvisor = page('admin/Advisor');
 const PublicDrives = page('drives/Drives');
 const PublicDriveDetail = page('drives/DriveDetail');
 const DrivePass = page('drives/DrivePass');
@@ -606,6 +607,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminWalkInDrives />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/advisor"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminAdvisor />
             </PrivateRoute>
           }
         />

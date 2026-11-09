@@ -97,6 +97,7 @@ const coreMenus = {
     { icon: Wallet,        label: 'Spend and income', path: '/admin/spend' },
     { icon: MessageSquareHeart, label: 'Feedback',   path: '/admin/feedback' },
     { icon: CalendarDays, label: 'Walk-in Drives',   path: '/admin/drives' },
+    { icon: Sparkles, label: 'Business Advisor',   path: '/admin/advisor' },
     { icon: BadgeCheck,    label: 'Skill tests',    path: '/admin/skill-tests' },
     { icon: UserCog,        label: 'Staff',          path: '/admin/staff' },
     { icon: Settings,       label: 'Settings',       path: '/admin/settings' },

@@ -44,6 +44,11 @@ router.get('/roles', requireAdminOr('users_view'), getRoles);
 router.use(authorizeRoles('admin'));
 
 // Employers' active-job limits: see them and raise them without a payment (Super Admin only).
+// Business advisor: weekly numbers, AI notes and ideas (Super Admin only).
+router.get('/advisor', require('../controllers/advisorController').getAdvisor);
+router.post('/advisor/generate', require('../controllers/advisorController').generate);
+router.post('/advisor/ask', require('../controllers/advisorController').ask);
+router.post('/advisor/ideas/:id', require('../controllers/advisorController').setIdeaStatus);
 // Walk-in drives: approve, reject and mark paid by hand (Super Admin only; no Razorpay).
 router.get('/drives', require('../controllers/walkInDriveController').adminListDrives);
 router.post('/drives/:id/review', require('../controllers/walkInDriveController').reviewDrive);

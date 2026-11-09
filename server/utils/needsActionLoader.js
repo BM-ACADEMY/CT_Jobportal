@@ -6,6 +6,7 @@ const AdminRequest = require('../models/AdminRequest');
 const Job = require('../models/Job');
 const Feedback = require('../models/Feedback');
 const WalkInDrive = require('../models/WalkInDrive');
+const AdvisorIdea = require('../models/AdvisorIdea');
 const AdminAssignment = require('../models/AdminAssignment');
 const { buildNeedsAction } = require('./needsAction');
 
@@ -22,6 +23,7 @@ const loadNeedsAction = async (now = new Date()) => {
     requests: await load(AdminRequest.find({ status: 'pending' }).select('type bookingName bookingEmail createdAt')),
     feedback: await load(Feedback.find({ status: 'new' }).select('rating text role createdAt')),
     drives: await load(WalkInDrive.find({ status: 'pending_approval' }).select('title organiserName plan createdAt')),
+    ideas: (await load(AdvisorIdea.find({ status: 'accepted' }).select('title numbers createdAt decidedAt'))).map((i) => ({ ...i, createdAt: i.decidedAt || i.createdAt })),
     jobs: await load(Job.find({ 'scamFlags.0': { $exists: true }, scamReviewed: { $ne: true }, status: { $ne: 'closed' } }).select('title scamFlags createdAt'))
   };
   const assignments = await AdminAssignment.find({}).lean();
