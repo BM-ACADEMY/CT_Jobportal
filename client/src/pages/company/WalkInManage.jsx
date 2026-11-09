@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import QrScanButton from '@/components/drives/QrScanButton';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -25,6 +26,9 @@ const ManageDrive = () => {
     const r = await act(() => axios.post(`${API}/drives/mine/${id}/check-in`, body));
     if (r) { setLast(r.data); setCode(''); }
   };
+  const scanned = useCallback(async (c) => {
+    try { const r = await axios.post(`${API}/drives/mine/${id}/check-in`, { code: c }); toast.success('Checked in'); setLast(r.data); await load(); } catch (e) { toast.error(e.response?.data?.msg || 'Could not check in'); }
+  }, [id, load]);
   const setResult = (regId, status) => {
     const joiningDate = status === 'selected' ? window.prompt('Joining date (YYYY-MM-DD), or leave empty') : undefined;
     return act(() => axios.patch(`${API}/drives/mine/${id}/registrations/${regId}`, { status, joiningDate: joiningDate || undefined }));
@@ -56,6 +60,7 @@ const ManageDrive = () => {
       {live && (
         <form onSubmit={checkIn} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-2">
           <h2 className="font-black text-slate-900 flex items-center gap-2"><QrCode size={16} className="text-emerald-600" /> Desk check-in</h2>
+          <QrScanButton onCode={scanned} />
           <input className={inputCls} placeholder="Pass code or mobile number" value={code} onChange={(e) => setCode(e.target.value)} />
           <button className="w-full h-11 rounded-xl bg-emerald-600 text-white font-black">Check in</button>
           {last && <p className="text-sm font-bold text-emerald-700">{last.name}: {last.already ? 'already checked in, ' : ''}token {last.tokenNumber}</p>}
