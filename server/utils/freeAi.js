@@ -1,15 +1,15 @@
 // Free AI for candidates is a marketing budget, kept gentle. Only the two costly resume tools are limited, and only
 // for people on the free plan. Each use comes back a few days later (a rolling window, not a calendar reset), and the
 // person is always told the exact time they can use it again. Job match checks and skill tests are not limited here.
-//   FREE_AI_RESUME_BUILD, FREE_AI_RESUME_CHECK   free uses per window (defaults 3 and 5)
+//   FREE_AI_RESUME_BUILD, FREE_AI_RESUME_CHECK   free uses per window (defaults 5 and 10)
 //   FREE_AI_WINDOW_DAYS                          days before a used one comes back (default 7)
 //   FREE_AI_DAILY_CEILING                        all free uses on the site per day (0 or unset = no ceiling)
 //   FREE_AI_LIMITS=off                           switches every limit above off
 //   FREE_AI_COST_PER_CALL                        rupees, only used to show an estimated cost in admin
 // Counters hold numbers and times only, never content.
 const KINDS = {
-  resume_build: { label: 'AI resume builder', env: 'FREE_AI_RESUME_BUILD', def: 3 },
-  resume_check: { label: 'resume checker', env: 'FREE_AI_RESUME_CHECK', def: 5 },
+  resume_build: { label: 'AI resume builder', env: 'FREE_AI_RESUME_BUILD', def: 5 },
+  resume_check: { label: 'resume checker', env: 'FREE_AI_RESUME_CHECK', def: 10 },
 };
 const DAY = 86400000;
 const num = (v, d, min = 0) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= min ? n : d; };

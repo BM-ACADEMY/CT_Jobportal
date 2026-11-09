@@ -21,8 +21,8 @@ const T0 = new Date('2026-11-12T06:00:00Z');
 const at = (h) => new Date(T0.getTime() + h * 3600000);
 const DAYS = (n) => n * 86400000;
 
-test('defaults: 3 resume builds and 5 resume checks per 7 days, no ceiling, limits on', () => {
-  assert.equal(allowanceFor('resume_build', {}), 3); assert.equal(allowanceFor('resume_check', {}), 5);
+test('defaults: 5 resume builds and 10 resume checks per 7 days, no ceiling, limits on', () => {
+  assert.equal(allowanceFor('resume_build', {}), 5); assert.equal(allowanceFor('resume_check', {}), 10);
   assert.equal(windowMs({}), DAYS(7)); assert.equal(ceilingFrom({}), 0); assert.equal(limitsOn({}), true);
   assert.equal(limitsOn({ FREE_AI_LIMITS: 'off' }), false);
   assert.equal(allowanceFor('job_match', {}), 0); // job match is not limited here at all
