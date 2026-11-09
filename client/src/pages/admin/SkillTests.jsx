@@ -49,7 +49,7 @@ const SkillTests = () => {
     { label: 'Tests taken', value: t.attempts },
     { label: 'Pass rate', value: `${t.passRate}%` },
     { label: 'Average score', value: `${t.averagePercentage}%` },
-    { label: 'Saved on an account', value: t.savedResults, note: `${t.savedShare}% of tests` },
+    { label: 'Saved on an account', value: t.savedResults, note: 'Counted separately from free tests' },
   ] : [];
   const maxDay = Math.max(1, ...(data?.byDay || []).map((d) => d.attempts));
 

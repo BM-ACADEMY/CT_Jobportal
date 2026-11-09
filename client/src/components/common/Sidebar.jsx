@@ -71,14 +71,17 @@ const coreMenus = {
     { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
   ],
   admin: [
-    { icon: LayoutDashboard, label: 'Command Center', path: '/admin/dashboard' },
-    { icon: Users,           label: 'Users',  path: '/admin/users' },
-    { icon: Briefcase,       label: 'Jobs',  path: '/admin/jobs' },
-    { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges' },
+    { icon: LayoutDashboard, label: 'Command Center', path: '/admin/dashboard', group: 'Daily' },
+    { icon: ListChecks,      label: 'Needs action',   path: '/admin/needs-action', group: 'Daily' },
+    { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests', group: 'Daily' },
+    { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets', group: 'Daily' },
+    { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages', group: 'Daily' },
+    { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges', group: 'Daily' },
     {
       icon: CreditCard,
       label: 'Subscriptions',
       path: '/admin/subscriptions',
+      group: 'Money',
       children: [
         { label: 'Plans', path: '/admin/subscriptions/plans' },
         { label: 'Renewals', path: '/admin/subscriptions/renewals' },
@@ -89,21 +92,19 @@ const coreMenus = {
         { label: 'Job limits', path: '/admin/job-limits' }
       ]
     },
-    { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests' },
-    { icon: History,         label: 'Payment History', path: '/admin/payment-history' },
-    { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
-    { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets' },
-    { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews' },
-    { icon: ListChecks,    label: 'Needs action',   path: '/admin/needs-action' },
-    { icon: Wallet,        label: 'Spend and income', path: '/admin/spend' },
-    { icon: MessageSquareHeart, label: 'Feedback',   path: '/admin/feedback' },
-    { icon: CalendarDays, label: 'Walk-in Drives',   path: '/admin/drives' },
-    { icon: Sparkles, label: 'Business Advisor',   path: '/admin/advisor' },
-    { icon: ListChecks, label: 'All Services',     path: '/admin/services' },
-    { icon: Users, label: 'Brand Leads',      path: '/admin/brand-leads' },
-    { icon: BadgeCheck,    label: 'Skill tests',    path: '/admin/skill-tests' },
-    { icon: UserCog,        label: 'Staff',          path: '/admin/staff' },
-    { icon: Settings,       label: 'Settings',       path: '/admin/settings' },
+    { icon: History,         label: 'Payment History', path: '/admin/payment-history', group: 'Money' },
+    { icon: Wallet,          label: 'Spend and income', path: '/admin/spend', group: 'Money' },
+    { icon: Sparkles,        label: 'Business Advisor',   path: '/admin/advisor', group: 'Money' },
+    { icon: Users,           label: 'Users',  path: '/admin/users', group: 'Growth' },
+    { icon: Briefcase,       label: 'Jobs',  path: '/admin/jobs', group: 'Growth' },
+    { icon: CalendarDays,    label: 'Walk-in Drives',   path: '/admin/drives', group: 'Growth' },
+    { icon: Users,           label: 'Brand Leads',      path: '/admin/brand-leads', group: 'Growth' },
+    { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews', group: 'Growth' },
+    { icon: MessageSquareHeart, label: 'Feedback',   path: '/admin/feedback', group: 'Growth' },
+    { icon: BadgeCheck,      label: 'Skill tests',    path: '/admin/skill-tests', group: 'Growth' },
+    { icon: ListChecks,      label: 'All Services',     path: '/admin/services', group: 'Setup' },
+    { icon: UserCog,         label: 'Staff',          path: '/admin/staff', group: 'Setup' },
+    { icon: Settings,        label: 'Settings',       path: '/admin/settings', group: 'Setup' },
   ],
   // A team member added via the "employee" invite flow (role becomes org_employee rather than
   // staying 'recruiter') — same recruiter-shaped workspace as coreMenus.recruiter, just with its
@@ -488,14 +489,25 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
             ) : (
               <div className="h-[1px] bg-white/10 my-4 mx-2" />
             )}
-            {coreItems.map(item => {
+            {coreItems.map((item, idx) => {
+              // Admin menu is grouped (Daily, Money, Growth, Setup); other roles have no groups.
+              const startsGroup = item.group && item.group !== coreItems[idx - 1]?.group && !isCollapsed;
+              const header = startsGroup ? (
+                <div key={`g-${item.group}`} className="px-5 pt-4 pb-1 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">{item.group}</div>
+              ) : null;
               if (item.children) {
                 return (
-                  <CollapsibleNavItem key={item.path} item={item} location={location} isCollapsed={isCollapsed} />
+                  <React.Fragment key={item.path}>
+                    {header}
+                    <CollapsibleNavItem item={item} location={location} isCollapsed={isCollapsed} />
+                  </React.Fragment>
                 );
               }
               return (
-                <NavItem key={item.path} item={item} active={isActive(item.path)} isCollapsed={isCollapsed} />
+                <React.Fragment key={item.path}>
+                  {header}
+                  <NavItem item={item} active={isActive(item.path)} isCollapsed={isCollapsed} />
+                </React.Fragment>
               );
             })}
           </div>

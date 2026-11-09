@@ -104,7 +104,7 @@ const Header = ({ toggleMobileSidebar }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Typewriter placeholder animation
-  const placeholders = [
+  const placeholders = role === 'admin' ? ["Search live jobs on the site..."] : [
     "Identify roles, companies or skillsets...",
     "Search jobs by title or keyword...",
     "Search for top organizations...",

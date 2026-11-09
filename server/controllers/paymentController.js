@@ -729,9 +729,15 @@ const rejectRefund = async (req, res) => {
   }
 };
 
+const { testEmailRegex } = require('../utils/publicStats');
+const buyerNotTestMatch = () => ({
+  'user.email': { $not: testEmailRegex() },
+  'user.name': { $not: /^\s*(test|demo)\b/i }
+});
+
 const getBuyers = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, role } = req.query;
+    const { page = 1, limit = 20, search, role, includeTest } = req.query;
 
     const pipeline = [
       { $match: { status: { $in: ['completed', 'superseded', 'refunded'] } } },
@@ -752,6 +758,10 @@ const getBuyers = async (req, res) => {
       { $lookup: { from: 'subscriptions', localField: 'lastPurchase.plan', foreignField: '_id', as: 'lastPurchase.plan' } },
       { $unwind: { path: '$lastPurchase.plan', preserveNullAndEmptyArrays: true } }
     ];
+
+    // Test and demo accounts (by email pattern or a name starting with Test or Demo) are left out
+    // of the totals unless ?includeTest=true is passed.
+    if (includeTest !== 'true') pipeline.push({ $match: buyerNotTestMatch() });
 
     if (role && role !== 'all') {
       pipeline.push({ $match: { 'user.role': role === 'employer' ? { $in: ['recruiter', 'company'] } : role } });

@@ -54,6 +54,7 @@ const {
   getAllCollegesForAdmin,
   getCollegeByIdForAdmin,
   adminVerifyCollege,
+  adminAskCollegeInfo,
   generatePrincipalPasskey,
   getPrincipalExecutiveReport,
   updateDriveRoundStatus,
@@ -156,6 +157,7 @@ router.get('/admin/all-colleges', verifyToken, requireAdminOr('colleges_view'), 
 router.get('/admin/colleges/:collegeId', verifyToken, requireAdminOr('colleges_view'), getCollegeByIdForAdmin);
 router.put('/admin/colleges/:collegeId/test', verifyToken, requireAdminOr('colleges_verify'), require('../controllers/collegeTestFlagController').setCollegeTestFlag);
 router.put('/admin/verify/:collegeId', verifyToken, requireAdminOr('colleges_verify'), adminVerifyCollege);
+router.post('/admin/ask-info/:collegeId', verifyToken, requireAdminOr('colleges_verify'), adminAskCollegeInfo);
 
 // ── TPO authenticated routes ────────────────────────────────────────────────
 router.get('/dashboard', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), getDashboard);

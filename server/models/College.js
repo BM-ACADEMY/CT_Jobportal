@@ -125,6 +125,14 @@ const collegeSchema = new mongoose.Schema({
   // Set by an admin for test or demo colleges. They stay in the database but are hidden from the
   // verification list by default and are not counted in admin totals.
   isTest: { type: Boolean, default: false, index: true },
+  // Why an admin verified without a proof document (how it was checked), or why it was rejected.
+  verificationNote: { type: String, default: '', maxlength: 500 },
+  // Messages an admin sent asking the college for proof or details. The status stays as it was.
+  infoRequests: [{
+    message: { type: String, maxlength: 500 },
+    askedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    askedAt: { type: Date, default: Date.now }
+  }],
   verifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

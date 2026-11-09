@@ -43,8 +43,9 @@ const getSkillTestSummary = async (req, res) => {
         passRate: pct(t.passed, t.attempts),
         averagePercentage: Math.round(t.avg || 0),
         savedResults: saved,
-        // Share of tests that ended with a saved result on a registered account.
-        savedShare: pct(saved, t.attempts),
+        // Free tests (no account) and saved results (logged-in job seekers) come from two different
+        // collections, so one is not a share of the other. Kept at most 100 for any old caller.
+        savedShare: Math.min(100, pct(saved, t.attempts)),
       },
       byDay: byDayRows.map((r) => ({ date: r._id, attempts: r.attempts })),
       bySkill: bySkillRows.map((r) => ({ skill: r._id, attempts: r.attempts, passRate: pct(r.passed, r.attempts), averagePercentage: Math.round(r.avg || 0) })),

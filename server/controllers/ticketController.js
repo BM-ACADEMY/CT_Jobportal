@@ -130,7 +130,8 @@ const updateTicket = async (req, res) => {
 
     if (!ticket) return res.status(404).json({ msg: 'Ticket not found' });
 
-    notifyUser({
+    // A ticket whose user account was deleted still saves; there is just nobody to notify.
+    if (ticket.user?._id) notifyUser({
       io: req.io,
       recipientId: ticket.user._id,
       title: 'Support ticket updated',
@@ -155,7 +156,7 @@ const getTicketById = async (req, res) => {
 
     // Only owner or admin can view
     if (
-      ticket.user._id.toString() !== req.user.id &&
+      ticket.user?._id?.toString() !== req.user.id &&
       req.user.role !== 'admin'
     ) {
       return res.status(403).json({ msg: 'Access denied' });

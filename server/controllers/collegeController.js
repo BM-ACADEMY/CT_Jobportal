@@ -2195,21 +2195,38 @@ const getCollegeByIdForAdmin = async (req, res) => {
   }
 };
 
+const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cleanNote = (v, max = 500) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+
 // @route   PUT /api/college/admin/verify/:collegeId
+// Body: { status: 'verified' | 'rejected' | 'pending', note?: string }
+// A college with no proof document can only be verified with a written note saying how it was
+// checked. A rejection can carry a reason, which is sent to the college.
 const adminVerifyCollege = async (req, res) => {
   try {
     const { status } = req.body; // 'verified' or 'rejected'
     if (!['verified', 'rejected', 'pending'].includes(status)) {
       return res.status(400).json({ msg: 'Invalid status' });
     }
+    const note = cleanNote(req.body.note);
 
     const college = await College.findById(req.params.collegeId).populate('tpoUser', 'name email phone');
     if (!college) return res.status(404).json({ msg: 'College not found' });
+
+    if (status === 'verified' && !college.proofDocumentUrl && note.length < 10) {
+      return res.status(400).json({
+        code: 'PROOF_OR_NOTE_REQUIRED',
+        msg: 'No proof document is uploaded. Add a note (at least 10 characters) saying how you checked this college, for example: called the principal office on 9 Nov.'
+      });
+    }
 
     college.verificationStatus = status;
     if (status === 'verified') {
       college.verifiedBy = req.user.id;
       college.verifiedAt = new Date();
+      if (note) college.verificationNote = note;
+    } else if (status === 'rejected' && note) {
+      college.verificationNote = note;
     }
     await college.save();
 
@@ -2220,7 +2237,7 @@ const adminVerifyCollege = async (req, res) => {
         title: status === 'verified' ? 'College verification approved' : 'College verification rejected',
         message: status === 'verified'
           ? `${college.name} is now verified.`
-          : `${college.name} verification was rejected. Please review and resubmit your proof.`,
+          : `${college.name} verification was rejected.${note ? ` Reason: ${note}.` : ''} Please review and resubmit your proof.`,
         type: 'college_verification',
         link: '/college/settings',
         email: false, // the verification email below already covers this
@@ -2235,10 +2252,10 @@ const adminVerifyCollege = async (req, res) => {
         email: recipientEmail,
         subject: approved ? `[Velaivaaipu] ${college.name} is now verified` : `[Velaivaaipu] ${college.name} verification was rejected`,
         html: emailWrapper(approved ? 'College Verified' : 'Verification Rejected', `
-          <p>Hi ${college.tpoUser?.name || college.principalName || 'there'},</p>
+          <p>Hi ${escapeHtml(college.tpoUser?.name || college.principalName || 'there')},</p>
           ${approved
-            ? `<p>Great news — <strong>${college.name}</strong> has been verified on Velaivaaipu. You now have full access to campus placement features.</p>`
-            : `<p>Your college verification submission for <strong>${college.name}</strong> was rejected. Please review and re-upload your authorization proof document in Settings.</p>`}
+            ? `<p>Great news — <strong>${escapeHtml(college.name)}</strong> has been verified on Velaivaaipu. You now have full access to campus placement features.</p>`
+            : `<p>Your college verification submission for <strong>${escapeHtml(college.name)}</strong> was rejected.${note ? ` Reason: <strong>${escapeHtml(note)}</strong>.` : ''} Please review and re-upload your authorization proof document in Settings.</p>`}
         `)
       }).catch(() => {});
     }
@@ -2259,6 +2276,54 @@ const adminVerifyCollege = async (req, res) => {
     }
 
     res.json({ msg: `College marked as ${status}`, college });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server Error', error: err.message });
+  }
+};
+
+// @route   POST /api/college/admin/ask-info/:collegeId
+// Body: { message }. Asks the college for proof or details. The status does not change.
+const adminAskCollegeInfo = async (req, res) => {
+  try {
+    const message = cleanNote(req.body?.message);
+    if (message.length < 10) return res.status(400).json({ msg: 'Write what you need from the college (at least 10 characters).' });
+
+    const college = await College.findById(req.params.collegeId).populate('tpoUser', 'name email phone');
+    if (!college) return res.status(404).json({ msg: 'College not found' });
+
+    college.infoRequests = [...(college.infoRequests || []), { message, askedBy: req.user.id, askedAt: new Date() }];
+    await college.save();
+
+    if (college.tpoUser?._id) {
+      notifyUser({
+        io: req.io,
+        recipientId: college.tpoUser._id,
+        title: 'Velaivaaipu needs a detail for verification',
+        message,
+        type: 'college_verification',
+        link: '/college/settings',
+        email: false,
+        metadata: { collegeId: college._id, status: college.verificationStatus }
+      }).catch(err => console.error('College info request notification failed:', err.message));
+    }
+
+    const recipientEmail = college.principalEmail || college.tpoUser?.email || college.collegeEmail;
+    let emailed = false;
+    if (recipientEmail) {
+      emailed = true;
+      sendEmail({
+        email: recipientEmail,
+        subject: `[Velaivaaipu] ${college.name}: we need one more detail to verify you`,
+        html: emailWrapper('One more detail needed', `
+          <p>Hi ${escapeHtml(college.tpoUser?.name || college.principalName || 'there')},</p>
+          <p>To finish verifying <strong>${escapeHtml(college.name)}</strong> we need the following:</p>
+          <p style="padding:12px;background:#f1f5f9;border-radius:8px">${escapeHtml(message)}</p>
+          <p>Please upload it in <a href="${FRONTEND_URL}/college/settings">College Settings</a>, or reply to this email.</p>
+        `)
+      }).catch(() => {});
+    }
+
+    res.json({ msg: emailed ? 'Message sent to the college' : 'Saved. The college has no email, so only the in-app alert was sent.', college });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error', error: err.message });
   }
@@ -3102,6 +3167,7 @@ module.exports = {
   getAllCollegesForAdmin,
   getCollegeByIdForAdmin,
   adminVerifyCollege,
+  adminAskCollegeInfo,
   generatePrincipalPasskey,
   getPrincipalExecutiveReport,
   updateDriveRoundStatus,
