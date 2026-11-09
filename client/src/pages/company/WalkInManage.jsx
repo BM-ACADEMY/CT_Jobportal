@@ -90,6 +90,7 @@ const ManageDrive = () => {
         <div className="flex gap-2 flex-wrap">
           <button onClick={loadReport} className="h-10 px-4 rounded-xl border border-slate-200 text-sm font-bold">Show report</button>
           <button onClick={csv} className="h-10 px-4 rounded-xl border border-slate-200 text-sm font-bold">Download list (CSV)</button>
+          {live && <button onClick={async () => { const r = await act(() => axios.post(`${API}/drives/mine/${id}/invite`)); if (r) toast.success(`Invited ${r.data.sent} nearby job seekers`); }} className="h-10 px-4 rounded-xl border border-slate-200 text-sm font-bold">Invite nearby job seekers ({data.invitesLeft} left)</button>}
           <button onClick={() => act(() => axios.post(`${API}/drives/mine/${id}/thanks`), 'Thank-you mails sent')} className="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-bold">Send thank-you mails</button>
         </div>
         {report && <div className="text-sm text-slate-700 space-y-1">

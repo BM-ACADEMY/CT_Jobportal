@@ -13,6 +13,7 @@ router.get('/mine/:id', ...org, c.manageDrive);
 router.post('/mine/:id/check-in', ...org, c.checkIn);
 router.patch('/mine/:id/registrations/:regId', ...org, c.updateRegistration);
 router.post('/mine/:id/addons', ...org, c.requestAddon);
+router.post('/mine/:id/invite', ...org, rateLimit({ windowMs: 3600000, max: 10 }), c.inviteSeekers);
 router.post('/mine/:id/thanks', ...org, c.sendThanks);
 router.get('/mine/:id/report', ...org, c.report);
 

@@ -40,6 +40,7 @@ const walkInDriveSchema = new mongoose.Schema({
   reviewedAt: Date,
   nextToken: { type: Number, default: 1 },
   thankYouSentAt: Date,
+  invitedUsers: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] },
 }, { timestamps: true });
 
 walkInDriveSchema.index({ status: 1, date: 1 });

@@ -8,7 +8,7 @@ const wrapDrive = (o) => Object.assign(o, { save: async () => o });
 const wrapReg = (o) => Object.assign(o, { save: async () => o });
 const matches = (o, f) => Object.entries(f).every(([k, v]) => (v && typeof v === 'object' && !(v instanceof Date) ? (v.$ne !== undefined ? o[k] !== v.$ne : v.$gte !== undefined ? o[k] >= v.$gte : true) : String(o[k]) === String(v)));
 const driveStub = {
-  create: async (d) => { const o = wrapDrive({ _id: String(++seq).padStart(24, 'a'), status: 'pending_approval', paid: false, addons: [], nextToken: 1, createdAt: new Date(), ...d }); drives.push(o); return o; },
+  create: async (d) => { const o = wrapDrive({ _id: String(++seq).padStart(24, 'a'), status: 'pending_approval', paid: false, addons: [], invitedUsers: [], nextToken: 1, createdAt: new Date(), ...d }); drives.push(o); return o; },
   findOne: (f) => { const v = drives.find((d) => matches(d, f)) || null; const p = Promise.resolve(v); p.select = async () => v; return p; },
   findById: async (id) => drives.find((d) => d._id === id) || null,
   countDocuments: async (f) => drives.filter((d) => d.organiser === f.organiser && d.plan === f.plan && d.status !== 'rejected' && d.createdAt >= f.createdAt.$gte).length,
@@ -21,7 +21,8 @@ const regStub = {
   findOne: async (f) => regs.find((r) => matches(r, f)) || null,
   find: (f) => sel(regs.filter((r) => matches(r, f))),
 };
-const userStub = { findById: () => ({ select: async () => ({ name: 'Acme', email: 'org@x.in' }) }) };
+let seekerQuery = null; const seekers = [{ _id: 'u1', name: 'S1', email: 's1@x.in' }, { _id: 'u2', name: 'S2', email: 's2@x.in' }, { _id: 'u3', name: 'S3', email: 's3@x.in' }];
+const userStub = { find: (q) => { seekerQuery = q; return { select: () => ({ limit: async (n) => seekers.filter((x) => !q._id.$nin.includes(x._id)).slice(0, n) }) }; }, findById: () => ({ select: async () => ({ name: 'Acme', email: 'org@x.in' }) }) };
 const realLoad = Module._load;
 Module._load = function (request, ...rest) {
   if (request === '../models/WalkInDrive') return driveStub;
@@ -29,6 +30,7 @@ Module._load = function (request, ...rest) {
   if (request === '../models/User') return userStub;
   if (request === '../utils/sendEmail') return async (m) => { mails.push(m); };
   if (request === '../utils/emailTemplates') return { emailWrapper: (t, b) => `${t}|${b}` };
+  if (request === '../utils/lifecycleEmails') return { unsubscribeLink: (id) => `https://api/unsub/${id}` };
   if (request === 'qrcode') return { toBuffer: async () => Buffer.from('png') };
   return realLoad.call(this, request, ...rest);
 };
@@ -150,4 +152,21 @@ test('public page and QR work for a live drive', async () => {
   assert.equal(g.code, 200); assert.match(g.body.shareText, /Register free/); assert.ok(!JSON.stringify(g.body).includes('org1'));
   const q = await run(c.driveQr, { params: { slug: free.slug } });
   assert.equal(q.headers['Content-Type'], 'image/png');
+});
+
+test('invites: need a live drive, a city and invites left; skip unsubscribed; never the same person twice', async () => {
+  const free = drives[0];
+  assert.equal((await run(c.inviteSeekers, { params: { id: free._id } })).code, 403, 'free plan has no invites');
+  const plus = drives.find((x) => x.plan === 'plus');
+  plus.venue.city = '';
+  assert.equal((await run(c.inviteSeekers, { params: { id: plus._id } })).code, 400);
+  plus.venue.city = 'Villupuram (north)';
+  mails.length = 0;
+  const a = await run(c.inviteSeekers, { params: { id: plus._id } });
+  assert.equal(a.code, 200); assert.equal(a.body.sent, 3); assert.equal(plus.invitedUsers.length, 3);
+  assert.equal(seekerQuery['emailPrefs.marketingOptOut'].$ne, true);
+  assert.ok(seekerQuery['profile.location'].test('villupuram (north)'));
+  assert.ok(!seekerQuery['profile.location'].test('Chennai'));
+  assert.match(mails[0].html, /unsub/);
+  assert.equal((await run(c.inviteSeekers, { params: { id: plus._id } })).body.sent, 0);
 });

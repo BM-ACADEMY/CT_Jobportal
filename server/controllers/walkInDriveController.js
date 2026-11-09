@@ -7,6 +7,7 @@ const sendEmail = require('../utils/sendEmail');
 const { emailWrapper } = require('../utils/emailTemplates');
 const cfg = require('../config/driveConfig');
 const R = require('../utils/driveRules');
+const { unsubscribeLink } = require('../utils/lifecycleEmails');
 
 const HEX = /^[0-9a-fA-F]{24}$/;
 const siteUrl = () => (process.env.FRONTEND_URL || 'https://velaivaaipu.in').replace(/\/$/, '');
@@ -26,7 +27,14 @@ const slotCountsFor = async (driveId) => {
 const listDrives = async (req, res) => {
   try {
     const drives = await WalkInDrive.find({ status: 'published', date: { $gte: R.istDayStart() } }).sort({ date: 1 }).limit(60);
-    res.json(drives.map((d) => { const l = cfg.effectiveLimits(d); return { ...R.publicDrive(d, { limits: l }), registered: undefined, spotsLeft: undefined }; }));
+    const now = Date.now();
+    const out = drives.map((d) => {
+      const l = cfg.effectiveLimits(d);
+      // A home page spot shows in the last N days before the drive, labelled Sponsored.
+      const sponsored = l.homeSpotDays > 0 && new Date(d.date).getTime() - now <= l.homeSpotDays * 86400000;
+      return { ...R.publicDrive(d, { limits: l }), sponsored, registered: undefined, spotsLeft: undefined };
+    });
+    res.json([...out.filter((d) => d.sponsored), ...out.filter((d) => !d.sponsored)]);
   } catch (err) { return fail(res, err, 'list'); }
 };
 
@@ -128,7 +136,7 @@ const manageDrive = async (req, res) => {
   try {
     const d = await mine(req); if (!d) return res.status(404).json({ msg: 'Drive not found' });
     const regs = await DriveRegistration.find({ drive: d._id }).sort({ createdAt: 1 });
-    res.json({ drive: d, limits: cfg.effectiveLimits(d), quote: cfg.quote(d), url: driveUrl(d), shareText: R.shareText(d, driveUrl(d)), registrations: regs, summary: R.summarise(regs) });
+    res.json({ drive: d, limits: cfg.effectiveLimits(d), quote: cfg.quote(d), url: driveUrl(d), shareText: R.shareText(d, driveUrl(d)), registrations: regs, summary: R.summarise(regs), invitesLeft: Math.max(0, cfg.effectiveLimits(d).inviteLimit - d.invitedUsers.length) });
   } catch (err) { return fail(res, err, 'manage'); }
 };
 
@@ -181,6 +189,30 @@ const requestAddon = async (req, res) => {
     await d.save();
     res.status(201).json({ quote: cfg.quote(d), msg: 'Added. It starts working once we confirm your payment.' });
   } catch (err) { return fail(res, err, 'addon'); }
+};
+
+// Emails job seekers living in the drive's city, up to the plan's invite limit (plus paid add-ons). Never to people who unsubscribed.
+const inviteSeekers = async (req, res) => {
+  try {
+    const d = await mine(req); if (!d) return res.status(404).json({ msg: 'Drive not found' });
+    if (d.status !== 'published') return res.status(400).json({ msg: 'Only a live drive can send invites' });
+    const left = cfg.effectiveLimits(d).inviteLimit - d.invitedUsers.length;
+    if (left <= 0) return res.status(403).json({ msg: 'No invites left. Add the invites add-on to send more.' });
+    const city = R.str(d.venue?.city, 60);
+    if (!city) return res.status(400).json({ msg: 'Add the city of the venue to invite nearby job seekers' });
+    const people = await User.find({
+      role: 'jobseeker', isVerified: true, isAdminBlocked: { $ne: true }, 'emailPrefs.marketingOptOut': { $ne: true },
+      email: { $not: /\.portal$/i }, 'profile.location': new RegExp(city.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), _id: { $nin: d.invitedUsers },
+    }).select('name email').limit(left);
+    for (const u of people) {
+      const unsub = unsubscribeLink(u._id);
+      await mail(u.email, `Walk-in drive near you: ${d.title}`, 'A walk-in drive near you',
+        `<p>Hi ${esc(u.name)},</p><p><b>${esc(d.title)}</b> by ${esc(d.organiserName)} on ${new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', timeZone: 'Asia/Kolkata' })} in ${esc(city)}.</p><p><a href="${driveUrl(d)}">See details and register free</a></p>${unsub ? `<p style="font-size:11px"><a href="${unsub}">Unsubscribe from these mails</a></p>` : ''}`);
+      d.invitedUsers.push(u._id);
+    }
+    await d.save();
+    res.json({ sent: people.length, left: left - people.length });
+  } catch (err) { return fail(res, err, 'invite'); }
 };
 
 const sendThanks = async (req, res) => {
@@ -264,4 +296,4 @@ const markPaid = async (req, res) => {
   } catch (err) { return fail(res, err, 'mark paid'); }
 };
 
-module.exports = { listDrives, getDrive, driveQr, registerForDrive, getRegistration, registrationQr, createDrive, myDrives, manageDrive, checkIn, updateRegistration, requestAddon, sendThanks, report, adminListDrives, reviewDrive, markPaid };
+module.exports = { listDrives, getDrive, driveQr, registerForDrive, getRegistration, registrationQr, createDrive, myDrives, manageDrive, inviteSeekers, checkIn, updateRegistration, requestAddon, sendThanks, report, adminListDrives, reviewDrive, markPaid };
