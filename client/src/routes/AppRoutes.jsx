@@ -123,6 +123,7 @@ const AudienceLanding = page('AudienceLanding');
 const AdminServices = page('admin/Services');
 const AdminBrandLeads = page('admin/BrandLeads');
 const AdminGrowth = page('admin/Growth');
+const AdminActivity = page('admin/Activity');
 const CollegeInternships = page('college/Internships');
 const PublicDrives = page('drives/Drives');
 const PublicDriveDetail = page('drives/DriveDetail');
@@ -180,6 +181,7 @@ const AppRoutes = () => {
         <Route path="/drives" element={<PublicDrives />} />
         <Route path="/drives/:slug" element={<PublicDriveDetail />} />
         <Route path="/drive-pass/:code" element={<DrivePass />} />
+        <Route path="/admin/activity" element={<PrivateRoute roles={['admin']}><AdminActivity /></PrivateRoute>} />
         <Route path="/admin/growth" element={<PrivateRoute roles={['admin']}><AdminGrowth /></PrivateRoute>} />
         <Route path="/admin/brand-leads" element={<PrivateRoute roles={['admin']}><AdminBrandLeads /></PrivateRoute>} />
         <Route path="/admin/services" element={<PrivateRoute roles={['admin']}><AdminServices /></PrivateRoute>} />
