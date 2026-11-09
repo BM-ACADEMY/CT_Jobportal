@@ -9,6 +9,7 @@ const stub = (name, exports) => {
   require.cache[file] = { id: file, filename: file, loaded: true, exports };
 };
 stub('Payment', {});
+stub('WalkInDrive', {});
 stub('SpendEntry', {
   create: async (doc) => { created.push(doc); return { _id: 'e1', ...doc }; },
   findByIdAndUpdate: async (id, u) => { updates.push({ id, u }); return id === 'a'.repeat(24) ? { _id: id } : null; }
