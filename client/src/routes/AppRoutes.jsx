@@ -117,6 +117,7 @@ const AdminFeedback = page('admin/ManageFeedback');
 const AdminWalkInDrives = page('admin/WalkInDrivesAdmin');
 const AdminAdvisor = page('admin/Advisor');
 const InternshipsPage = page('Internships');
+const AdminServices = page('admin/Services');
 const CollegeInternships = page('college/Internships');
 const PublicDrives = page('drives/Drives');
 const PublicDriveDetail = page('drives/DriveDetail');
@@ -174,6 +175,7 @@ const AppRoutes = () => {
         <Route path="/drives" element={<PublicDrives />} />
         <Route path="/drives/:slug" element={<PublicDriveDetail />} />
         <Route path="/drive-pass/:code" element={<DrivePass />} />
+        <Route path="/admin/services" element={<PrivateRoute roles={['admin']}><AdminServices /></PrivateRoute>} />
         <Route path="/internships" element={<InternshipsPage />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/jobs/:location" element={<Jobs />} />
