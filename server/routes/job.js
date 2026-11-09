@@ -11,11 +11,10 @@ const { rateLimit } = require('../middlewares/rateLimit');
 const { requireTeamPermission } = require('../middlewares/teamPermission');
 const { JOB_LIST_KEYS } = require('../config/teamPermissions');
 const { aiDailyCap } = require('../middlewares/aiDailyCap');
-const { freeAiMonthly } = require('../middlewares/freeAiMonthly');
 
 // --- Jobseeker Routes ---
 router.get('/matching', verifyToken, authorizeRoles('jobseeker'), getMatchingJobs);
-router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), freeAiMonthly('job_match', { dedupeParam: 'jobId' }), aiDailyCap('match'), calculatePreMatch);
+router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), aiDailyCap('match'), calculatePreMatch);
 
 // --- Recruiter / Company Routes ---
 router.post('/', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), createJob);

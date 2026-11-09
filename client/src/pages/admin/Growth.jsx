@@ -55,12 +55,13 @@ const Growth = () => {
 
       {ai && (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
-          <h2 className="font-bold text-slate-800">Free AI given to candidates this month</h2>
-          <p className="text-sm text-slate-600">Counted as marketing spend. <b>{ai.total}</b> free uses so far{ai.ceiling > 0 ? <> of a ceiling of <b>{ai.ceiling}</b>. Free AI pauses when it is reached.</> : '. No ceiling is set.'}{ai.estimatedCost != null && <> Estimated cost <b>₹{ai.estimatedCost}</b> at ₹{ai.costPerCall} a use.</>} Resets {new Date(ai.resetsOn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}.</p>
+          <h2 className="font-bold text-slate-800">Free AI given to candidates</h2>
+          <p className="text-sm text-slate-600">Counted as marketing spend. Only the resume builder and resume checker are limited, and only for free-plan people. Job match checks and skill tests are not limited. {ai.limited ? <>Each free use comes back after <b>{ai.windowDays} days</b>.</> : <b>All limits are switched off.</b>}</p>
+          <p className="text-sm text-slate-700">Today: <b>{ai.today}</b> free uses{ai.ceiling > 0 ? <> of a daily ceiling of <b>{ai.ceiling}</b>. Free AI pauses when it is reached and opens again tomorrow.</> : '. No daily ceiling is set.'} This month: <b>{ai.month}</b>{ai.estimatedCost != null && <>, about <b>₹{ai.estimatedCost}</b> at ₹{ai.costPerCall} a use</>}.</p>
           <ul className="text-sm text-slate-700 space-y-1">
-            {ai.features.map((f) => <li key={f.kind}>{f.label}: <b>{f.used}</b> used, {f.perPerson} free per person a month</li>)}
+            {ai.features.map((f) => <li key={f.kind}>{f.label}: <b>{f.used}</b> used this month, {f.perPerson} free per person every {ai.windowDays} days</li>)}
           </ul>
-          <p className="text-xs text-slate-500">Paid plans are not counted. The limits are settings: FREE_AI_RESUME_BUILD, FREE_AI_RESUME_CHECK, FREE_AI_JOB_MATCH, FREE_AI_MONTHLY_CEILING and FREE_AI_COST_PER_CALL.</p>
+          <p className="text-xs text-slate-500">Settings: FREE_AI_RESUME_BUILD, FREE_AI_RESUME_CHECK, FREE_AI_WINDOW_DAYS, FREE_AI_DAILY_CEILING, FREE_AI_LIMITS (off switches everything off) and FREE_AI_COST_PER_CALL.</p>
         </div>
       )}
 

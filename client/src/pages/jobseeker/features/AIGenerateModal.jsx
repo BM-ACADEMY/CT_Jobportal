@@ -159,11 +159,15 @@ const AIGenerateModal = ({ onClose, onSuccess }) => {
             <div>
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">AI Resume Studio</h2>
               <p className="text-xs text-slate-500 font-medium">Generate or analyse professional resumes</p>
-              {free && !free.paid && (
-                <p className="text-xs text-emerald-700 font-semibold mt-1">
-                  Free this month: {free.features.resume_build.left} of {free.features.resume_build.limit} resume build, {free.features.resume_check.left} of {free.features.resume_check.limit} resume checks. Resets on {new Date(free.resetsOn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}.
-                </p>
-              )}
+              {free && !free.paid && free.limited && (() => {
+                const f = free.features; const when = (d) => new Date(d).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+                const line = (x, name) => (x.left > 0 ? `${x.left} ${name}` : `no ${name} now${x.nextAt ? ` (next one on ${when(x.nextAt)})` : ''}`);
+                return (
+                  <p className="text-xs text-emerald-700 font-semibold mt-1">
+                    Free for you now: {line(f.resume_build, 'resume builds')}, {line(f.resume_check, 'resume checks')}. A used one comes back after {free.windowDays} days.
+                  </p>
+                );
+              })()}
             </div>
           </div>
           <button onClick={onClose} className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-[12px] transition-colors text-slate-400 hover:text-slate-600">
