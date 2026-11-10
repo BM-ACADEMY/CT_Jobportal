@@ -150,7 +150,9 @@ const run = async () => {
     const existing = await Subscription.findOne(filter);
     if (existing) {
       const previousName = existing.name;
-      Object.assign(existing, plan);
+      // Keep the on/off switch the admin chose. Re-running this must not bring back a plan that was switched off.
+      const { isActive: _ignored, ...rest } = plan;
+      Object.assign(existing, rest);
       await existing.save();
       console.log(previousName === plan.name ? `Updated ${plan.name}` : `Updated ${plan.name} (was named "${previousName}")`);
     } else {

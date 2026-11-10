@@ -21,12 +21,19 @@ const recordPack = async (req, res) => {
     if (college.verificationStatus !== 'verified') return res.status(400).json({ msg: 'Verify the college before adding a pack.' });
     const plan = planPack(college, req.body?.packs);
     if (plan.error) return res.status(400).json({ msg: plan.error });
-    await CollegePackPayment.create({ college: college._id, packs: plan.packs, students: plan.students, amount: plan.total, note, by: String(req.user?.id || '') });
+    // Two taps or a retry a few seconds apart must not record the same pack twice.
+    const justNow = await CollegePackPayment.findOne({ college: college._id, createdAt: { $gte: new Date(Date.now() - 30000) } }).lean();
+    if (justNow) return res.status(409).json({ msg: 'A pack was just recorded for this college. Refresh the page to see it before adding another.' });
+    const payment = await CollegePackPayment.create({ college: college._id, packs: plan.packs, students: plan.students, amount: plan.total, note, by: String(req.user?.id || '') });
     // The college's open request is now dealt with, so its dashboard button comes back.
     await AdminRequest.updateMany({ type: 'student_pack', college: college._id, status: { $in: ['pending', 'approved'] } }, { $set: { status: 'completed' } }).catch(() => {});
     college.extraStudents = plan.extraStudents;
     college.extraUntil = plan.extraUntil;
-    await college.save();
+    try { await college.save(); } catch (saveErr) {
+      // Capacity was not added, so the payment record must not stay behind (a retry would count it twice).
+      await CollegePackPayment.deleteOne({ _id: payment._id }).catch(() => {});
+      throw saveErr;
+    }
     res.json({ msg: `Added ${plan.students} students.`, paid: plan.total, studentLimit: effectiveStudentLimit(college), extraStudents: college.extraStudents, extraUntil: college.extraUntil });
   } catch (e) { console.error('College pack:', e.message); res.status(500).json({ msg: 'Could not save' }); }
 };
