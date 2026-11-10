@@ -242,8 +242,8 @@ const fulfillRecurringPayment = async ({ user, plan, couponCode = '', subscripti
         const studentLimitFeature = plan.features?.find(f => f.name === 'Student Capacity');
         if (studentLimitFeature) {
           const newLimit = studentLimitFeature.value > 0 ? studentLimitFeature.value : STUDENT_LIMIT_UNLIMITED;
-          // A plan that does not change the tier (Campus Starter) only ever adds capacity: a college already on a
-          // bigger plan keeps its bigger limit instead of dropping to the Starter number.
+          // A plan that does not change the tier (the small student plan) only ever adds capacity: a college already on a
+          // bigger plan keeps its bigger limit instead of dropping to the smaller number.
           college.studentLimit = COLLEGE_TIER_MAP[plan.name] ? newLimit : Math.max(Number(college.studentLimit) || 0, newLimit);
         }
         college.razorpaySubscriptionId = subscriptionId;

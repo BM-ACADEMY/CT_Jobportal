@@ -43,7 +43,7 @@ test('if saving the college fails, the payment record is removed so a retry is n
   const b = await call(); assert.equal(b.code, 200);
   assert.equal(state.payments.length, 1);
 });
-test('a plan that does not change the tier (Campus Starter) never lowers a college\'s student limit', () => {
+test('a plan that does not change the tier never lowers a college\'s student limit', () => {
   const src = fs.readFileSync(__dirname + '/../utils/paymentFulfillment.js', 'utf8');
   assert.match(src, /COLLEGE_TIER_MAP\[plan\.name\] \? newLimit : Math\.max\(Number\(college\.studentLimit\) \|\| 0, newLimit\)/);
 });
