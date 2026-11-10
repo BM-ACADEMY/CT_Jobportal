@@ -563,11 +563,19 @@ const getUserProfile = async (req, res) => {
       employerCompanyName = employer?.name || null;
     }
 
+    // A small summary for the employer notices (verification banner, first-steps checklist). Employers only.
+    let companyStatus = null;
+    if (['company', 'recruiter'].includes(roleName) && user.company) {
+      const c = await Company.findById(user.company).select('is_verified logo logo_url description').lean();
+      if (c) companyStatus = { verified: !!c.is_verified, hasLogo: !!(c.logo || c.logo_url), hasDescription: !!String(c.description || '').trim() };
+    }
+
     res.json({
       id: user._id,
       name: user.name,
       email: user.email,
       role: roleName,
+      companyStatus,
       avatar: user.avatar,
       coverPic: user.coverPic,
       profile: user.profile,

@@ -1,3 +1,4 @@
+import VerificationBanner from '@/components/company/VerificationBanner';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -197,6 +198,7 @@ const PostJob = () => {
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
             <PageSOPBanner pageKey="postJob" />
+            <VerificationBanner />
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
                 <div className="flex items-center gap-4">

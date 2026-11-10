@@ -1,3 +1,4 @@
+import VerificationBanner from '@/components/company/VerificationBanner';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -164,6 +165,7 @@ const MyJobs = () => {
     <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex-1 min-w-0 space-y-12">
       <PageSOPBanner pageKey="myJobs" />
+      <VerificationBanner />
       
       {/* Premium Welcome Header */}
       <Card variant="borderless" styles={{ body: { padding: 0 } }} style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)', borderRadius: 0 }} className="relative shadow-sm overflow-hidden group">

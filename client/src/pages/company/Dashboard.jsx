@@ -8,6 +8,8 @@ const { Title, Text } = Typography;
 import { CardContent } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
+import VerificationBanner from '@/components/company/VerificationBanner';
+import FirstSteps from '@/components/company/FirstSteps';
 
 const CompanyDashboard = () => {
   const navigate = useNavigate();
@@ -88,6 +90,9 @@ const CompanyDashboard = () => {
           </div>
         </div>
       </Card>
+
+      <VerificationBanner />
+      <FirstSteps jobCount={stats.totalJobs} loading={loading} />
 
       {/* Stats - Premium Glassmorphic Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
