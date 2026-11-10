@@ -110,6 +110,46 @@ const faqs = [
 const rupees = (n) => `₹${Number(n).toLocaleString('en-IN')}`;
 const capacityOf = (plan) => (plan.features || []).find((f) => f.name === 'Student Capacity' && f.isActive)?.value;
 
+// Every feature of every plan in one table. Built from the plan data itself, so it never disagrees with the cards.
+const PlanCompare = ({ plans }) => {
+  const names = [];
+  plans.forEach((p) => (p.features || []).forEach((f) => { if (f.name !== 'Student Capacity' && !names.includes(f.name)) names.push(f.name); }));
+  if (plans.length < 2 || names.length === 0) return null;
+  const cell = (p, name) => {
+    const f = (p.features || []).find((x) => x.name === name);
+    if (!f || !f.isActive || f.value === false) return <span className="text-zinc-300" aria-label="Not included">—</span>;
+    if (f.value === true || f.value === undefined || f.value === null || f.value === '') return <CheckCircle2 size={16} className="text-[#059669] inline" aria-label="Included" />;
+    return <span className="text-xs font-semibold text-zinc-700">{typeof f.value === 'number' ? f.value.toLocaleString('en-IN') : String(f.value)}</span>;
+  };
+  return (
+    <details className="mt-8 rounded-2xl border border-zinc-200 bg-white">
+      <summary className="cursor-pointer px-5 py-4 text-sm font-bold text-zinc-900">Compare all features side by side</summary>
+      <div className="overflow-x-auto px-2 pb-4">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wider text-zinc-500">
+              <th className="px-3 py-2 font-bold">Feature</th>
+              {plans.map((p) => <th key={p._id} className="px-3 py-2 font-bold text-center">{p.name}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-zinc-100">
+              <td className="px-3 py-2 text-zinc-700">Students</td>
+              {plans.map((p) => { const c = capacityOf(p); return <td key={p._id} className="px-3 py-2 text-center text-xs font-semibold text-zinc-700">{c === undefined ? '—' : typeof c === 'number' ? c.toLocaleString('en-IN') : String(c)}</td>; })}
+            </tr>
+            {names.map((n) => (
+              <tr key={n} className="border-t border-zinc-100">
+                <td className="px-3 py-2 text-zinc-700">{n}</td>
+                {plans.map((p) => <td key={p._id} className="px-3 py-2 text-center">{cell(p, n)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+};
+
 const FaqItem = ({ item, open, onToggle, id }) => (
   <div className={`rounded-2xl border transition-colors ${open ? 'border-emerald-200 bg-emerald-50/50' : 'border-zinc-200 bg-white hover:border-emerald-200'}`}>
     <h3>
@@ -356,6 +396,7 @@ const ForColleges = () => {
                 })}
               </motion.div>
               <p className="text-center text-xs text-zinc-400 mt-6">Prices shown are what you will see at checkout. GST may apply.</p>
+              <PlanCompare plans={plans} />
             </div>
           </section>
         )}

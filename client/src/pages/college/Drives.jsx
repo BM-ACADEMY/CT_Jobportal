@@ -538,8 +538,17 @@ const Drives = () => {
               <input value={form.departments} onChange={e => setForm(p => ({ ...p, departments: e.target.value }))} placeholder="e.g. BCA, B.Com, MBA, ECE (blank = all)" className={antInputClass} />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Min CGPA</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Min CGPA (out of 10)</label>
               <input type="number" step="0.1" value={form.minCGPA} onChange={e => setForm(p => ({ ...p, minCGPA: e.target.value }))} placeholder="e.g. 6.5" className={antInputClass} />
+              <div className="mt-1.5 flex items-center gap-2 text-[11px] text-slate-500">
+                <span>Company says a percentage?</span>
+                <input
+                  type="number" min="0" max="100" placeholder="e.g. 60" aria-label="Minimum percentage"
+                  onChange={e => { const v = parseFloat(e.target.value); if (v > 0 && v <= 100) setForm(p => ({ ...p, minCGPA: (Math.round((v / 9.5) * 10) / 10).toString() })); }}
+                  className="w-16 h-7 px-2 text-xs border border-[#d9d9d9] rounded-none outline-none"
+                />
+                <span>% fills the CGPA above (percentage ÷ 9.5, the usual rule; check your university)</span>
+              </div>
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Max Arrears</label>

@@ -2364,6 +2364,7 @@ const generatePrincipalPasskey = async (req, res) => {
 //          The link alone is not sufficient — an incorrect/missing/expired code is Unauthorized.
 // @route   POST /api/college/public/principal-report/:passkey
 const { checkPrincipalCode, tryPrincipalAccess } = require('../utils/principalCode');
+const { sendReportAgain } = require('../utils/reportEmail');
 const getPrincipalExecutiveReport = async (req, res) => {
   try {
     const { code } = req.body;
@@ -2695,7 +2696,7 @@ const generatePlacementReportForCollege = async (college) => {
       email,
       subject: `[Velaivaaipu] ${college.name} Placement Report — ${periodLabel}`,
       html
-    }))).then(() => { report.sentToPrincipal = true; report.save(); }).catch(() => {});
+    }))).then(() => { report.sentToPrincipal = true; report.sentAt = new Date(); report.save(); }).catch(() => {});
   }
 
   const tpoUserId = college.tpoUser?._id || college.tpoUser;
@@ -2716,6 +2717,25 @@ const generatePlacementReportForCollege = async (college) => {
   }
 
   return report;
+};
+
+// @desc    One tap: email an existing report again to the principal and the other report recipients.
+// @route   POST /api/college/reports/:id/send
+const sendPlacementReport = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(String(req.params.id || ''))) return res.status(404).json({ msg: 'Report not found' });
+    const college = await getCollegeForTPO(req.user.id);
+    const report = await CollegePlacementReport.findOne({ _id: req.params.id, college: college._id });
+    if (!report) return res.status(404).json({ msg: 'Report not found' });
+    const r = await sendReportAgain({ college, report, sendEmail, emailWrapper, frontendUrl: FRONTEND_URL });
+    if (!r.ok) return res.status(r.code).json({ msg: r.msg });
+    report.sentToPrincipal = true; report.sentAt = new Date(); await report.save();
+    res.json({ msg: `Report sent to ${r.sentTo.join(', ')}`, sentTo: r.sentTo, sentAt: report.sentAt });
+  } catch (err) {
+    if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
+    console.error('Send placement report error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
 };
 
 // @route   POST /api/college/reports/generate
@@ -3181,6 +3201,7 @@ module.exports = {
   generateMou,
   getPlacementReports,
   generatePlacementReport,
+  sendPlacementReport,
   generatePlacementReportForCollege,
   downloadSummaryReport,
   getMyCollegeStudent,
