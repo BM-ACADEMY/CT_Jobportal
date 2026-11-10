@@ -104,12 +104,15 @@ const Header = ({ toggleMobileSidebar }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Typewriter placeholder animation
-  const placeholders = role === 'admin' ? ["Search live jobs on the site..."] : [
+  // The box searches jobs (Enter opens the jobs page), so every hint must say jobs, never drives or reports.
+  const placeholders = role === 'admin' ? ["Search live jobs on the site..."] : role === 'college' ? [
+    "Search jobs for your students...",
+    "Find companies hiring freshers...",
+    "Search by job title or keyword..."
+  ] : [
     "Identify roles, companies or skillsets...",
     "Search jobs by title or keyword...",
-    "Search for top organizations...",
-    "Search campus drives...",
-    "Explore placement reports & tools..."
+    "Search for top organizations..."
   ];
   const [placeholderText, setPlaceholderText] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
