@@ -11,17 +11,23 @@ const needsCheck = (p, now) =>
 /**
  * @param {object} razorpay  Razorpay client (has refunds.fetch)
  * @param {Array}  payments  Payment documents (Mongoose docs with save())
+ * onChange(payment, newStatus, oldStatus) is called once for each refund whose Razorpay status changed (optional).
  * Updates the documents in place and saves the ones that changed. Never throws: Razorpay being slow must not break the page.
  */
-const syncRefundStatuses = async (razorpay, payments, now = Date.now()) => {
+const syncRefundStatuses = async (razorpay, payments, now = Date.now(), onChange) => {
   const due = payments.filter((p) => needsCheck(p, now)).slice(0, MAX_PER_CALL);
   for (const p of due) {
     try {
       const refund = await razorpay.refunds.fetch(p.razorpay_refund_id);
       const status = String(refund?.status || '').toLowerCase();
+      const old = p.refundGatewayStatus || '';
       if (status) p.refundGatewayStatus = status;
       p.refundStatusCheckedAt = new Date(now);
       await p.save();
+      // Tell the caller when Razorpay's status changed, so the buyer (and, if it failed, the admin) can be emailed once.
+      if (onChange && status && status !== old) {
+        try { await onChange(p, status, old); } catch (e) { console.error('Refund status mail failed for', String(p._id), e.message); }
+      }
     } catch (err) {
       console.error('Refund status check failed for', String(p._id), err?.error?.description || err?.message || err);
     }

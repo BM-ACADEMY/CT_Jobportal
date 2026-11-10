@@ -449,7 +449,29 @@ const getPaymentHistory = async (req, res) => {
       .sort({ createdAt: -1 });
 
     // Show the refund status exactly as Razorpay has it (pending, processed, failed).
-    await syncRefundStatuses(getRazorpay(), payments);
+    await syncRefundStatuses(getRazorpay(), payments, Date.now(), async (p, status) => {
+      const rupees = Number(p.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (status === 'processed') {
+        await notifyUser({
+          io: req.io, recipientId: p.user, title: 'Your refund was processed',
+          message: `Razorpay processed your refund of Rs ${rupees}. It can take a few working days to reach your bank.`,
+          emailBody: `<p>Razorpay has <strong>processed</strong> your refund of <strong>Rs ${rupees}</strong>. The money goes back to your original payment method and usually shows up within 5 to 7 working days, depending on your bank.</p>`,
+          type: 'refund_status', link: paymentHistoryLink(req.user.role), metadata: { paymentId: p._id, status: 'processed' }
+        });
+      } else if (status === 'failed') {
+        await notifyUser({
+          io: req.io, recipientId: p.user, title: 'Your refund could not be completed',
+          message: 'Razorpay could not complete your refund. Our team will contact you.',
+          emailBody: `<p>Razorpay could not complete your refund of <strong>Rs ${rupees}</strong>. Our team has been told and will contact you. You can also reply to this email.</p>`,
+          type: 'refund_status', link: paymentHistoryLink(req.user.role), metadata: { paymentId: p._id, status: 'failed' }
+        });
+        await notifyRoles({
+          io: req.io, roles: ['admin', 'subadmin'], title: 'A refund FAILED at Razorpay',
+          message: `The refund for payment ${p._id} (Rs ${rupees}) failed at Razorpay. Refund it in the Razorpay dashboard and contact the customer.`,
+          type: 'refund_failed', link: '/admin/subscriptions/refunds', metadata: { paymentId: p._id }
+        });
+      }
+    });
 
     res.json(payments);
   } catch (err) {
@@ -480,6 +502,7 @@ const cancelSubscription = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate('role');
     const userRole = user?.role?.name || 'jobseeker';
+    const cancelledPlanName = user?.subscriptionDetails?.name || 'paid';
 
     const freePlan = await Subscription.findOne({ price: 0, isActive: true, role: userRole });
     if (!freePlan) {
@@ -514,6 +537,28 @@ const cancelSubscription = async (req, res) => {
     await user.save();
 
     await reconcileTeamSeats(user, freePlan).catch(err => console.error('Seat Reconciliation Error:', err.message));
+
+    // Tell the admin, and confirm to the person what cancelling does and does not do.
+    notifyRoles({
+      io: req.io,
+      roles: ['admin', 'subadmin'],
+      title: 'Plan cancelled by user',
+      message: `${user.name || 'A user'} (${user.email}) cancelled the ${cancelledPlanName} plan and moved to Free. No refund was given.`,
+      type: 'plan_cancelled',
+      link: '/admin/subscriptions/buyers',
+      metadata: { userId: user._id }
+    }).catch(err => console.error('Plan cancel admin notification failed:', err.message));
+    notifyUser({
+      io: req.io,
+      recipientId: user._id,
+      title: 'Your plan was cancelled',
+      message: `Your ${cancelledPlanName} plan was cancelled and you are now on the Free plan.`,
+      emailSubject: 'Your Velaivaaipu plan was cancelled',
+      emailBody: `<p>You cancelled your <strong>${String(cancelledPlanName).replace(/[<>&"]/g, '')}</strong> plan, and you are now on the Free plan.</p><p><strong>Cancelling does not refund your payment.</strong> If you want a refund, request it from Payment History within 10 days of the payment date.</p>`,
+      type: 'plan_cancelled_self',
+      link: paymentHistoryLink(userRole),
+      metadata: { userId: user._id }
+    }).catch(err => console.error('Plan cancel user notification failed:', err.message));
 
     res.json({ success: true, msg: 'Subscription cancelled. You are now on the Free plan.' });
   } catch (err) {
