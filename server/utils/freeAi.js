@@ -103,4 +103,14 @@ const messages = {
   paused: (nextAt) => `Free AI has reached its limit for today because many people used it. It opens again on ${when(nextAt)}. Everything else on the site still works, and paid plans are not affected.`,
 };
 
-module.exports = { factorFrom, effectiveLimit, factorFor, KINDS, limitsOn, allowanceFor, windowMs, ceilingFrom, dayKey, monthKey, tomorrow, when, isPaid, peek, takeFree, refundFree, messages };
+// A person on the Free plan whom the admin gave extra benefits (a personal copy of the plan, see adminUserPlanController)
+// is not limited on that tool. Only an explicit grant counts: AI resume review switched on, or more than the one
+// free resume. A resume count of 0 is NOT read as "unlimited" here, because a plan row that never set it also shows 0.
+const isGranted = (plan, expiry, kind, now = new Date()) => {
+  if (!plan || (expiry && new Date(expiry) <= now)) return false;
+  if (kind === 'resume_check') return plan.hasAiResumeReview === true;
+  if (kind === 'resume_build') return plan.hasResumeBuilder === true && Number(plan.resumeBuilderCount) > 1;
+  return false;
+};
+
+module.exports = { isGranted, factorFrom, effectiveLimit, factorFor, KINDS, limitsOn, allowanceFor, windowMs, ceilingFrom, dayKey, monthKey, tomorrow, when, isPaid, peek, takeFree, refundFree, messages };

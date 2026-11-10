@@ -1,4 +1,4 @@
-const { takeFree, refundFree, isPaid, limitsOn, messages } = require('../utils/freeAi');
+const { takeFree, refundFree, isPaid, isGranted, limitsOn, messages } = require('../utils/freeAi');
 
 // Put after verifyToken, on the two resume tools only. Paid plans pass without counting. If the counter store fails,
 // the request is allowed (the daily safety limit and the AI provider's spend limit are still there).
@@ -9,7 +9,7 @@ const freeAiLimit = (kind) => async (req, res, next) => {
     const User = require('../models/User');
     const Usage = require('../models/AssistantUsage');
     const u = await User.findById(userId).select('subscription subscriptionExpiry subscriptionDetails').populate('subscription');
-    if (isPaid(u?.subscription, u?.subscriptionExpiry)) return next();
+    if (isPaid(u?.subscription, u?.subscriptionExpiry) || isGranted(u?.subscription, u?.subscriptionExpiry, kind)) return next();
     const r = await takeFree(Usage, { userId, kind });
     if (r.ok) {
       // A request that fails (bad file, the daily safety stop) did no AI work, so the use is given back.

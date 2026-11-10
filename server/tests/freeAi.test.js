@@ -122,3 +122,17 @@ test('parallel requests from one person cannot go past the limit', async () => {
   assert.ok(rows.length <= 1, 'no extra uses left behind');
   assert.equal(u.m.get(`fa:day:${dayKey(T0)}`).count, rows.length, 'the daily counter matches');
 });
+
+test('admin-granted benefits lift the free limit on that tool only', () => {
+  const { isGranted } = require('../utils/freeAi');
+  const free = { price: 0, hasResumeBuilder: true, resumeBuilderCount: 1, hasAiResumeReview: false };
+  assert.strictEqual(isGranted(free, null, 'resume_check'), false);
+  assert.strictEqual(isGranted(free, null, 'resume_build'), false);
+  assert.strictEqual(isGranted({ ...free, hasAiResumeReview: true }, null, 'resume_check'), true);
+  assert.strictEqual(isGranted({ ...free, hasAiResumeReview: true }, null, 'resume_build'), false, 'review grant does not open the builder');
+  assert.strictEqual(isGranted({ ...free, resumeBuilderCount: 5 }, null, 'resume_build'), true);
+  assert.strictEqual(isGranted({ ...free, resumeBuilderCount: 0 }, null, 'resume_build'), false, '0 is not read as unlimited');
+  assert.strictEqual(isGranted({ ...free, hasAiResumeReview: true }, new Date(Date.now() - 1000), 'resume_check'), false, 'expired grant');
+  assert.strictEqual(isGranted(null, null, 'resume_check'), false);
+  assert.strictEqual(isGranted({ ...free, hasAiResumeReview: true }, null, 'other'), false);
+});

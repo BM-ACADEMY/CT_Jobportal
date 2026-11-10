@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Usage = require('../models/AssistantUsage');
-const { KINDS, factorFor, effectiveLimit, limitsOn, allowanceFor, windowMs, ceilingFrom, dayKey, monthKey, tomorrow, isPaid, peek } = require('../utils/freeAi');
+const { KINDS, factorFor, effectiveLimit, limitsOn, allowanceFor, windowMs, ceilingFrom, dayKey, monthKey, tomorrow, isPaid, isGranted, peek } = require('../utils/freeAi');
 
 // GET /api/user/free-ai-status : what this person has left right now and when a used one comes back.
 const myStatus = async (req, res) => {
@@ -8,7 +8,7 @@ const myStatus = async (req, res) => {
     const u = await User.findById(req.user.id).select('subscription subscriptionExpiry subscriptionDetails').populate('subscription');
     const paid = isPaid(u?.subscription, u?.subscriptionExpiry);
     const features = {};
-    for (const k of Object.keys(KINDS)) { const p = await peek(Usage, { userId: req.user.id, kind: k }); features[k] = { label: KINDS[k].label, limit: p.limit, left: p.left, nextAt: p.nextAt }; }
+    for (const k of Object.keys(KINDS)) { const p = await peek(Usage, { userId: req.user.id, kind: k }); features[k] = { label: KINDS[k].label, limit: p.limit, left: p.left, nextAt: p.nextAt, unlimited: isGranted(u?.subscription, u?.subscriptionExpiry, k) }; }
     res.json({ paid, limited: limitsOn(), windowDays: windowMs() / 86400000, features });
   } catch (e) { console.error('Free AI status:', e.message); res.status(500).json({ msg: 'Could not load' }); }
 };
