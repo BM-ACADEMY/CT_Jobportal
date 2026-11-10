@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { checkHealth } = require('../utils/health');
+const { checkHealth, checkHealthCached, resetHealthCache } = require('../utils/health');
 
 const conn = (readyState, ping) => ({ connection: { readyState, db: { admin: () => ({ ping }) } } });
 const fixed = () => new Date('2026-11-09T00:00:00Z');
@@ -20,4 +20,16 @@ test('down when not connected, when the ping fails and when it hangs', async () 
 test('the answer carries no secrets or counts', async () => {
   const r = await checkHealth(conn(1, async () => ({})), { now: fixed });
   assert.deepEqual(Object.keys(r).sort(), ['db', 'ok', 'time']);
+});
+
+test('repeated calls within a few seconds ask the database only once', async () => {
+  resetHealthCache();
+  let pings = 0; let t = 1000;
+  const m = conn(1, async () => { pings += 1; return {}; });
+  await checkHealthCached(m, { now: () => t });
+  await checkHealthCached(m, { now: () => t + 1000 });
+  assert.equal(pings, 1);
+  await checkHealthCached(m, { now: () => t + 6000 });
+  assert.equal(pings, 2, 'asks again after the cache time');
+  resetHealthCache();
 });

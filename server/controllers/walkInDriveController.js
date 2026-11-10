@@ -153,10 +153,16 @@ const checkIn = async (req, res) => {
     const reg = await DriveRegistration.findOne(code ? { drive: d._id, code } : { drive: d._id, phone });
     if (!reg) return res.status(404).json({ msg: 'No registration found' });
     if (reg.status !== 'registered') return res.json({ already: true, name: reg.name, tokenNumber: reg.tokenNumber, status: reg.status });
+    // Claim the check-in first, in one step. If two desks scan the same person together, only one wins and only one token is used.
+    const claimed = await DriveRegistration.findOneAndUpdate({ _id: reg._id, status: 'registered' }, { $set: { status: 'checked_in', checkedInAt: new Date() } }, { new: true });
+    if (!claimed) {
+      const now = await DriveRegistration.findById(reg._id).lean();
+      return res.json({ already: true, name: reg.name, tokenNumber: now?.tokenNumber, status: now?.status });
+    }
     const upd = await WalkInDrive.findByIdAndUpdate(d._id, { $inc: { nextToken: 1 } }, { new: false });
-    reg.tokenNumber = upd.nextToken; reg.status = 'checked_in'; reg.checkedInAt = new Date();
-    await reg.save();
-    res.json({ name: reg.name, tokenNumber: reg.tokenNumber, slot: reg.slot, status: reg.status, limits: undefined });
+    claimed.tokenNumber = upd.nextToken;
+    await claimed.save();
+    res.json({ name: claimed.name, tokenNumber: claimed.tokenNumber, slot: claimed.slot, status: claimed.status, limits: undefined });
   } catch (err) { return fail(res, err, 'check-in'); }
 };
 

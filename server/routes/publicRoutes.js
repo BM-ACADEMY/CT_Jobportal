@@ -430,8 +430,14 @@ router.post('/contact', rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 
 
     // Send enquiry to n8n
     try {
+      // Only the known fields go out. Never forward the raw body: anyone can add extra fields to it.
+      const clip = (v, n) => String(v ?? '').slice(0, n);
       const webhookData = {
-        ...req.body,
+        name: clip(name, 120),
+        email: clip(email, 200),
+        subject: clip(subject, 200),
+        message: clip(message, 4000),
+        segment: clip(req.body.segment, 40),
         website: 'velaivaaipu.in',
         form: 'Contact Form'
       };

@@ -19,6 +19,8 @@ const sel = (arr) => { const p = Promise.resolve(arr); p.select = async () => ar
 const regStub = {
   create: async (d) => { if (regs.some((r) => r.code === d.code)) { const e = new Error('dup code'); e.code = 11000; throw e; } const o = wrapReg({ _id: String(++seq).padStart(24, 'b'), status: 'registered', ...d }); regs.push(o); return o; },
   findOne: async (f) => regs.find((r) => matches(r, f)) || null,
+  findOneAndUpdate: async (f, u) => { const r = regs.find((x) => matches(x, f)); if (!r) return null; Object.assign(r, u.$set); return r; },
+  findById: (id) => ({ lean: async () => regs.find((r) => r._id === id) || null }),
   find: (f) => sel(regs.filter((r) => matches(r, f))),
 };
 let seekerQuery = null; const seekers = [{ _id: 'u1', name: 'S1', email: 's1@x.in' }, { _id: 'u2', name: 'S2', email: 's2@x.in' }, { _id: 'u3', name: 'S3', email: 's3@x.in' }];
@@ -169,4 +171,18 @@ test('invites: need a live drive, a city and invites left; skip unsubscribed; ne
   assert.ok(!seekerQuery['profile.location'].test('Chennai'));
   assert.match(mails[0].html, /unsub/);
   assert.equal((await run(c.inviteSeekers, { params: { id: plus._id } })).body.sent, 0);
+});
+
+test('two desks checking in the same person at once use only one token number', async () => {
+  const d = drives[0];
+  const reg = await regStub.create({ drive: d._id, name: 'Race', phone: '9000000099', code: 'RACECODE', slot: '10 AM' });
+  const before = d.nextToken;
+  const [a, b] = await Promise.all([
+    run(c.checkIn, { params: { id: d._id }, body: { phone: '9000000099' } }),
+    run(c.checkIn, { params: { id: d._id }, body: { phone: '9000000099' } }),
+  ]);
+  const wins = [a, b].filter((r) => !r.body.already);
+  assert.equal(wins.length, 1, 'only one desk gets a new token');
+  assert.equal(d.nextToken, before + 1, 'only one number is used');
+  assert.equal(reg.status, 'checked_in');
 });

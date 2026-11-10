@@ -2363,24 +2363,14 @@ const generatePrincipalPasskey = async (req, res) => {
 // @desc    Verify the 4-digit access code and, if it matches, return the executive report.
 //          The link alone is not sufficient — an incorrect/missing/expired code is Unauthorized.
 // @route   POST /api/college/public/principal-report/:passkey
-const { checkPrincipalCode } = require('../utils/principalCode');
+const { checkPrincipalCode, tryPrincipalAccess } = require('../utils/principalCode');
 const getPrincipalExecutiveReport = async (req, res) => {
   try {
     const { code } = req.body;
-    const college = await College.findOne({ principalPasskey: req.params.passkey });
-    if (!college) return res.status(404).json({ msg: 'Invalid executive link' });
-
-    const verdict = checkPrincipalCode({ code: college.principalAccessCode, expiry: college.principalAccessCodeExpiry, attempts: college.principalAccessAttempts || 0 }, code);
-    if (verdict === 'expired') {
-      return res.status(401).json({ msg: 'This access code has expired. Ask the TPO to share a new one.' });
-    }
-    if (verdict === 'locked') {
-      return res.status(401).json({ msg: 'Too many wrong codes. Ask the TPO to share a new code.' });
-    }
-    if (verdict !== 'ok') {
-      await College.updateOne({ _id: college._id }, { $inc: { principalAccessAttempts: 1 } });
-      return res.status(401).json({ msg: 'Unauthorized: incorrect access code.' });
-    }
+    // One answer for every failure (unknown link, expired code, locked, wrong code), so nobody can tell which part was right.
+    const refuse = () => res.status(401).json({ msg: 'This link or code is not valid, or the code has expired. Ask the TPO to share them again.' });
+    const college = await tryPrincipalAccess(College, req.params.passkey, code);
+    if (!college) return refuse();
 
     const totalStudents = await CollegeStudent.countDocuments({ college: college._id });
     const statusCounts = await CollegeStudent.aggregate([

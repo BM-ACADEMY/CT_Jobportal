@@ -77,6 +77,13 @@ const takeFree = async (Usage, { userId, kind, now = new Date(), env = process.e
   const rowKey = `${prefix(kind, userId)}${ts}-${Math.random().toString(36).slice(2, 6)}`;
   await Usage.create({ key: rowKey, count: 1, expireAt: new Date(ts + windowMs(env) + DAY) });
   await Usage.updateOne({ key: `fa:f:${kind}:${monthKey(now)}` }, { $inc: { count: 1 }, $setOnInsert: { expireAt: new Date(ts + 40 * DAY) } }, { upsert: true }).catch(() => {});
+  // Insert first, then count again: when several requests arrive at once, only the first few stay inside the limit.
+  const after = await peek(Usage, { userId, kind, now, env });
+  if (after.used > after.limit) {
+    await refundFree(Usage, { rowKey, dayKeyUsed: dayKey(now), kind, now });
+    const q = await peek(Usage, { userId, kind, now, env });
+    return { ok: false, reason: 'person', limit: q.limit, nextAt: q.limit > 0 ? q.nextAt : null };
+  }
   return { ok: true, left: p.left - 1, limit: p.limit, rowKey, dayKeyUsed: dayKey(now) };
 };
 

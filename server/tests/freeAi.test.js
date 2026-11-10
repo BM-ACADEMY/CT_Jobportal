@@ -111,3 +111,14 @@ test('a failed request gives its free use back, once, and the day counter too', 
   assert.equal(U.m.get(`fa:day:${dayKey(T0)}`).count, 0);
   assert.equal((await peek(U, { userId: 'u1', kind: 'resume_check', now: T0, env })).left, 10);
 });
+
+test('parallel requests from one person cannot go past the limit', async () => {
+  const u = fakeUsage(); const env = { FREE_AI_RESUME_BUILD: '1' };
+  // The stand-in insert is instant, so every parallel call sees the same count first; the re-count must still stop the extras.
+  const results = await Promise.all(Array.from({ length: 6 }, () => takeFree(u, { userId: 'p1', kind: 'resume_build', now: T0, env })));
+  const ok = results.filter((r) => r.ok).length;
+  assert.ok(ok <= 1, `at most 1 allowed, got ${ok}`);
+  const rows = [...u.m.keys()].filter((k) => k.startsWith('fa:r:resume_build:p1'));
+  assert.ok(rows.length <= 1, 'no extra uses left behind');
+  assert.equal(u.m.get(`fa:day:${dayKey(T0)}`).count, rows.length, 'the daily counter matches');
+});

@@ -15,4 +15,19 @@ const checkPrincipalCode = ({ code, expiry, attempts = 0 }, entered, now = new D
   return same ? 'ok' : 'wrong';
 };
 
-module.exports = { checkPrincipalCode, MAX_WRONG_TRIES };
+// Counts the try in one atomic step (so parallel guesses cannot slip past the limit), then checks the code.
+// Returns the college when the code is right, otherwise null. The caller gives one answer for every failure.
+const tryPrincipalAccess = async (College, passkey, code, now = new Date()) => {
+  const college = await College.findOneAndUpdate(
+    { principalPasskey: String(passkey || ''), principalAccessAttempts: { $lt: MAX_WRONG_TRIES } },
+    { $inc: { principalAccessAttempts: 1 } },
+    { new: false }
+  );
+  if (!college) return null;
+  const verdict = checkPrincipalCode({ code: college.principalAccessCode, expiry: college.principalAccessCodeExpiry, attempts: college.principalAccessAttempts || 0 }, code, now);
+  if (verdict !== 'ok') return null;
+  await College.updateOne({ _id: college._id }, { $set: { principalAccessAttempts: 0 } });
+  return college;
+};
+
+module.exports = { checkPrincipalCode, tryPrincipalAccess, MAX_WRONG_TRIES };
