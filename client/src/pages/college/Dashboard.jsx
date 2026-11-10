@@ -186,7 +186,7 @@ const CollegeDashboard = () => {
         <p style={{ marginBottom: 8 }}>Each pack adds {pack?.students} students for a year. Price: ₹{pack?.price?.toLocaleString('en-IN')} + 18% GST per pack. You can have up to {pack?.maxPacks} packs.</p>
         <p style={{ marginBottom: 4 }}>How many packs?</p>
         <select value={packN} onChange={e => setPackN(Number(e.target.value))} style={{ border: '1px solid #d9d9d9', padding: '6px 10px', marginBottom: 12 }}>
-          {Array.from({ length: Math.max(1, (pack?.maxPacks || 3) - (pack?.havePacks || 0)) }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n} pack{n > 1 ? 's' : ''}: ₹{(n * (pack?.price || 0) * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })} with GST</option>)}
+          {Array.from({ length: Math.max(1, (pack?.maxPacks || 2) - (pack?.havePacks || 0)) }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n} pack{n > 1 ? 's' : ''}: ₹{(n * (pack?.price || 0) * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })} with GST</option>)}
         </select>
         <Input.TextArea value={packNote} onChange={e => setPackNote(e.target.value)} maxLength={300} rows={2} placeholder="Anything we should know (optional)" />
         <p style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Our team will contact you within 24 hours with payment details. The students are added once payment is confirmed.</p>
@@ -236,22 +236,41 @@ const CollegeDashboard = () => {
         const pct = (used / limit) * 100;
         if (pct < 70) return null;
         const full = pct >= 100;
+        const goQuotes = () => { const el = document.getElementById('plan-quotes'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+        const askCall = async (interest) => {
+          try {
+            const r = await axios.post(`${API}/college/me/upgrade-call`, { interest }, { headers: { Authorization: `Bearer ${token}` } });
+            toast.success(r.data?.msg || 'Request sent');
+          } catch (err) { toast.error(err.response?.data?.msg || 'Could not send the request'); }
+        };
+        const optionClass = 'text-left border border-slate-200 bg-white px-3 py-3 cursor-pointer hover:border-[#1b496d]';
         return (
-          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border px-4 py-3 ${full ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'}`} role="status">
-            <div className="text-sm text-slate-800">
-              <p className="m-0 font-bold">{full ? 'Your student limit is full' : 'Your student limit is filling up'}: {used} of {limit} students</p>
-              <p className="m-0 mt-1 text-xs text-slate-600">{full ? 'New students cannot join or be uploaded until you add more room.' : 'Add room before the last students are turned away.'} Our team will also call you to help.</p>
+          <div className={`border px-4 py-4 ${full ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'}`} role="status">
+            <p className="m-0 text-sm font-bold text-slate-800">{full ? 'Your student limit is full' : 'Your student limit is filling up'}: {used} of {limit} students</p>
+            <p className="m-0 mt-1 text-xs text-slate-600">{full ? 'New students cannot join or be uploaded until you add more room.' : 'Add room before the last students are turned away.'} Choose what suits your college:</p>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {pack?.canRequest && (
+                <button type="button" className={optionClass} onClick={() => setPackOpen(true)}>
+                  <span className="block text-sm font-bold text-slate-800">Add a student pack</span>
+                  <span className="block text-xs text-slate-500">+{pack.students} students for a year, ₹{Number(pack.price).toLocaleString('en-IN')} + GST. Best for a small gap.</span>
+                </button>
+              )}
+              <button type="button" className={optionClass} onClick={goQuotes}>
+                <span className="block text-sm font-bold text-slate-800">Move to a bigger plan</span>
+                <span className="block text-xs text-slate-500">More students, reports and drive invites. Get a quote for your principal.</span>
+              </button>
+              <button type="button" className={optionClass} onClick={() => askCall(pack?.canRequest ? 'unsure' : 'plan')}>
+                <span className="block text-sm font-bold text-slate-800">Ask us to call you</span>
+                <span className="block text-xs text-slate-500">Not sure which is right? Our team will call within 24 hours.</span>
+              </button>
             </div>
-            {pack?.canRequest && (
-              <Button onClick={() => setPackOpen(true)} style={{ borderRadius: 0, backgroundColor: '#1b496d', borderColor: '#1b496d', color: '#fff', fontWeight: 'bold', fontSize: 11 }}>Add a student pack</Button>
-            )}
           </div>
         );
       })()}
 
       {(totalStudents || 0) < 50 && <StudentKit collegeName={college?.name} />}
 
-      <PlanQuotes />
+      <div id="plan-quotes"><PlanQuotes /></div>
 
       {/* Secondary Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

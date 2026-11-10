@@ -209,7 +209,7 @@ const CollegeKycDetails = () => {
                     Add {250 * packs} students (₹{(price * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })} received)
                   </Button>
                 </div>
-              ) : <p className="text-sm text-amber-700">This college has all 3 packs. A bigger plan is better value now.</p>}
+              ) : <p className="text-sm text-amber-700">This college has all its packs. A bigger plan is better value now.</p>}
             </div>
           );
         })()}

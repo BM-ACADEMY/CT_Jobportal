@@ -19,11 +19,12 @@ test('one pack costs 4,999 plus 18% GST and adds 250 students for a year', () =>
   assert.deepEqual([p.students, p.base, p.total, p.extraStudents], [250, 4999, 5898.82, 250]);
   assert.equal(p.extraUntil.toISOString().slice(0, 10), '2027-11-20');
 });
-test('packs add up to 3 and no more; a lapsed pack no longer counts', () => {
-  const have2 = { studentLimit: 1000, extraStudents: 500, extraUntil: FUTURE };
-  assert.equal(planPack(have2, 1, NOW).extraStudents, 750);
-  assert.match(planPack(have2, 2, NOW).error, /at most 3/);
-  assert.equal(planPack({ studentLimit: 1000, extraStudents: 750, extraUntil: PAST }, 3, NOW).extraStudents, 750);
+test('packs add up to 2 and no more; a lapsed pack no longer counts', () => {
+  const have1 = { studentLimit: 1000, extraStudents: 250, extraUntil: FUTURE };
+  assert.equal(planPack(have1, 1, NOW).extraStudents, 500);
+  assert.match(planPack(have1, 2, NOW).error, /at most 2/);
+  assert.match(planPack({ studentLimit: 100 }, 3, NOW).error, /at most 2/);
+  assert.equal(planPack({ studentLimit: 1000, extraStudents: 500, extraUntil: PAST }, 2, NOW).extraStudents, 500);
 });
 test('bad quantities and unlimited colleges are refused', () => {
   for (const q of [0, -1, 1.5, 'x', undefined, null]) assert.ok(planPack({ studentLimit: 100 }, q, NOW).error, String(q));
@@ -44,7 +45,7 @@ test('a college can ask for packs within its allowance, one request at a time', 
   const c = { studentLimit: 100 };
   assert.deepEqual(checkRequest(c, 2, false, NOW), { packs: 2, students: 500, total: 11797.64 });
   assert.match(checkRequest(c, 1, true, NOW).error, /already have a pack request/);
-  assert.match(checkRequest({ studentLimit: 1000, extraStudents: 500, extraUntil: FUTURE }, 2, false, NOW).error, /at most 3/);
+  assert.match(checkRequest({ studentLimit: 1000, extraStudents: 250, extraUntil: FUTURE }, 2, false, NOW).error, /at most 2/);
   assert.ok(checkRequest(c, 0, false, NOW).error);
 });
 test('the college gets a receipt in its own words and no review ask', async () => {

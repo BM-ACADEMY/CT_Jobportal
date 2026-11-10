@@ -67,6 +67,29 @@ const myPackStatus = async (req, res) => {
   } catch (e) { res.status(500).json({ msg: 'Could not load' }); }
 };
 
+const INTERESTS = { pack: 'a student pack', plan: 'a bigger plan', unsure: 'not sure yet, wants advice' };
+
+// POST /api/college/me/upgrade-call {interest, note}  → "please call me about more students" (one open request at a time)
+const requestUpgradeCall = async (req, res) => {
+  try {
+    const college = await College.findOne({ $or: [{ tpoUser: req.user.id }, { teamMembers: { $elemMatch: { user: req.user.id, isActive: true } } }] });
+    if (!college) return res.status(404).json({ msg: 'No college linked to your account.' });
+    const open = await AdminRequest.exists({ type: 'college_upgrade', college: college._id, status: { $in: ['pending', 'approved'] } });
+    const interest = INTERESTS[req.body?.interest] ? req.body.interest : 'unsure';
+    const note = String(req.body?.note || '').trim().slice(0, 300);
+    if (open) return res.json({ msg: 'We already have your request. Our team will call you soon.' });
+    const user = await User.findById(req.user.id).select('name email phone');
+    await AdminRequest.create({
+      user: req.user.id, type: 'college_upgrade', college: college._id,
+      bookingName: user?.name, bookingEmail: user?.email, bookingPhone: user?.phone || college.collegePhone,
+      notes: `${college.name} asked for a call about more students. Interested in: ${INTERESTS[interest]}. ${note}`.trim()
+    });
+    notifyRoles({ io: req.io, roles: ['admin'], title: 'College asked for a call about more students', message: `${college.name} is interested in ${INTERESTS[interest]}.`, type: 'service_request', link: '/admin/requests' })
+      .catch((err) => console.error('Upgrade call alert failed:', err.message));
+    res.status(201).json({ msg: 'Thank you. Our team will call you within 24 hours.' });
+  } catch (e) { console.error('Upgrade call:', e.message); res.status(500).json({ msg: 'Could not send the request' }); }
+};
+
 const packInfo = (req, res) => res.json(PACK);
 
-module.exports = { recordPack, packInfo, requestPack, myPackStatus };
+module.exports = { recordPack, packInfo, requestPack, myPackStatus, requestUpgradeCall };
