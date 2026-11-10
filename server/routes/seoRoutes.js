@@ -3,6 +3,7 @@ const express = require('express');
 const Job = require('../models/Job');
 const Company = require('../models/Company');
 const BlogPost = require('../models/BlogPost');
+const { publicJobConditions, publicCompanyConditions, hideUnverified } = require('../utils/publicVisibility');
 const { buildJobResponse, buildSitemap, getShell, jobIdFromSlug } = require('../utils/seoPages');
 
 const router = express.Router();
@@ -18,7 +19,7 @@ router.get('/job/:slug', async (req, res) => {
     shell = await getShell();
     const id = jobIdFromSlug(req.params.slug);
     if (!id) return send(res, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60' }, body: shell }, 'shell-no-id');
-    const job = await Job.findById(id).populate('company', 'name logo website').lean();
+    const job = await Job.findById(id).populate('company', 'name logo website is_verified hiddenFromPublic').lean();
     return send(res, buildJobResponse({ slug: req.params.slug, job, shell }));
   } catch (err) {
     console.error('[SEO] job page failed, serving the plain app:', err.message);
@@ -31,9 +32,14 @@ router.get('/job/:slug', async (req, res) => {
 router.get('/sitemap.xml', async (req, res) => {
   try {
     const now = new Date();
+    // Same rules as the public lists: verified companies, jobs under 45 days (or renewed), nothing admin-hidden.
+    const strict = hideUnverified();
+    const companyDocs = await Company.find(strict ? publicCompanyConditions() : { hiddenFromPublic: true }).select('_id updatedAt').sort({ updatedAt: -1 }).limit(2000).lean();
+    const ids = companyDocs.map((c) => c._id);
+    const companyList = strict ? companyDocs : [];
     const [jobs, companies, posts] = await Promise.all([
-      Job.find({ status: 'active', $or: [{ validThrough: { $gte: now } }, { validThrough: null }] }).select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
-      Company.find({}).select('updatedAt').sort({ updatedAt: -1 }).limit(2000).lean(),
+      Job.find({ status: 'active', $and: [{ $or: [{ validThrough: { $gte: now } }, { validThrough: null }] }, ...publicJobConditions(strict ? { verifiedCompanyIds: ids } : { hiddenCompanyIds: ids })] }).select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
+      strict ? companyList : Company.find(publicCompanyConditions()).select('updatedAt').sort({ updatedAt: -1 }).limit(2000).lean(),
       BlogPost.find({ status: 'published', publishedAt: { $lte: now } }).select('slug updatedAt').sort({ publishedAt: -1 }).limit(1000).lean().catch(() => []),
     ]);
     res.set('Content-Type', 'application/xml; charset=utf-8').set('Cache-Control', 'public, s-maxage=900');

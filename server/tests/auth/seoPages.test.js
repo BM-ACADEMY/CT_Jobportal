@@ -6,7 +6,7 @@ const { buildJobResponse, buildSitemap, jobSlug, jobIdFromSlug, getShell, resetS
 
 const SHELL = '<!doctype html><html><head><meta name="description" content="old" /><meta property="og:title" content="old" /><link rel="canonical" href="https://velaivaaipu.in/" /><title>old</title></head><body><div id="root"></div></body></html>';
 const ID = 'a'.repeat(24);
-const job = { _id: ID, title: 'Telecaller <Exec> & "QA"', location: 'Puducherry', vacancies: 2, description: '<p>Call leads</p>', status: 'active', createdAt: '2026-11-01', validThrough: '2099-01-01', jobType: 'Full-time', company: { name: 'Acme', logo: '/uploads/logo.png' }, salary: { min: 300000, max: 500000 } };
+const job = { _id: ID, title: 'Telecaller <Exec> & "QA"', location: 'Puducherry', vacancies: 2, description: '<p>Call leads</p>', status: 'active', createdAt: '2026-11-01', validThrough: '2099-01-01', jobType: 'Full-time', company: { name: 'Acme', logo: '/uploads/logo.png', is_verified: true }, salary: { min: 300000, max: 500000 } };
 const slug = jobSlug(job);
 const run = (over = {}, s = slug) => buildJobResponse({ slug: s, job: { ...job, ...over }, shell: SHELL, now: new Date('2026-11-05') });
 

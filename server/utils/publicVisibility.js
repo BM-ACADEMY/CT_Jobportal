@@ -23,4 +23,19 @@ const publicJobConditions = ({ now = Date.now(), verifiedCompanyIds = null, hidd
 // Whole-company check used by the Companies page.
 const publicCompanyConditions = () => ({ hiddenFromPublic: { $ne: true }, ...(hideUnverified() ? { is_verified: true } : {}) });
 
-module.exports = { JOB_MAX_AGE_DAYS, hideUnverified, freshCutoff, publicJobConditions, publicCompanyConditions };
+// Same rules for one job already loaded (company populated with is_verified / hiddenFromPublic).
+// Used by the search-engine pages so Google is never told about a job the site itself hides.
+const jobIsPublic = (job, now = Date.now()) => {
+  if (!job || job.hiddenFromPublic) return false;
+  const cut = freshCutoff(now).getTime();
+  const t = (d) => (d ? new Date(d).getTime() : 0);
+  if (t(job.createdAt) < cut && t(job.renewedAt) < cut) return false;
+  const c = job.company;
+  if (c && typeof c === 'object') {
+    if (c.hiddenFromPublic) return false;
+    if (hideUnverified() && !c.is_verified) return false;
+  }
+  return true;
+};
+
+module.exports = { jobIsPublic, JOB_MAX_AGE_DAYS, hideUnverified, freshCutoff, publicJobConditions, publicCompanyConditions };

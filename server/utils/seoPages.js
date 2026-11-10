@@ -74,6 +74,7 @@ const injectHead = (html, { title, description, canonical, robots = 'index, foll
  * @returns {{status:number, headers:object, body:string, tag:string}}
  */
 const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
+  const { jobIsPublic } = require('./publicVisibility');
   const html = { 'Content-Type': 'text/html; charset=utf-8' };
   if (!job) {
     return { status: 200, tag: 'unavailable', headers: { ...html, 'Cache-Control': 'public, s-maxage=60' }, body: injectHead(shell, {
@@ -118,6 +119,12 @@ const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
     ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
   };
   const full = `${job.title} Job in ${city} – ${company} | Velaivaaipu`;
+  // A job the public list hides (unverified company, older than 45 days, admin-hidden): the link still works, search engines skip it.
+  if (!jobIsPublic(job, now.getTime())) {
+    return { status: 200, tag: 'hidden', headers: { ...html, 'Cache-Control': 'public, s-maxage=300' }, body: injectHead(shell, {
+      title: clip(full.length <= 60 ? full : `${job.title} Job in ${city} | Velaivaaipu`, 70), description, canonical, robots: 'noindex, follow',
+    }) };
+  }
   return { status: 200, tag: 'job', headers: { ...html, 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' }, body: injectHead(shell, {
     title: clip(full.length <= 60 ? full : `${job.title} Job in ${city} | Velaivaaipu`, 70),
     description, canonical, image: image2, type: 'article', jsonLd,
@@ -140,8 +147,10 @@ const STATIC_PAGES = [
 ];
 const urlEntry = (loc, lastmod, priority) =>
   `  <url><loc>${escapeHtml(loc)}</loc>${lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${priority ? `<priority>${priority}</priority>` : ''}</url>`;
-const buildSitemap = ({ jobs = [], companies = [], posts = [] }) => {
-  const entries = [...STATIC_PAGES, ...blogSlugs().map((s) => `/blog/${s}`)].map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, null, p === '/' ? '1.0' : '0.8'));
+const buildSitemap = ({ jobs = [], companies = [], posts = [], builtAt = null }) => {
+  // Static pages carry the newest job/post date so crawlers see a real lastmod; no date when there is nothing to base it on.
+  const newest = [...jobs, ...posts].map((x) => new Date(x.updatedAt || 0).getTime()).filter(Boolean).sort((a, b) => b - a)[0] || builtAt;
+  const entries = [...STATIC_PAGES, ...blogSlugs().map((s) => `/blog/${s}`)].map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, ['/jobs', '/', '/internships'].includes(p) || p.startsWith('/jobs/') ? newest : null, p === '/' ? '1.0' : '0.8'));
   posts.forEach((p) => entries.push(urlEntry(`${SITE_URL()}/blog/${p.slug}`, p.updatedAt, '0.8')));
   jobs.forEach((j) => entries.push(urlEntry(jobUrl(j), j.updatedAt, '0.7')));
   companies.forEach((c) => entries.push(urlEntry(`${SITE_URL()}/companies/${c._id}`, c.updatedAt, '0.5')));
