@@ -6,6 +6,7 @@ const runCourseFollowUps = require('./courseFollowUps');
 const runLifecycleMails = require('./lifecycleMails');
 const runDriveReminders = require('./driveReminders');
 const runWeeklyAdvisor = require('./advisorWeekly');
+const { runFreeCollegeSummaries } = require('./freeCollegeSummary');
 const { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts, runCollegeRoleReminders, runCollegeLimitNudges } = require('./adminFollowUp');
 
 // Called once after the Mongo connection is established (see server/index.js).
@@ -34,6 +35,8 @@ const startCronJobs = () => {
   cron.schedule('*/30 * * * *', runPaymentAlerts);
   cron.schedule('0 10 * * *', runCollegeRoleReminders, { timezone: 'Asia/Kolkata' });
   cron.schedule('30 10 * * *', runCollegeLimitNudges, { timezone: 'Asia/Kolkata' });
+  // Free colleges: one short summary a month (off with FREE_COLLEGE_SUMMARY=off).
+  cron.schedule('45 10 * * *', () => runFreeCollegeSummaries(), { timezone: 'Asia/Kolkata' });
 
   // Walk-in drive reminders: day before (18:00) and morning of (07:00) India time. Off unless DRIVE_REMINDERS_ENABLED=true.
   cron.schedule('0 18 * * *', () => runDriveReminders('day_before'), { timezone: 'Asia/Kolkata' });
