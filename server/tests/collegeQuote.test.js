@@ -29,3 +29,12 @@ test('the PDF is made and starts with the PDF marker', { skip: !generateQuotePdf
   assert.ok(Buffer.isBuffer(buf) && buf.length > 1000);
   assert.equal(buf.subarray(0, 4).toString(), '%PDF');
 });
+
+test('a student pack quote is 4,999 per pack plus 18% GST, with no plan capacity line', () => {
+  const pack = (n) => ({ name: `Student Packs (${n})`, price: 4999 * n, duration: 'one year', features: [{ name: `Adds ${250 * n} students to your plan for one year`, isActive: true, value: true }] });
+  const one = buildQuote({ college, plan: pack(1), env: {}, now });
+  assert.deepEqual([one.base, one.gst, one.total], [4999, 899.82, 5898.82]);
+  const two = buildQuote({ college, plan: pack(2), env: {}, now });
+  assert.deepEqual([two.base, two.total], [9998, 11797.64]);
+  assert.equal(two.plan.capacity, ''); assert.deepEqual(two.plan.features, ['Adds 500 students to your plan for one year']);
+});

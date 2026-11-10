@@ -90,6 +90,26 @@ const requestUpgradeCall = async (req, res) => {
   } catch (e) { console.error('Upgrade call:', e.message); res.status(500).json({ msg: 'Could not send the request' }); }
 };
 
+// GET /api/college/me/quote-pack/:packs  → one-page quote (with 18% GST) for 1 or 2 student packs
+const downloadPackQuote = async (req, res) => {
+  try {
+    const n = Number(req.params.packs);
+    if (!Number.isInteger(n) || n < 1 || n > PACK.maxPacks) return res.status(404).json({ msg: 'Choose 1 or ' + PACK.maxPacks + ' packs' });
+    const college = await College.findOne({ $or: [{ tpoUser: req.user.id }, { teamMembers: { $elemMatch: { user: req.user.id, isActive: true } } }] });
+    if (!college) return res.status(404).json({ msg: 'No college linked to your account.' });
+    const { buildQuote } = require('../utils/collegeQuote');
+    const { generateQuotePdf } = require('../utils/pdfGenerator');
+    const plan = {
+      name: n === 1 ? 'Student Pack (1 pack)' : `Student Packs (${n} packs)`, price: PACK.price * n, duration: 'one year',
+      features: [{ name: `Adds ${PACK.students * n} students to your plan for one year`, isActive: true, value: true }, { name: 'Added by our team after payment is confirmed', isActive: true, value: true }],
+    };
+    const pdf = await generateQuotePdf(buildQuote({ college, plan }));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="quote-student-pack-${n}.pdf"`);
+    res.send(pdf);
+  } catch (e) { console.error('Pack quote:', e.message); res.status(500).json({ msg: 'Could not make the quote' }); }
+};
+
 const packInfo = (req, res) => res.json(PACK);
 
-module.exports = { recordPack, packInfo, requestPack, myPackStatus, requestUpgradeCall };
+module.exports = { recordPack, packInfo, requestPack, myPackStatus, requestUpgradeCall, downloadPackQuote };

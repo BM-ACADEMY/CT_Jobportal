@@ -141,6 +141,7 @@ const requireDriveAccess = async (req, res, next) => {
 };
 
 // ── Public routes (no auth) ─────────────────────────────────────────────────
+router.get('/public/student-pack-info', require('../controllers/collegePackController').packInfo);
 router.get('/public/drive/:driveCode', getPublicDrive);
 router.post('/public/drive/:driveCode/register', publicRegisterLimiter, publicRegister);
 router.get('/public/assessment', publicSubmitLimiter, getPublicAssessment);
@@ -187,6 +188,7 @@ router.get('/mou', verifyToken, authorizeRoles('college'), generateMou);
 router.get('/reports', verifyToken, authorizeRoles('college'), getPlacementReports);
 router.post('/reports/generate', verifyToken, authorizeRoles('college'), generatePlacementReport);
 router.post('/reports/:id/send', verifyToken, authorizeRoles('college'), sendPlacementReport);
+router.get('/me/quote-pack/:packs', verifyToken, authorizeRoles('college'), require('../controllers/collegePackController').downloadPackQuote);
 router.get('/me/quote/:planId', verifyToken, authorizeRoles('college'), downloadPlanQuote);
 router.get('/reports/summary-pdf', verifyToken, authorizeRoles('college'), downloadSummaryReport);
 router.get('/accreditation/overview', verifyToken, authorizeRoles('college'), getOverview);

@@ -17,7 +17,22 @@ const PlanQuotes = () => {
       .catch(() => setPlans([]));
   }, []);
 
-  if (!plans.length) return null;
+  const [pack, setPack] = useState(null);
+  useEffect(() => { axios.get(`${API}/college/public/student-pack-info`).then((r) => setPack(r.data)).catch(() => setPack(null)); }, []);
+
+  if (!plans.length && !pack) return null;
+
+  const downloadPack = async (n) => {
+    setBusy(`pack${n}`);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API}/college/me/quote-pack/${n}`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a'); a.href = url; a.download = `quote-student-pack-${n}.pdf`; a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (e) { toast.error('Could not make the quote. Please try again.'); }
+    finally { setBusy(''); }
+  };
 
   const download = async (plan) => {
     setBusy(plan._id);
@@ -44,6 +59,16 @@ const PlanQuotes = () => {
               <span className="block text-xs text-slate-500">{rupees(p.price)} a year + GST</span>
             </span>
             <span className="flex items-center gap-1 text-xs font-bold text-[#1b496d]"><FileText size={14} /> {busy === p._id ? '...' : 'Quote'}</span>
+          </button>
+        ))}
+        {pack?.price > 0 && Array.from({ length: pack.maxPacks || 1 }, (_, i) => i + 1).map((n) => (
+          <button key={`pack${n}`} type="button" onClick={() => downloadPack(n)} disabled={busy === `pack${n}`}
+            className="flex items-center justify-between gap-3 border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-left cursor-pointer hover:border-[#1b496d] disabled:opacity-60">
+            <span>
+              <span className="block text-sm font-bold text-slate-800">{n === 1 ? 'Student pack' : `${n} student packs`}</span>
+              <span className="block text-xs text-slate-500">+{pack.students * n} students · {rupees(pack.price * n)} + GST</span>
+            </span>
+            <span className="flex items-center gap-1 text-xs font-bold text-[#1b496d]"><FileText size={14} /> {busy === `pack${n}` ? '...' : 'Quote'}</span>
           </button>
         ))}
       </div>

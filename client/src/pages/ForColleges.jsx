@@ -188,9 +188,11 @@ const FaqItem = ({ item, open, onToggle, id }) => (
 
 const ForColleges = () => {
   const [plans, setPlans] = useState([]);
+  const [pack, setPack] = useState(null);
   const [openFaq, setOpenFaq] = useState(0);
 
   useEffect(() => {
+    axios.get(`${API}/college/public/student-pack-info`).then((res) => setPack(res.data)).catch(() => {});
     axios.get(`${API}/subscriptions`)
       .then((res) => {
         const college = (res.data || []).filter((p) => p.role === 'college' && p.isActive);
@@ -397,6 +399,17 @@ const ForColleges = () => {
               </motion.div>
               <p className="text-center text-xs text-zinc-400 mt-6">Prices shown are what you will see at checkout. GST may apply.</p>
               <PlanCompare plans={plans} />
+              {pack?.price > 0 && (
+                <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <p className="m-0 text-base font-bold text-zinc-900">Need a little more room? Add a student pack</p>
+                    <p className="m-0 mt-1 text-sm text-zinc-600">
+                      +{pack.students} students for a year at {rupees(pack.price)} + GST, up to {pack.maxPacks} packs. Request it from your dashboard once your college is verified. Our team adds the students after payment.
+                    </p>
+                  </div>
+                  <p className="m-0 text-3xl font-bold tracking-tight text-zinc-900 whitespace-nowrap">{rupees(pack.price)}<span className="text-sm font-semibold text-zinc-400"> / {pack.students} students</span></p>
+                </div>
+              )}
             </div>
           </section>
         )}
