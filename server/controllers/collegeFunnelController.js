@@ -13,7 +13,7 @@ const ids = (list) => new Set(list.map((x) => String(x)));
 const getCollegeFunnel = async (req, res) => {
   try {
     const colleges = await College.find({ isTest: { $ne: true } })
-      .select('name createdAt subscriptionTier studentLimit extraStudents extraUntil verificationStatus principalName collegePhone tpoUser')
+      .select('name createdAt subscriptionTier subscriptionExpiry studentLimit extraStudents extraUntil verificationStatus principalName collegePhone tpoUser')
       .populate('tpoUser', 'name phone')
       .sort({ createdAt: -1 }).limit(500).lean();
     const [counts, drives, reports, called] = await Promise.all([
@@ -27,7 +27,7 @@ const getCollegeFunnel = async (req, res) => {
     const now = Date.now();
     const rows = colleges.map((c) => {
       const students = countMap.get(String(c._id)) || 0; const limit = effectiveStudentLimit(c);
-      const flags = flagsFor({ students, limit, called: calledSet.has(String(c._id)), drive: driveSet.has(String(c._id)), report: reportSet.has(String(c._id)), tier: c.subscriptionTier });
+      const flags = flagsFor({ students, limit, called: calledSet.has(String(c._id)), drive: driveSet.has(String(c._id)), report: reportSet.has(String(c._id)), tier: c.subscriptionTier, paidPlan: !!c.subscriptionExpiry });
       return {
         id: c._id, name: c.name, createdAt: c.createdAt, daysOld: Math.floor((now - new Date(c.createdAt).getTime()) / 86400000),
         verified: c.verificationStatus === 'verified', tier: c.subscriptionTier || 'campus_free', students, limit,

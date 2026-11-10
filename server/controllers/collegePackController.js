@@ -67,7 +67,7 @@ const myPackStatus = async (req, res) => {
   } catch (e) { res.status(500).json({ msg: 'Could not load' }); }
 };
 
-const INTERESTS = { pack: 'a student pack', plan: 'a bigger plan', unsure: 'not sure yet, wants advice' };
+const INTERESTS = { pack: 'a student pack', plan: 'a bigger plan', custom: 'a customised plan', unsure: 'not sure yet, wants advice' };
 
 // POST /api/college/me/upgrade-call {interest, note}  → "please call me about more students" (one open request at a time)
 const requestUpgradeCall = async (req, res) => {

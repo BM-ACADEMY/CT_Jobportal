@@ -11,14 +11,15 @@ const STEPS = [
   { key: 'paid', label: 'Paid plan' },
 ];
 
-const flagsFor = ({ students = 0, limit = 0, called = false, drive = false, report = false, tier = 'campus_free' }) => ({
+// `paidPlan` covers Campus Starter, which keeps tier campus_free but has a paid renewal date.
+const flagsFor = ({ students = 0, limit = 0, called = false, drive = false, report = false, tier = 'campus_free', paidPlan = false }) => ({
   signedUp: true,
   called: !!called,
   students: students > 0,
   drive: !!drive,
   report: !!report,
   nearLimit: levelFor(students, limit) > 0,
-  paid: !!tier && tier !== 'campus_free',
+  paid: paidPlan || (!!tier && tier !== 'campus_free'),
 });
 
 // The next thing a college has not done yet, in the order we want them to do it. Paid colleges have none.

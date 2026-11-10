@@ -68,7 +68,16 @@ const FAQS = [
 ];
 
 const Contact = () => {
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '', segment: '', company_website: '' });
+  // A link such as /contact?segment=college&subject=Custom%20plan opens the form already filled in.
+  const [form, setForm] = useState(() => {
+    let segment = ''; let subject = '';
+    try {
+      const q = new URLSearchParams(window.location.search);
+      segment = ['jobseeker', 'company', 'college'].includes(q.get('segment')) ? q.get('segment') : '';
+      subject = String(q.get('subject') || '').slice(0, 100);
+    } catch (e) { /* ignore */ }
+    return { name: '', email: '', subject, message: '', segment, company_website: '' };
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);

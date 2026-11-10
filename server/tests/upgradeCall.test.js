@@ -38,3 +38,9 @@ test('an unknown choice becomes "not sure", and a second ask while one is open m
   assert.equal(r.code, 200); assert.match(r.body.msg, /already have your request/);
   assert.equal(created.length, 1); assert.equal(alerts.length, 1);
 });
+
+test('a customised-plan request is recorded as such', async () => {
+  created.length = 0; open = false;
+  await run({ interest: 'custom' });
+  assert.match(created[0].notes, /a customised plan/);
+});

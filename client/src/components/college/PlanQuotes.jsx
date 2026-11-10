@@ -22,6 +22,14 @@ const PlanQuotes = () => {
 
   if (!plans.length && !pack) return null;
 
+  const askCustom = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const r = await axios.post(`${API}/college/me/upgrade-call`, { interest: 'custom' }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(r.data?.msg || 'Request sent');
+    } catch (e) { toast.error(e.response?.data?.msg || 'Could not send the request'); }
+  };
+
   const downloadPack = async (n) => {
     setBusy(`pack${n}`);
     try {
@@ -71,6 +79,10 @@ const PlanQuotes = () => {
             <span className="flex items-center gap-1 text-xs font-bold text-[#1b496d]"><FileText size={14} /> {busy === `pack${n}` ? '...' : 'Quote'}</span>
           </button>
         ))}
+      </div>
+      <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-slate-100 pt-3">
+        <p className="m-0 text-xs text-slate-500">Need something customised, such as more students or several campuses? Tell us and our team will contact you.</p>
+        <button type="button" onClick={askCustom} className="text-xs font-bold text-[#1b496d] bg-transparent border-0 cursor-pointer whitespace-nowrap">Ask us to call me</button>
       </div>
     </div>
   );

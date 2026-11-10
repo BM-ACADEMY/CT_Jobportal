@@ -399,6 +399,15 @@ const ForColleges = () => {
               </motion.div>
               <p className="text-center text-xs text-zinc-400 mt-6">Prices shown are what you will see at checkout. GST may apply.</p>
               <PlanCompare plans={plans} />
+              <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <p className="m-0 text-base font-bold text-zinc-900">Want something different for your college?</p>
+                  <p className="m-0 mt-1 text-sm text-zinc-600">If you want to buy one of these plans, choose it above. If you need something customised, such as more students, several campuses or special reports, send us a message and our team will contact you.</p>
+                </div>
+                <Link to="/contact?segment=college&subject=Customised%20college%20plan" className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl text-sm font-bold bg-zinc-900 text-white whitespace-nowrap">
+                  Talk to our team <ArrowRight size={16} />
+                </Link>
+              </div>
               {pack?.price > 0 && (
                 <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
