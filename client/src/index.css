@@ -209,6 +209,9 @@ main section {
 @keyframes home-float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -10px, 0); } }
 @keyframes home-float-sm { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -6px, 0); } }
 @keyframes home-marquee { to { transform: translate3d(-50%, 0, 0); } }
+/* For Colleges card loops: a CSV upload bar that fills and resets, and a blinking text caret. */
+@keyframes college-fill { 0% { transform: scaleX(0); } 70%, 100% { transform: scaleX(1); } }
+@keyframes college-caret { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
 @keyframes home-shine {
   from { transform: translateX(-120%) skewX(-20deg); }
   to { transform: translateX(320%) skewX(-20deg); }

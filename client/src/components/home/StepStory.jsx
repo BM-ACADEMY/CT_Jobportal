@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent, useInView } from 'framer-motion';
 import {
-  Search, MapPin, FileText, Check, BadgeCheck, Building2, IndianRupee, Bell, Signal, Wifi, BatteryFull,
+  Search, MapPin, FileText, Check, BadgeCheck, Building2, IndianRupee, Bell,
   Home, Briefcase, ClipboardList, User, LayoutDashboard, Users, UserCheck, Send, Upload,
 } from 'lucide-react';
 
@@ -243,30 +243,87 @@ const SCREENS = {
 
 /* ---------- Phone ---------- */
 
-const TITANIUM = 'linear-gradient(145deg,#eceef0 0%,#a7aab0 20%,#5f6268 46%,#b3b6bb 72%,#e8e9eb 100%)';
+// Natural-titanium rail: alternating bright and dark bands so the edge reads as polished metal.
+const TITANIUM = 'linear-gradient(160deg,#e4e3df 0%,#9c9b97 14%,#d3d2cd 30%,#7d7c78 52%,#c8c7c2 72%,#8f8e8a 88%,#dcdbd6 100%)';
+const BUTTON = 'linear-gradient(90deg,#6f6e6a 0%,#d6d5d0 45%,#a3a29e 70%,#6c6b67 100%)';
+const IOS_FONT = { fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif' };
 
-// An iPhone-style frame around a mini Velaivaaipu app: status bar, app header with the real
-// logo, the step's screen, and a bottom tab bar whose active tab follows the step.
+// iOS status bar glyphs drawn like the real ones: four rising bars, three wifi arcs,
+// an outlined battery with its cap.
+const IosSignal = () => (
+  <svg width="17" height="11" viewBox="0 0 17 11" aria-hidden="true"><g fill="currentColor">
+    <rect x="0" y="7" width="3" height="4" rx="0.8" /><rect x="4.6" y="5" width="3" height="6" rx="0.8" />
+    <rect x="9.2" y="2.6" width="3" height="8.4" rx="0.8" /><rect x="13.8" y="0" width="3" height="11" rx="0.8" />
+  </g></svg>
+);
+const IosWifi = () => (
+  <svg width="15" height="11" viewBox="0 0 15 11" aria-hidden="true"><g fill="currentColor">
+    <path d="M7.5 2.2c2.2 0 4.2.85 5.7 2.25l1.1-1.13A9.6 9.6 0 0 0 7.5.6 9.6 9.6 0 0 0 .7 3.32L1.8 4.45A8 8 0 0 1 7.5 2.2Z" />
+    <path d="M7.5 5.3c1.36 0 2.6.5 3.55 1.35l1.1-1.13A6.7 6.7 0 0 0 7.5 3.7c-1.8 0-3.44.7-4.65 1.82l1.1 1.13A5.1 5.1 0 0 1 7.5 5.3Z" />
+    <path d="M7.5 8.4c.5 0 .97.18 1.33.48L7.5 10.6 6.17 8.88c.36-.3.83-.48 1.33-.48Z" />
+  </g></svg>
+);
+const IosBattery = () => (
+  <svg width="25" height="12" viewBox="0 0 25 12" aria-hidden="true">
+    <rect x="0.5" y="0.5" width="21" height="11" rx="3.4" fill="none" stroke="currentColor" strokeOpacity="0.4" />
+    <rect x="2" y="2" width="16" height="8" rx="2" fill="currentColor" />
+    <path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" fill="currentColor" fillOpacity="0.45" />
+  </svg>
+);
+
+// An iPhone 15 Pro-style device around a mini Velaivaaipu app. The titanium rail is stacked in
+// depth (translateZ layers) so it shows real thickness when the phone is turned in 3D.
 const Phone = ({ audience, step, t, children, className = '' }) => {
   const a = AUDIENCES[audience];
   const activeTab = a.tabForStep[step] ?? 0;
   return (
-    <div className={`relative w-[290px] h-[600px] ${className}`}>
-      {/* Side buttons */}
-      <span className="absolute -left-[3px] top-[104px] h-7 w-[4px] rounded-l-sm" style={{ background: TITANIUM }} />
-      <span className="absolute -left-[3px] top-[150px] h-12 w-[4px] rounded-l-sm" style={{ background: TITANIUM }} />
-      <span className="absolute -left-[3px] top-[210px] h-12 w-[4px] rounded-l-sm" style={{ background: TITANIUM }} />
-      <span className="absolute -right-[3px] top-[170px] h-20 w-[4px] rounded-r-sm" style={{ background: TITANIUM }} />
+    <div className={`relative w-[290px] h-[600px] ${className}`} style={{ transformStyle: 'preserve-3d' }}>
+      {/* Depth of the rail; the back-most layer carries the cast shadow */}
+      {[7, 6, 5, 4, 3, 2, 1].map((z) => (
+        <span
+          key={z}
+          aria-hidden="true"
+          className="absolute inset-0 rounded-[54px]"
+          style={{
+            transform: `translateZ(-${z * 1.4}px)`,
+            background: z === 7 ? '#55544f' : '#8a8985',
+            boxShadow: z === 7 ? '0 40px 70px -30px rgba(15,23,42,0.55), 0 80px 140px -50px rgba(15,23,42,0.45)' : undefined,
+          }}
+        />
+      ))}
 
-      <div className="h-full w-full rounded-[52px] p-[3px] shadow-[0_50px_100px_-40px_rgba(15,23,42,0.55),0_20px_40px_-20px_rgba(15,23,42,0.3)]" style={{ background: TITANIUM }}>
-        <div className="h-full w-full rounded-[49px] bg-black p-[8px]">
-          <div className="relative h-full w-full overflow-hidden rounded-[41px] bg-white text-left">
-            {/* Status bar + Dynamic Island */}
-            <div className="absolute inset-x-0 top-0 z-30 flex h-11 items-center justify-between px-7 pt-1 text-[12px] font-semibold text-zinc-900">
-              <span>9:41</span>
-              <span className="flex items-center gap-1"><Signal size={12} strokeWidth={2.75} /><Wifi size={12} strokeWidth={2.75} /><BatteryFull size={17} strokeWidth={2} /></span>
+      {/* Side buttons: action, volume up, volume down (left); side button (right) */}
+      <span aria-hidden="true" className="absolute -left-[2.5px] top-[112px] h-[26px] w-[3.5px] rounded-l-[2px]" style={{ background: BUTTON, transform: 'translateZ(-5px)' }} />
+      <span aria-hidden="true" className="absolute -left-[2.5px] top-[160px] h-[46px] w-[3.5px] rounded-l-[2px]" style={{ background: BUTTON, transform: 'translateZ(-5px)' }} />
+      <span aria-hidden="true" className="absolute -left-[2.5px] top-[216px] h-[46px] w-[3.5px] rounded-l-[2px]" style={{ background: BUTTON, transform: 'translateZ(-5px)' }} />
+      <span aria-hidden="true" className="absolute -right-[2.5px] top-[180px] h-[72px] w-[3.5px] rounded-r-[2px]" style={{ background: BUTTON, transform: 'translateZ(-5px) scaleX(-1)' }} />
+
+      {/* Titanium rail (front face) */}
+      <div
+        className="relative h-full w-full rounded-[54px] p-[4px]"
+        style={{ background: TITANIUM, boxShadow: 'inset 0 0 0 0.75px rgba(255,255,255,0.7), inset 0 0 0 1.5px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.25)' }}
+      >
+        {/* Antenna bands cut into the rail */}
+        <span aria-hidden="true" className="absolute left-0 top-[78px] h-[3px] w-[4px] bg-[#6e6d69]/70" />
+        <span aria-hidden="true" className="absolute right-0 top-[78px] h-[3px] w-[4px] bg-[#6e6d69]/70" />
+        <span aria-hidden="true" className="absolute left-0 bottom-[78px] h-[3px] w-[4px] bg-[#6e6d69]/70" />
+        <span aria-hidden="true" className="absolute right-0 bottom-[78px] h-[3px] w-[4px] bg-[#6e6d69]/70" />
+        <span aria-hidden="true" className="absolute top-0 left-[62px] h-[4px] w-[3px] bg-[#6e6d69]/70" />
+        <span aria-hidden="true" className="absolute bottom-0 right-[62px] h-[4px] w-[3px] bg-[#6e6d69]/70" />
+
+        {/* Black glass border around the display */}
+        <div className="h-full w-full rounded-[50px] bg-[#050505] p-[7px]" style={{ boxShadow: 'inset 0 0 0 1px #1c1c1e, inset 0 0 2px 1px rgba(255,255,255,0.08)' }}>
+          <div className="relative h-full w-full overflow-hidden rounded-[43px] bg-white text-left" style={{ boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.35)' }}>
+            {/* Status bar: time left of the island, glyphs right of it */}
+            <div className="absolute inset-x-0 top-0 z-30 grid h-[46px] grid-cols-[1fr_86px_1fr] items-center pt-[1px] text-zinc-950" style={IOS_FONT}>
+              <span className="justify-self-center pl-2 text-[14px] font-semibold tracking-[-0.01em]">9:41</span>
+              <span />
+              <span className="justify-self-center flex items-center gap-[4px] pr-1"><IosSignal /><IosWifi /><IosBattery /></span>
             </div>
-            <span className="absolute z-40 top-[11px] left-1/2 -translate-x-1/2 h-[26px] w-[88px] rounded-full bg-black" />
+            {/* Dynamic Island with the front camera */}
+            <span aria-hidden="true" className="absolute z-40 top-[10px] left-1/2 -translate-x-1/2 h-[27px] w-[86px] rounded-full bg-black">
+              <span className="absolute right-[9px] top-1/2 -translate-y-1/2 h-[10px] w-[10px] rounded-full" style={{ background: 'radial-gradient(circle at 35% 35%, #3a4a6b 0%, #141a2b 45%, #050608 75%)', boxShadow: '0 0 0 1.5px #0d0d10' }} />
+            </span>
 
             {/* App header with the real logo */}
             <div className="absolute inset-x-0 top-11 z-20 flex items-center justify-between px-4 py-2 bg-white/95 border-b border-zinc-100">
@@ -278,23 +335,24 @@ const Phone = ({ audience, step, t, children, className = '' }) => {
             </div>
 
             {/* Screen */}
-            <div className="absolute inset-x-0 top-[92px] bottom-[64px] overflow-hidden px-4 pt-3">
+            <div className="absolute inset-x-0 top-[92px] bottom-[68px] overflow-hidden px-4 pt-3">
               {children}
             </div>
 
-            {/* Bottom tab bar */}
-            <div className="absolute inset-x-0 bottom-0 z-20 h-[64px] border-t border-zinc-100 bg-white/95 px-3 pb-3 pt-1.5 grid grid-cols-4">
+            {/* Bottom tab bar, iOS style: translucent, with room for the home indicator */}
+            <div className="absolute inset-x-0 bottom-0 z-20 h-[68px] border-t border-zinc-200/70 bg-white/90 backdrop-blur-md px-3 pb-[18px] pt-1.5 grid grid-cols-4" style={IOS_FONT}>
               {a.tabs.map(([label, Icon], i) => (
-                <span key={label} className={`flex flex-col items-center gap-0.5 text-[9px] font-semibold transition-colors duration-300 ${i === activeTab ? t.text : 'text-zinc-400'}`}>
-                  <Icon size={17} strokeWidth={i === activeTab ? 2.4 : 1.8} />
+                <span key={label} className={`flex flex-col items-center gap-0.5 text-[9.5px] font-medium transition-colors duration-300 ${i === activeTab ? t.text : 'text-zinc-400'}`}>
+                  <Icon size={18} strokeWidth={i === activeTab ? 2.3 : 1.8} />
                   {label}
                 </span>
               ))}
             </div>
-            <span className="absolute z-30 bottom-1.5 left-1/2 -translate-x-1/2 h-1 w-28 rounded-full bg-zinc-900/80" />
+            <span aria-hidden="true" className="absolute z-30 bottom-[7px] left-1/2 -translate-x-1/2 h-[4px] w-[104px] rounded-full bg-black" />
 
-            {/* Glass reflection */}
-            <span className="pointer-events-none absolute inset-0 z-40 bg-[linear-gradient(118deg,rgba(255,255,255,0.28)_0%,rgba(255,255,255,0.05)_26%,transparent_40%)]" />
+            {/* Glass: a soft diagonal glare and a faint edge falloff */}
+            <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-40 bg-[linear-gradient(115deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.06)_22%,transparent_34%,transparent_78%,rgba(255,255,255,0.05)_100%)]" />
+            <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-40 rounded-[43px] shadow-[inset_0_0_14px_rgba(0,0,0,0.06)]" />
           </div>
         </div>
       </div>
@@ -452,7 +510,7 @@ const StepStory = ({ eyebrow = 'Simple Process', title, steps, audience = 'jobse
             {/* Right: phone with a floating notification */}
             <motion.div variants={openPhone} className="col-span-6 flex justify-center pr-28">
               <div className="relative" style={{ transform: `scale(${phoneScale})`, transformOrigin: 'center' }}>
-                <div style={{ transform: 'perspective(1600px) rotateY(-10deg) rotateX(3deg)' }}>
+                <div style={{ transform: 'perspective(1600px) rotateY(-14deg) rotateX(4deg)', transformStyle: 'preserve-3d' }}>
                   <Phone audience={aud} step={active} t={t}>
                     <AnimatePresence mode="wait">
                       <motion.div
