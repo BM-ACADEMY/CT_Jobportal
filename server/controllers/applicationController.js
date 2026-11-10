@@ -147,6 +147,15 @@ exports.applyJob = async (req, res) => {
     const applicantId = req.user.id;
     const User = require('../models/User');
 
+    // A job seeker needs a usable mobile number before applying: recruiters call. One given in the apply step fills a missing number.
+    const phoneRule = require('../utils/phoneRule');
+    const me = await User.findById(applicantId).select('profile.phone');
+    if (!phoneRule.valid(me?.profile?.phone)) {
+      const typed = phoneRule.clean(quick?.phone);
+      if (!typed) return res.status(400).json({ code: 'PHONE_REQUIRED', msg: 'Please add your mobile number so the company can reach you.' });
+      await User.updateOne({ _id: applicantId }, { $set: { 'profile.phone': typed } });
+    }
+
     // Check if already applied
     let existingApplication = await Application.findOne({ job: jobId, applicant: applicantId });
     if (existingApplication) {
