@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Mail, Phone, MapPin, Clock, Send, MessageSquare,
   Briefcase, HeadphonesIcon, CheckCircle2, ArrowRight,
-  X, Link2, Camera, HelpCircle, ChevronDown
+  Link2, Camera, HelpCircle, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -17,14 +17,14 @@ const CONTACT_CARDS = [
     icon: Mail,
     title: 'Email Us',
     desc: 'We typically reply within 24 hours.',
-    value: 'support@velaivaaipu.in',
+    value: 'hello@velaivaaipu.in',
     color: 'text-[#00D492]',
     bg: 'bg-[#00D492]/10',
   },
   {
     icon: Phone,
     title: 'Call Us',
-    desc: 'Mon–Fri, 9 AM to 6 PM IST.',
+    desc: 'Mon–Fri, 10 AM to 7 PM IST.',
     value: '+91 99445 09441',
     color: 'text-[#00D492]',
     bg: 'bg-[#00D492]/10',
@@ -32,8 +32,8 @@ const CONTACT_CARDS = [
   {
     icon: MapPin,
     title: 'Visit Us',
-    desc: 'Come say hello at our office.',
-    value: 'Chennai, Tamil Nadu, India',
+    desc: 'Our registered office.',
+    value: '78 Lenin St, Kosapalayam, Puducherry 605013',
     color: 'text-[#00D492]',
     bg: 'bg-[#00D492]/10',
   },
@@ -42,7 +42,7 @@ const CONTACT_CARDS = [
 const FAQS = [
   { 
     q: 'How do I post a job on Velaivaaipu?', 
-    a: 'Register or log in as a company or recruiter, then go to your dashboard and click "Post a Job". Fill in the details and your listing goes live instantly.',
+    a: 'Register or log in as a company or recruiter, then go to your dashboard and click "Post a Job". Our team checks new companies, and jobs from a company show publicly once it is verified. Until then you can see them in your dashboard.',
     icon: Briefcase
   },
   { 
@@ -52,12 +52,12 @@ const FAQS = [
   },
   { 
     q: 'How do subscription plans work?', 
-    a: 'Subscription plans unlock premium features like resume builder, profile boost, direct messaging with recruiters, and career counselling. Plans are billed monthly, quarterly, or yearly.',
+    a: 'The Plans page lists what each plan includes and what it costs, with GST shown before you pay. Start free, and upgrade only if you need more.',
     icon: Clock
   },
   { 
     q: 'How can I contact a recruiter directly?', 
-    a: 'With a premium subscription, you can message recruiters directly from their job listings or company profiles. Upgrade your plan to unlock this feature.',
+    a: 'Open the job or company page and use the apply or message option shown there. Which contact options you see depends on your plan. The Plans page has the details.',
     icon: MessageSquare
   },
   { 
@@ -310,8 +310,7 @@ const Contact = () => {
               </div>
               <div className="space-y-3">
                 {[
-                  { day: 'Monday – Friday', time: '9:00 AM – 6:00 PM' },
-                  { day: 'Saturday', time: '10:00 AM – 2:00 PM' },
+                  { day: 'Monday – Friday', time: '10:00 AM – 7:00 PM' },
                   { day: 'Sunday', time: 'Closed' },
                 ].map((row, i) => (
                   <div key={i} className="flex justify-between items-center py-2.5 border-b border-zinc-50 last:border-0">
@@ -347,13 +346,12 @@ const Contact = () => {
               <p className="text-zinc-400 text-xs font-semibold mb-5">Stay updated with job alerts and career tips.</p>
               <div className="flex gap-3">
                 {[
-                  { icon: X, label: 'Twitter / X' },
-                  { icon: Link2, label: 'LinkedIn' },
-                  { icon: Camera, label: 'Instagram' },
+                  { icon: Camera, label: 'Instagram', href: 'https://www.instagram.com/velaivaaipu_/' },
+                  { icon: Link2, label: 'Facebook', href: 'https://www.facebook.com/profile.php?id=61594638677591' },
                 ].map((s, i) => (
-                  <button key={i} className="w-10 h-10 rounded-xl bg-zinc-200/60 hover:bg-[#00D492] hover:text-white flex items-center justify-center text-zinc-650 transition-all cursor-pointer" aria-label={s.label}>
-                    <s.icon size={17} />
-                  </button>
+                  <a key={i} href={s.href} target="_blank" rel="noopener noreferrer" className="h-10 px-3 gap-2 rounded-xl bg-zinc-200/60 hover:bg-[#00D492] hover:text-white flex items-center justify-center text-zinc-650 text-sm font-semibold transition-all" aria-label={s.label}>
+                    <s.icon size={17} /> {s.label}
+                  </a>
                 ))}
               </div>
             </div>

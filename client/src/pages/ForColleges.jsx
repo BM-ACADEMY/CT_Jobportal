@@ -82,7 +82,7 @@ const DriveVisual = () => (
 );
 
 const steps = [
-  { icon: GraduationCap, title: 'Register your college', desc: 'Sign up as a TPO. Our team verifies your institution, usually within a working day.', tint: 'bg-sky-50', badge: 'bg-sky-600', Visual: VerifyVisual },
+  { icon: GraduationCap, title: 'Register your college', desc: 'Sign up as the placement officer (TPO). Our team verifies your institution, usually within a working day.', tint: 'bg-sky-50', badge: 'bg-sky-600', Visual: VerifyVisual },
   { icon: QrCode, title: 'Get your students in', desc: 'Upload a CSV once, or put a QR code on the notice board. Students join with just a name and WhatsApp number.', tint: 'bg-orange-50', badge: 'bg-orange-500', Visual: StudentsVisual },
   { icon: CalendarCheck, title: 'Run your drives', desc: 'Create a drive, invite companies, move students through every round and see the status live.', tint: 'bg-emerald-50', badge: 'bg-emerald-600', Visual: DriveVisual },
 ];
@@ -213,7 +213,7 @@ const ForColleges = () => {
         />
 
         {/* Hero */}
-        <HeroShell>
+        <HeroShell compact>
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             <motion.div variants={heroStagger} initial="hidden" animate="show" className="lg:col-span-7 space-y-7">
               <motion.p variants={heroItem} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#059669]">
@@ -240,7 +240,7 @@ const ForColleges = () => {
               </motion.h1>
 
               <motion.p variants={heroItem} className="text-zinc-600 text-base md:text-lg max-w-xl leading-relaxed">
-                Bring students in with a QR code, run drives with companies, and give your principal a clear report, all from one dashboard.
+                Campus placement software for colleges in Tamil Nadu and Puducherry. Bring students in with a QR code, run drives with companies, and give your principal a clear report, all from one dashboard.
               </motion.p>
 
               <motion.div variants={heroItem} className="flex flex-col sm:flex-row gap-3">
@@ -249,7 +249,7 @@ const ForColleges = () => {
                     Start Free <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={18} />
                   </Button>
                 </Link>
-                <Link to="/contact">
+                <Link to="/contact?segment=college&subject=Campus%20placement%20software">
                   <Button variant="outline" className="w-full sm:w-auto h-12 px-8 rounded-xl border-zinc-300 bg-white text-zinc-800 font-bold text-base hover:border-[#059669] hover:text-[#059669] hover:bg-white active:scale-[0.98] cursor-pointer">
                     Talk to Our Team
                   </Button>

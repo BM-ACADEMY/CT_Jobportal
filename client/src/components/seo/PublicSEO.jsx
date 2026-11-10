@@ -10,7 +10,7 @@ const baseSchema = {
   alternateName: 'வேலைவாய்ப்பு',
   url: 'https://velaivaaipu.in',
   logo: 'https://velaivaaipu.in/velaivaaipu-logo.png',
-  email: 'support@velaivaaipu.in',
+  email: 'hello@velaivaaipu.in',
   telephone: '+91-99445-09441',
   address: {
     '@type': 'PostalAddress',
