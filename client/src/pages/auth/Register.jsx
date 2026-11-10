@@ -448,6 +448,9 @@ const RegisterPage = () => {
                           </FormItem>
                         )}
                       />
+                      <p className="text-xs text-slate-500 leading-relaxed m-0">
+                        Our team will call you within 24 hours to help you start. We do not sell student data. <a href="/privacy-policy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a>
+                      </p>
                     </>
                   )}
 

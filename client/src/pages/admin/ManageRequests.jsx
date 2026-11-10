@@ -19,6 +19,7 @@ const TYPE_CONFIG = {
   counselling:    { label: 'Career Counselling', icon: Star,         color: 'bg-rose-50 text-rose-700 border-rose-200' },
   mock_interview: { label: 'Mock Interview',     icon: Mic,          color: 'bg-teal-50 text-teal-700 border-teal-200' },
   student_pack:   { label: 'Student Pack',       icon: GraduationCap, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  college_call:   { label: 'New College Call',   icon: GraduationCap, color: 'bg-sky-50 text-sky-700 border-sky-200' },
 };
 
 const STATUS_CONFIG = {
@@ -113,6 +114,15 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
               <p><span className="font-bold text-slate-700">Phone:</span> {request.bookingPhone || '—'}</p>
               {request.notes && <p><span className="font-bold text-slate-700">Details:</span> {request.notes}</p>}
               <p className="pt-1 text-slate-500">After payment arrives, record it on the college page (Student packs). That adds the students.</p>
+            </>
+          )}
+          {request.type === 'college_call' && (
+            <>
+              <p><span className="font-bold text-slate-700">TPO:</span> {request.bookingName || '—'}</p>
+              <p><span className="font-bold text-slate-700">Phone:</span> {request.bookingPhone || '—'}</p>
+              <p><span className="font-bold text-slate-700">Email:</span> {request.bookingEmail || '—'}</p>
+              {request.notes && <p className="pt-1 text-slate-500">{request.notes}</p>}
+              <p className="pt-1 text-slate-500">After the call, mark this Completed. The college is not messaged.</p>
             </>
           )}
           {request.type === 'website_request' && (
@@ -283,6 +293,7 @@ const TABS = [
   { key: 'counselling',     label: 'Career Counselling' },
   { key: 'mock_interview',  label: 'Mock Interviews' },
   { key: 'student_pack',    label: 'Student Packs' },
+  { key: 'college_call',    label: 'New College Calls' },
 ];
 
 const STATUS_TABS = [
@@ -618,6 +629,9 @@ const ManageRequests = () => {
                         {r.type === 'student_pack' && (
                           <span className="truncate block">{r.packs} pack(s) — {r.notes}</span>
                         )}
+                        {r.type === 'college_call' && (
+                          <span className="truncate block">{r.bookingName} — {r.bookingPhone || 'no phone'} (call within 24 hours)</span>
+                        )}
                         {r.type === 'website_request' && (
                           <span className="truncate block">{r.websiteDetails}</span>
                         )}
@@ -654,7 +668,7 @@ const ManageRequests = () => {
                           >
                             <Eye size={11} /> View
                           </button>
-                          {canAssign && r.type !== 'student_pack' && r.status !== 'cancelled' && r.status !== 'completed' && (
+                          {canAssign && r.type !== 'student_pack' && r.type !== 'college_call' && r.status !== 'cancelled' && r.status !== 'completed' && (
                             <button
                               onClick={() => setAssignTarget(r)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"

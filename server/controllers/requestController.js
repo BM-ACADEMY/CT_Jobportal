@@ -722,6 +722,8 @@ const updateRequestStatus = async (req, res) => {
 
     await request.save();
     res.json({ msg: 'Request updated successfully', request });
+    // The new-college call is an internal task for our team; the college is not messaged when it is ticked off.
+    if (request.type === 'college_call') return;
     askForReviewOnce({ request, notify: notifyUser, io: req.io }).catch(err => console.error('Review ask failed:', err.message));
 
     notifyUser({
@@ -752,6 +754,7 @@ const adminAssignRequest = async (req, res) => {
     if (!request) return res.status(404).json({ msg: 'Request not found' });
     if (!staffMayTouchRequestType(req, request.type)) return res.status(403).json({ msg: 'Staff accounts cannot assign this type of request.' });
     if (request.type === 'student_pack') return res.status(400).json({ msg: 'Student pack requests are handled by contacting the college, not assigned.' });
+    if (request.type === 'college_call') return res.status(400).json({ msg: 'This is a call task for our team, not assigned to a recruiter.' });
 
     request.assignedToPool = assignedToPool || [];
     request.assignedTo = null;

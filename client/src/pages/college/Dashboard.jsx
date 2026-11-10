@@ -1,3 +1,4 @@
+import StudentKit from '@/components/college/StudentKit';
 import React, { useState, useEffect } from 'react';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { useNavigate } from 'react-router-dom';
@@ -227,6 +228,8 @@ const CollegeDashboard = () => {
         <StatCard icon={CheckCircle2} label="Placed" value={stats.placed} bgGradient="from-[#10b981] to-[#34d399]" />
         <StatCard icon={TrendingUp} label="Success Rate" value={`${successRate}%`} bgGradient="from-[#f43f5e] to-[#fb7185]" />
       </div>
+
+      {(totalStudents || 0) < 50 && <StudentKit collegeName={college?.name} />}
 
       {/* Secondary Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

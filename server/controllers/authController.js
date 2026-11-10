@@ -204,6 +204,21 @@ const registerUser = async (req, res) => {
       await college.save();
       user.collegeProfile = { college: college._id, designation: 'TPO' };
       await user.save();
+
+      // A new college gets a call within 24 hours. Goes into Needs action so someone owns it. Never blocks signup.
+      try {
+        const AdminRequest = require('../models/AdminRequest');
+        await AdminRequest.create({
+          user: user._id, type: 'college_call', college: college._id,
+          bookingName: name, bookingPhone: tpoPhone || phone || collegePhone || '', bookingEmail: normalizedEmail,
+          notes: `New college signed up: ${college.name}. Call the TPO within 24 hours to welcome them and help with the first student upload.`,
+        });
+        notifyRoles({
+          io: req.io, roles: ['admin'], title: 'New college: call within 24 hours',
+          message: `${college.name} just registered (${name}${tpoPhone || phone ? `, ${tpoPhone || phone}` : ''}). Call them within 24 hours.`,
+          type: 'general', link: '/admin/requests',
+        }).catch(err => console.error('College call notice failed:', err.message));
+      } catch (err) { console.error('College call task failed:', err.message); }
     }
 
     // Send OTP Email

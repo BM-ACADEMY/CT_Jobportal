@@ -33,7 +33,7 @@ const faqs = [
   { q: 'What does it cost?', a: 'You can start on the free plan with no card. Paid plans add things like co-branded certificates, company drive invites, WhatsApp interview invites and scheduled reports. Current prices are listed below.' },
   { q: 'Will companies actually come to our drives?', a: 'Paid plans let you invite companies to each drive and track their replies. We cannot promise which companies will accept — your own placement relationships still matter — but everything runs from one dashboard.' },
   { q: 'I need reports for my principal and accreditation files.', a: 'The platform gives you placement reports by drive and department, and a shareable executive summary link for your principal.' },
-  { q: 'What happens to our students’ data?', a: 'It is used to run your placement drives and the services students sign up for. Please read our Terms before you start, and contact us if you want details on how your students’ data is handled.' },
+  { q: 'What happens to our students’ data?', a: 'It is used to run your placement drives and the services students sign up for. We do not sell personal data. Students can ask us to correct or delete their data, or close their account. The details are in our Privacy Policy.' },
 ];
 
 const rupees = (n) => `₹${Number(n).toLocaleString('en-IN')}`;
@@ -151,6 +151,20 @@ const ForColleges = () => {
           <p className="text-center text-xs text-slate-400 mt-4">Prices shown are what you will see at checkout. GST may apply.</p>
         </section>
       )}
+
+      {/* Data safety */}
+      <section className="max-w-4xl mx-auto px-6 py-16">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6 md:p-8">
+          <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm"><ShieldCheck size={18} /> How we look after your students’ data</div>
+          <ul className="mt-4 space-y-2 text-sm text-slate-700 list-none p-0">
+            <li>We do not sell personal data, to companies or anyone else.</li>
+            <li>Student details are used to run your drives and the services your students sign up for.</li>
+            <li>Students can ask us to correct or delete their data, or close their account, at any time.</li>
+            <li>Your principal’s report opens only with a private link and a code that you share. You can issue a new code whenever you want.</li>
+          </ul>
+          <p className="mt-4 text-xs text-slate-500">Read the full <Link to="/privacy-policy" className="underline">Privacy Policy</Link>, or write to hello@velaivaaipu.in with any question before you sign up.</p>
+        </div>
+      </section>
 
       {/* FAQ */}
       <section className="bg-slate-50 py-20">
