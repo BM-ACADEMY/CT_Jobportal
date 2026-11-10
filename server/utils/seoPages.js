@@ -118,7 +118,7 @@ const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
     // Salary is entered per year (lakhs x 100000 in the post-job form)
     ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
   };
-  const full = `${job.title} Job in ${city} – ${company} | Velaivaaipu`;
+  const full = company === 'Velaivaaipu' ? `${job.title} Job in ${city} | Velaivaaipu` : `${job.title} Job in ${city} – ${company} | Velaivaaipu`;
   // A job the public list hides (unverified company, older than 45 days, admin-hidden): the link still works, search engines skip it.
   if (!jobIsPublic(job, now.getTime())) {
     return { status: 200, tag: 'hidden', headers: { ...html, 'Cache-Control': 'public, s-maxage=300' }, body: injectHead(shell, {
@@ -128,6 +128,62 @@ const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
   return { status: 200, tag: 'job', headers: { ...html, 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' }, body: injectHead(shell, {
     title: clip(full.length <= 60 ? full : `${job.title} Job in ${city} | Velaivaaipu`, 70),
     description, canonical, image: image2, type: 'article', jsonLd,
+  }) };
+};
+
+// Tags for the main public pages. The app sets these only after JavaScript runs; search engines and WhatsApp
+// read this raw HTML first, so each page must say what it is (and not claim to be the homepage).
+const CITY_PAGES = {
+  '/jobs/pondicherry': { city: 'Pondicherry', match: /pondicherry|puducherry|pondy|kosapalayam|lawspet|villianur|ariyankuppam|kottakuppam/i },
+  '/jobs/chennai': { city: 'Chennai', match: /chennai/i },
+  '/jobs/villupuram': { city: 'Villupuram', match: /villupuram|viluppuram|tindivanam|tindivanam/i },
+  '/jobs/cuddalore': { city: 'Cuddalore', match: /cuddalore|neyveli|chidambaram|panruti/i },
+};
+const PAGE_TAGS = {
+  '/': ['Jobs in Tamil Nadu & Pondicherry – Apply Free | Velaivaaipu', 'Find the latest job vacancies in Tamil Nadu and Pondicherry. Take a free AI skill test, get resume feedback and apply to jobs for free.'],
+  '/jobs': ['Latest Jobs in Tamil Nadu & Pondicherry – Apply Free | Velaivaaipu', 'Browse current private job openings in Tamil Nadu and Pondicherry by city, role and experience. Apply free on Velaivaaipu.'],
+  '/internships': ['Internships in Tamil Nadu, Free to Apply | Velaivaaipu', 'Paid and unpaid internships in Tamil Nadu and Pondicherry for students and freshers. Apply free on Velaivaaipu.'],
+  '/drives': ['Walk-in Drives and Campus Drives in Tamil Nadu | Velaivaaipu', 'See upcoming walk-in interviews and campus placement drives in Tamil Nadu and Pondicherry, with date, venue and how to register.'],
+  '/companies': ['Companies Hiring in Tamil Nadu & Pondicherry | Velaivaaipu', 'Browse companies hiring in Tamil Nadu and Pondicherry. See company profiles and open vacancies, and apply directly for free.'],
+  '/how-it-works': ['How It Works – Find Jobs or Hire in Tamil Nadu | Velaivaaipu', 'Learn how job seekers apply free, employers find candidates and colleges run campus drives on Velaivaaipu.'],
+  '/plans': ['Plans and Pricing for Job Seekers, Companies and Colleges | Velaivaaipu', 'Start free. See what each Velaivaaipu plan includes for students, job seekers, recruiters, companies and colleges. Prices in rupees, GST shown before you pay.'],
+  '/contact': ['Contact Us – Job Search & Hiring Support | Velaivaaipu', 'Need help with your job search, account or hiring on Velaivaaipu? Reach our support team by WhatsApp or email.'],
+  '/blog': ['Job Search Tips & Career Guides for Tamil Nadu | Velaivaaipu', 'Practical guides on fresher jobs, private jobs, walk-in interviews and resumes for Tamil Nadu and Pondicherry.'],
+  '/for-colleges': ['Campus Placement Software for Colleges in TN | Velaivaaipu', 'Run campus drives, track students and share placement reports with your principal. Students join by QR code with just a WhatsApp number. Start free.'],
+  '/for-companies': ['Hire in Tamil Nadu & Pondicherry – Post Jobs Free | Velaivaaipu', 'Post jobs free, reach local candidates and manage applications in one place. Companies are checked before their jobs go public.'],
+  '/for-recruiters': ['Recruiter Tools for Hiring in Tamil Nadu | Velaivaaipu', 'Find and shortlist candidates in Tamil Nadu and Pondicherry, run walk-ins and track applications on Velaivaaipu.'],
+  '/free-assessment': ['Free Online Skill Test for Job Seekers | Velaivaaipu', 'Take a free online skill test, see your score and find out which jobs in Tamil Nadu and Pondicherry suit your skills.'],
+  '/job-post-templates': ['Free Job Post Templates for Employers | Velaivaaipu', 'Ready-to-use job post templates for common roles. Copy, edit and post your opening on Velaivaaipu for free.'],
+  '/terms': ['Terms and Conditions | Velaivaaipu', 'The terms for using Velaivaaipu as a job seeker, employer or college, including accounts, payments and refunds.'],
+  '/privacy-policy': ['Privacy Policy | Velaivaaipu', 'How Velaivaaipu collects, uses and protects your data.'],
+  '/refund-policy': ['Refund Policy | Velaivaaipu', 'When and how refunds work for Velaivaaipu plans and services.'],
+};
+Object.entries(CITY_PAGES).forEach(([path, { city }]) => {
+  PAGE_TAGS[path] = [`Jobs in ${city} – Fresher & Walk-in Jobs | Velaivaaipu`, `Current job openings in ${city}, including fresher jobs and walk-in interviews. Apply free on Velaivaaipu.`];
+});
+
+const ORG_JSON_LD = () => ({
+  '@context': 'https://schema.org', '@type': 'Organization', '@id': `${SITE_URL()}/#organization`,
+  name: 'Velaivaaipu', alternateName: ['வேலைவாய்ப்பு', 'Velai Vaaippu'], url: SITE_URL(), logo: `${SITE_URL()}/velaivaaipu-logo.png`,
+  description: 'A private job portal for Tamil Nadu and Puducherry. Not a government website.',
+  areaServed: [{ '@type': 'State', name: 'Tamil Nadu' }, { '@type': 'State', name: 'Puducherry' }],
+});
+
+const normalizePath = (p) => {
+  const clean = String(p || '/').split(/[?#]/)[0].replace(/\/+$/, '').toLowerCase();
+  return clean || '/';
+};
+// openJobs: how many public jobs the city page would list (null = unknown). City pages below the minimum are noindex.
+const cityMinJobs = () => { const n = parseInt(process.env.CITY_PAGE_MIN_JOBS, 10); return Number.isFinite(n) && n >= 0 ? n : 10; };
+const buildPageResponse = ({ path, shell, openJobs = null }) => {
+  const key = normalizePath(path);
+  const tags = PAGE_TAGS[key];
+  const html = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' };
+  if (!tags) return { status: 200, tag: 'shell-unknown-page', headers: html, body: shell };
+  const thin = CITY_PAGES[key] && openJobs !== null && openJobs < cityMinJobs();
+  return { status: 200, tag: thin ? 'page-thin' : 'page', headers: html, body: injectHead(shell, {
+    title: tags[0], description: tags[1], canonical: `${SITE_URL()}${key === "/" ? "/" : key}`,
+    robots: thin ? 'noindex, follow' : 'index, follow', ...(key === '/' ? { jsonLd: ORG_JSON_LD() } : {}),
   }) };
 };
 
@@ -147,14 +203,14 @@ const STATIC_PAGES = [
 ];
 const urlEntry = (loc, lastmod, priority) =>
   `  <url><loc>${escapeHtml(loc)}</loc>${lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${priority ? `<priority>${priority}</priority>` : ''}</url>`;
-const buildSitemap = ({ jobs = [], companies = [], posts = [], builtAt = null }) => {
+const buildSitemap = ({ jobs = [], companies = [], posts = [], builtAt = null, skipPaths = [] }) => {
   // Static pages carry the newest job/post date so crawlers see a real lastmod; no date when there is nothing to base it on.
   const newest = [...jobs, ...posts].map((x) => new Date(x.updatedAt || 0).getTime()).filter(Boolean).sort((a, b) => b - a)[0] || builtAt;
-  const entries = [...STATIC_PAGES, ...blogSlugs().map((s) => `/blog/${s}`)].map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, ['/jobs', '/', '/internships'].includes(p) || p.startsWith('/jobs/') ? newest : null, p === '/' ? '1.0' : '0.8'));
+  const entries = [...STATIC_PAGES.filter((p) => !skipPaths.includes(p)), ...blogSlugs().map((s) => `/blog/${s}`)].map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, ['/jobs', '/', '/internships'].includes(p) || p.startsWith('/jobs/') ? newest : null, p === '/' ? '1.0' : '0.8'));
   posts.forEach((p) => entries.push(urlEntry(`${SITE_URL()}/blog/${p.slug}`, p.updatedAt, '0.8')));
   jobs.forEach((j) => entries.push(urlEntry(jobUrl(j), j.updatedAt, '0.7')));
   companies.forEach((c) => entries.push(urlEntry(`${SITE_URL()}/companies/${c._id}`, c.updatedAt, '0.5')));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>\n`;
 };
 
-module.exports = { blogSlugs, buildJobResponse, buildSitemap, getShell, resetShellCache, injectHead, jobIdFromSlug, jobSlug, jobUrl, slugify, STATIC_PAGES };
+module.exports = { CITY_PAGES, PAGE_TAGS, buildPageResponse, normalizePath, cityMinJobs, blogSlugs, buildJobResponse, buildSitemap, getShell, resetShellCache, injectHead, jobIdFromSlug, jobSlug, jobUrl, slugify, STATIC_PAGES };
