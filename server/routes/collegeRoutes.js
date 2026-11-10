@@ -143,7 +143,7 @@ router.get('/public/drive/:driveCode', getPublicDrive);
 router.post('/public/drive/:driveCode/register', publicRegisterLimiter, publicRegister);
 router.get('/public/assessment', publicSubmitLimiter, getPublicAssessment);
 router.post('/public/submit-assessment', publicSubmitLimiter, submitAssessment);
-router.post('/public/principal-report/:passkey', getPrincipalExecutiveReport);
+router.post('/public/principal-report/:passkey', rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: 'Too many attempts. Please wait a few minutes.' }), getPrincipalExecutiveReport);
 router.get('/drives/incharge/verify/:driveId/:token', verifyInchargeInvite);
 router.post('/drives/incharge/accept-existing/:driveId/:token', acceptInchargeInviteExisting);
 router.post('/drives/incharge/accept-new/:driveId/:token', acceptInchargeInviteNew);

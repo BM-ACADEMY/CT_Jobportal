@@ -448,7 +448,7 @@ const SubscriptionPage = () => {
   return (
     <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex-1 min-w-0 space-y-12">
-      <PageSOPBanner pageKey="companySubscription" />
+      <PageSOPBanner pageKey={user?.role === 'college' ? 'collegeSubscription' : 'companySubscription'} />
 
       {/* Checkout summary modal */}
       {checkoutPlan && (
@@ -568,8 +568,8 @@ const SubscriptionPage = () => {
             </div>
           </div>
 
-          {/* Auto-renew toggle */}
-          {!isExpired && (
+          {/* Auto-renew toggle: a plan with no end date (the Free plan) has nothing to renew */}
+          {!isExpired && expiry && (
             <div className="flex items-center justify-between rounded-none bg-white border border-[#e8e8e8] px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <RefreshCw size={15} className={autoRenew ? 'text-blue-500' : 'text-slate-400'} />

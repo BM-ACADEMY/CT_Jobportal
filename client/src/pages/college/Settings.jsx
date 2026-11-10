@@ -346,7 +346,7 @@ const CollegeSettings = () => {
               type="email"
               value={form.principalEmail}
               onChange={e => setForm(p => ({ ...p, principalEmail: e.target.value }))}
-              placeholder="principal@skct.campus"
+              placeholder="principal@yourcollege.edu"
               className={antInputClass}
             />
           </div>
@@ -356,7 +356,7 @@ const CollegeSettings = () => {
               type="email"
               value={form.collegeEmail}
               onChange={e => setForm(p => ({ ...p, collegeEmail: e.target.value }))}
-              placeholder="office@skct.campus"
+              placeholder="office@yourcollege.edu"
               className={antInputClass}
             />
           </div>
@@ -374,7 +374,7 @@ const CollegeSettings = () => {
             <input
               value={form.additionalReportRecipients}
               onChange={e => setForm(p => ({ ...p, additionalReportRecipients: e.target.value }))}
-              placeholder="placement.head@skct.campus, management@skct.campus"
+              placeholder="placement.head@yourcollege.edu, management@yourcollege.edu"
               className={antInputClass}
             />
             <p className="text-[10px] text-slate-400 mt-1">Placement reports are emailed to the Principal Email and everyone listed here.</p>

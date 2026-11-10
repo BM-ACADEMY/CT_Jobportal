@@ -20,13 +20,13 @@ const StatCard = ({ icon: Icon, label, value, bgGradient, subtext, onClick }) =>
     onClick={onClick}
     className={`rounded-xl border border-slate-200 bg-slate-50/60 p-5 space-y-4 hover:-translate-y-1 transition-all duration-300 ${onClick ? 'cursor-pointer' : ''}`}
   >
-    <div className="flex items-center gap-4 relative overflow-hidden">
-      <div className={`w-14 h-14 bg-gradient-to-br ${bgGradient} rounded-none flex items-center justify-center shrink-0 border border-white/50 shadow-sm relative z-10`}>
+    <div className="flex items-center gap-3 relative">
+      <div className={`w-12 h-12 bg-gradient-to-br ${bgGradient} rounded-none flex items-center justify-center shrink-0 border border-white/50 shadow-sm relative z-10`}>
         <Icon size={22} className="text-white" />
       </div>
-      <div className="relative z-10">
-        <p className="text-3xl font-black tracking-tight text-slate-800">{value}</p>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+      <div className="relative z-10 min-w-0">
+        <p className={`${typeof value === 'string' && !/^[\d.,%]+$/.test(value) ? 'text-xl' : 'text-3xl'} font-black tracking-tight text-slate-800 break-words`}>{value}</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 leading-tight break-words">{label}</p>
         {subtext && <p className="text-[9px] text-slate-400 font-semibold mt-1">{subtext}</p>}
       </div>
     </div>
@@ -143,7 +143,7 @@ const CollegeDashboard = () => {
                 </div>
                 <h2 className="text-2xl font-black text-white tracking-tight m-0">{college.name}</h2>
                 <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
-                  Manage your institution's placement drives, student verification, and analytics dynamically.
+                  Manage your institution's placement drives, student verification and results in one place.
                 </p>
               </div>
             </div>
@@ -219,7 +219,7 @@ const CollegeDashboard = () => {
       </div>
 
       {/* Stats - Grid of Gradient Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard icon={Users} label="Total Students" value={totalStudents} bgGradient="from-[#6b62fc] to-[#8d7cff]" />
         <StatCard icon={BookOpen} label="Registered" value={stats.registered} bgGradient="from-[#a855f7] to-[#c084fc]" />
         <StatCard icon={Briefcase} label="Applied" value={stats.applied} bgGradient="from-[#f97316] to-[#fb923c]" />
@@ -248,7 +248,7 @@ const CollegeDashboard = () => {
                { label: 'Shortlisted', value: placementFunnel.shortlistsReceived, bgGradient: 'from-indigo-600 to-purple-500', desc: 'Selected profiles' },
                { label: 'Interviews', value: placementFunnel.interviewsScheduled, bgGradient: 'from-violet-600 to-fuchsia-500', desc: 'Conducted interviews' },
                { label: 'Offers Made', value: placementFunnel.offersMade, bgGradient: 'from-[#10b981] to-[#34d399]', desc: 'Offers accepted' },
-               { label: 'Avg. Salary', value: `₹${placementFunnel.averagePlacementSalary} LPA`, bgGradient: 'from-[#f97316] to-[#fb923c]', desc: 'Average Package' }
+               { label: 'Avg. Salary', value: Number(placementFunnel.averagePlacementSalary) > 0 ? `₹${placementFunnel.averagePlacementSalary} LPA` : '—', bgGradient: 'from-[#f97316] to-[#fb923c]', desc: 'Average Package' }
             ].map((metric, i) => (
               <div key={i} className={`flex-1 p-5 rounded-none shadow-sm bg-gradient-to-br ${metric.bgGradient} text-white hover:shadow-md transition-all duration-300 flex flex-col justify-between`}>
                 <div>

@@ -183,7 +183,7 @@ const MyJobs = () => {
                  </div>
                  <h2 className="text-2xl font-black text-white tracking-tight m-0">My Job Listings</h2>
                  <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
-                   Manage all your posted positions, analyze applicant flow, and track engagement dynamically.
+                   Manage all your posted positions, analyze applicant flow, and track engagement.
                  </p>
                  {quota && !quota.unlimited && (
                    <div style={{ marginTop: 8 }}>

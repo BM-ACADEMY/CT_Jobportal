@@ -190,7 +190,7 @@ const MyTeam = () => {
                  </div>
                  <h2 className="text-2xl font-black text-white tracking-tight m-0">My Team</h2>
                  <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
-                   Manage your organization's team members and staff accounts dynamically.
+                   Manage your organization's team members and staff accounts.
                  </p>
               </div>
             </div>

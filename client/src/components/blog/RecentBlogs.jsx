@@ -3,10 +3,19 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { BLOGS } from '../../data/blogs';
 import { useAdminBlogCards } from '../../data/useBlogPosts';
+import { useAuth } from '../../context/AuthContext';
+
+// Posts written for employers and recruiters are not useful on a student or college screen.
+const RECRUITER_ONLY = ['For Recruiters & Employers', 'Recruitment & HR Guidance'];
+const HIDE_RECRUITER_POSTS_FOR = ['jobseeker', 'college', 'drive_incharge'];
 
 const RecentBlogs = ({ compact = false }) => {
   const newPosts = useAdminBlogCards();
-  const RECENT_BLOGS = [...newPosts, ...BLOGS].slice(0, 2);
+  const { user } = useAuth();
+  const hideRecruiterPosts = HIDE_RECRUITER_POSTS_FOR.includes(user?.role);
+  const RECENT_BLOGS = [...newPosts, ...BLOGS]
+    .filter((b) => !(hideRecruiterPosts && RECRUITER_ONLY.includes(b.category)))
+    .slice(0, 2);
   return (
   <section className={compact ? '' : 'max-w-7xl mx-auto px-6 py-14'} aria-labelledby="recent-blogs-title">
     <div className={compact ? 'mb-4' : 'flex items-end justify-between gap-4 mb-7'}>

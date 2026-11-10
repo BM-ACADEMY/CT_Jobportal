@@ -320,7 +320,7 @@ const CollegeReports = () => {
             </div>
             <div className={`flex items-center gap-3 rounded-none border p-4 ${accreditation.missingEvidence ? 'border-amber-200 bg-amber-50/50' : 'border-emerald-200 bg-emerald-50/50'}`}>
               {accreditation.missingEvidence ? <AlertTriangle className="text-amber-600 shrink-0" size={20} /> : <CheckCircle2 className="text-[#39c884] shrink-0" size={20} />}
-              <div><p className="text-xs font-semibold text-slate-900">{accreditation.missingEvidence ? `${accreditation.missingEvidence} claim(s) missing evidence` : 'All claimed outcomes have evidence'}</p><p className="text-[10px] text-slate-500 mt-0.5">{accreditation.claimCount} placement/progression claims checked. Add evidence from Students → student details before submission.</p></div>
+              <div><p className="text-xs font-semibold text-slate-900">{accreditation.missingEvidence ? `${accreditation.missingEvidence} claim(s) missing evidence` : (accreditation.claimCount > 0 ? 'All claimed outcomes have evidence' : 'No placement outcomes claimed yet')}</p><p className="text-[10px] text-slate-500 mt-0.5">{accreditation.claimCount > 0 ? `${accreditation.claimCount} placement/progression claims checked. ` : ''}Add evidence from Students → student details before submission.</p></div>
             </div>
           </>
         )}

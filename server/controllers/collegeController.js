@@ -2343,6 +2343,7 @@ const generatePrincipalPasskey = async (req, res) => {
     const code = String(crypto.randomInt(1000, 10000));
     college.principalAccessCode = code;
     college.principalAccessCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // valid 24h
+    college.principalAccessAttempts = 0;
     await college.save();
 
     const executiveUrl = `${FRONTEND_URL}/principal/executive-summary/${college.principalPasskey}`;
@@ -2362,16 +2363,22 @@ const generatePrincipalPasskey = async (req, res) => {
 // @desc    Verify the 4-digit access code and, if it matches, return the executive report.
 //          The link alone is not sufficient — an incorrect/missing/expired code is Unauthorized.
 // @route   POST /api/college/public/principal-report/:passkey
+const { checkPrincipalCode } = require('../utils/principalCode');
 const getPrincipalExecutiveReport = async (req, res) => {
   try {
     const { code } = req.body;
     const college = await College.findOne({ principalPasskey: req.params.passkey });
     if (!college) return res.status(404).json({ msg: 'Invalid executive link' });
 
-    if (!college.principalAccessCode || !college.principalAccessCodeExpiry || college.principalAccessCodeExpiry < new Date()) {
+    const verdict = checkPrincipalCode({ code: college.principalAccessCode, expiry: college.principalAccessCodeExpiry, attempts: college.principalAccessAttempts || 0 }, code);
+    if (verdict === 'expired') {
       return res.status(401).json({ msg: 'This access code has expired. Ask the TPO to share a new one.' });
     }
-    if (!code || String(code) !== college.principalAccessCode) {
+    if (verdict === 'locked') {
+      return res.status(401).json({ msg: 'Too many wrong codes. Ask the TPO to share a new code.' });
+    }
+    if (verdict !== 'ok') {
+      await College.updateOne({ _id: college._id }, { $inc: { principalAccessAttempts: 1 } });
       return res.status(401).json({ msg: 'Unauthorized: incorrect access code.' });
     }
 

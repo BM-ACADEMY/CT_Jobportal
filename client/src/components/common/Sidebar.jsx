@@ -269,7 +269,7 @@ const PremiumNavItem = ({ item, active, unlocked, isCollapsed }) => {
   return (
     <Link
       to={item.path}
-      title={item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined)}
+      title={!unlocked ? `${item.label}: not in your current plan. Open it to see what you get and how to upgrade.` : (item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined))}
       className={`group flex items-center transition-all relative rounded-none outline-none focus:outline-none
         ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
         ${active
@@ -523,7 +523,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                 <div className="px-5 mb-3 flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">
                   <span>Premium Features</span>
                   <div className="h-[1px] flex-1 bg-white/10" />
-                  {(!user?.subscription || user?.subscription?.price === 0) && (
+                  {(!user?.subscription || user?.subscription?.price === 0) && premiumItems.some(i => i.featureKey && !hasFeature(user, i.featureKey)) && (
                     <Badge className="text-[8px] font-bold bg-amber-50 text-amber-600 border-amber-100 px-1.5 py-0 shrink-0 rounded-none">
                       Upgrade
                     </Badge>

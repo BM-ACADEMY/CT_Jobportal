@@ -9,6 +9,7 @@ const Company = require('../models/Company');
 const Subscription = require('../models/Subscription');
 const CampusDrive = require('../models/CampusDrive');
 const sendEmail = require('../utils/sendEmail');
+const { otpEmail } = require('../utils/emailTemplates');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { cleanInterestedCategories } = require('../config/jobCategories');
 const { isSelfServeRole } = require('../utils/selfServeRoles');
@@ -206,17 +207,7 @@ const registerUser = async (req, res) => {
     }
 
     // Send OTP Email
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-        <h2 style="color: #1d4ed8;">Welcome to Velaivaaipu!</h2>
-        <p style="font-size: 16px;">Hi ${name},</p>
-        <p style="font-size: 16px;">Thank you for registering. Please use the following OTP to verify your email address. It is valid for 10 minutes.</p>
-        <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
-          ${otp}
-        </div>
-        <p style="font-size: 14px; color: #6b7280;">If you didn't request this, you can safely ignore this email.</p>
-      </div>
-    `;
+    const htmlContent = otpEmail({ title: 'Welcome to Velaivaaipu', name, otp, intro: 'Thank you for registering. Use this code to verify your email address.' });
 
     const emailSent = await sendEmail({
       email,
@@ -356,16 +347,7 @@ const loginUser = async (req, res) => {
       user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
 
-      const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-          <h2 style="color: #1d4ed8;">Verify Your Account</h2>
-          <p style="font-size: 16px;">Hi ${user.name}, you tried to log in but your account isn't verified.</p>
-          <p style="font-size: 16px;">Your new OTP is:</p>
-          <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
-            ${otp}
-          </div>
-        </div>
-      `;
+      const htmlContent = otpEmail({ title: 'Verify your account', name: user.name, otp, intro: "You tried to log in, but your email isn't verified yet. Use this code to verify it." });
       const emailSent = await sendEmail({ email, subject: 'Verify Your Email - Velaivaaipu', html: htmlContent });
       
       const msg = emailSent 
@@ -473,17 +455,7 @@ const forgotPassword = async (req, res) => {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-        <h2 style="color: #1d4ed8;">Password Reset Request</h2>
-        <p style="font-size: 16px;">Hi ${user.name},</p>
-        <p style="font-size: 16px;">You requested to reset your password. Use the following OTP to securely verify your identity.</p>
-        <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
-          ${otp}
-        </div>
-        <p style="font-size: 14px; color: #6b7280;">If you didn't request a password reset, you can safely ignore this email.</p>
-      </div>
-    `;
+    const htmlContent = otpEmail({ title: 'Reset your password', name: user.name, otp, intro: 'You asked to reset your password. Use this code to confirm it is you.', safety: "If you didn't ask to reset your password, you can safely ignore this email; your password will not change. Never share this code with anyone." });
 
     const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Velaivaaipu', html: htmlContent });
 
@@ -652,17 +624,7 @@ const resendOtp = async (req, res) => {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
 
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-        <h2 style="color: #1d4ed8;">Your New OTP Code</h2>
-        <p style="font-size: 16px;">Hi ${user.name},</p>
-        <p style="font-size: 16px;">You requested a new verification code. It is valid for 10 minutes.</p>
-        <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
-          ${otp}
-        </div>
-        <p style="font-size: 14px; color: #6b7280;">If you didn't request this, please ignore this email.</p>
-      </div>
-    `;
+    const htmlContent = otpEmail({ title: 'Your new verification code', name: user.name, otp, intro: 'You asked for a new verification code. Use it to continue.' });
 
     const emailSent = await sendEmail({
       email: normalizedEmail,

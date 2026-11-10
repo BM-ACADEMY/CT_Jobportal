@@ -169,6 +169,14 @@ export const PAGE_SOP = {
       'Plans renew automatically unless auto-renew is turned off.',
       'All payments are final — see our Terms & Conditions for the no-refund policy.'
     ]
+  },  collegeSubscription: {
+    title: 'Subscription Plans',
+    whatItIs: 'Compare campus plans. Higher plans allow more students and unlock co-branded certificates, MoU, WhatsApp interview invites and scheduled placement reports.',
+    howItWorks: [
+      'Pick a plan and complete payment via Razorpay.',
+      'Plans renew automatically unless auto-renew is turned off.',
+      'All payments are final — see our Terms & Conditions for the no-refund policy.'
+    ]
   },
   assignedRequests: {
     title: 'Requests',

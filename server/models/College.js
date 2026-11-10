@@ -154,6 +154,7 @@ const collegeSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  principalAccessAttempts: { type: Number, default: 0 }, // wrong tries on the current code; reset when a new code is issued
   principalAccessCodeExpiry: {
     type: Date,
     default: null
