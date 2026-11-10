@@ -7,7 +7,8 @@ import PublicSEO from '../components/seo/PublicSEO';
 // Public layout used for the landing page — has a header but no sidebar
 const PublicLayout = () => {
   const { pathname } = useLocation();
-  const showRecentBlogs = pathname === '/jobs' || pathname === '/companies';
+  // /companies renders RecentBlogs itself, above its footer.
+  const showRecentBlogs = pathname === '/jobs';
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <PublicSEO />
