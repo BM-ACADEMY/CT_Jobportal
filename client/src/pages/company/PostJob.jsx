@@ -474,8 +474,8 @@ const PostJob = () => {
                                 </Select>
                             </Form.Item>
 
-                            <Form.Item label="Location" name="location">
-                                <Input size="large" placeholder="e.g. Chennai, India" />
+                            <Form.Item label="Location" name="location" extra="The town or city where the person will work. Not just Tamil Nadu or India.">
+                                <Input size="large" placeholder="e.g. Puducherry" />
                             </Form.Item>
 
                             <Form.Item label="Number of Vacancies" name="vacancies">

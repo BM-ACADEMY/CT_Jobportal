@@ -3,6 +3,7 @@ const { withPromotion } = require('../utils/jobPromotion');
 const { cleanInternship, freeInternshipSlot } = require('../utils/internship');
 const { cleanFacets, cleanSalary } = require('../utils/jobFacets');
 const Company = require('../models/Company');
+const { vagueLocation, VAGUE_LOCATION_MESSAGE } = require('../utils/jobLocation');
 const { publicJobConditions, publicCompanyConditions, hideUnverified } = require('../utils/publicVisibility');
 const { cleanCategory, cleanInterestedCategories, guessCategory } = require('../config/jobCategories');
 const Job = require('../models/Job');
@@ -111,6 +112,7 @@ const createJob = async (req, res) => {
     if (status !== 'draft') {
       if (!title) return res.status(400).json({ msg: 'Job title is required for publishing' });
       if (!description) return res.status(400).json({ msg: 'Job description is required for publishing' });
+      if (vagueLocation(location, workMode)) return res.status(400).json({ msg: VAGUE_LOCATION_MESSAGE });
     }
 
     const newJob = new Job({
@@ -286,6 +288,9 @@ const updateJob = async (req, res) => {
 
     // Conditional validation for updates
     const updatedStatus = req.body.status || job.status;
+    if (updatedStatus !== 'draft' && req.body.location !== undefined && vagueLocation(req.body.location, req.body.workMode || job.workMode)) {
+      return res.status(400).json({ msg: VAGUE_LOCATION_MESSAGE });
+    }
     
     // Check limit if moving from draft/inactive to active/closed
     const currentIsCounting = ['active', 'closed'].includes(job.status);
