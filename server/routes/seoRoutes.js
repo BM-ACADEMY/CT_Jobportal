@@ -46,11 +46,11 @@ const cityCounts = async () => {
 };
 
 // nginx sends the main public pages here: GET /seo/page/for-colleges, /seo/page/jobs/chennai, /seo/page (home)
-router.get(['/page', '/page/*'], async (req, res) => {
+router.get(['/page', '/page/*splat'], async (req, res) => {
   let shell = '';
   try {
     shell = await getShell();
-    const path = normalizePath(`/${req.params[0] || ''}`);
+    const path = normalizePath(`/${[].concat(req.params.splat || []).join('/')}`);
     let openJobs = null;
     if (CITY_PAGES[path]) { try { openJobs = (await cityCounts())[path]; } catch (e) { console.error('[SEO] city count failed:', e.message); } }
     return send(res, buildPageResponse({ path, shell, openJobs }));

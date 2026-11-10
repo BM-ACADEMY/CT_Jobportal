@@ -15,7 +15,10 @@ const runFreeCollegeSummaries = async (now = new Date()) => {
     const keys = colleges.map((c) => keyFor(c._id, now));
     const sent = new Set((await AdminAlertLog.find({ key: { $in: keys } }).select('key').lean()).map((r) => r.key));
     const since = new Date(now.getTime() - 30 * 86400000);
-    for (const college of pickDue({ colleges, sentKeys: sent, now })) {
+    const MAX_PER_RUN = 40; // a first run never floods; the rest go out on the next days
+    const settled = new Date(now.getTime() - 30 * 86400000);
+    const due = pickDue({ colleges: colleges.filter((c) => !c.createdAt || new Date(c.createdAt) <= settled), sentKeys: sent, now }).slice(0, MAX_PER_RUN);
+    for (const college of due) {
       try {
         const [total, joined, drives, placed] = await Promise.all([
           CollegeStudent.countDocuments({ college: college._id }),

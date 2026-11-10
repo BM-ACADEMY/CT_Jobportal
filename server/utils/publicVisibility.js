@@ -31,7 +31,8 @@ const jobIsPublic = (job, now = Date.now()) => {
   const t = (d) => (d ? new Date(d).getTime() : 0);
   if (t(job.createdAt) < cut && t(job.renewedAt) < cut) return false;
   const c = job.company;
-  if (c && typeof c === 'object') {
+  if (!c) return !hideUnverified(); // a job with no company is hidden by the list rule too, so the pages match
+  if (typeof c === 'object') {
     if (c.hiddenFromPublic) return false;
     if (hideUnverified() && !c.is_verified) return false;
   }

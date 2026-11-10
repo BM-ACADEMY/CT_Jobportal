@@ -113,10 +113,10 @@ const escape = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<':
 const runCollegeRoleReminders = async () => {
   if (!enabled()) return;
   try {
-    const pending = await College.find({ verificationStatus: 'pending', isTest: { $ne: true }, createdAt: { $lte: new Date(Date.now() - 2 * 86400000) } })
-      .populate('tpoUser', 'name email').limit(50);
+    const pending = await College.find({ verificationStatus: 'pending', isTest: { $ne: true }, 'infoRequests.0': { $exists: false }, createdAt: { $lte: new Date(Date.now() - 2 * 86400000) } })
+      .sort({ createdAt: 1 }).populate('tpoUser', 'name email').limit(50);
     const sent = await alreadySent(pending.map(collegeAskKey));
-    for (const c of pickCollegesToAsk(pending, sent)) {
+    for (const c of pickCollegesToAsk(pending, sent).slice(0, 10)) { // at most 10 a day, so a first run cannot flood
       const to = c.principalEmail || c.tpoUser?.email || c.collegeEmail;
       const ok = await sendEmail({
         email: to, subject: `[Velaivaaipu] ${c.name}: one quick detail to finish verification`,

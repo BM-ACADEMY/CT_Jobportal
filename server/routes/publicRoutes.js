@@ -1,4 +1,5 @@
 const express = require('express');
+const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const router = express.Router();
 const mongoose = require('mongoose');
 const axios = require('axios');
@@ -166,12 +167,12 @@ router.get('/companies', async (req, res) => {
       const companyQuery = { ...publicCompanyConditions() };
       if (search) {
         companyQuery.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { location: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } },
+          { name: { $regex: escapeRegex(search), $options: 'i' } },
+          { location: { $regex: escapeRegex(search), $options: 'i' } },
+          { description: { $regex: escapeRegex(search), $options: 'i' } },
         ];
       }
-      if (industry) companyQuery.industry = { $regex: industry, $options: 'i' };
+      if (industry) companyQuery.industry = { $regex: escapeRegex(industry), $options: 'i' };
 
       [companies, totalCompanies] = await Promise.all([
         Company.find(companyQuery)
@@ -202,9 +203,9 @@ router.get('/companies', async (req, res) => {
         const recruiterQuery = { role: recruiterRole._id, isAdminBlocked: { $ne: true } };
         if (search) {
           recruiterQuery.$or = [
-            { name: { $regex: search, $options: 'i' } },
-            { 'recruiterProfile.location': { $regex: search, $options: 'i' } },
-            { 'recruiterProfile.jobTitle': { $regex: search, $options: 'i' } },
+            { name: { $regex: escapeRegex(search), $options: 'i' } },
+            { 'recruiterProfile.location': { $regex: escapeRegex(search), $options: 'i' } },
+            { 'recruiterProfile.jobTitle': { $regex: escapeRegex(search), $options: 'i' } },
           ];
         }
 

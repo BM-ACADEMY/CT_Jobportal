@@ -38,3 +38,15 @@ test('sitemap gives list pages a lastmod from the newest job or post', () => {
   assert.doesNotMatch(xml, /\/terms<\/loc><lastmod>/);
   assert.doesNotMatch(buildSitemap({}), /<lastmod>/);
 });
+
+test('a job with no company follows the verified-company rule', () => {
+  const now = Date.now();
+  const job = { createdAt: new Date(now - 86400000) };
+  const prev = process.env.HIDE_UNVERIFIED_JOBS;
+  try {
+    process.env.HIDE_UNVERIFIED_JOBS = 'true';
+    assert.strictEqual(V.jobIsPublic({ ...job, company: null }, now), false);
+    process.env.HIDE_UNVERIFIED_JOBS = 'false';
+    assert.strictEqual(V.jobIsPublic({ ...job, company: null }, now), true);
+  } finally { if (prev === undefined) delete process.env.HIDE_UNVERIFIED_JOBS; else process.env.HIDE_UNVERIFIED_JOBS = prev; }
+});

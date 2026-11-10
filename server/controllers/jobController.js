@@ -230,6 +230,9 @@ const cloneJob = async (req, res) => {
     newJobData.applicantsCount = 0;
     newJobData.status = 'draft';
     newJobData.isCloned = true;
+    // A copy never inherits paid, flagged or reported state.
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'hiddenFromPublic', 'scamReviewed', 'scamFlags', 'reportCount', 'renewedAt'].forEach((k) => { delete newJobData[k]; });
+    if (newJobData.internship) newJobData.internship = { ...newJobData.internship, free: false };
 
     const newJob = new Job(newJobData);
     const savedJob = await newJob.save();
@@ -288,7 +291,7 @@ const updateJob = async (req, res) => {
 
     // Conditional validation for updates
     const updatedStatus = req.body.status || job.status;
-    if (updatedStatus !== 'draft' && req.body.location !== undefined && vagueLocation(req.body.location, req.body.workMode || job.workMode)) {
+    if (updatedStatus !== 'draft' && req.body.location !== undefined && String(req.body.location).trim() !== String(job.location || '').trim() && vagueLocation(req.body.location, req.body.workMode || job.workMode)) {
       return res.status(400).json({ msg: VAGUE_LOCATION_MESSAGE });
     }
     
@@ -337,7 +340,7 @@ const updateJob = async (req, res) => {
     const previousStatus = job.status;
     delete req.body.scamFlags; delete req.body.scamReviewed; // only the server and admin set these
     // Paid and counted fields are never set from the posting form: only an admin (sponsored, urgent) or the server (reports, free internship) can.
-    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'hiddenFromPublic'].forEach((k) => { delete req.body[k]; });
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'hiddenFromPublic', 'company', 'recruiter', 'applicantsCount', 'display_id', 'isCloned', '_id'].forEach((k) => { delete req.body[k]; });
     Object.keys(req.body).forEach((k) => { if (k.includes('.') || k.startsWith('$')) delete req.body[k]; });   // no dotted paths such as 'internship.free'
     if (req.body.internship !== undefined) {
       if (job.jobType !== 'Internship' && req.body.jobType !== 'Internship') { delete req.body.internship; }
