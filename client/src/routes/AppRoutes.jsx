@@ -131,6 +131,7 @@ const DrivePass = page('drives/DrivePass');
 const WalkInDrives = page('company/WalkInDrives');
 const WalkInManage = page('company/WalkInManage');
 const AdminCollegeVerification = page('admin/CollegeVerification');
+const AdminCollegeFunnel = page('admin/CollegeFunnel');
 const CollegeKycDetails = page('admin/CollegeKycDetails');
 const CollegeDashboard = page('college/Dashboard');
 const CollegeStudents = page('college/Students');
@@ -468,6 +469,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManageJobs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/college-funnel"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminCollegeFunnel />
             </PrivateRoute>
           }
         />

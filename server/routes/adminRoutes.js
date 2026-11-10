@@ -46,6 +46,7 @@ router.use(authorizeRoles('admin'));
 
 // Employers' active-job limits: see them and raise them without a payment (Super Admin only).
 // Business advisor: weekly numbers, AI notes and ideas (Super Admin only).
+router.get('/college-funnel', require('../controllers/collegeFunnelController').getCollegeFunnel);
 router.get('/student-pack-info', require('../controllers/collegePackController').packInfo);
 router.post('/colleges/:id/student-pack', require('../controllers/collegePackController').recordPack);
 router.get('/activity', require('../controllers/activityController').getActivity);

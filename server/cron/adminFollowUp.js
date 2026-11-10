@@ -133,4 +133,41 @@ const runCollegeRoleReminders = async () => {
   }
 };
 
-module.exports = { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts, runCollegeRoleReminders };
+// Once a day: colleges whose student list is over 70%, 90% or 100% of their limit get one message per line crossed
+// (the limit is part of the key, so a new pack or plan starts the count again). Our team gets one call task per college.
+const runCollegeLimitNudges = async () => {
+  if (!enabled()) return;
+  try {
+    const CollegeStudent = require('../models/CollegeStudent');
+    const AdminRequest = require('../models/AdminRequest');
+    const { effectiveStudentLimit } = require('../utils/collegePack');
+    const { levelFor, nudgeText } = require('../utils/collegeLimit');
+    const counts = new Map((await CollegeStudent.aggregate([{ $group: { _id: '$college', n: { $sum: 1 } } }])).map((r) => [String(r._id), r.n]));
+    const colleges = await College.find({ isActive: true, isTest: { $ne: true }, verificationStatus: 'verified' }).populate('tpoUser', 'name email phone').limit(500);
+    const due = [];
+    for (const c of colleges) {
+      const used = counts.get(String(c._id)) || 0; const limit = effectiveStudentLimit(c);
+      const level = levelFor(used, limit);
+      if (level) due.push({ c, used, limit, level, key: `limit:${c._id}:${limit}:${level}` });
+    }
+    const sent = await alreadySent(due.map((d) => d.key));
+    for (const d of due.filter((x) => !sent.has(x.key))) {
+      const text = nudgeText(d.level, { used: d.used, limit: d.limit, college: d.c.name });
+      const tpoId = d.c.tpoUser?._id;
+      if (tpoId) await notifyUser({ recipientId: tpoId, title: text.title, message: text.message, type: 'college_limit', link: '/college/dashboard' }).catch((e) => console.error('[Admin follow-up] limit notice failed:', e.message));
+      const open = await AdminRequest.exists({ type: 'college_upgrade', college: d.c._id, status: { $in: ['pending', 'approved'] } });
+      if (!open && tpoId) {
+        await AdminRequest.create({
+          user: tpoId, type: 'college_upgrade', college: d.c._id,
+          bookingName: d.c.tpoUser?.name || d.c.principalName || '', bookingPhone: d.c.tpoUser?.phone || d.c.collegePhone || '', bookingEmail: d.c.tpoUser?.email || d.c.principalEmail || '',
+          notes: `${d.c.name} has ${d.used} of ${d.limit} students (${d.level}% line crossed). Call to offer a student pack or Campus Lite.`
+        }).catch((e) => console.error('[Admin follow-up] upgrade task failed:', e.message));
+      }
+      await remember([d.key]);
+    }
+  } catch (err) {
+    console.error('[Admin follow-up] college limit nudges failed:', err.message);
+  }
+};
+
+module.exports = { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts, runCollegeRoleReminders, runCollegeLimitNudges };

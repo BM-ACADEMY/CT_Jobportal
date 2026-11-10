@@ -2738,6 +2738,27 @@ const sendPlacementReport = async (req, res) => {
   }
 };
 
+// @desc    A one-page price quote (with 18% GST) for a paid campus plan, to hand to the principal.
+// @route   GET /api/college/me/quote/:planId
+const downloadPlanQuote = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(String(req.params.planId || ''))) return res.status(404).json({ msg: 'Plan not found' });
+    const college = await getCollegeForTPO(req.user.id);
+    const plan = await Subscription.findOne({ _id: req.params.planId, role: 'college', isActive: true, price: { $gt: 0 } }).lean();
+    if (!plan) return res.status(404).json({ msg: 'Plan not found' });
+    const { buildQuote } = require('../utils/collegeQuote');
+    const { generateQuotePdf } = require('../utils/pdfGenerator');
+    const pdf = await generateQuotePdf(buildQuote({ college, plan }));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="quote-${String(plan.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf"`);
+    res.send(pdf);
+  } catch (err) {
+    if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
+    console.error('Plan quote error:', err.message);
+    res.status(500).json({ msg: 'Could not make the quote' });
+  }
+};
+
 // @route   POST /api/college/reports/generate
 // Manual, on-demand trigger by the TPO — unrestricted by plan, unlike the automatic cadence.
 // The same underlying logic also runs automatically — see server/cron/reportScheduler.js —
@@ -3202,6 +3223,7 @@ module.exports = {
   getPlacementReports,
   generatePlacementReport,
   sendPlacementReport,
+  downloadPlanQuote,
   generatePlacementReportForCollege,
   downloadSummaryReport,
   getMyCollegeStudent,

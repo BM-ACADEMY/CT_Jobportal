@@ -1,4 +1,5 @@
 import StudentKit from '@/components/college/StudentKit';
+import PlanQuotes from '@/components/college/PlanQuotes';
 import React, { useState, useEffect } from 'react';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { useNavigate } from 'react-router-dom';
@@ -229,7 +230,28 @@ const CollegeDashboard = () => {
         <StatCard icon={TrendingUp} label="Success Rate" value={`${successRate}%`} bgGradient="from-[#f43f5e] to-[#fb7185]" />
       </div>
 
+      {(() => {
+        const limit = pack?.studentLimit; const used = totalStudents || 0;
+        if (!limit || limit >= 100000) return null;
+        const pct = (used / limit) * 100;
+        if (pct < 70) return null;
+        const full = pct >= 100;
+        return (
+          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border px-4 py-3 ${full ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'}`} role="status">
+            <div className="text-sm text-slate-800">
+              <p className="m-0 font-bold">{full ? 'Your student limit is full' : 'Your student limit is filling up'}: {used} of {limit} students</p>
+              <p className="m-0 mt-1 text-xs text-slate-600">{full ? 'New students cannot join or be uploaded until you add more room.' : 'Add room before the last students are turned away.'} Our team will also call you to help.</p>
+            </div>
+            {pack?.canRequest && (
+              <Button onClick={() => setPackOpen(true)} style={{ borderRadius: 0, backgroundColor: '#1b496d', borderColor: '#1b496d', color: '#fff', fontWeight: 'bold', fontSize: 11 }}>Add a student pack</Button>
+            )}
+          </div>
+        );
+      })()}
+
       {(totalStudents || 0) < 50 && <StudentKit collegeName={college?.name} />}
+
+      <PlanQuotes />
 
       {/* Secondary Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

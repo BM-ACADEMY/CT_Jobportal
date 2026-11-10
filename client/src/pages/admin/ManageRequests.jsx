@@ -20,6 +20,7 @@ const TYPE_CONFIG = {
   mock_interview: { label: 'Mock Interview',     icon: Mic,          color: 'bg-teal-50 text-teal-700 border-teal-200' },
   student_pack:   { label: 'Student Pack',       icon: GraduationCap, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   college_call:   { label: 'New College Call',   icon: GraduationCap, color: 'bg-sky-50 text-sky-700 border-sky-200' },
+  college_upgrade: { label: 'College Near Limit', icon: GraduationCap, color: 'bg-orange-50 text-orange-700 border-orange-200' },
 };
 
 const STATUS_CONFIG = {
@@ -116,13 +117,13 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
               <p className="pt-1 text-slate-500">After payment arrives, record it on the college page (Student packs). That adds the students.</p>
             </>
           )}
-          {request.type === 'college_call' && (
+          {(request.type === 'college_call' || request.type === 'college_upgrade') && (
             <>
               <p><span className="font-bold text-slate-700">TPO:</span> {request.bookingName || '—'}</p>
               <p><span className="font-bold text-slate-700">Phone:</span> {request.bookingPhone || '—'}</p>
               <p><span className="font-bold text-slate-700">Email:</span> {request.bookingEmail || '—'}</p>
               {request.notes && <p className="pt-1 text-slate-500">{request.notes}</p>}
-              <p className="pt-1 text-slate-500">After the call, mark this Completed. The college is not messaged.</p>
+              <p className="pt-1 text-slate-500">After the call, mark this Completed. The college is not messaged. If they buy, record it on the college page (Student packs) or mark the plan paid.</p>
             </>
           )}
           {request.type === 'website_request' && (
@@ -294,6 +295,7 @@ const TABS = [
   { key: 'mock_interview',  label: 'Mock Interviews' },
   { key: 'student_pack',    label: 'Student Packs' },
   { key: 'college_call',    label: 'New College Calls' },
+  { key: 'college_upgrade', label: 'Near Limit' },
 ];
 
 const STATUS_TABS = [
@@ -629,7 +631,7 @@ const ManageRequests = () => {
                         {r.type === 'student_pack' && (
                           <span className="truncate block">{r.packs} pack(s) — {r.notes}</span>
                         )}
-                        {r.type === 'college_call' && (
+                        {(r.type === 'college_call' || r.type === 'college_upgrade') && (
                           <span className="truncate block">{r.bookingName} — {r.bookingPhone || 'no phone'} (call within 24 hours)</span>
                         )}
                         {r.type === 'website_request' && (
@@ -668,7 +670,7 @@ const ManageRequests = () => {
                           >
                             <Eye size={11} /> View
                           </button>
-                          {canAssign && r.type !== 'student_pack' && r.type !== 'college_call' && r.status !== 'cancelled' && r.status !== 'completed' && (
+                          {canAssign && r.type !== 'student_pack' && r.type !== 'college_call' && r.type !== 'college_upgrade' && r.status !== 'cancelled' && r.status !== 'completed' && (
                             <button
                               onClick={() => setAssignTarget(r)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"

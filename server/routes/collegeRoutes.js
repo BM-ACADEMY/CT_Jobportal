@@ -72,6 +72,7 @@ const {
   getPlacementReports,
   generatePlacementReport,
   sendPlacementReport,
+  downloadPlanQuote,
   downloadSummaryReport,
   getMyCollegeStudent,
   joinCollege,
@@ -185,6 +186,7 @@ router.get('/mou', verifyToken, authorizeRoles('college'), generateMou);
 router.get('/reports', verifyToken, authorizeRoles('college'), getPlacementReports);
 router.post('/reports/generate', verifyToken, authorizeRoles('college'), generatePlacementReport);
 router.post('/reports/:id/send', verifyToken, authorizeRoles('college'), sendPlacementReport);
+router.get('/me/quote/:planId', verifyToken, authorizeRoles('college'), downloadPlanQuote);
 router.get('/reports/summary-pdf', verifyToken, authorizeRoles('college'), downloadSummaryReport);
 router.get('/accreditation/overview', verifyToken, authorizeRoles('college'), getOverview);
 router.get('/accreditation/employers', verifyToken, authorizeRoles('college'), searchEmployers);

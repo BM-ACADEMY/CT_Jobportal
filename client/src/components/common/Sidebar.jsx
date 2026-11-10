@@ -78,6 +78,7 @@ const coreMenus = {
     { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets', group: 'Daily' },
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages', group: 'Daily' },
     { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges', group: 'Daily' },
+    { icon: GraduationCap,   label: 'College Funnel',    path: '/admin/college-funnel', group: 'Daily' },
     {
       icon: CreditCard,
       label: 'Subscriptions',
