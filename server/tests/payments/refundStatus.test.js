@@ -44,3 +44,20 @@ test('if Razorpay fails, the page still works and the old status is kept', async
   assert.equal(p.refundGatewayStatus, 'pending');
   assert.equal(p.saves, 0);
 });
+
+test('onChange is called once when Razorpay\'s status changes (pending to processed), and not when it stays the same', async () => {
+  const seen = [];
+  const p = pay();
+  await syncRefundStatuses(rz('processed'), [p], NOW, async (pp, status, old) => { seen.push([pp._id, status, old]); });
+  assert.deepEqual(seen, [['p1', 'processed', 'pending']]);
+  const q = pay({ _id: 'p2' }); seen.length = 0;
+  await syncRefundStatuses(rz('pending'), [q], NOW, async (pp, status, old) => { seen.push([pp._id, status, old]); });
+  assert.deepEqual(seen, [], 'still pending: no mail');
+});
+
+test('a failing onChange (for example a mail error) never breaks the page or the saved status', async () => {
+  const p = pay();
+  await syncRefundStatuses(rz('processed'), [p], NOW, async () => { throw new Error('mail down'); });
+  assert.equal(p.refundGatewayStatus, 'processed');
+  assert.equal(p.saves, 1);
+});
