@@ -25,6 +25,7 @@ import UpcomingDrives from '@/components/home/UpcomingDrives';
 import HomeInternships from '@/components/home/HomeInternships';
 import WhoAreYou from '@/components/home/WhoAreYou';
 import LogoStrips from '@/components/home/LogoStrips';
+import HireCta from '@/components/home/HireCta';
 import { popularTerms, MIN_POPULAR_TERMS } from '@/utils/popularSearches';
 import { trackEvent } from '@/utils/analytics';
 
@@ -363,82 +364,7 @@ const HomeGuest = () => {
 
         <TestimonialCarousel subtitle="Join our growing community of professionals who found their career path through us." />
 
-        {/* Recruiter CTA */}
-        {/* Brand-green banner; the cut-out photo breaks out of the top edge */}
-        <section className="pt-16 lg:pt-32 pb-24 bg-white">
-          <div className="max-w-6xl mx-auto px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.98 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="relative rounded-[2rem] bg-gradient-to-br from-[#3CC283] via-[#34B678] to-[#249a62] shadow-2xl shadow-[#34B678]/30"
-            >
-              {/* Decoration stays clipped to the card; the photo is not */}
-              <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
-                {/* Wave lines: sweep in from the top-left behind the photo, then bundle into a band
-                    that runs just under the button row (buttons sit at ~66–82% of card height) */}
-                <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1000 300" preserveAspectRatio="none" fill="none">
-                  <defs>
-                    <linearGradient id="cta-wave-fade" x1="0" x2="1" y1="0" y2="0">
-                      <stop offset="0" stopColor="#fff" stopOpacity="0.15" />
-                      <stop offset="0.35" stopColor="#fff" stopOpacity="0.55" />
-                      <stop offset="0.75" stopColor="#fff" stopOpacity="0.35" />
-                      <stop offset="1" stopColor="#fff" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <path
-                      key={i}
-                      d={`M0 ${30 + i * 9} C 150 ${-20 + i * 7}, 290 ${110 + i * 6}, 420 ${262 + i * 1.6} S 760 ${266 + i * 1.6}, 1000 ${252 + i * 2}`}
-                      stroke="url(#cta-wave-fade)"
-                      strokeWidth="1"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  ))}
-                </svg>
-                <div className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-white/10" />
-              </div>
-
-              <div className="relative lg:pl-[40%]">
-                {/* Card height comes from the text. On desktop the photo is pinned to the card's
-                    bottom and sized off that height, so only the head rises above the top edge */}
-                <motion.img
-                  src="/images/ads.png"
-                  alt="Happy candidate pointing to the call to action"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                  className="hidden lg:block absolute bottom-0 left-[4%] w-auto h-[120%] select-none [mask-image:linear-gradient(to_bottom,#000_72%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,#000_72%,transparent)]"
-                  draggable="false"
-                />
-
-                <div className="px-8 sm:px-12 py-12 lg:pl-0 lg:pr-14 lg:py-14 text-left">
-                  <p className="text-[#10213D] text-sm font-bold mb-3">For Recruiters & Companies</p>
-                  <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight leading-tight">
-                    Ready to Hire India's <span className="text-[#10213D]">Best Talent?</span>
-                  </h2>
-                  <p className="text-white/90 text-base font-medium mb-8 max-w-xl leading-relaxed">
-                    Post a job in minutes and reach job seekers across Tamil Nadu and Puducherry.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-start">
-                    <Link to="/register">
-                      <Button className="group home-shine relative overflow-hidden h-12 px-8 rounded-xl bg-[#10213D] hover:bg-[#0b1830] text-white font-bold text-base shadow-lg shadow-[#10213D]/30 transition-all hover:-translate-y-0.5 cursor-pointer">
-                        Post a Job Free <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={18} />
-                      </Button>
-                    </Link>
-                    <Link to="/company-login">
-                      <Button variant="outline" className="h-12 px-8 rounded-xl bg-white text-[#10213D] border-white hover:bg-white/90 hover:text-[#10213D] font-bold text-base cursor-pointer">
-                        Company Login
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
+        <HireCta />
 
         <Footer />
         <BackToTop />

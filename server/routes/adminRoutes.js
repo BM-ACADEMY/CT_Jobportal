@@ -26,6 +26,7 @@ const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware')
 const { requireAdminOr } = require('../middlewares/staffPermission');
 const { listStaff, addStaff, updateStaff, removeStaff } = require('../controllers/staffController');
 const { listJobLimits, grantJobLimits } = require('../controllers/adminJobLimitController');
+const { getUserPlan, updateUserPlan } = require('../controllers/adminUserPlanController');
 
 // Public route for admin login
 const { rateLimit: adminRateLimit } = require('../middlewares/rateLimit');
@@ -66,6 +67,10 @@ router.post('/drives/:id/mark-paid', require('../controllers/walkInDriveControll
 router.get('/skill-tests', require('../controllers/skillTestAdminController').getSkillTestSummary);
 router.get('/job-limits', listJobLimits);
 router.post('/job-limits/grant', grantJobLimits);
+
+// One person's plan benefits and validity (counts, switches, end date): see utils/planEntitlements.js. Super Admin only.
+router.get('/users/:id/plan', getUserPlan);
+router.patch('/users/:id/plan', updateUserPlan);
 
 // Staff accounts (support, counsellor, college verifier): Super Admin only.
 router.get('/staff', listStaff);
