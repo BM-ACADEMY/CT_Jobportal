@@ -1,4 +1,5 @@
 const Assessment = require('../models/Assessment');
+const User = require('../models/User');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const { normalizeSet, publicQuestions, scoreAttempt, QUESTIONS_PER_SET } = require('../utils/campusTest');
 const CampusQuestionSet = require('../models/CampusQuestionSet');
@@ -173,6 +174,14 @@ const saveResult = async (req, res) => {
   try {
     const claims = verifyResult(req.body?.resultToken);
     if (!claims) return res.status(400).json({ msg: 'This result could not be verified. Please take the test again.' });
+    // A mobile number must be on the account before a result is kept. One typed now fills a missing number; it never replaces one.
+    const phoneRule = require('../utils/phoneRule');
+    const me = await User.findById(req.user.id).select('profile.phone');
+    if (!phoneRule.valid(me?.profile?.phone)) {
+      const typed = phoneRule.clean(req.body?.phone);
+      if (!typed) return res.status(400).json({ code: 'PHONE_REQUIRED', msg: 'Please add your mobile number to save your result.' });
+      await User.updateOne({ _id: req.user.id }, { $set: { 'profile.phone': typed } });
+    }
     const set = (await Assessment.findById(claims.set)) || (await CampusQuestionSet.findById(claims.set));
     const { skill, difficulty, score, total } = claims;
     const percentage = total ? Math.round((score / total) * 100) : 0;

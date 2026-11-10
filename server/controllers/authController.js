@@ -98,6 +98,10 @@ const registerUser = async (req, res) => {
     const { name, password, role, collegeName, collegeEmail, collegePhone, tpoPhone, phone } = req.body;
     const email = cleanEmail(req.body.email);
     const normalizedEmail = email;
+    // Job seekers need a usable mobile number: counsellors and recruiters call them, and tests tie results to it.
+    if (role === 'jobseeker' && !require('../utils/phoneRule').valid(phone)) {
+      return res.status(400).json({ msg: 'Please enter a valid mobile number.' });
+    }
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       return res.status(400).json({ msg: 'Please enter a valid email address' });
     }

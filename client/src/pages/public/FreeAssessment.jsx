@@ -34,6 +34,8 @@ const FreeAssessment = () => {
   // Lead Capture state
   const [leadName, setLeadName] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
+  const [answersForSave, setAnswersForSave] = useState(null);
+  const [savingPhone, setSavingPhone] = useState(false);
 
   // Only skills that have reviewed questions are listed, so there are no typos and no dead ends.
   useEffect(() => {
@@ -95,6 +97,12 @@ const FreeAssessment = () => {
           await axios.post(`${API}/skill-tests/save`, { resultToken: result.resultToken, answers });
           navigate('/candidate/skill-tests');
         } catch (err) {
+          if (err.response?.data?.code === 'PHONE_REQUIRED') {
+            // Keep the answers on screen and ask for the number first.
+            setAnswersForSave(answers);
+            setStep('phone');
+            return;
+          }
           toast.error("Failed to save score, but redirecting.");
           navigate('/candidate/skill-tests');
         }
@@ -260,6 +268,31 @@ const FreeAssessment = () => {
             </Button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  const savePhone = async (e) => {
+    e.preventDefault();
+    if (!/^(\+?91|0)?[6-9]\d{9}$/.test(leadPhone.replace(/[\s-]/g, ''))) return toast.error('Please enter a valid 10-digit mobile number.');
+    setSavingPhone(true);
+    try {
+      await axios.post(`${API}/skill-tests/save`, { resultToken, answers: answersForSave || answers, phone: leadPhone });
+      navigate('/candidate/skill-tests');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not save. Please try again.');
+    } finally { setSavingPhone(false); }
+  };
+
+  if (step === 'phone') {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <form onSubmit={savePhone} className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-5">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">One last step</h1>
+          <p className="text-sm text-slate-500">Add your mobile number to save your score. We use it only to reach you about your jobs and sessions.</p>
+          <input type="tel" inputMode="numeric" value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} placeholder="10-digit mobile number" className="w-full h-12 rounded-xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500" />
+          <Button type="submit" disabled={savingPhone} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold">{savingPhone ? 'Saving...' : 'Save my score'}</Button>
+        </form>
       </div>
     );
   }

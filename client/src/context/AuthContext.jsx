@@ -82,6 +82,7 @@ export const AuthProvider = ({ children }) => {
       return { redirect: '/candidate/skill-tests' };
     } catch (err) {
       console.error('Error saving pending assessment:', err);
+      if (err.response?.data?.code === 'PHONE_REQUIRED') return { msg: 'Please add your mobile number in your profile, then take the test again to save your score.' };
       return { msg: 'Please open Skill Tests from your dashboard to see your marks.' };
     }
   };
