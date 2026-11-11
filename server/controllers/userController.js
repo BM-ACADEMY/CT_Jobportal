@@ -944,7 +944,7 @@ const deleteMyAccount = async (req, res) => {
     res.json({ msg: 'Your account has been deleted.' });
   } catch (err) {
     console.error('Delete account error:', err.message);
-    res.status(500).json({ msg: 'Something went wrong. Please try again or write to support@velaivaaipu.in.' });
+    res.status(500).json({ msg: 'Something went wrong. Please try again or write to hello@velaivaaipu.in.' });
   }
 };
 

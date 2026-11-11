@@ -112,6 +112,9 @@ const TermsAndConditions = () => {
               <Link to="/how-it-works" className="font-bold text-emerald-700 hover:underline">How It Works</Link> page.
             </p>
             <p>
+              Most jobs are posted by employers on the Platform. Some jobs are collected from public sources, such as an employer's own careers page, and are marked "Apply on company site". For these, you apply on the employer's website, not on Velaivaaipu. The employer, not Velaivaaipu, receives and handles your application and decides how your data is used, under its own terms and privacy policy. We try to check these listings, but we do not guarantee that they are accurate, open or genuine. Never pay money to anyone to get a job, and report any listing that asks you to.
+            </p>
+            <p>
               We reserve the right to add, modify, or discontinue any feature at our discretion, including features tied to a specific subscription tier, with reasonable notice where practical.
             </p>
           </Section>
@@ -251,7 +254,7 @@ const TermsAndConditions = () => {
 
           <Section id="contact" title="21. Contact Us">
             <p>
-              Velaivaaipu is operated by Afra Ventures Private Limited, 78 Lenin St, Kosapalayam, Puducherry 605013, India. Questions about these Terms can be directed to <strong>support@velaivaaipu.in</strong> or via our{' '}
+              Velaivaaipu is operated by Afra Ventures Private Limited, 78 Lenin St, Kosapalayam, Puducherry 605013, India. Questions about these Terms can be directed to <strong>hello@velaivaaipu.in</strong> or via our{' '}
               <Link to="/contact" className="font-bold text-emerald-700 hover:underline">Contact page</Link>.
             </p>
           </Section>

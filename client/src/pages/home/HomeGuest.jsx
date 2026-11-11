@@ -119,7 +119,7 @@ const HomeGuest = () => {
     { label: 'Open Jobs', raw: platformStats.openJobs ?? platformStats.activeJobsCount, icon: Briefcase },
     { label: 'Companies Hiring', raw: platformStats.companiesHiring ?? platformStats.companiesCount, icon: Building2, invert: true },
     { label: 'Colleges', raw: platformStats.collegesOnboardedCount, icon: GraduationCap },
-    { label: 'Students', raw: platformStats.students ?? platformStats.jobseekersCount, icon: Users },
+    { label: 'Job Seekers', raw: platformStats.students ?? platformStats.jobseekersCount, icon: Users },
     { label: 'Free Skill Tests', raw: skillTestCount, icon: ClipboardCheck },
     { label: 'Avg Rating', raw: platformStats.reviewsCount, icon: Star, display: `${Number(platformStats.avgRating || 0).toFixed(1)}\u2605` },
   ]
@@ -131,7 +131,7 @@ const HomeGuest = () => {
     { label: 'Companies Hiring', raw: platformStats.companiesHiring },
     { label: 'Open Jobs', raw: platformStats.openJobs },
     { label: 'Colleges', raw: platformStats.collegesOnboardedCount },
-    { label: 'Students', raw: platformStats.students },
+    { label: 'Job Seekers', raw: platformStats.students },
     { label: 'Free Skill Tests', raw: skillTestCount },
   ]
     .filter((c) => Number(c.raw) >= MIN_STAT)

@@ -761,7 +761,7 @@ const rejectRefund = async (req, res) => {
       recipientId: payment.user,
       title: 'Refund request rejected',
       message: 'Your refund request was reviewed and rejected. The payment remains active.',
-      emailBody: `<p>We reviewed your refund request and could not approve it, so your payment and plan stay active. This usually happens when the plan or feature was already used, or the request fell outside our refund rules.</p><p style="font-size:13px;color:#475569;">Read the <a href="${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/refund-policy" style="color:#059669;">Refund policy</a> or write to support@velaivaaipu.in if you think this is a mistake.</p>`,
+      emailBody: `<p>We reviewed your refund request and could not approve it, so your payment and plan stay active. This usually happens when the plan or feature was already used, or the request fell outside our refund rules.</p><p style="font-size:13px;color:#475569;">Read the <a href="${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/refund-policy" style="color:#059669;">Refund policy</a> or write to hello@velaivaaipu.in if you think this is a mistake.</p>`,
       type: 'refund_status',
       link: paymentHistoryLink(payment.user?.role?.name),
       metadata: { paymentId: payment._id, status: 'rejected' }

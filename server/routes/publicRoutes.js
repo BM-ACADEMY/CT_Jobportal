@@ -30,7 +30,7 @@ const handleUnsubscribe = async (req, res) => {
     return page('You have been unsubscribed.');
   } catch (err) {
     console.error('Unsubscribe error:', err.message);
-    return page('Something went wrong. Please write to support@velaivaaipu.in.');
+    return page('Something went wrong. Please write to hello@velaivaaipu.in.');
   }
 };
 // GET = the link in the mail footer; POST = the one-click button in Gmail / Yahoo (RFC 8058).

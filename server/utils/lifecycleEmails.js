@@ -45,7 +45,7 @@ const sendWelcomeEmail = async (user, roleName) => {
       <p>Your account is ready. Your first step:</p>
       <p>${esc(step.text)}</p>
       ${frontend() ? button(`${frontend()}${step.path}`, step.label) : ''}
-      <p style="font-size:13px;color:#475569;">Need help? Write to support@velaivaaipu.in.</p>
+      <p style="font-size:13px;color:#475569;">Need help? Write to hello@velaivaaipu.in.</p>
     `),
   }).then(() => true).catch(() => false);
 };
@@ -71,7 +71,7 @@ const sendReceiptEmail = async ({ user, itemName, payment, validUntil, paymentId
         ${rows.map(([k, v]) => `<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">${k}</td><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:right;">${v}</td></tr>`).join('')}
       </table>
       <p style="font-size:12px;color:#64748b;margin-top:16px;">Sold by ${esc(process.env.FOOTER_ENTITY || 'Afra Ventures Private Limited')}, ${esc(process.env.FOOTER_ADDRESS || '78 Lenin St, Kosapalayam, Puducherry 605013')}${(process.env.GSTIN || '34ABGCA7083D1ZS') ? `. GSTIN ${esc(process.env.GSTIN || '34ABGCA7083D1ZS')}` : ''}.</p>
-      <p style="font-size:13px;color:#475569;margin-top:8px;">Refunds follow our <a href="${esc(frontend())}/refund-policy" style="color:#059669;">Refund policy</a> (24 hours, nothing used). Questions: support@velaivaaipu.in.</p>
+      <p style="font-size:13px;color:#475569;margin-top:8px;">Refunds follow our <a href="${esc(frontend())}/refund-policy" style="color:#059669;">Refund policy</a> (10 days, nothing used). Questions: hello@velaivaaipu.in.</p>
     `),
   }).then(() => true).catch(() => false);
 };
