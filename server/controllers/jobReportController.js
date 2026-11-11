@@ -2,7 +2,7 @@ const Job = require('../models/Job');
 const JobReport = require('../models/JobReport');
 
 const HEX = /^[0-9a-fA-F]{24}$/;
-const REASONS = ['asks_for_money', 'fake_company', 'wrong_details', 'other'];
+const REASONS = ['asks_for_money', 'fake_company', 'wrong_details', 'inappropriate', 'other'];
 
 // @route POST /api/jobs/:id/report   Body: { reason, note? }   Signed-in users
 // The job stays visible. It goes into the admin review list (same list as the automatic scam flags),

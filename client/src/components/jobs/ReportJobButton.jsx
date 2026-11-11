@@ -13,6 +13,7 @@ const REASONS = [
   ['asks_for_money', 'Asks for money, a fee or a deposit'],
   ['fake_company', 'The company or job looks fake'],
   ['wrong_details', 'Wrong or misleading details'],
+  ['inappropriate', 'Vulgar, abusive or adult content'],
   ['other', 'Something else'],
 ];
 

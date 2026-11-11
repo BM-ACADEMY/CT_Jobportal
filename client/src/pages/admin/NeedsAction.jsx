@@ -22,7 +22,7 @@ const LEVEL_STYLE = {
 
 const RULE_LABELS = {
   college: 'College verifications', ticket: 'Support tickets', message: 'Contact messages',
-  review: 'Reviews', request: 'Requests', whatsapp: 'WhatsApp messages', job: 'Possible scam jobs',
+  review: 'Reviews', request: 'Requests', whatsapp: 'WhatsApp messages', job: 'Jobs to review',
 };
 
 const NeedsAction = () => {
