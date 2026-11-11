@@ -25,7 +25,7 @@ const PrivacyPolicy = () => (
   <LegalPage
     title="Privacy Policy"
     icon={ShieldCheck}
-    effective="October 22, 2026"
+    effective="November 19, 2026"
     intro="Explains what data we collect, why, and the choices you have."
     sections={SECTIONS}
     seoPath="/privacy-policy"
@@ -103,6 +103,7 @@ const PrivacyPolicy = () => (
 
     <Section id="contact" title="12. Contact and grievances">
       <p>Write to <strong>{SUPPORT_EMAIL}</strong> or use our <Link to="/contact" className="font-bold text-emerald-700 hover:underline">Contact page</Link> for any privacy question or complaint.</p>
+      <p>Grievance Officer: Mohamed Kamarudeen B, Authorised Signatory, Afra Ventures Private Limited, <strong>{SUPPORT_EMAIL}</strong> (subject "Grievance"). We acknowledge within 24 hours and aim to resolve within 15 days.</p>
     </Section>
   </LegalPage>
 );
