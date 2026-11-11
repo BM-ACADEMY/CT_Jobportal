@@ -13,8 +13,8 @@ test('vulgar or adult wording is flagged for review', () => {
   assert.ok(inappropriateText('this is a fucking job'));
 });
 test('honest job text is not flagged', () => {
-  for (const t of ['Survey on sex ratio and health', 'Hotel in Essex, classic menu', 'Assistant professor in Dickinson Road', 'Sales executive, fresh graduates, Puducherry', 'Naked eye astronomy tutor']) {
-    assert.strictEqual(inappropriateText(t), t.includes('Naked') ? true : false, t);
+  for (const t of ['Survey on sex ratio and health', 'Hotel in Essex, classic menu', 'Assistant professor in Dickinson Road', 'Sales executive, fresh graduates, Puducherry', 'Naked eye astronomy tutor', 'Patient escort and ambulance attendant', 'VIP escort vehicle driver', 'Teacher at Lund Public School', 'Sunni Jamia office assistant', 'Dick Smith Foods sales executive']) {
+    assert.strictEqual(inappropriateText(t), false, t);
   }
 });
 test('an honest job gets no flag at all and a flag never hides the job', () => {
