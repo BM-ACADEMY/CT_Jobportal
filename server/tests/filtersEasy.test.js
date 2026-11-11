@@ -34,3 +34,12 @@ test('place section lists towns that have jobs now with counts, and part-time ho
   assert.match(src, /job\.partTime\?\.schedule/);
   assert.match(src, /setSelectedSchedules\(\[\]\)/, 'Clear all also clears the hours');
 });
+
+test('when nothing matches the page offers the single filter whose removal brings jobs back', () => {
+  assert.match(src, /const removalHints = \(\) =>/);
+  assert.match(src, /Closest fix: remove one filter/);
+  assert.match(src, /const rankJobs = \(search, place\) =>/);
+  assert.match(src, /const jobPasses = \(job, skip = ''\) =>/);
+  assert.strictEqual((src.match(/skip === '/g) || []).length, 9, 'every drawer filter can be skipped');
+  assert.match(src, /let result = ranked\.filter\(\(job\) => jobPasses\(job\)\)/, 'the list itself uses the same rule');
+});

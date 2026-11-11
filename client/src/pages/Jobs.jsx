@@ -157,12 +157,13 @@ const Jobs = () => {
   const salaryRange = SALARY_RANGES[selectedSalary];
   const expRange = EXPERIENCE_RANGES[selectedExperience];
 
-  const filteredJobs = useMemo(() => {
+  // Search words and place only. Used for the list and for the "try removing" hint when nothing matches.
+  const rankJobs = (search, place) => {
     // Fuzzy, typo-tolerant, substring-anywhere matching (not exact-word) across the job title,
     // company, description, and skills — a single-letter typo like "pondicheryd" still finds
     // "Pondicherry". Each surviving job carries `_fuzzyMatches` for the highlight rendering below.
-    let ranked = searchTerm.trim()
-      ? fuzzySearch(jobs, searchTerm, [
+    let ranked = search.trim()
+      ? fuzzySearch(jobs, search, [
           { name: 'title', weight: 3 },
           { name: 'company.name', weight: 2 },
           { name: 'skillsRequired', weight: 2, getFn: job => tokenize(job.skillsRequired) },
@@ -171,41 +172,48 @@ const Jobs = () => {
         ])
       : jobs.map(job => ({ ...job, _fuzzyMatches: [] }));
 
-    if (locationTerm.trim()) {
+    if (place.trim()) {
       // fuzzySearch overwrites `_fuzzyMatches` with this pass's own matches, so the search-term
       // box's matches (captured above) need to be saved first and merged back in afterward —
       // both boxes should be able to highlight independently once a job survives both filters.
       const searchMatchesById = new Map(ranked.map(job => [job._id, job._fuzzyMatches]));
-      ranked = fuzzySearch(ranked, locationTerm, ['location']).map(job => ({
+      ranked = fuzzySearch(ranked, place, ['location']).map(job => ({
         ...job,
         _fuzzyMatches: [...(searchMatchesById.get(job._id) || []), ...(job._fuzzyMatches || [])],
       }));
     }
 
-    let result = ranked.filter(job => {
-      const matchesType = selectedTypes.length === 0 ||
+    return ranked;
+  };
+
+  const jobPasses = (job, skip = '') => {
+      const matchesType = skip === 'types' || selectedTypes.length === 0 ||
         selectedTypes.some(type => job.jobType?.includes(type));
 
       const jobPay = monthlyPay(job);
-      const matchesSalary = selectedSalary === 0 ||
+      const matchesSalary = skip === 'salary' || selectedSalary === 0 ||
         (jobPay > 0 && jobPay >= salaryRange.min && jobPay < salaryRange.max);
 
       const jobExpMin = job.experience?.min || 0;
       const jobExpMax = job.experience?.max || 0;
-      const matchesExperience = selectedExperience === 0 ||
+      const matchesExperience = skip === 'exp' || selectedExperience === 0 ||
         (jobExpMin <= expRange.max && (jobExpMax >= expRange.min || jobExpMax === 0 || !jobExpMax));
 
       // The "For You" list comes without guessed categories, so jobs with none are kept there rather than hidden.
-      const matchesCategory = !selectedCategory || job.category === selectedCategory || (activeTab === 'matched' && !job.category);
+      const matchesCategory = skip === 'category' || !selectedCategory || job.category === selectedCategory || (activeTab === 'matched' && !job.category);
 
-      const matchesEducation = educationFits(job, selectedEducation);
-      const matchesMode = selectedModes.length === 0 || selectedModes.includes(job.workMode) || (selectedModes.includes('Remote') && job.jobType === 'Remote');
-      const matchesPosted = postedWithinDays(job, postedDays);
-      const matchesNoExp = !noExperience || job.freshersWelcome === true || !(job.experience?.min > 0);
+      const matchesEducation = skip === 'edu' || educationFits(job, selectedEducation);
+      const matchesMode = skip === 'modes' || selectedModes.length === 0 || selectedModes.includes(job.workMode) || (selectedModes.includes('Remote') && job.jobType === 'Remote');
+      const matchesPosted = skip === 'posted' || postedWithinDays(job, postedDays);
+      const matchesNoExp = skip === 'noExp' || !noExperience || job.freshersWelcome === true || !(job.experience?.min > 0);
 
-      const matchesSchedule = selectedSchedules.length === 0 || selectedSchedules.includes(job.partTime?.schedule);
+      const matchesSchedule = skip === 'hours' || selectedSchedules.length === 0 || selectedSchedules.includes(job.partTime?.schedule);
       return matchesType && matchesSalary && matchesExperience && matchesCategory && matchesEducation && matchesMode && matchesPosted && matchesNoExp && matchesSchedule;
-    });
+  };
+
+  const filteredJobs = useMemo(() => {
+    const ranked = rankJobs(searchTerm, locationTerm);
+    let result = ranked.filter((job) => jobPasses(job));
 
     // A search term implies relevance ranking already did the ordering (best match first);
     // otherwise fall back to the explicit sort control.
@@ -222,6 +230,25 @@ const Jobs = () => {
 
     return result;
   }, [jobs, activeTab, searchTerm, locationTerm, selectedCategory, selectedTypes, selectedSalary, selectedExperience, selectedEducation, selectedModes, postedDays, noExperience, selectedSchedules, sortBy]);
+
+  // When nothing matches: which single filter, if removed, would bring jobs back (most jobs first, at most 3).
+  const removalHints = () => {
+    const base = rankJobs(searchTerm, locationTerm);
+    const opts = [];
+    const add = (on, label, skip, undo) => { if (on) opts.push({ label, skip, undo }); };
+    add(selectedTypes.length > 0, selectedTypes.join(' / '), 'types', () => setSelectedTypes([]));
+    add(selectedSalary > 0, SALARY_RANGES[selectedSalary]?.label, 'salary', () => setSelectedSalary(0));
+    add(selectedExperience > 0, EXPERIENCE_RANGES[selectedExperience]?.label, 'exp', () => setSelectedExperience(0));
+    add(!!selectedCategory, JOB_CATEGORIES.find((c) => c.key === selectedCategory)?.label || 'Field of work', 'category', () => setSelectedCategory(''));
+    add(!!selectedEducation, EDUCATION_LEVELS.find((e) => e.key === selectedEducation)?.label || 'Education', 'edu', () => setSelectedEducation(''));
+    add(selectedModes.length > 0, selectedModes.map((m) => (m === 'Remote' ? 'Work from home' : m)).join(' / '), 'modes', () => setSelectedModes([]));
+    add(postedDays > 0, POSTED_WITHIN.find((x) => x.days === postedDays)?.label, 'posted', () => setPostedDays(0));
+    add(noExperience, 'No experience needed', 'noExp', () => setNoExperience(false));
+    add(selectedSchedules.length > 0, 'Part-time hours', 'hours', () => setSelectedSchedules([]));
+    const out = opts.map((o) => ({ ...o, count: base.filter((j) => jobPasses(j, o.skip)).length }));
+    if (locationTerm.trim()) out.push({ label: locationTerm.trim(), count: rankJobs(searchTerm, '').filter((j) => jobPasses(j)).length, undo: () => setLocationTerm('') });
+    return out.filter((o) => o.count > 0).sort((a, b) => b.count - a.count).slice(0, 3);
+  };
 
   const toggleType = (type) => {
     setSelectedTypes(prev =>
@@ -746,6 +773,19 @@ const Jobs = () => {
                 <Briefcase size={40} className="text-slate-200 mb-4" />
                 <h3 className="text-lg font-bold text-slate-800 mb-2">No matching jobs found</h3>
                 <p className="text-slate-400 text-sm mb-6">Try adjusting your search or clearing filters</p>
+                {(() => {
+                  const hints = removalHints();
+                  return hints.length > 0 ? (
+                    <div className="flex flex-col gap-2 mb-6 w-full max-w-xs px-4">
+                      <p className="text-xs font-bold text-slate-500">Closest fix: remove one filter</p>
+                      {hints.map((h) => (
+                        <button key={h.label} type="button" onClick={h.undo} className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-emerald-300">
+                          Remove “{h.label}” · {h.count} job{h.count === 1 ? '' : 's'}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
                 <Button onClick={clearFilters} variant="outline" className="h-10 px-6 rounded-xl border-emerald-200 text-emerald-600 font-bold hover:bg-emerald-50">
                   Clear Filters
                 </Button>
