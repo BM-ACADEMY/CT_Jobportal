@@ -603,10 +603,12 @@ const JobDetails = () => {
                     <Globe size={16} className="text-slate-300 group-hover:text-primary" />
                   </a>
                 )}
+                {job.company?.company_size_range && (
                 <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-100">
                   <span className="text-sm font-semibold text-slate-600">Company Size</span>
-                  <span className="text-xs font-bold text-slate-900">500+ Employees</span>
+                  <span className="text-xs font-bold text-slate-900">{job.company.company_size_range}</span>
                 </div>
+                )}
               </div>
             </CardContent>
           </Card>

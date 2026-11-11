@@ -34,3 +34,10 @@ test('terms: Puducherry courts, GST line, college pack rules, grievance officer,
   const p = read('client/src/pages/PrivacyPolicy.jsx');
   assert.ok(/Grievance Officer/.test(p) && /November 19, 2026/.test(p));
 });
+
+test('job page shows company size only when the company entered it; no "calls" promise', () => {
+  const j = read('client/src/pages/JobDetails.jsx');
+  assert.ok(!/500\+ Employees/.test(j) && /company_size_range/.test(j));
+  assert.ok(/company_size_range/.test(read('server/controllers/jobController.js')));
+  assert.ok(!/our team calls and checks every company/.test(read('client/src/pages/AudienceLanding.jsx')));
+});
