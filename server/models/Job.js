@@ -26,6 +26,7 @@ const jobSchema = new mongoose.Schema({
   sponsoredUntil: { type: Date, default: null },
   sponsoredNote: { type: String, default: '', maxlength: 200, select: false }, // payment note: never sent to the public
   urgentUntil: { type: Date, default: null },
+  shortLife: { type: Boolean, default: false }, // set by the server for the limited free tier: public for 14 days only, renewing does not extend it
   renewedAt: { type: Date, default: null }, // the company pressed Renew: keeps an old job on the public list for 45 more days
   hiddenFromPublic: { type: Boolean, default: false }, // Super Admin switch
   // Job found on the web: candidates apply on the employer's own site. Set only by an admin (utils/externalApply.js).

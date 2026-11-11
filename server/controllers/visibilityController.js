@@ -15,6 +15,7 @@ const renewJob = async (req, res) => {
       || (user.company && job.company && job.company.toString() === user.company.toString() && hasCompanyAccess(user));
     if (!owner) return res.status(403).json({ msg: 'Not authorized to renew this job' });
     if (job.status !== 'active') return res.status(400).json({ msg: 'Only an active job can be renewed' });
+    if (job.shortLife) return res.status(400).json({ msg: 'Jobs from a free email account stay on the site for 14 days and cannot be renewed. Post a new one, or sign up with your company email or choose a paid plan.' });
     job.renewedAt = new Date();
     await job.save();
     res.json({ renewedAt: job.renewedAt });

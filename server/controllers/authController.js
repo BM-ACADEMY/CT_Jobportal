@@ -13,7 +13,6 @@ const { otpEmail } = require('../utils/emailTemplates');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { cleanInterestedCategories } = require('../config/jobCategories');
 const { isSelfServeRole } = require('../utils/selfServeRoles');
-const { blocksCompanySignup, COMPANY_EMAIL_MSG } = require('../utils/emailKind');
 const { sendWelcomeEmail } = require('../utils/lifecycleEmails');
 
 // "Manage Drive" is a capability layered on top of whatever role a user already has —
@@ -114,7 +113,6 @@ const registerUser = async (req, res) => {
     if (!isSelfServeRole(role)) {
       return res.status(400).json({ msg: 'Invalid role specified' });
     }
-    if (blocksCompanySignup(role, email)) return res.status(400).json({ msg: COMPANY_EMAIL_MSG, code: 'company_email_required' });
 
     // Password Validation: 6 chars, 1 capital, 1 number, 1 symbol
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/\\|~`\-]).{6,}$/;
@@ -584,7 +582,7 @@ const getUserProfile = async (req, res) => {
     let companyStatus = null;
     if (['company', 'recruiter'].includes(roleName) && user.company) {
       const c = await Company.findById(user.company).select('is_verified logo logo_url description').lean();
-      if (c) companyStatus = { verified: !!c.is_verified, hasLogo: !!(c.logo || c.logo_url), hasDescription: !!String(c.description || '').trim() };
+      if (c) companyStatus = { verified: !!c.is_verified, limitedTier: require('../utils/companyTier').isLimitedTier(user), hasLogo: !!(c.logo || c.logo_url), hasDescription: !!String(c.description || '').trim() };
     }
 
     res.json({
@@ -742,7 +740,6 @@ const completeSocialProfile = async (req, res) => {
     if (!isSelfServeRole(role)) {
       return res.status(400).json({ msg: 'Invalid role specified' });
     }
-    if (blocksCompanySignup(role, user.email)) return res.status(400).json({ msg: COMPANY_EMAIL_MSG, code: 'company_email_required' });
     const roleDoc = await Role.findOne({ name: role });
     if (!roleDoc) {
       return res.status(400).json({ msg: 'Invalid role specified' });

@@ -15,7 +15,9 @@ test('job conditions hide admin-hidden, old and (when asked) unverified-company 
   const now = Date.UTC(2026, 10, 9);
   const c = V.publicJobConditions({ now, verifiedCompanyIds: ['a'] });
   assert.deepStrictEqual(c[0], { hiddenFromPublic: { $ne: true } });
-  assert.ok(c[1].$or.some((x) => x.renewedAt), 'renewed jobs stay');
+  const normal = c[1].$or.find((x) => x.shortLife && x.shortLife.$ne === true);
+  assert.ok(normal.$or.some((x) => x.renewedAt), 'renewed jobs stay (normal jobs)');
+  assert.ok(c[1].$or.some((x) => x.shortLife === true && x.createdAt), 'free-email jobs get 14 days');
   assert.deepStrictEqual(c[2], { company: { $in: ['a'] } });
 });
 test('with the switch off, only hidden companies are removed', () => {

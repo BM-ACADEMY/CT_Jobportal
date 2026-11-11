@@ -338,7 +338,7 @@ const RegisterPage = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'College Email' : (selectedRole === 'recruiter' || selectedRole === 'company') ? 'Company Email' : 'Email Address'}</FormLabel>
+                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'College Email' : (selectedRole === 'recruiter' || selectedRole === 'company') ? 'Company Email (best)' : 'Email Address'}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -352,7 +352,7 @@ const RegisterPage = () => {
                         </FormControl>
                         {(selectedRole === 'recruiter' || selectedRole === 'company') && (
                           <p className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-md px-2.5 py-1.5">
-                            Sign up with your company email and list your company free. Gmail, Yahoo and other free email addresses are not accepted here.
+                            Sign up with your company email and list your company free, verified at once. Gmail and other free emails also work: one live job at a time for 14 days, after a quick proof check.
                           </p>
                         )}
                         <FormMessage className="text-xs font-medium text-rose-500" />

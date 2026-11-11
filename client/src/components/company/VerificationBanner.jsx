@@ -21,6 +21,12 @@ const VerificationBanner = () => {
           You can post jobs now. They will show on the public site once our team confirms your company, usually within one working day.
           We will email you the moment it is done. If you want it faster, make sure your logo, website and description are filled in under Settings.
         </p>
+        {status.limitedTier && (
+          <p className="m-0 mt-2 leading-relaxed font-semibold">
+            You signed up with a free email address. To be verified, send one proof of your business (GST certificate, Shops licence or Udyam) to hello@velaivaaipu.in.
+            Free email accounts can have one live job at a time, shown for 14 days. A company email or a paid plan lifts this.
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,18 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
 const { inappropriateText } = require('../utils/contentFlags');
 const { pinPriority } = require('../utils/sponsorAddon');
+const { isLimitedTier, shortLifeCutoff, LIMITED_MSG, LIMITED_MAX_ACTIVE } = require('../utils/companyTier');
 
 // A job with vulgar, abusive or adult wording is not posted. The poster is told why and can edit and try again,
 // and the admins get a notification so a repeat poster can be spotted (and the company hidden in one tap).
 const CONTENT_BLOCK_MSG = 'This job was not posted because the title or description has vulgar, abusive or adult wording. Please remove it and post again. If you think this is a mistake, contact hello@velaivaaipu.in.';
+// Free-email accounts: one live job at a time (a job older than 14 days no longer counts, it is off the public site).
+const limitedTierFull = async (user, excludeJobId) => {
+  if (!isLimitedTier(user)) return false;
+  const q = { recruiter: user._id, status: 'active', createdAt: { $gte: shortLifeCutoff() } };
+  if (excludeJobId) q._id = { $ne: excludeJobId };
+  return (await Job.countDocuments(q)) >= LIMITED_MAX_ACTIVE;
+};
 const blockForContent = async (req, user, title, description) => {
   if (!inappropriateText(`${title || ''}\n${description || ''}`)) return false;
   notifyRoles({ io: req.io, roles: ['admin', 'subadmin'], title: 'Job post blocked', message: `${user.name || 'A recruiter'} tried to post a job with vulgar or adult wording. It was not posted.`, type: 'job_posted', link: '/admin/users', metadata: { userId: user._id } })
@@ -48,6 +56,8 @@ const createJob = async (req, res) => {
       return res.status(400).json({ msg: 'You must be associated with a company to post jobs as a company' });
     }
 
+    const limitedTier = isLimitedTier(user);
+    if (limitedTier && req.body.status !== 'draft' && await limitedTierFull(user)) return res.status(403).json({ msg: LIMITED_MSG, code: 'free_email_one_job' });
     if (req.body.status !== 'draft' && await blockForContent(req, user, req.body.title, req.body.description)) return res.status(400).json({ msg: CONTENT_BLOCK_MSG, code: 'content_blocked' });
 
     // Internships: details are required, and a verified company's first 3 live internships are free (no paid slot used).
@@ -152,6 +162,7 @@ const createJob = async (req, res) => {
     });
 
     newJob.scamFlags = jobScamFlags({ title, description });
+    if (limitedTier) newJob.shortLife = true;
     const job = await newJob.save();
 
     if (job.status === 'active') {
@@ -245,7 +256,7 @@ const cloneJob = async (req, res) => {
     newJobData.status = 'draft';
     newJobData.isCloned = true;
     // A copy never inherits paid, flagged or reported state.
-    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'hiddenFromPublic', 'scamReviewed', 'scamFlags', 'reportCount', 'renewedAt', 'externalApply'].forEach((k) => { delete newJobData[k]; });
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'shortLife', 'hiddenFromPublic', 'scamReviewed', 'scamFlags', 'reportCount', 'renewedAt', 'externalApply'].forEach((k) => { delete newJobData[k]; });
     if (newJobData.internship) newJobData.internship = { ...newJobData.internship, free: false };
 
     const newJob = new Job(newJobData);
@@ -351,6 +362,10 @@ const updateJob = async (req, res) => {
       if (!updatedDesc) return res.status(400).json({ msg: 'Job description is required for publishing' });
     }
 
+    if (job.shortLife && updatedStatus === 'active') {
+      const poster = await User.findById(job.recruiter).select('email subscriptionDetails subscriptionExpiry');
+      if (await limitedTierFull(poster, job._id)) return res.status(403).json({ msg: LIMITED_MSG, code: 'free_email_one_job' });
+    }
     if (updatedStatus !== 'draft') {
       const owner = await User.findById(req.user.id).select('name');
       if (await blockForContent(req, owner || {}, req.body.title ?? job.title, req.body.description ?? job.description)) return res.status(400).json({ msg: CONTENT_BLOCK_MSG, code: 'content_blocked' });
@@ -359,7 +374,7 @@ const updateJob = async (req, res) => {
     const previousStatus = job.status;
     delete req.body.scamFlags; delete req.body.scamReviewed; // only the server and admin set these
     // Paid and counted fields are never set from the posting form: only an admin (sponsored, urgent) or the server (reports, free internship) can.
-    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'hiddenFromPublic', 'company', 'recruiter', 'externalApply', 'applicantsCount', 'display_id', 'isCloned', '_id'].forEach((k) => { delete req.body[k]; });
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'shortLife', 'hiddenFromPublic', 'company', 'recruiter', 'externalApply', 'applicantsCount', 'display_id', 'isCloned', '_id'].forEach((k) => { delete req.body[k]; });
     Object.keys(req.body).forEach((k) => { if (k.includes('.') || k.startsWith('$')) delete req.body[k]; });   // no dotted paths such as 'internship.free'
     if (req.body.internship !== undefined) {
       if (job.jobType !== 'Internship' && req.body.jobType !== 'Internship') { delete req.body.internship; }

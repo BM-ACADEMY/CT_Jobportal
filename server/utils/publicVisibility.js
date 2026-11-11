@@ -2,6 +2,7 @@
 // jobs newer than 45 days (or renewed), not hidden by admin, and from verified companies.
 const JOB_MAX_AGE_DAYS = 45;
 const DAY = 86400000;
+const SHORT_LIFE_DAYS = 14; // jobs from the limited free tier (free email address)
 
 // HIDE_UNVERIFIED_JOBS=false turns the verified-company rule off. On by default.
 const hideUnverified = () => process.env.HIDE_UNVERIFIED_JOBS !== 'false';
@@ -13,7 +14,10 @@ const publicJobConditions = ({ now = Date.now(), verifiedCompanyIds = null, hidd
   const cut = freshCutoff(now);
   const and = [
     { hiddenFromPublic: { $ne: true } },
-    { $or: [{ createdAt: { $gte: cut } }, { renewedAt: { $gte: cut } }] },
+    { $or: [
+      { shortLife: { $ne: true }, $or: [{ createdAt: { $gte: cut } }, { renewedAt: { $gte: cut } }] },
+      { shortLife: true, createdAt: { $gte: new Date(now - SHORT_LIFE_DAYS * DAY) } },
+    ] },
   ];
   if (verifiedCompanyIds) and.push({ company: { $in: verifiedCompanyIds } });
   else if (hiddenCompanyIds && hiddenCompanyIds.length) and.push({ company: { $nin: hiddenCompanyIds } });
@@ -29,7 +33,8 @@ const jobIsPublic = (job, now = Date.now()) => {
   if (!job || job.hiddenFromPublic) return false;
   const cut = freshCutoff(now).getTime();
   const t = (d) => (d ? new Date(d).getTime() : 0);
-  if (t(job.createdAt) < cut && t(job.renewedAt) < cut) return false;
+  if (job.shortLife) { if (t(job.createdAt) < now - SHORT_LIFE_DAYS * DAY) return false; }
+  else if (t(job.createdAt) < cut && t(job.renewedAt) < cut) return false;
   const c = job.company;
   if (!c) return !hideUnverified(); // a job with no company is hidden by the list rule too, so the pages match
   if (typeof c === 'object') {

@@ -17,10 +17,6 @@ const emailKind = (email, website) => {
   return { kind: 'official', matchesWebsite: !!host && (host === domain || host.endsWith(`.${domain}`) || domain.endsWith(`.${host}`)) };
 };
 
-const COMPANY_ROLES = ['recruiter', 'company'];
 const isPersonalEmail = (email) => emailKind(email, '').kind === 'personal';
-// Companies and recruiters sign up with their company email. Free inboxes (Gmail, Yahoo...) are not accepted for them.
-const COMPANY_EMAIL_MSG = 'Please sign up with your company email address (like name@yourcompany.com). Gmail, Yahoo and other free email addresses are not accepted for companies and recruiters. Job seekers and colleges can use any email.';
-const blocksCompanySignup = (role, email) => COMPANY_ROLES.includes(role) && isPersonalEmail(email);
 
-module.exports = { emailKind, hostOf, isPersonalEmail, blocksCompanySignup, COMPANY_EMAIL_MSG };
+module.exports = { emailKind, hostOf, isPersonalEmail };
