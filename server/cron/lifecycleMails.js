@@ -18,6 +18,7 @@ const Application = require('../models/Application');
 const Payment = require('../models/Payment');
 const { expiryStage, failedPaymentDue } = require('../utils/lifecycle/billing');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
+const policy = require('../utils/lifecycle/emailPolicy');
 const { getCategory, PASS_RATIO } = require('../config/courseMap');
 
 const DAY = 86400000;
@@ -39,6 +40,10 @@ const deliver = async (state, user, key, mail, audience = 'seeker') => {
   if (!realEmail(user) || optedOut(user)) return false;
   const recent = await EmailLog.exists({ user: user._id, sentAt: { $gte: ago(20 / 24) } });
   if (recent) return false;
+  if (!policy.isTransactional(key)) { // weekly cap: never more than a few marketing-style mails a week
+    const lastWeek = await EmailLog.countDocuments({ user: user._id, sentAt: { $gte: ago(7) }, key: { $not: /^(plan_|pay_|paid_welcome)/ } });
+    if (!policy.underWeeklyCap(audience, lastWeek)) return false;
+  }
   try {
     await EmailLog.create({ user: user._id, key });
   } catch (err) {
@@ -237,11 +242,51 @@ const collegeMails = async (state) => {
   }
 };
 
+// Free weekly jobs mail for job seekers (Tue-Thu). Skips people with no real match, people who just applied, and paid-alert holders (they have their own).
+const weeklyJobs = async (state) => {
+  const now = new Date();
+  if (!policy.isDigestDay(now)) return;
+  const role = await Role.findOne({ name: 'jobseeker' }).select('_id');
+  const fresh = await Job.find({ status: 'active', validThrough: { $gt: now }, createdAt: { $gte: ago(7) } })
+    .populate('company', 'name').sort({ createdAt: -1 }).limit(400).lean();
+  if (!fresh.length) return;
+  const week = `weekly-${periodId(7, now)}`;
+  const done = (await EmailLog.find({ key: week }).select('user').lean()).map((l) => l.user);
+  const users = await User.find({
+    ...baseUserFilter, role: role._id, _id: { $nin: done },
+    'profile.profileCompletion': { $gte: 40 },
+    $or: [{ lastLoginAt: { $gte: ago(90) } }, { lastLoginAt: null, createdAt: { $gte: ago(90) } }],
+  }).limit(BATCH);
+  for (const u of users) {
+    if (state.sent >= MAX_PER_RUN) break;
+    if (alertFrequency(u, now)) continue;
+    const last = await Application.findOne({ applicant: u._id }).sort({ createdAt: -1 }).select('createdAt').lean();
+    if (policy.recentlyApplied(last?.createdAt)) continue;
+    const jobs = rankForMail(u, fresh, 5, { appliedJobIds: await appliedJobIds(u) });
+    if (jobs.length) await deliver(state, u, week, mails.wrap(mails.weeklyJobs(u, jobs), u._id));
+  }
+};
+
+// Once after a completed payment (first 3 days): what they bought and where to start. Not counted against the weekly cap.
+const paidWelcome = async (state) => {
+  const payments = await Payment.find({ status: 'completed', amount: { $gt: 0 }, createdAt: { $gte: ago(3), $lte: ago(1 / 24) } })
+    .populate('plan', 'name').populate('payPerFeature', 'name').sort({ createdAt: -1 }).limit(BATCH).lean();
+  const roles = await Role.find({ name: { $in: ['jobseeker', 'recruiter', 'company', 'college'] } }).lean();
+  const nameOf = Object.fromEntries(roles.map((r) => [String(r._id), r.name]));
+  for (const p of payments) {
+    const user = await User.findOne({ ...baseUserFilter, _id: p.user });
+    if (!user) continue;
+    const rn = nameOf[String(user.role)];
+    const audience = rn === 'jobseeker' ? 'seeker' : rn === 'college' ? 'college' : 'company';
+    await deliver(state, user, `paid_welcome-${p._id}`, mails.wrap(mails.paidWelcome(user, { audience, itemName: p.plan?.name || p.payPerFeature?.name }), user._id), audience);
+  }
+};
+
 const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [paidWelcome, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

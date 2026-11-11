@@ -171,6 +171,35 @@ const collegeFirstStudents = (user, college) => ({
     ${button(link('/college/drives', 'college_first_students'), 'Open my drives')}`,
 });
 
+// Weekly jobs mail for every active job seeker (free). Up to 5 real matches, with the reason each one fits.
+const weeklyJobs = (user, jobs) => ({
+  subject: `${jobs.length} new job${jobs.length > 1 ? 's' : ''} for you this week`,
+  title: 'New jobs that fit you',
+  html: `<p>Hi ${first(user)},</p>
+    <p>These jobs were posted this week and match your profile:</p>
+    <ul style="padding-left:18px;">${jobs.map((j) => `<li style="margin:6px 0;"><a href="${esc(utm(jobUrl(j), 'weekly_jobs'))}" style="color:#059669;font-weight:bold;">${esc(j.title)}</a>${j.company?.name ? ` at ${esc(j.company.name)}` : ''}${j.location ? `, ${esc(j.location)}` : ''}${j.why?.length ? `<br><span style="font-size:12px;color:#475569;">${esc(j.why.slice(0, 2).join(' · '))}</span>` : ''}</li>`).join('')}</ul>
+    <p style="font-size:13px;color:#475569;">Applying is free. A complete profile and a resume help your application get seen.</p>
+    ${button(utm(`${frontend()}/jobs`, 'weekly_jobs'), 'See all jobs')}`,
+});
+
+// Sent once after a payment: what they bought and the one place to start, so the money turns into a benefit.
+const PAID_START = {
+  seeker: { path: '/candidate/job-alerts', label: 'Set up my job alerts', tip: 'Set your alert once and matching jobs reach your inbox. Also try the AI resume review and mock interviews included in your plan.' },
+  company: { path: '/company/candidates', label: 'Find candidates', tip: 'Post your job, then open Candidates to see people who fit. Your plan lets you contact them directly.' },
+  college: { path: '/college/drives', label: 'Open my drives', tip: 'Create a drive and share the QR code with students. Their skill results show up in your reports.' },
+};
+const paidWelcome = (user, { audience, itemName }) => {
+  const s = PAID_START[audience] || PAID_START.seeker;
+  return {
+    subject: `Your ${itemName || 'plan'} is active. Start here`,
+    title: 'Thank you. Here is how to use it',
+    html: `<p>Hi ${first(user)},</p>
+      <p>Your payment for <strong>${esc(itemName || 'your plan')}</strong> went through. ${esc(s.tip)}</p>
+      <p>Stuck on anything? Reply to this mail or write to hello@velaivaaipu.in and we will help.</p>
+      ${button(link(s.path, 'paid_welcome'), s.label)}`,
+  };
+};
+
 const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
-module.exports = { planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };
+module.exports = { weeklyJobs, paidWelcome, planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };
