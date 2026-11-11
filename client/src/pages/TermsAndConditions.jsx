@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from "@/components/ui/badge";
 import { FileText, ShieldAlert } from 'lucide-react';
 
-const EFFECTIVE_DATE = 'October 22, 2026';
+const EFFECTIVE_DATE = 'November 19, 2026';
 // The assistant wording stays hidden until VITE_ASSISTANT_ENABLED=true (set it together with ASSISTANT_ENABLED on the server).
 const ASSISTANT_LIVE = import.meta.env.VITE_ASSISTANT_ENABLED === 'true';
 
@@ -121,13 +121,16 @@ const TermsAndConditions = () => {
 
           <Section id="subscriptions" title="5. Subscription Plans, Billing & Payments">
             <p>
-              The Platform offers free and paid subscription tiers for Job Seekers, Recruiters/Companies, and Colleges, as well as one-time Pay-Per-Feature purchases. Paid plan features, limits, and pricing are as displayed on the relevant Subscription page at the time of purchase.
+              The Platform offers free and paid subscription tiers for Job Seekers, Recruiters/Companies, and Colleges, as well as one-time Pay-Per-Feature purchases. Paid plan features, limits, and pricing are as displayed on the relevant Subscription page at the time of purchase. Prices are before GST. GST at 18% is added at checkout, and the total you pay is shown before you confirm.
             </p>
             <p>
               Payments are processed through our third-party payment partner (Razorpay). By subscribing, you authorize us to charge your chosen payment method for the plan price, including recurring auto-renewal charges where auto-renewal is enabled, until you cancel or downgrade. You can manage auto-renewal from your account's Subscription settings.
             </p>
             <p>
               If a recurring payment fails, your plan may be downgraded to the Free tier after repeated failed attempts, as described in your dashboard's renewal notifications.
+            </p>
+                      <p>
+              College student packs: a pack adds 250 student places to a verified College for 1 year from purchase. A College can hold at most 2 packs at a time. Pack prices are before GST, like all other prices.
             </p>
           </Section>
 
@@ -242,7 +245,7 @@ const TermsAndConditions = () => {
 
           <Section id="governing-law" title="19. Governing Law & Disputes">
             <p>
-              These Terms are governed by the laws of India. Any disputes arising from these Terms or your use of the Platform shall be subject to the exclusive jurisdiction of the courts of Chennai, Tamil Nadu, India, unless otherwise required by applicable law.
+              These Terms are governed by the laws of India. Any disputes arising from these Terms or your use of the Platform shall be subject to the exclusive jurisdiction of the courts of Puducherry, India, unless otherwise required by applicable law.
             </p>
           </Section>
 
@@ -256,6 +259,9 @@ const TermsAndConditions = () => {
             <p>
               Velaivaaipu is operated by Afra Ventures Private Limited, 78 Lenin St, Kosapalayam, Puducherry 605013, India. Questions about these Terms can be directed to <strong>hello@velaivaaipu.in</strong> or via our{' '}
               <Link to="/contact" className="font-bold text-emerald-700 hover:underline">Contact page</Link>.
+            </p>
+            <p>
+              Grievance Officer: Mohamed Kamarudeen B, Authorised Signatory, Afra Ventures Private Limited. Write to <strong>hello@velaivaaipu.in</strong> with the subject "Grievance". We acknowledge within 24 hours and aim to resolve within 15 days.
             </p>
           </Section>
         </div>

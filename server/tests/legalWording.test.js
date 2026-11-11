@@ -24,3 +24,13 @@ test('home stat says Job Seekers, not Students', () => {
   const s = read('client/src/pages/home/HomeGuest.jsx');
   assert.ok(!/label: 'Students'/.test(s) && /label: 'Job Seekers'/.test(s));
 });
+
+test('terms: Puducherry courts, GST line, college pack rules, grievance officer, new date', () => {
+  const t = read('client/src/pages/TermsAndConditions.jsx');
+  assert.ok(/courts of Puducherry/.test(t) && !/courts of Chennai/.test(t));
+  assert.ok(/GST at 18% is added at checkout/.test(t));
+  assert.ok(/250 student places/.test(t) && /at most 2 packs/.test(t));
+  assert.ok(/Grievance Officer/.test(t) && /November 19, 2026/.test(t));
+  const p = read('client/src/pages/PrivacyPolicy.jsx');
+  assert.ok(/Grievance Officer/.test(p) && /November 19, 2026/.test(p));
+});
