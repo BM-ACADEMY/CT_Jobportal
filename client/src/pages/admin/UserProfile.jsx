@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { openUploadedFile } from '@/utils/signedFiles';
+import UserUsageCard from '@/components/admin/UserUsageCard';
 
 const Field = ({ icon: Icon, label, value }) => {
   if (!value) return null;
@@ -505,6 +506,8 @@ const UserProfile = () => {
 
         {/* Right column */}
         <div className="space-y-6">
+
+          <UserUsageCard userId={id} />
 
           {/* Account meta */}
           <Card className="p-6 rounded-[24px] border-slate-200 shadow-sm bg-white space-y-5">
