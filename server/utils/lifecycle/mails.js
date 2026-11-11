@@ -200,6 +200,45 @@ const paidWelcome = (user, { audience, itemName }) => {
   };
 };
 
+// Recruiter mails: new applicants (weekly), a job about to close, and the day before / after a walk-in drive.
+const applicantsWeekly = (user, { total, pending, topJob }) => ({
+  subject: `${total} new applicant${total > 1 ? 's' : ''} on your jobs this week`,
+  title: 'Applicants are waiting',
+  html: `<p>Hi ${first(user)},</p>
+    <p>${total} new ${total > 1 ? 'people applied' : 'person applied'} to your jobs this week${topJob ? `, most for <strong>${esc(topJob)}</strong>` : ''}. ${pending} ${pending === 1 ? 'is' : 'are'} still waiting for your review.</p>
+    <p>Quick replies keep good candidates interested.</p>
+    ${button(link('/company/candidates', 'applicants_weekly'), 'Review applicants')}`,
+});
+
+const jobClosing = (user, job, { shortLife }) => ({
+  subject: `Your job "${String(job.title).slice(0, 60)}" closes soon`,
+  title: 'Your job is about to close',
+  html: `<p>Hi ${first(user)},</p>
+    <p><strong>${esc(job.title)}</strong> closes in about ${Math.max(1, Math.ceil((new Date(job.validThrough) - Date.now()) / 86400000))} day(s).</p>
+    ${shortLife
+    ? '<p>Jobs from free email addresses run for 14 days and cannot be renewed. To keep hiring, register with your company email or ask us to verify your company, and post again.</p>'
+    : '<p>Still hiring? Extend it from your jobs page. Already hired? Close it so candidates are not kept waiting.</p>'}
+    ${button(link('/company/jobs', 'job_closing'), 'Open my jobs')}`,
+});
+
+const drivePre = (user, drive, { registered }) => ({
+  subject: `Tomorrow: ${String(drive.title).slice(0, 60)}. ${registered} registered`,
+  title: 'Your drive is tomorrow',
+  html: `<p>Hi ${first(user)},</p>
+    <p><strong>${esc(drive.title)}</strong> is tomorrow. ${registered} ${registered === 1 ? 'person has' : 'people have'} registered. Candidates were reminded to bring their documents.</p>
+    <p>Keep the check-in QR ready on your phone.</p>
+    ${button(link('/company/drives', 'drive_pre'), 'Open drive')}`,
+});
+
+const drivePost = (user, drive, { registered, checkedIn }) => ({
+  subject: `${String(drive.title).slice(0, 60)}: update your candidates`,
+  title: 'Thanks for hosting your drive',
+  html: `<p>Hi ${first(user)},</p>
+    <p>${checkedIn} of ${registered} registered candidates checked in at <strong>${esc(drive.title)}</strong>.</p>
+    <p>Mark who is shortlisted or selected so people hear back quickly. It also keeps your hiring record in one place.</p>
+    ${button(link('/company/drives', 'drive_post'), 'Update candidates')}`,
+});
+
 const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
-module.exports = { weeklyJobs, paidWelcome, planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };
+module.exports = { applicantsWeekly, jobClosing, drivePre, drivePost, weeklyJobs, paidWelcome, planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };

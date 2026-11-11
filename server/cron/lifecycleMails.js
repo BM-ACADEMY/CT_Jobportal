@@ -19,6 +19,9 @@ const Payment = require('../models/Payment');
 const { expiryStage, failedPaymentDue } = require('../utils/lifecycle/billing');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
 const policy = require('../utils/lifecycle/emailPolicy');
+const WalkInDrive = require('../models/WalkInDrive');
+const DriveRegistration = require('../models/DriveRegistration');
+const { istDayStart } = require('../utils/driveRules');
 const { getCategory, PASS_RATIO } = require('../config/courseMap');
 
 const DAY = 86400000;
@@ -282,11 +285,59 @@ const paidWelcome = async (state) => {
   }
 };
 
+// Weekly (Tue-Thu) to recruiters: how many people applied to their jobs in the last 7 days and how many wait for review.
+const applicantsWeekly = async (state) => {
+  const now = new Date();
+  if (!policy.isDigestDay(now)) return;
+  const apps = await Application.find({ createdAt: { $gte: ago(7) }, status: { $ne: 'withdrawn' } }).select('job status').lean();
+  if (!apps.length) return;
+  const jobs = await Job.find({ _id: { $in: [...new Set(apps.map((a) => a.job))] } }).select('recruiter title').lean();
+  const byRecruiter = new Map();
+  for (const j of jobs) {
+    const mine = apps.filter((a) => String(a.job) === String(j._id));
+    const r = byRecruiter.get(String(j.recruiter)) || { total: 0, pending: 0, best: { title: '', n: 0 } };
+    r.total += mine.length; r.pending += mine.filter((a) => a.status === 'pending').length;
+    if (mine.length > r.best.n) r.best = { title: j.title, n: mine.length };
+    byRecruiter.set(String(j.recruiter), r);
+  }
+  const week = `co_applicants-${periodId(7, now)}`;
+  for (const [id, r] of [...byRecruiter].slice(0, BATCH)) {
+    const u = await User.findOne({ ...baseUserFilter, _id: id });
+    if (u) await deliver(state, u, week, mails.wrap(mails.applicantsWeekly(u, { total: r.total, pending: r.pending, topJob: r.best.title }), u._id), 'company');
+  }
+};
+
+// One mail per job, 1 to 3 days before it closes.
+const jobClosing = async (state) => {
+  const jobs = await Job.find({ status: 'active', validThrough: { $gt: new Date(Date.now() + 12 * 3600000), $lte: ago(-3) } }).select('title validThrough recruiter shortLife').limit(BATCH).lean();
+  for (const j of jobs) {
+    const u = await User.findOne({ ...baseUserFilter, _id: j.recruiter });
+    if (u) await deliver(state, u, `co_job_closing-${j._id}`, mails.wrap(mails.jobClosing(u, j, { shortLife: !!j.shortLife }), u._id), 'company');
+  }
+};
+
+// Walk-in drive organiser: a heads-up the day before and a follow-up the day after. (Candidates get their own reminders from cron/driveReminders.js.)
+const driveOrganiser = async (state) => {
+  const today = istDayStart(new Date()).getTime();
+  const drives = await WalkInDrive.find({ status: 'published', date: { $gte: new Date(today - DAY), $lt: new Date(today + 2 * DAY) } }).limit(BATCH);
+  for (const d of drives) {
+    const u = await User.findOne({ ...baseUserFilter, _id: d.organiser });
+    if (!u) continue;
+    const at = istDayStart(d.date).getTime();
+    const registered = await DriveRegistration.countDocuments({ drive: d._id });
+    if (at === today + DAY) { if (registered) await deliver(state, u, `co_drive_pre-${d._id}`, mails.wrap(mails.drivePre(u, d, { registered }), u._id), 'company'); }
+    else if (at === today - DAY && registered) {
+      const checkedIn = await DriveRegistration.countDocuments({ drive: d._id, status: { $ne: 'registered' } });
+      await deliver(state, u, `co_drive_post-${d._id}`, mails.wrap(mails.drivePost(u, d, { registered, checkedIn }), u._id), 'company');
+    }
+  }
+};
+
 const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [paidWelcome, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [paidWelcome, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, driveOrganiser, applicantsWeekly, jobClosing, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

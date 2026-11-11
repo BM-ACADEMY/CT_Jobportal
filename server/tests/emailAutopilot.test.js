@@ -89,3 +89,24 @@ test('email report is admin only and does not touch plans or prices', () => {
   const code = fs.readFileSync(require.resolve('../controllers/emailReportController.js'), 'utf8').replace(/\/\/.*$/gm, '');
   assert.ok(!/razorpay|\.save\(|updateOne|create\(/i.test(code));
 });
+
+test('recruiter and drive mails: honest, one button, unsubscribe, cap applies', () => {
+  const u = { _id: '507f1f77bcf86cd799439011', name: 'Ravi K' };
+  const job = { title: 'Sales Executive', validThrough: new Date(Date.now() + 2 * 86400000) };
+  const drive = { title: 'Walk-in Hiring' };
+  const all = [
+    mails.wrap(mails.applicantsWeekly(u, { total: 4, pending: 3, topJob: 'Sales Executive' }), u._id),
+    mails.wrap(mails.jobClosing(u, job, { shortLife: true }), u._id),
+    mails.wrap(mails.jobClosing(u, job, { shortLife: false }), u._id),
+    mails.wrap(mails.drivePre(u, drive, { registered: 12 }), u._id),
+    mails.wrap(mails.drivePost(u, drive, { registered: 12, checkedIn: 9 }), u._id),
+  ];
+  for (const m of all) {
+    assert.match(m.html, /unsubscribe/i);
+    assert.ok(!/(hurry|last chance|act now|only today)/i.test(m.html));
+  }
+  assert.match(all[1].html, /14 days/);
+  assert.ok(!/14 days/.test(all[2].html));
+  const src = fs.readFileSync(require.resolve('../cron/lifecycleMails.js'), 'utf8');
+  assert.match(src, /driveOrganiser, applicantsWeekly, jobClosing/);
+});
