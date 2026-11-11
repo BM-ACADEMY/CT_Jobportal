@@ -53,6 +53,29 @@ const Growth = () => {
         </div>
       )}
 
+      {data && data.sources && data.sources.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-x-auto mt-4">
+          <p className="px-4 pt-4 text-sm font-bold text-slate-800">Money and results by source</p>
+          <p className="px-4 text-xs text-slate-500">Spend comes from Spend and income entries tagged with a source (same word as utm_source). Revenue is what those people have paid, before GST.</p>
+          <table className="w-full text-sm mt-2">
+            <thead><tr className="text-left text-[11px] uppercase tracking-widest text-slate-400"><th className="p-3">Source</th><th className="p-3">Spent</th><th className="p-3">Signups</th><th className="p-3">Per signup</th><th className="p-3">Paid</th><th className="p-3">Revenue</th><th className="p-3">Needs attention</th></tr></thead>
+            <tbody>
+              {data.sources.map((r) => (
+                <tr key={r.source} className="border-t border-slate-50">
+                  <td className="p-3 font-semibold text-slate-800">{r.source}</td>
+                  <td className="p-3">{r.spend ? `₹${r.spend.toLocaleString('en-IN')}` : '-'}</td>
+                  <td className="p-3">{r.signups}</td>
+                  <td className="p-3">{r.costPerSignup != null ? `₹${r.costPerSignup.toLocaleString('en-IN')}` : '-'}</td>
+                  <td className="p-3">{r.paid}</td>
+                  <td className="p-3">{r.revenue ? `₹${r.revenue.toLocaleString('en-IN')}` : '-'}</td>
+                  <td className="p-3 text-xs font-bold text-amber-600">{r.attention}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {ai && (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
           <h2 className="font-bold text-slate-800">Free AI given to candidates</h2>
