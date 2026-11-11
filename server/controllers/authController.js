@@ -13,6 +13,7 @@ const { otpEmail } = require('../utils/emailTemplates');
 const { hasCompanyAccess } = require('../utils/companyAccess');
 const { cleanInterestedCategories } = require('../config/jobCategories');
 const { isSelfServeRole } = require('../utils/selfServeRoles');
+const { blocksCompanySignup, COMPANY_EMAIL_MSG } = require('../utils/emailKind');
 const { sendWelcomeEmail } = require('../utils/lifecycleEmails');
 
 // "Manage Drive" is a capability layered on top of whatever role a user already has —
@@ -113,6 +114,7 @@ const registerUser = async (req, res) => {
     if (!isSelfServeRole(role)) {
       return res.status(400).json({ msg: 'Invalid role specified' });
     }
+    if (blocksCompanySignup(role, email)) return res.status(400).json({ msg: COMPANY_EMAIL_MSG, code: 'company_email_required' });
 
     // Password Validation: 6 chars, 1 capital, 1 number, 1 symbol
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}\[\]:;"'<>,.?/\\|~`\-]).{6,}$/;
@@ -740,6 +742,7 @@ const completeSocialProfile = async (req, res) => {
     if (!isSelfServeRole(role)) {
       return res.status(400).json({ msg: 'Invalid role specified' });
     }
+    if (blocksCompanySignup(role, user.email)) return res.status(400).json({ msg: COMPANY_EMAIL_MSG, code: 'company_email_required' });
     const roleDoc = await Role.findOne({ name: role });
     if (!roleDoc) {
       return res.status(400).json({ msg: 'Invalid role specified' });
