@@ -1,6 +1,5 @@
 // "Did you get what you expected?" after a payment: signed one-click links, score mapping and the numbers for the Admin table.
-const jwt = require('jsonwebtoken');
-const { getJwtSecret } = require('../config/jwt');
+// jwt is loaded only when a link is made or checked, so the summary numbers load anywhere.
 
 const MET = ['yes', 'partly', 'no'];
 const MET_RATING = { yes: 5, partly: 3, no: 1 }; // a one-click answer already gives a score; the form can refine it
@@ -8,10 +7,10 @@ const ASK_AFTER_DAYS = 7;
 const ASK_WINDOW_DAYS = 21;
 
 const signFeedbackToken = (userId, paymentId) =>
-  jwt.sign({ uid: String(userId), pid: String(paymentId), purpose: 'payment-feedback' }, getJwtSecret(), { expiresIn: '60d' });
+  require('jsonwebtoken').sign({ uid: String(userId), pid: String(paymentId), purpose: 'payment-feedback' }, require('../config/jwt').getJwtSecret(), { expiresIn: '60d' });
 const verifyFeedbackToken = (token) => {
   try {
-    const p = jwt.verify(String(token || ''), getJwtSecret());
+    const p = require('jsonwebtoken').verify(String(token || ''), require('../config/jwt').getJwtSecret());
     return p.purpose === 'payment-feedback' && p.uid && p.pid ? p : null;
   } catch { return null; }
 };

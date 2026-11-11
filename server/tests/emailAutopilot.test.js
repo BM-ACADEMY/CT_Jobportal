@@ -77,7 +77,7 @@ test('new mails: one button, unsubscribe in the footer, honest copy', () => {
 test('cron wiring: cap applied, new rules registered, job seekers first, engine still behind its flag', () => {
   const src = fs.readFileSync(require.resolve('../cron/lifecycleMails.js'), 'utf8');
   assert.match(src, /underWeeklyCap/);
-  assert.match(src, /for \(const rule of \[paidWelcome, profileIncomplete/);
+  assert.match(src, /for \(const rule of \[paidWelcome, paymentFeedbackAsk, profileIncomplete/);
   assert.match(src, /weeklyJobs/);
   assert.match(src, /LIFECYCLE_EMAILS_ENABLED === 'true'/);
   assert.match(src, /marketingOptOut/);
