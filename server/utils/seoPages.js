@@ -83,7 +83,7 @@ const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
       canonical: `${SITE_URL()}/jobs`, robots: 'noindex, follow',
     }) };
   }
-  const company = job.company?.name || 'Velaivaaipu';
+  const company = job.externalApply?.employerName || job.company?.name || 'Velaivaaipu';
   const city = job.location || 'Tamil Nadu';
   const canonical = jobUrl(job);
 
@@ -101,7 +101,7 @@ const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
 
   const image = job.company?.logo ? absolute(job.company.logo) : OG_IMAGE();
   const image2 = /\.(png|jpe?g)$/i.test(image) ? image : OG_IMAGE(); // WhatsApp ignores webp/svg previews
-  const description = clip(`${company} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}. Apply free on Velaivaaipu. ${stripHtml(job.description)}`, 155);
+  const description = clip(`${company} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}. ${job.externalApply?.url ? 'Apply on the employer site.' : 'Apply free on Velaivaaipu.'} ${stripHtml(job.description)}`, 155);
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'JobPosting',
@@ -111,9 +111,9 @@ const buildJobResponse = ({ slug, job, shell, now = new Date() }) => {
     datePosted: job.createdAt,
     validThrough: job.validThrough,
     employmentType: String(job.jobType || 'FULL_TIME').toUpperCase().replace(/[ -]/g, '_'),
-    hiringOrganization: { '@type': 'Organization', name: company, ...(job.company?.website ? { sameAs: job.company.website } : {}), ...(job.company?.logo ? { logo: absolute(job.company.logo) } : {}) },
+    hiringOrganization: { '@type': 'Organization', name: company, ...(!job.externalApply?.url && job.company?.website ? { sameAs: job.company.website } : {}), ...(!job.externalApply?.url && job.company?.logo ? { logo: absolute(job.company.logo) } : {}) },
     jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: city, addressRegion: 'Tamil Nadu', addressCountry: 'IN' } },
-    directApply: true,
+    directApply: !job.externalApply?.url,
     ...(job.workMode === 'Remote' ? { jobLocationType: 'TELECOMMUTE', applicantLocationRequirements: { '@type': 'Country', name: 'IN' } } : {}),
     // Salary is entered per year (lakhs x 100000 in the post-job form)
     ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),

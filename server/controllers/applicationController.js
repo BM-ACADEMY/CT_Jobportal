@@ -147,6 +147,10 @@ exports.applyJob = async (req, res) => {
     const applicantId = req.user.id;
     const User = require('../models/User');
 
+    // Jobs found on the web are applied for on the employer's own site, never here.
+    const extJob = await Job.findById(jobId).select('externalApply').lean();
+    if (extJob?.externalApply?.url) return res.status(400).json({ code: 'EXTERNAL_APPLY', msg: 'Apply for this job on the employer\'s site.', url: extJob.externalApply.url });
+
     // A job seeker needs a usable mobile number before applying: recruiters call. One given in the apply step fills a missing number.
     const phoneRule = require('../utils/phoneRule');
     const me = await User.findById(applicantId).select('profile.phone');

@@ -118,6 +118,8 @@ router.get('/needs-action', require('../controllers/needsActionController').getN
 router.put('/needs-action/assign', require('../controllers/needsActionController').assignItem);
 router.put('/needs-action/rules', require('../controllers/needsActionController').setRule);
 router.get('/jobs', getJobs);
+router.get('/external-jobs', require('../controllers/externalJobController').listExternalJobs);
+router.post('/external-jobs', require('../controllers/externalJobController').createExternalJob);
 router.patch('/jobs/:id/scam-review', require('../controllers/jobScamReviewController').setJobScamReviewed);
 router.delete('/jobs/:id', deleteJob);
 router.post('/jobs/:id/sponsor', require('../controllers/jobPromotionController').sponsorJob);

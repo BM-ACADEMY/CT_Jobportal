@@ -28,6 +28,13 @@ const jobSchema = new mongoose.Schema({
   urgentUntil: { type: Date, default: null },
   renewedAt: { type: Date, default: null }, // the company pressed Renew: keeps an old job on the public list for 45 more days
   hiddenFromPublic: { type: Boolean, default: false }, // Super Admin switch
+  // Job found on the web: candidates apply on the employer's own site. Set only by an admin (utils/externalApply.js).
+  externalApply: {
+    url: { type: String, default: undefined },
+    employerName: { type: String, default: undefined },
+    sourceName: { type: String, default: undefined },
+    clicks: { type: Number, default: 0 }
+  },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'

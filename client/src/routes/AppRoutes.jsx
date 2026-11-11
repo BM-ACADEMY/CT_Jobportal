@@ -53,6 +53,7 @@ const AdminLogin = page('admin/AdminLogin');
 const ManageUsers = page('admin/ManageUsers');
 const UserProfile = page('admin/UserProfile');
 const ManageJobs = page('admin/ManageJobs');
+const ExternalJobs = page('admin/ExternalJobs');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
 const ManageStaff = page('admin/ManageStaff');
 const ManageRenewals = page('admin/ManageRenewals');
@@ -469,6 +470,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManageJobs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/web-jobs"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ExternalJobs />
             </PrivateRoute>
           }
         />

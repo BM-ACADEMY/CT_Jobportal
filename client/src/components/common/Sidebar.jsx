@@ -99,6 +99,7 @@ const coreMenus = {
     { icon: Sparkles,        label: 'Business Advisor',   path: '/admin/advisor', group: 'Money' },
     { icon: Users,           label: 'Users',  path: '/admin/users', group: 'Growth' },
     { icon: Briefcase,       label: 'Jobs',  path: '/admin/jobs', group: 'Growth' },
+    { icon: Briefcase,       label: 'Web jobs',  path: '/admin/web-jobs', group: 'Growth' },
     { icon: CalendarDays,    label: 'Walk-in Drives',   path: '/admin/drives', group: 'Growth' },
     { icon: Activity,        label: 'Daily activity',   path: '/admin/activity', group: 'Growth' },
     { icon: Users,           label: 'Signup sources',   path: '/admin/growth', group: 'Growth' },

@@ -80,7 +80,15 @@ const JobDetails = () => {
 
   const [showProfileNudge, setShowProfileNudge] = useState(false);
 
+  // Job found on the web: the candidate applies on the employer's own site (no login needed).
+  const externalUrl = job?.externalApply?.url || '';
   const handleApply = () => {
+    if (externalUrl) {
+      window.open(externalUrl, '_blank', 'noopener,noreferrer');
+      axios.post(`${API_BASE_URL}/jobs/${job._id}/apply-click`).catch(() => {});
+      trackEvent && trackEvent('external_apply_click', { job_id: job._id });
+      return;
+    }
     if (!user) {
       toast.error("Please login to apply for this job");
       navigate('/login');
@@ -237,20 +245,20 @@ const JobDetails = () => {
     );
   }
 
-  const companyName = job.company?.name || 'Velaivaaipu';
+  const companyName = job.externalApply?.employerName || job.company?.name || 'Velaivaaipu';
   const city = job.location || 'Tamil Nadu';
   const fullJobTitle = `${job.title} Job in ${city} – ${companyName} | Velaivaaipu`;
   const seoTitle = fullJobTitle.length <= 60 ? fullJobTitle : `${job.title} Job in ${city} | Velaivaaipu`;
-  const seoDescription = `${companyName} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}${job.jobType ? `, ${String(job.jobType).toLowerCase()}` : ''}. Check the job details and apply online free on Velaivaaipu.`;
+  const seoDescription = `${companyName} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}${job.jobType ? `, ${String(job.jobType).toLowerCase()}` : ''}. ${job.externalApply?.url ? 'Check the details and apply on the employer site.' : 'Check the job details and apply online free on Velaivaaipu.'}`;
   const jobSchema = {
     '@context': 'https://schema.org', '@type': 'JobPosting',
     title: job.title, description: job.description,
     identifier: { '@type': 'PropertyValue', name: 'Velaivaaipu', value: job.display_id || job._id },
     datePosted: job.createdAt, validThrough: job.validThrough,
     employmentType: String(job.jobType || 'FULL_TIME').toUpperCase().replace(/[ -]/g, '_'),
-    hiringOrganization: { '@type': 'Organization', name: companyName, sameAs: job.company?.website },
+    hiringOrganization: { '@type': 'Organization', name: companyName, sameAs: job.externalApply?.url ? undefined : job.company?.website },
     jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: city, addressRegion: 'Tamil Nadu', addressCountry: 'IN' } },
-    directApply: true,
+    directApply: !job.externalApply?.url,
     ...(job.workMode === 'Remote' ? { jobLocationType: 'TELECOMMUTE', applicantLocationRequirements: { '@type': 'Country', name: 'IN' } } : {}),
     ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: ({ month: 'MONTH', day: 'DAY', hour: 'HOUR' })[job.salary.unit] || 'YEAR' } } } : {}),
   };
@@ -304,8 +312,8 @@ const JobDetails = () => {
                 </h1>
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-2 text-primary font-medium text-lg">
-                    {job.company?.name}
-                    {job.company?.website && (
+                    {job.externalApply?.employerName || job.company?.name}
+                    {!externalUrl && job.company?.website && (
                       <a href={job.company.website} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-primary transition-colors">
                         <Globe size={16} />
                       </a>
@@ -351,7 +359,7 @@ const JobDetails = () => {
                 size="xl" 
                 className="rounded-md px-10 h-14 bg-slate-900 hover:bg-primary text-white font-bold text-lg shadow-md transition-all hover:scale-[1.01]"
               >
-                Apply for this job
+                {externalUrl ? 'Apply on company site' : 'Apply for this job'}
               </Button>
             )}
           </motion.div>
@@ -543,6 +551,11 @@ const JobDetails = () => {
 
               <Separator className="bg-slate-50" />
               
+              {externalUrl ? (
+                <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                  You will leave Velaivaaipu to apply{job.externalApply?.sourceName ? ` (${job.externalApply.sourceName})` : ''}. The employer handles your application. Never pay anyone to get a job.
+                </p>
+              ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <CheckCircle2 size={16} className="text-emerald-500" />
@@ -553,10 +566,12 @@ const JobDetails = () => {
                   <span className="text-sm font-bold text-slate-600">Immediate Joining</span>
                 </div>
               </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Company Card */}
+          {/* Company Card (a job found on the web shows the real employer only, not our host company) */}
+          {!externalUrl && (
           <Card className="border-slate-100 rounded-xl overflow-hidden shadow-sm bg-slate-50/30">
             <CardContent className="p-8">
               <h3 className="text-lg font-bold text-slate-900 mb-6 tracking-tight">About Company</h3>
@@ -595,6 +610,8 @@ const JobDetails = () => {
               </div>
             </CardContent>
           </Card>
+
+          )}
 
           {/* Safety Warning */}
           <div className="p-8 rounded-xl border border-amber-100 bg-amber-50/50">
