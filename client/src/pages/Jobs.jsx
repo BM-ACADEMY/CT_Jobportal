@@ -16,7 +16,7 @@ import SEOHead from '../components/seo/SEOHead';
 import { jobPath } from '../utils/jobUrl';
 import { getCityIntro, CITY_LINKS } from '../data/cityJobIntros';
 import { JOB_CATEGORIES } from '../data/jobCategories';
-import { EDUCATION_LEVELS, MONTHLY_PAY_RANGES, POSTED_WITHIN, WORK_MODES, monthlyPay, educationFits, postedWithinDays, formatPay, jobFacts } from '../data/jobFacets';
+import { EDUCATION_LEVELS, PART_TIME_SCHEDULES, MONTHLY_PAY_RANGES, POSTED_WITHIN, WORK_MODES, monthlyPay, educationFits, postedWithinDays, formatPay, jobFacts } from '../data/jobFacets';
 
 const SEARCH_FIELD_LABELS = {
   title: 'Job Title',
@@ -121,6 +121,7 @@ const Jobs = () => {
   const [selectedEducation, setSelectedEducation] = useState(EDUCATION_LEVELS.some((e) => e.key === searchParams.get('education')) ? searchParams.get('education') : '');
   const [selectedModes, setSelectedModes] = useState([]);
   const [postedDays, setPostedDays] = useState(0);
+  const [selectedSchedules, setSelectedSchedules] = useState([]);
   const [noExperience, setNoExperience] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -202,7 +203,8 @@ const Jobs = () => {
       const matchesPosted = postedWithinDays(job, postedDays);
       const matchesNoExp = !noExperience || job.freshersWelcome === true || !(job.experience?.min > 0);
 
-      return matchesType && matchesSalary && matchesExperience && matchesCategory && matchesEducation && matchesMode && matchesPosted && matchesNoExp;
+      const matchesSchedule = selectedSchedules.length === 0 || selectedSchedules.includes(job.partTime?.schedule);
+      return matchesType && matchesSalary && matchesExperience && matchesCategory && matchesEducation && matchesMode && matchesPosted && matchesNoExp && matchesSchedule;
     });
 
     // A search term implies relevance ranking already did the ordering (best match first);
@@ -219,7 +221,7 @@ const Jobs = () => {
     }
 
     return result;
-  }, [jobs, activeTab, searchTerm, locationTerm, selectedCategory, selectedTypes, selectedSalary, selectedExperience, selectedEducation, selectedModes, postedDays, noExperience, sortBy]);
+  }, [jobs, activeTab, searchTerm, locationTerm, selectedCategory, selectedTypes, selectedSalary, selectedExperience, selectedEducation, selectedModes, postedDays, noExperience, selectedSchedules, sortBy]);
 
   const toggleType = (type) => {
     setSelectedTypes(prev =>
@@ -237,12 +239,26 @@ const Jobs = () => {
     setSelectedEducation('');
     setSelectedModes([]);
     setPostedDays(0);
+    setSelectedSchedules([]);
     setNoExperience(false);
     setSortBy('newest');
   };
 
+  const toggleSchedule = (k) => setSelectedSchedules((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]));
+  // Towns that have jobs right now, with how many, taken from the jobs already loaded (the part before the first comma).
+  const placeCounts = useMemo(() => {
+    const m = new Map();
+    for (const j of jobs) {
+      const name = String(j.location || '').split(',')[0].replace(/\s+/g, ' ').trim();
+      if (!name || name.length > 30) continue;
+      const key = name.toLowerCase();
+      const cur = m.get(key) || { name: name.replace(/\b\w/g, (c) => c.toUpperCase()), count: 0 };
+      cur.count += 1; m.set(key, cur);
+    }
+    return [...m.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, 10);
+  }, [jobs]);
   const toggleMode = (m) => setSelectedModes((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
-  const extraFilterCount = (selectedEducation ? 1 : 0) + selectedModes.length + (postedDays ? 1 : 0) + (noExperience ? 1 : 0);
+  const extraFilterCount = (selectedEducation ? 1 : 0) + selectedModes.length + (postedDays ? 1 : 0) + (noExperience ? 1 : 0) + selectedSchedules.length;
   const hasActiveFilters = searchTerm || locationTerm || selectedCategory || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0 || extraFilterCount > 0;
 
   const searchedLocation = locationTerm.trim()
@@ -317,6 +333,27 @@ const Jobs = () => {
 
   const FilterPanel = () => (
     <div className="space-y-7">
+      {/* Place: towns that have jobs now, with counts */}
+      {placeCounts.length > 0 && (
+        <>
+          <div className={secClass('place', locationTerm.trim() ? 1 : 0)}>
+            {secHead('place', 'Place', locationTerm.trim() ? 1 : 0)}
+            <div className="flex flex-wrap gap-2">
+              {placeCounts.map((pl) => {
+                const on = locationTerm.trim().toLowerCase() === pl.name.toLowerCase();
+                return (
+                  <button key={pl.name} type="button" onClick={() => setLocationTerm(on ? '' : pl.name)}
+                    className={`px-3.5 py-1.5 rounded-none text-xs font-semibold border transition-all ${on ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
+                    {pl.name} <span className="opacity-60">({pl.count})</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="h-px bg-slate-100" />
+        </>
+      )}
+
       {/* Job Type */}
       <div className={secClass('types', selectedTypes.length)}>
         {secHead('types', 'Job Type', selectedTypes.length)}
@@ -410,6 +447,20 @@ const Jobs = () => {
             <button key={m} onClick={() => toggleMode(m)}
               className={`px-3.5 py-1.5 rounded-none text-xs font-semibold border transition-all ${selectedModes.includes(m) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700'}`}>
               {m === 'Remote' ? 'Work from home' : m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-px bg-slate-100" />
+
+      <div className={secClass('hours', selectedSchedules.length)}>
+        {secHead('hours', 'Part-time hours', selectedSchedules.length)}
+        <div className="flex flex-wrap gap-2">
+          {PART_TIME_SCHEDULES.map((x) => (
+            <button key={x.key} type="button" onClick={() => toggleSchedule(x.key)}
+              className={`px-3.5 py-1.5 rounded-none text-xs font-semibold border transition-all ${selectedSchedules.includes(x.key) ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300'}`}>
+              {x.label}
             </button>
           ))}
         </div>
@@ -578,6 +629,11 @@ const Jobs = () => {
                     {POSTED_WITHIN.find((p) => p.days === postedDays)?.label} <X size={11} className="ml-1.5" />
                   </Badge>
                 )}
+                {selectedSchedules.map((k) => (
+                  <Badge key={k} className="bg-sky-50 text-sky-700 border border-sky-200 rounded-none px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-sky-100 transition-colors" onClick={() => toggleSchedule(k)}>
+                    {PART_TIME_SCHEDULES.find((x) => x.key === k)?.label} <X size={11} className="ml-1.5" />
+                  </Badge>
+                ))}
                 {noExperience && (
                   <Badge className="bg-blue-50 text-blue-700 border border-blue-200 rounded-none px-3 py-1 text-xs font-semibold cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => setNoExperience(false)}>
                     No experience needed <X size={11} className="ml-1.5" />

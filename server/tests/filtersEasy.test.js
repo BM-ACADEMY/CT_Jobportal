@@ -25,3 +25,12 @@ test('remembered filters never keep search words or place, and storage failures 
 test('brace balance of the page is intact', () => {
   for (const [a, b] of [['(', ')'], ['{', '}'], ['[', ']']]) assert.strictEqual(src.split(a).length, src.split(b).length, a);
 });
+
+test('place section lists towns that have jobs now with counts, and part-time hours can be picked', () => {
+  assert.match(src, /placeCounts/);
+  assert.match(src, /secHead\('place'/);
+  assert.match(src, /secHead\('hours'/);
+  assert.match(src, /PART_TIME_SCHEDULES/);
+  assert.match(src, /job\.partTime\?\.schedule/);
+  assert.match(src, /setSelectedSchedules\(\[\]\)/, 'Clear all also clears the hours');
+});
