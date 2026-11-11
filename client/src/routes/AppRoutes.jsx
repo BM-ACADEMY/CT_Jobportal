@@ -128,6 +128,9 @@ const AdminActivity = page('admin/Activity');
 const CollegeInternships = page('college/Internships');
 const PublicDrives = page('drives/Drives');
 const PublicDriveDetail = page('drives/DriveDetail');
+const PublicJobFairs = page('fairs/JobFairs');
+const PublicJobFairDetail = page('fairs/JobFairDetail');
+const AdminJobFairs = page('admin/JobFairsAdmin');
 const DrivePass = page('drives/DrivePass');
 const WalkInDrives = page('company/WalkInDrives');
 const WalkInManage = page('company/WalkInManage');
@@ -182,6 +185,8 @@ const AppRoutes = () => {
         <Route path="/incharge/accept/:driveId/:token" element={<AcceptInchargeInvite />} />
         <Route path="/drives" element={<PublicDrives />} />
         <Route path="/drives/:slug" element={<PublicDriveDetail />} />
+        <Route path="/job-fairs" element={<PublicJobFairs />} />
+        <Route path="/job-fairs/:slug" element={<PublicJobFairDetail />} />
         <Route path="/drive-pass/:code" element={<DrivePass />} />
         <Route path="/admin/activity" element={<PrivateRoute roles={['admin']}><AdminActivity /></PrivateRoute>} />
         <Route path="/admin/growth" element={<PrivateRoute roles={['admin']}><AdminGrowth /></PrivateRoute>} />
@@ -642,6 +647,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminWalkInDrives />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/job-fairs"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminJobFairs />
             </PrivateRoute>
           }
         />
