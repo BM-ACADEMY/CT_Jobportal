@@ -32,6 +32,7 @@ const UserUsageCard = ({ userId }) => {
         <span className="font-semibold text-slate-900 text-sm">{p.name}</span>
         <Badge className={`${tone} text-[9px] font-bold uppercase`}>{label}</Badge>
       </div>
+      {d.suggestion && <p className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">Worth a call: {d.suggestion}</p>}
       <div className="space-y-2">
         {p.price > 0 && <Row k="Price" v={`${rupees(p.price)} ${p.duration || ''}`} />}
         {p.expiry && <Row k="Ends" v={`${day(p.expiry)} · ${left}`} />}
@@ -48,6 +49,7 @@ const UserUsageCard = ({ userId }) => {
         {d.skillTests.recent.map((t, i) => <Row key={i} k={`${t.skill}`} v={`${t.percentage}% · ${t.passed ? 'passed' : 'not passed'} · ${day(t.createdAt)}`} />)}
         <Row k="Jobs applied to" v={d.applications} />
         {d.jobsPosted > 0 && <Row k="Jobs posted" v={d.jobsPosted} />}
+        {d.jobsPosted > 0 && <Row k="Applications received" v={d.applicationsReceived} />}
       </div>
       {d.payments.length > 0 && (<div className="space-y-2 pt-2 border-t border-slate-100"><p className="text-[10px] font-bold uppercase text-slate-400">Recent payments</p>{d.payments.map((x, i) => <Row key={i} k={day(x.at)} v={`${rupees(x.amount)} · ${x.status}`} />)}</div>)}
     </Card>

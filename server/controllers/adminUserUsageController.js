@@ -7,7 +7,7 @@ const SkillTestResult = require('../models/SkillTestResult');
 const Usage = require('../models/AssistantUsage');
 const { USAGE_FIELDS } = require('../utils/planEntitlements');
 const { KINDS } = require('../utils/freeAi');
-const { planSummary, featureRows } = require('../utils/userUsage');
+const { planSummary, featureRows, suggestFor } = require('../utils/userUsage');
 
 const OBJECT_ID = /^[a-f0-9]{24}$/i;
 const DAY = 86400000;
@@ -40,9 +40,13 @@ const getUserUsage = async (req, res) => {
       return { kind: k, label: KINDS[k].label, last30Days: times.filter((t) => t > since).length, lastUsedAt: times.length ? new Date(Math.max(...times)) : null };
     });
 
+    const plan = planSummary({ details, expiry: user.subscriptionExpiry, autoRenew: user.autoRenew });
+    const received = jobsPosted > 0 ? await Application.countDocuments({ job: { $in: await Job.find({ recruiter: user._id }).distinct('_id') } }) : 0;
+    const suggestion = suggestFor({ role, plan, freeAi30: freeAi.reduce((n, a) => n + a.last30Days, 0), latestTest: skillRecent[0] || null, jobsPosted });
     res.json({
+      suggestion, applicationsReceived: received,
       user: { _id: user._id, name: user.name, email: user.email, role, createdAt: user.createdAt, lastLoginAt: user.lastLoginAt || null },
-      plan: planSummary({ details, expiry: user.subscriptionExpiry, autoRenew: user.autoRenew }),
+      plan,
       givenByAdmin: !!user.subscriptionDetails && !(Array.isArray(payments) && payments.length),
       used: USAGE_FIELDS.map((u) => ({ key: u.key, label: u.label, value: Number(user[u.key] || 0) })).filter((u) => u.value > 0),
       payPerFeature: featureRows(user.purchasedFeatures),

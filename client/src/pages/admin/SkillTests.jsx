@@ -33,8 +33,8 @@ const SkillTests = () => {
 
   const exportCsv = () => {
     if (!data?.recent?.length) return;
-    const rows = [['Name', 'Email', 'Phone', 'Skill', 'Score %', 'Passed', 'Date']]
-      .concat(data.recent.map((r) => [r.name, r.email, r.phone, r.skill, r.percentage, r.passed ? 'Yes' : 'No', new Date(r.createdAt).toLocaleDateString('en-IN')]));
+    const rows = [['Name', 'Email', 'Phone', 'Skill', 'Score %', 'Passed', 'Plan', 'Suggestion', 'Date']]
+      .concat(data.recent.map((r) => [r.name, r.email, r.phone, r.skill, r.percentage, r.passed ? 'Yes' : 'No', r.plan, r.suggestion, new Date(r.createdAt).toLocaleDateString('en-IN')]));
     const blob = new Blob([rows.map((r) => r.map(csvCell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -127,7 +127,7 @@ const SkillTests = () => {
               <Button variant="outline" onClick={exportCsv} disabled={!data.recent.length} className="gap-2 rounded-xl"><Download size={16} /> Download CSV</Button>
             </div>
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-slate-500"><th className="py-2 pr-4">Name</th><th className="py-2 pr-4">Phone</th><th className="py-2 pr-4">Email</th><th className="py-2 pr-4">Skill</th><th className="py-2 pr-4">Score</th><th className="py-2">Date</th></tr></thead>
+              <thead><tr className="text-left text-slate-500"><th className="py-2 pr-4">Name</th><th className="py-2 pr-4">Phone</th><th className="py-2 pr-4">Email</th><th className="py-2 pr-4">Skill</th><th className="py-2 pr-4">Score</th><th className="py-2 pr-4">Plan</th><th className="py-2 pr-4">Worth a call?</th><th className="py-2">Date</th></tr></thead>
               <tbody>
                 {data.recent.map((r) => (
                   <tr key={r._id} className="border-t border-slate-100">
@@ -136,10 +136,12 @@ const SkillTests = () => {
                     <td className="py-2 pr-4">{r.email || '—'}</td>
                     <td className="py-2 pr-4 capitalize">{r.skill}</td>
                     <td className="py-2 pr-4">{r.percentage}% {r.passed ? '✓' : ''}</td>
+                    <td className="py-2 pr-4">{r.plan}</td>
+                    <td className="py-2 pr-4 text-xs font-bold text-amber-700">{r.suggestion || '—'}</td>
                     <td className="py-2">{new Date(r.createdAt).toLocaleDateString('en-IN')}</td>
                   </tr>
                 ))}
-                {data.recent.length === 0 && <tr><td className="py-3 text-slate-500" colSpan={6}>No saved results in this period.</td></tr>}
+                {data.recent.length === 0 && <tr><td className="py-3 text-slate-500" colSpan={8}>No saved results in this period.</td></tr>}
               </tbody>
             </table>
           </section>

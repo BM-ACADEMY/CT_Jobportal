@@ -20,4 +20,17 @@ const featureRows = (purchased = [], now = new Date()) => purchased.map((f) => (
   usageLeft: Number(f.usageLeft) || 0, expiresAt: f.expiresAt || null, daysLeft: daysLeft(f.expiresAt, now), boughtAt: f.purchasedAt || null
 }));
 
-module.exports = { daysLeft, planSummary, featureRows };
+// One plain hint on who is worth a call and why. A hint only: nothing is sent to anyone.
+// t = { role, plan (planSummary), freeAi30 (free AI uses, last 30 days), latestTest {skill, percentage, passed} | null, jobsPosted }
+const suggestFor = ({ role = 'jobseeker', plan = {}, freeAi30 = 0, latestTest = null, jobsPosted = 0 } = {}) => {
+  if (plan.state === 'expired') return 'Plan has ended: ask if they want to renew';
+  if (plan.paid) return '';
+  if (role === 'recruiter' || role === 'company') return jobsPosted > 0 ? 'Posting jobs on the free plan: offer a paid plan' : '';
+  if (role !== 'jobseeker') return '';
+  if (latestTest && latestTest.passed === false) return `Did not pass ${latestTest.skill}: offer a BM Academy course`;
+  if (latestTest && Number(latestTest.percentage) >= 70) return `Scored ${latestTest.percentage}% in ${latestTest.skill}: offer a premium plan`;
+  if (freeAi30 >= 5) return 'Uses the free AI tools a lot: offer a premium plan';
+  return '';
+};
+
+module.exports = { daysLeft, planSummary, featureRows, suggestFor };
