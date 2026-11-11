@@ -124,7 +124,6 @@ const Jobs = () => {
   const [noExperience, setNoExperience] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [showAllTypes, setShowAllTypes] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'matched' ? 'matched' : 'all'); // 'all' or 'matched'
   
   const { user } = useAuth();
@@ -271,13 +270,58 @@ const Jobs = () => {
     return formatPay(salary);
   };
 
+  // This phone remembers the last pay, experience, type, mode, education and posted filters (never the search words or place),
+  // and brings them back only when the page is opened without a link that already chose something. They show as chips,
+  // and Clear all removes them. Storage can be blocked, so every read and write is guarded.
+  const FILTER_MEMORY = 'vv_job_filters_v1';
+  const [memoryLoaded, setMemoryLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      if (!routeLocation && ![...searchParams.keys()].length) {
+        const m = JSON.parse(localStorage.getItem(FILTER_MEMORY) || 'null');
+        if (m && typeof m === 'object') {
+          if (Array.isArray(m.types)) setSelectedTypes(m.types.filter((t) => JOB_TYPES.includes(t)));
+          if (Number.isInteger(m.salary) && m.salary > 0 && m.salary < SALARY_RANGES.length) setSelectedSalary(m.salary);
+          if (Number.isInteger(m.exp) && m.exp > 0 && m.exp < EXPERIENCE_RANGES.length) setSelectedExperience(m.exp);
+          if (EDUCATION_LEVELS.some((e) => e.key === m.edu)) setSelectedEducation(m.edu);
+          if (Array.isArray(m.modes)) setSelectedModes(m.modes.filter((x) => WORK_MODES.includes(x)));
+          if (POSTED_WITHIN.some((x) => x.days === m.posted)) setPostedDays(m.posted);
+          if (m.noExp === true) setNoExperience(true);
+        }
+      }
+    } catch { /* storage blocked: filters just start empty */ }
+    setMemoryLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!memoryLoaded) return;
+    try {
+      localStorage.setItem(FILTER_MEMORY, JSON.stringify({ types: selectedTypes, salary: selectedSalary, exp: selectedExperience, edu: selectedEducation, modes: selectedModes, posted: postedDays, noExp: noExperience }));
+    } catch { /* ignore */ }
+  }, [memoryLoaded, selectedTypes, selectedSalary, selectedExperience, selectedEducation, selectedModes, postedDays, noExperience]);
+
+  // Drawer sections open and close with one tap and show how many options are chosen inside. Plain functions, not
+  // components, so a tap never rebuilds the drawer. Job type and pay start open; others open once something is chosen.
+  const [openSecs, setOpenSecs] = useState({});
+  const secOpen = (id, count) => (openSecs[id] === undefined ? (count > 0 || id === 'types' || id === 'pay') : openSecs[id]);
+  const secClass = (id, count) => (secOpen(id, count) ? '' : '[&>*:not(:first-child)]:hidden');
+  const secHead = (id, title, count) => (
+    <button type="button" aria-expanded={secOpen(id, count)} onClick={() => setOpenSecs((o) => ({ ...o, [id]: !secOpen(id, count) }))} className="w-full flex items-center justify-between mb-3 min-h-9">
+      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em]">{title}</span>
+      <span className="flex items-center gap-2">
+        {count > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">{count}</span>}
+        {secOpen(id, count) ? <ChevronUp size={15} className="text-slate-400" /> : <ChevronDown size={15} className="text-slate-400" />}
+      </span>
+    </button>
+  );
+
   const FilterPanel = () => (
     <div className="space-y-7">
       {/* Job Type */}
-      <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Job Type</p>
+      <div className={secClass('types', selectedTypes.length)}>
+        {secHead('types', 'Job Type', selectedTypes.length)}
         <div className="flex flex-wrap gap-2">
-          {(showAllTypes ? JOB_TYPES : JOB_TYPES.slice(0, 4)).map(type => (
+          {JOB_TYPES.map(type => (
             <button
               key={type}
               onClick={() => toggleType(type)}
@@ -291,21 +335,13 @@ const Jobs = () => {
             </button>
           ))}
         </div>
-        {JOB_TYPES.length > 4 && (
-          <button
-            onClick={() => setShowAllTypes(v => !v)}
-            className="mt-3 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-          >
-            {showAllTypes ? <><ChevronUp size={13} /> Show less</> : <><ChevronDown size={13} /> Show more</>}
-          </button>
-        )}
       </div>
 
       <div className="h-px bg-slate-100" />
 
       {/* Salary Range */}
-      <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Pay per month</p>
+      <div className={secClass('pay', selectedSalary > 0 ? 1 : 0)}>
+        {secHead('pay', 'Pay per month', selectedSalary > 0 ? 1 : 0)}
         <div className="flex flex-col gap-1">
           {SALARY_RANGES.map((range, i) => (
             <button
@@ -326,8 +362,8 @@ const Jobs = () => {
       <div className="h-px bg-slate-100" />
 
       {/* Experience Range */}
-      <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Experience</p>
+      <div className={secClass('exp', selectedExperience > 0 ? 1 : 0)}>
+        {secHead('exp', 'Experience', selectedExperience > 0 ? 1 : 0)}
         <div className="flex flex-col gap-1">
           {EXPERIENCE_RANGES.map((range, i) => (
             <button
@@ -348,8 +384,8 @@ const Jobs = () => {
       <div className="h-px bg-slate-100" />
 
       {/* Education: shows jobs that accept this level or lower */}
-      <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-1">My education</p>
+      <div className={secClass('edu', (selectedEducation ? 1 : 0) + (noExperience ? 1 : 0))}>
+        {secHead('edu', 'My education', (selectedEducation ? 1 : 0) + (noExperience ? 1 : 0))}
         <p className="text-[11px] text-slate-400 mb-3">Jobs that accept this level</p>
         <div className="flex flex-wrap gap-2">
           {EDUCATION_LEVELS.filter((e) => e.key !== 'any').map((e) => (
@@ -367,8 +403,8 @@ const Jobs = () => {
 
       <div className="h-px bg-slate-100" />
 
-      <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Work mode</p>
+      <div className={secClass('mode', selectedModes.length)}>
+        {secHead('mode', 'Work mode', selectedModes.length)}
         <div className="flex flex-wrap gap-2">
           {WORK_MODES.map((m) => (
             <button key={m} onClick={() => toggleMode(m)}
@@ -381,8 +417,8 @@ const Jobs = () => {
 
       <div className="h-px bg-slate-100" />
 
-      <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em] mb-3">Posted</p>
+      <div className={secClass('posted', postedDays > 0 ? 1 : 0)}>
+        {secHead('posted', 'Posted', postedDays > 0 ? 1 : 0)}
         <div className="flex flex-col gap-1">
           {POSTED_WITHIN.map((p) => (
             <button key={p.days} onClick={() => setPostedDays(p.days)}
@@ -557,15 +593,30 @@ const Jobs = () => {
 
             {/* Sort + Mobile Filter bar */}
             {/* Field of work: tap one to narrow the list, tap it again to clear */}
+            {/* Nearby towns: one tap fills the place box, tap again to clear */}
+            <div className="no-scrollbar -mx-4 px-4 mb-3 flex gap-2 overflow-x-auto sm:mx-0 sm:px-0 sm:flex-wrap" role="group" aria-label="Places">
+              {['Puducherry', 'Chennai', 'Cuddalore', 'Villupuram', 'Bengaluru', 'Hyderabad', 'Remote'].map((c) => {
+                const on = locationTerm.trim().toLowerCase() === c.toLowerCase();
+                return (
+                  <button key={c} type="button" aria-pressed={on} onClick={() => setLocationTerm(on ? '' : c)}
+                    className={`shrink-0 h-9 px-3.5 rounded-full border text-xs font-bold transition-colors ${on ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}>
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
             {/* Quick filters for the most common local searches */}
             <div className="no-scrollbar -mx-4 px-4 mb-3 flex gap-2 overflow-x-auto sm:mx-0 sm:px-0 sm:flex-wrap" role="group" aria-label="Quick filters">
               {[
                 { label: 'No degree needed', on: selectedEducation === 'iti-diploma', toggle: () => setSelectedEducation(selectedEducation === 'iti-diploma' ? '' : 'iti-diploma') },
                 { label: 'Part-time', on: selectedTypes.includes('Part-time'), toggle: () => toggleType('Part-time') },
+                { label: 'Internship', on: selectedTypes.includes('Internship'), toggle: () => toggleType('Internship') },
                 { label: 'Contract', on: selectedTypes.includes('Contract'), toggle: () => toggleType('Contract') },
                 { label: 'Work from home', on: selectedModes.includes('Remote'), toggle: () => toggleMode('Remote') },
                 { label: 'No experience needed', on: noExperience, toggle: () => setNoExperience(!noExperience) },
+                { label: 'Posted today', on: postedDays === 1, toggle: () => setPostedDays(postedDays === 1 ? 0 : 1) },
                 { label: 'New this week', on: postedDays === 7, toggle: () => setPostedDays(postedDays === 7 ? 0 : 7) },
+                { label: 'Under ₹10,000', on: selectedSalary === 1, toggle: () => setSelectedSalary(selectedSalary === 1 ? 0 : 1) },
               ].map((q) => (
                 <button key={q.label} type="button" aria-pressed={q.on} onClick={q.toggle}
                   className={`shrink-0 h-9 px-3.5 rounded-full border text-xs font-bold transition-colors ${q.on ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-400'}`}>
