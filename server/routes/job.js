@@ -18,6 +18,7 @@ router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), aiDail
 
 // --- Recruiter / Company Routes ---
 router.post('/', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), createJob);
+router.post('/:id/sponsor-addon', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), require('../controllers/jobPromotionController').sponsorMyJob);
 // Quality score and tips for a draft job, so the poster can fix it before publishing. Stateless; nothing is saved.
 router.post('/quality-check', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job', 'my_jobs'), (req, res) => res.json(scoreJobPost(req.body && typeof req.body === 'object' ? req.body : {})));
 router.post('/import-pipeline', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ats_pipeline'), upload.single('file'), importPipeline);

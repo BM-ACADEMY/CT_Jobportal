@@ -1,5 +1,6 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
 const { inappropriateText } = require('../utils/contentFlags');
+const { pinPriority } = require('../utils/sponsorAddon');
 
 // A job with vulgar, abusive or adult wording is not posted. The poster is told why and can edit and try again,
 // and the admins get a notification so a repeat poster can be spotted (and the company hidden in one tap).
@@ -475,9 +476,7 @@ const getAllJobs = async (req, res) => {
       .sort({ createdAt: -1 });
 
     // Sort: priority listing recruiters first, then by date
-    const prioritized = jobs.filter(j => j.recruiter?.subscription?.hasPriorityListing);
-    const regular = jobs.filter(j => !j.recruiter?.subscription?.hasPriorityListing);
-    const sorted = [...prioritized, ...regular];
+    const sorted = pinPriority(jobs, (j) => !!j.recruiter?.subscription?.hasPriorityListing);
 
     // Add isPriority flag
     const result = sorted.map(j => ({
