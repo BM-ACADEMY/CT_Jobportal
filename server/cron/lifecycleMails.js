@@ -19,6 +19,8 @@ const Payment = require('../models/Payment');
 const { expiryStage, failedPaymentDue } = require('../utils/lifecycle/billing');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
 const policy = require('../utils/lifecycle/emailPolicy');
+const Feedback = require('../models/Feedback');
+const { signFeedbackToken, ASK_AFTER_DAYS, ASK_WINDOW_DAYS } = require('../utils/paymentFeedback');
 const WalkInDrive = require('../models/WalkInDrive');
 const DriveRegistration = require('../models/DriveRegistration');
 const { istDayStart } = require('../utils/driveRules');
@@ -44,7 +46,7 @@ const deliver = async (state, user, key, mail, audience = 'seeker') => {
   const recent = await EmailLog.exists({ user: user._id, sentAt: { $gte: ago(20 / 24) } });
   if (recent) return false;
   if (!policy.isTransactional(key)) { // weekly cap: never more than a few marketing-style mails a week
-    const lastWeek = await EmailLog.countDocuments({ user: user._id, sentAt: { $gte: ago(7) }, key: { $not: /^(plan_|pay_|paid_welcome)/ } });
+    const lastWeek = await EmailLog.countDocuments({ user: user._id, sentAt: { $gte: ago(7) }, key: { $not: /^(plan_|pay_|paid_)/ } });
     if (!policy.underWeeklyCap(audience, lastWeek)) return false;
   }
   try {
@@ -333,11 +335,24 @@ const driveOrganiser = async (state) => {
   }
 };
 
+// A week after a completed payment: did it deliver what they expected? Once per payment, skipped when they already answered.
+const paymentFeedbackAsk = async (state) => {
+  const payments = await Payment.find({ status: 'completed', amount: { $gt: 0 }, createdAt: { $gte: ago(ASK_WINDOW_DAYS), $lte: ago(ASK_AFTER_DAYS) } })
+    .populate('plan', 'name').populate('payPerFeature', 'name').sort({ createdAt: -1 }).limit(BATCH).lean();
+  for (const p of payments) {
+    if (await Feedback.exists({ payment: p._id })) continue;
+    const user = await User.findOne({ ...baseUserFilter, _id: p.user });
+    if (!user) continue;
+    const itemName = p.plan?.name || p.payPerFeature?.name || '';
+    await deliver(state, user, `paid_feedback-${p._id}`, mails.wrap(mails.paymentFeedbackAsk(user, { itemName, token: signFeedbackToken(user._id, p._id) }), user._id), 'company');
+  }
+};
+
 const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [paidWelcome, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, driveOrganiser, applicantsWeekly, jobClosing, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [paidWelcome, paymentFeedbackAsk, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, driveOrganiser, applicantsWeekly, jobClosing, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

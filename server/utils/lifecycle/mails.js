@@ -239,6 +239,20 @@ const drivePost = (user, drive, { registered, checkedIn }) => ({
     ${button(link('/company/drives', 'drive_post'), 'Update candidates')}`,
 });
 
+// One week after paying: did it deliver what they expected? Three one-tap answers, no login. Every answer helps us improve.
+const apiBase = () => (process.env.API_PUBLIC_URL || '').replace(/\/$/, '');
+const paymentFeedbackAsk = (user, { itemName, token }) => {
+  const a = (met, label, color) => `<a href="${esc(`${apiBase()}/api/public/payment-feedback?token=${token}&met=${met}`)}" style="display:inline-block;margin:4px 6px 4px 0;background:${color};color:#fff;text-decoration:none;font-weight:bold;padding:11px 16px;border-radius:8px;">${label}</a>`;
+  return {
+    subject: `Did ${itemName || 'your plan'} give you what you expected?`,
+    title: 'One quick question',
+    html: `<p>Hi ${first(user)},</p>
+      <p>You paid for <strong>${esc(itemName || 'your plan')}</strong> a week ago. Did it give you what you expected? Tap one. It takes 5 seconds and we read every answer.</p>
+      <p>${a('yes', 'Yes, it did', '#059669')}${a('partly', 'Partly', '#d97706')}${a('no', 'No, not really', '#dc2626')}</p>
+      <p style="font-size:13px;color:#475569;">If something went wrong, tell us and we will try to fix it.</p>`,
+  };
+};
+
 const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
-module.exports = { applicantsWeekly, jobClosing, drivePre, drivePost, weeklyJobs, paidWelcome, planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };
+module.exports = { paymentFeedbackAsk, applicantsWeekly, jobClosing, drivePre, drivePost, weeklyJobs, paidWelcome, planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };

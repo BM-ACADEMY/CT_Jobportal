@@ -37,6 +37,54 @@ const handleUnsubscribe = async (req, res) => {
 router.get('/unsubscribe', handleUnsubscribe);
 router.post('/unsubscribe', handleUnsubscribe);
 
+// @desc  GET /api/public/payment-feedback?token=...&met=yes|partly|no  (one tap from the mail: saves the answer, shows a short form)
+//       POST /api/public/payment-feedback  { token, rating, text }  (refines the score and adds a comment)
+const { verifyFeedbackToken, MET, MET_RATING } = require('../utils/paymentFeedback');
+const feedbackPage = (res, inner) => res.status(200).type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your feedback</title><body style="font-family:system-ui,sans-serif;max-width:480px;margin:40px auto;padding:0 16px;color:#0f172a">${inner}</body>`);
+const loadFeedbackTarget = async (token) => {
+  const p = verifyFeedbackToken(token);
+  if (!p || !mongoose.isValidObjectId(p.uid) || !mongoose.isValidObjectId(p.pid)) return null;
+  const Payment = require('../models/Payment');
+  const pay = await Payment.findOne({ _id: p.pid, user: p.uid }).populate('plan', 'name').populate('payPerFeature', 'name').lean();
+  return pay ? { uid: p.uid, pay, item: pay.plan?.name || pay.payPerFeature?.name || 'Plan' } : null;
+};
+router.get('/payment-feedback', async (req, res) => {
+  try {
+    const t = await loadFeedbackTarget(req.query.token);
+    if (!t) return feedbackPage(res, '<p>This link has expired or is not valid.</p>');
+    const met = MET.includes(req.query.met) ? req.query.met : '';
+    const Feedback = require('../models/Feedback');
+    const existing = await Feedback.findOne({ payment: t.pay._id }).select('rating').lean();
+    if (met && !existing) {
+      await Feedback.updateOne({ payment: t.pay._id }, { $setOnInsert: { user: t.uid, role: 'paid', source: 'payment', met, item: String(t.item).slice(0, 120), rating: MET_RATING[met], payment: t.pay._id } }, { upsert: true });
+    }
+    const tok = esc(String(req.query.token));
+    return feedbackPage(res, `<h2>Thank you</h2><p>${met === 'no' ? 'Sorry it fell short. ' : ''}Tell us a little more so we can improve (optional):</p>
+      <form method="POST" action="/api/public/payment-feedback"><input type="hidden" name="token" value="${tok}">
+      <p>Your rating: ${[1, 2, 3, 4, 5].map((n) => `<label style="margin-right:8px"><input type="radio" name="rating" value="${n}" ${n === MET_RATING[met] ? 'checked' : ''}> ${n}</label>`).join('')}</p>
+      <textarea name="text" maxlength="500" rows="4" style="width:100%" placeholder="What worked, what did not, what you expected"></textarea>
+      <p><button style="background:#059669;color:#fff;border:0;padding:11px 18px;border-radius:8px;font-weight:bold">Send</button></p></form>`);
+  } catch (err) {
+    console.error('Payment feedback error:', err.message);
+    return feedbackPage(res, '<p>Something went wrong. Please write to hello@velaivaaipu.in.</p>');
+  }
+});
+router.post('/payment-feedback', express.urlencoded({ extended: false, limit: '4kb' }), rateLimit({ windowMs: 60 * 60 * 1000, max: 20, message: 'Too many tries. Please try later.' }), async (req, res) => {
+  try {
+    const t = await loadFeedbackTarget(req.body?.token);
+    if (!t) return feedbackPage(res, '<p>This link has expired or is not valid.</p>');
+    const rating = Number(req.body?.rating);
+    const set = { text: String(req.body?.text || '').trim().slice(0, 500) };
+    if (Number.isInteger(rating) && rating >= 1 && rating <= 5) set.rating = rating;
+    const Feedback = require('../models/Feedback');
+    await Feedback.updateOne({ payment: t.pay._id }, { $set: set, $setOnInsert: { user: t.uid, role: 'paid', source: 'payment', item: String(t.item).slice(0, 120), payment: t.pay._id, ...(set.rating ? {} : { rating: 3 }) } }, { upsert: true });
+    return feedbackPage(res, '<h2>Thank you</h2><p>We read every reply and use it to improve.</p>');
+  } catch (err) {
+    console.error('Payment feedback save error:', err.message);
+    return feedbackPage(res, '<p>Something went wrong. Please write to hello@velaivaaipu.in.</p>');
+  }
+});
+
 // @desc  GET /api/public/sitemap-feed
 //        Lightweight list of public URLs' data for the dynamic sitemap (jobs + companies).
 router.get('/sitemap-feed', async (req, res) => {

@@ -6,7 +6,7 @@ const WEEKLY_CAP = { seeker: 3, company: 2, college: 2 };
 const capFor = (audience) => WEEKLY_CAP[audience] ?? 2;
 
 // Mails about money or a plan are never counted against the cap and never held back by it.
-const TRANSACTIONAL = /^(plan_|pay_|paid_welcome)/;
+const TRANSACTIONAL = /^(plan_|pay_|paid_)/;
 const isTransactional = (key) => TRANSACTIONAL.test(String(key || ''));
 
 // Mail may go out when fewer than the cap (non-transactional) mails were sent in the last 7 days.

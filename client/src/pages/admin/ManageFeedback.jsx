@@ -9,18 +9,19 @@ const STATUS = { new: 'New', read: 'Read', replied: 'Replied', closed: 'Closed' 
 const ManageFeedback = () => {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('new');
+  const [paidOnly, setPaidOnly] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/feedback/admin`, { params: status === 'all' ? {} : { status } });
+      const res = await axios.get(`${API}/feedback/admin`, { params: { ...(status === 'all' ? {} : { status }), ...(paidOnly ? { source: 'payment' } : {}) } });
       setData(res.data);
     } catch {
       toast.error('Failed to load feedback');
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, [status, paidOnly]);
 
   useEffect(() => { setLoading(true); load(); }, [load]);
 
@@ -44,6 +45,28 @@ const ManageFeedback = () => {
         </p>
       </div>
 
+
+      {data?.paymentSummary?.total > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+          <div>
+            <p className="text-sm font-black text-slate-900">After payment: did it give what they expected?</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {data.paymentSummary.total} answers, average {data.paymentSummary.average} out of 5
+              {data.paymentSummary.metPercent !== null ? `, ${data.paymentSummary.metPercent}% said yes` : ''}
+              {data.paymentSummary.notMet ? `, ${data.paymentSummary.notMet} said no` : ''}. Weakest first: fix these first.
+            </p>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {data.paymentSummary.items.map((it) => (
+              <div key={it.item} className="py-2 flex items-center justify-between gap-3 text-xs">
+                <span className="font-bold text-slate-800 truncate">{it.item}</span>
+                <span className="text-slate-500 shrink-0">{it.average} / 5 · {it.yes} yes · {it.partly} partly · {it.no} no ({it.count})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2 flex-wrap">
         {['new', 'read', 'replied', 'closed', 'all'].map((s) => (
           <button key={s} type="button" onClick={() => setStatus(s)}
@@ -51,6 +74,10 @@ const ManageFeedback = () => {
             {s === 'all' ? 'All' : STATUS[s]}{s !== 'all' && data?.counts?.[s] ? ` (${data.counts[s]})` : ''}
           </button>
         ))}
+        <button type="button" onClick={() => setPaidOnly((v) => !v)}
+          className={`h-9 px-3 rounded-full text-xs font-bold border ${paidOnly ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-600 border-slate-200'}`}>
+          Paid customers only
+        </button>
       </div>
 
       {loading || !data ? (
@@ -66,6 +93,8 @@ const ManageFeedback = () => {
                   <span className="flex" aria-label={`${f.rating} out of 5`}>
                     {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={14} className={n <= f.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'} />)}
                   </span>
+                  {f.met && <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${f.met === 'yes' ? 'bg-emerald-50 text-emerald-700' : f.met === 'partly' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{f.met === 'yes' ? 'Got what expected' : f.met === 'partly' ? 'Partly' : 'Not met'}</span>}
+                  {f.item && <span className="text-[10px] font-bold text-slate-500">{f.item}</span>}
                   {f.role && <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">{f.role}</span>}
                   <span className="text-[10px] text-slate-400">{new Date(f.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                 </div>
