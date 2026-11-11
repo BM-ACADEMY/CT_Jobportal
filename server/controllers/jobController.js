@@ -1,4 +1,15 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
+const { inappropriateText } = require('../utils/contentFlags');
+
+// A job with vulgar, abusive or adult wording is not posted. The poster is told why and can edit and try again,
+// and the admins get a notification so a repeat poster can be spotted (and the company hidden in one tap).
+const CONTENT_BLOCK_MSG = 'This job was not posted because the title or description has vulgar, abusive or adult wording. Please remove it and post again. If you think this is a mistake, contact hello@velaivaaipu.in.';
+const blockForContent = async (req, user, title, description) => {
+  if (!inappropriateText(`${title || ''}\n${description || ''}`)) return false;
+  notifyRoles({ io: req.io, roles: ['admin', 'subadmin'], title: 'Job post blocked', message: `${user.name || 'A recruiter'} tried to post a job with vulgar or adult wording. It was not posted.`, type: 'job_posted', link: '/admin/users', metadata: { userId: user._id } })
+    .catch((err) => console.error('Blocked job notification failed:', err.message));
+  return true;
+};
 const { withPromotion } = require('../utils/jobPromotion');
 const { cleanInternship, freeInternshipSlot } = require('../utils/internship');
 const { cleanFacets, cleanSalary } = require('../utils/jobFacets');
@@ -35,6 +46,8 @@ const createJob = async (req, res) => {
     if (['company', 'both'].includes(finalPostedAs) && (!user || !user.company)) {
       return res.status(400).json({ msg: 'You must be associated with a company to post jobs as a company' });
     }
+
+    if (req.body.status !== 'draft' && await blockForContent(req, user, req.body.title, req.body.description)) return res.status(400).json({ msg: CONTENT_BLOCK_MSG, code: 'content_blocked' });
 
     // Internships: details are required, and a verified company's first 3 live internships are free (no paid slot used).
     let internshipData = null; let freeInternship = false;
@@ -335,6 +348,11 @@ const updateJob = async (req, res) => {
       const updatedDesc = req.body.description || job.description;
       if (!updatedTitle) return res.status(400).json({ msg: 'Job title is required for publishing' });
       if (!updatedDesc) return res.status(400).json({ msg: 'Job description is required for publishing' });
+    }
+
+    if (updatedStatus !== 'draft') {
+      const owner = await User.findById(req.user.id).select('name');
+      if (await blockForContent(req, owner || {}, req.body.title ?? job.title, req.body.description ?? job.description)) return res.status(400).json({ msg: CONTENT_BLOCK_MSG, code: 'content_blocked' });
     }
 
     const previousStatus = job.status;
