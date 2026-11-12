@@ -321,7 +321,8 @@ router.get('/companies/:id', async (req, res) => {
     // Never publish billing / tax / internal fields on a public profile.
     const publicCompany = company.toObject();
     ['tax_id_ein', 'admin_email', 'legal_name', 'razorpaySubscriptionId', 'renewalFailureCount',
-      'nextRenewalDate', 'autoRenewEnabled', 'subscriptionExpiry', 'pendingJoinRequests'
+      'nextRenewalDate', 'autoRenewEnabled', 'subscriptionExpiry', 'pendingJoinRequests',
+      'verifiedByCallNote', 'verifiedByCallBy', 'verifiedByCallAt'
     ].forEach((field) => delete publicCompany[field]);
 
     // "Usually responds in X": only when enough real first-response times exist (utils/recruiterResponse.js).

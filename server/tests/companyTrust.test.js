@@ -66,7 +66,8 @@ describe('Verified employer (verifiedByCall)', () => {
   it('public job lists and the company page read the flag, never the note', () => {
     assert.match(read('../controllers/jobController.js'), /website verifiedByCall'/);
     assert.match(read('../routes/publicRoutes.js'), /is_verified verifiedByCall/);
-    assert.doesNotMatch(read('../routes/publicRoutes.js'), /verifiedByCallNote/);
+    // The note may appear only in the list of fields removed from the public response, never in a .select().
+    assert.doesNotMatch(read('../routes/publicRoutes.js'), /\.select\([^)]*verifiedByCallNote/);
   });
 });
 

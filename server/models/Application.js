@@ -33,7 +33,8 @@ const applicationSchema = new mongoose.Schema({
   firstResponseAt: { type: Date, default: null },
   // Internship completion (status 'completed'): set once when the company marks it completed. See utils/internshipCertificate.js.
   completedAt: { type: Date, default: null },
-  certificateCode: { type: String, default: null, index: { unique: true, sparse: true } },
+  // No default: a unique sparse index still indexes null, so a null default would make the second new application fail.
+  certificateCode: { type: String, index: { unique: true, sparse: true } },
   display_id: {
     type: String,
     unique: true,

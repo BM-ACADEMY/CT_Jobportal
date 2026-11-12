@@ -445,7 +445,7 @@ const AppRoutes = () => {
         <Route path="/college/drives/new" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
         <Route path="/college/reports" element={<PrivateRoute roles={['college']}><CollegeReports /></PrivateRoute>} />
         <Route path="/college/what-you-get" element={<PrivateRoute roles={['college']}><CollegeWhatYouGet /></PrivateRoute>} />
-        <Route path="/college/verification"element={<PrivateRoute roles={['college']}><CollegeVerification /></PrivateRoute>} />
+        <Route path="/college/verification" element={<PrivateRoute roles={['college']}><CollegeVerification /></PrivateRoute>} />
         <Route path="/college/subscription" element={<PrivateRoute roles={['college']}><CompanySubscription /></PrivateRoute>} />
         <Route path="/college/payment-history" element={<PrivateRoute roles={['college']}><PaymentHistory /></PrivateRoute>} />
         <Route path="/college/settings" element={<PrivateRoute roles={['college']}><CollegeSettings /></PrivateRoute>} />
