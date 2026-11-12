@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
+import { walkInActive } from '../utils/walkIn';
 import {
   MapPin, Briefcase, IndianRupee, Clock, Loader2, ArrowLeft, Building2, Globe, Users,
   Calendar, ChevronRight, Share2, Bookmark, Sparkles, TrendingUp, ShieldCheck, Laptop, CalendarClock, ArrowRight
@@ -371,6 +372,7 @@ const JobDetails = () => {
     { label: 'Experience', value: formatExperience(job.experience), icon: Clock },
     { label: 'Salary', value: salaryText, icon: IndianRupee },
     { label: 'Work mode', value: job.workMode || 'In-office', icon: Laptop },
+    ...(walkInActive(job) ? [{ label: 'Walk-in', value: `${new Date(job.walkIn.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}${job.walkIn.venue ? `, ${job.walkIn.venue}` : ''}`, icon: Calendar }] : []),
   ];
   const overview = [
     { label: 'Openings', value: `${job.vacancies || 1} ${job.vacancies === 1 ? 'position' : 'positions'}`, icon: Users },

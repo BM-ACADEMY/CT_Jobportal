@@ -4,6 +4,7 @@
 //   GET /seo/sitemap.xml       static pages + every active job and company
 // nginx sends /job/* and /sitemap.xml here (see docs/SEO_ON_OWN_SERVER.md). Same rules as client/api/job.js.
 const fs = require('fs');
+const { JOB_CATEGORIES } = require('../config/jobCategories');
 
 const SITE_URL = () => (process.env.SITE_URL || 'https://velaivaaipu.in').replace(/\/$/, '');
 const API_DOMAIN = () => (process.env.API_PUBLIC_URL || 'https://api.velaivaaipu.in').replace(/\/api\/?$/, '').replace(/\/$/, '');
@@ -200,6 +201,7 @@ const blogSlugs = () => {
 const STATIC_PAGES = [
   '/', '/jobs', '/internships', '/drives', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/for-companies', '/for-recruiters', '/free-assessment', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
   '/jobs/pondicherry', '/jobs/chennai', '/jobs/villupuram', '/jobs/cuddalore',
+  ...JOB_CATEGORIES.map((c) => `/jobs/category/${c.key}`), // field-of-work pages (client route /jobs/category/:slug)
 ];
 const urlEntry = (loc, lastmod, priority) =>
   `  <url><loc>${escapeHtml(loc)}</loc>${lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${priority ? `<priority>${priority}</priority>` : ''}</url>`;

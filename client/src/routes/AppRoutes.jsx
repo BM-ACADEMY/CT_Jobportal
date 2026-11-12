@@ -18,6 +18,8 @@ const FreeAssessment = lazy(() => import('../pages/public/FreeAssessment'));
 const CampusRegistration = lazy(() => import('../pages/public/CampusRegistration'));
 const Jobs = lazy(() => import('../pages/Jobs'));
 const JobDetails = lazy(() => import('../pages/JobDetails'));
+const CategoryJobs = lazy(() => import('../pages/CategoryJobs'));
+const InternshipCertificate = lazy(() => import('../pages/InternshipCertificate'));
 const ForColleges = lazy(() => import('../pages/ForColleges'));
 const Companies = lazy(() => import('../pages/Companies'));
 const CompanyProfilePage = lazy(() => import('../pages/CompanyProfilePage'));
@@ -194,7 +196,9 @@ const AppRoutes = () => {
         <Route path="/admin/services" element={<PrivateRoute roles={['admin']}><AdminServices /></PrivateRoute>} />
         <Route path="/internships" element={<InternshipsPage />} />
         <Route path="/jobs" element={<Jobs />} />
+        <Route path="/jobs/category/:slug" element={<CategoryJobs />} />
         <Route path="/jobs/:location" element={<Jobs />} />
+        <Route path="/certificate/:code" element={<InternshipCertificate />} />
         <Route path="/job/:id" element={<JobDetails />} />
         <Route path="/companies" element={<Companies />} />
         <Route path="/companies/:id" element={<CompanyProfilePage />} />

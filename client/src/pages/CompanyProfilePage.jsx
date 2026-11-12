@@ -123,6 +123,11 @@ const CompanyProfilePage = () => {
                 <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest">
                   <Users size={14} className="text-emerald-600/70" /> {company.company_size_range || company.employeeCount || '10-50'} Employees
                 </div>
+                {company.responseTime?.label && (
+                  <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest" title={`Median time to first reply, from ${company.responseTime.sample} applications in the last 90 days`}>
+                    <CheckCircle2 size={14} className="text-emerald-600/70" /> Usually responds in {company.responseTime.label}
+                  </div>
+                )}
                 {company.website && (
                   <a href={company.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase tracking-widest">
                     <Globe size={14} /> Website
