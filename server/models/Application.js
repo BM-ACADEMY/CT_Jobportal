@@ -18,7 +18,7 @@ const applicationSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['pending', 'reviewed', 'shortlisted', 'rejected', 'accepted', 'withdrawn'],
+    enum: ['pending', 'reviewed', 'shortlisted', 'rejected', 'accepted', 'withdrawn', 'completed'],
     default: 'pending'
   },
   matchAnalysis: {
@@ -29,6 +29,11 @@ const applicationSchema = new mongoose.Schema({
     insufficientData: Boolean,
     lastCalculated: Date
   },
+  // When the company first moved this application out of 'pending'. Set once by applicationController; only new activity has it.
+  firstResponseAt: { type: Date, default: null },
+  // Internship completion (status 'completed'): set once when the company marks it completed. See utils/internshipCertificate.js.
+  completedAt: { type: Date, default: null },
+  certificateCode: { type: String, default: null, index: { unique: true, sparse: true } },
   display_id: {
     type: String,
     unique: true,

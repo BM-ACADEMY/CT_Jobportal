@@ -324,7 +324,11 @@ router.get('/companies/:id', async (req, res) => {
       'nextRenewalDate', 'autoRenewEnabled', 'subscriptionExpiry', 'pendingJoinRequests'
     ].forEach((field) => delete publicCompany[field]);
 
-    res.json({ ...publicCompany, openJobs, profileType: 'company' });
+    // "Usually responds in X": only when enough real first-response times exist (utils/recruiterResponse.js).
+    let responseTime = null;
+    try { responseTime = await require('../utils/recruiterResponse').getCompanyResponseTime(id); } catch (e) { console.error('Response time error:', e.message); }
+
+    res.json({ ...publicCompany, openJobs, responseTime, profileType: 'company' });
   } catch (err) {
     console.error('Company Detail Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

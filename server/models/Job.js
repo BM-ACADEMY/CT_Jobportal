@@ -22,6 +22,12 @@ const jobSchema = new mongoose.Schema({
     ppo: { type: Boolean, default: false },
     free: { type: Boolean, default: false }
   },
+  // Optional walk-in tag on an ordinary job (utils/walkIn.js). Absent on older jobs.
+  walkIn: {
+    enabled: { type: Boolean },
+    date: { type: Date },
+    venue: { type: String, trim: true, maxlength: 200 }
+  },
   // Set by an admin after payment is received by hand (controllers/jobPromotionController.js). Shown with a clear label.
   sponsoredUntil: { type: Date, default: null },
   sponsoredNote: { type: String, default: '', maxlength: 200, select: false }, // payment note: never sent to the public
