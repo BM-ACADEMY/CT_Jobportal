@@ -25,7 +25,7 @@ const PrivacyPolicy = () => (
   <LegalPage
     title="Privacy Policy"
     icon={ShieldCheck}
-    effective="November 16, 2026"
+    effective="November 14, 2026"
     intro="Explains what data we collect, why, and the choices you have."
     sections={SECTIONS}
     seoPath="/privacy-policy"
