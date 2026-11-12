@@ -21,6 +21,7 @@ const TYPE_CONFIG = {
   student_pack:   { label: 'Student Pack',       icon: GraduationCap, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   college_call:   { label: 'New College Call',   icon: GraduationCap, color: 'bg-sky-50 text-sky-700 border-sky-200' },
   college_upgrade: { label: 'College Near Limit', icon: GraduationCap, color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  help_request:   { label: 'Help Request',       icon: AlertCircle,  color: 'bg-amber-50 text-amber-700 border-amber-200' },
 };
 
 const STATUS_CONFIG = {
@@ -124,6 +125,13 @@ const AssignModal = ({ request, onClose, onAssigned }) => {
               <p><span className="font-bold text-slate-700">Email:</span> {request.bookingEmail || '—'}</p>
               {request.notes && <p className="pt-1 text-slate-500">{request.notes}</p>}
               <p className="pt-1 text-slate-500">After the call, mark this Completed. The college is not messaged. If they buy, record it on the college page (Student packs) or mark the plan paid.</p>
+            </>
+          )}
+          {request.type === 'help_request' && (
+            <>
+              <p><span className="font-bold text-slate-700">Page:</span> {request.pageUrl || '—'}</p>
+              <p><span className="font-bold text-slate-700">Phone:</span> {request.bookingPhone || '—'}</p>
+              <p className="pt-1 text-slate-500">{request.notes}</p>
             </>
           )}
           {request.type === 'website_request' && (
@@ -296,6 +304,7 @@ const TABS = [
   { key: 'student_pack',    label: 'Student Packs' },
   { key: 'college_call',    label: 'New College Calls' },
   { key: 'college_upgrade', label: 'Near Limit' },
+  { key: 'help_request',    label: 'Help Requests' },
 ];
 
 const STATUS_TABS = [
