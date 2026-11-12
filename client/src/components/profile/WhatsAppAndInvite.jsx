@@ -31,6 +31,7 @@ const WhatsAppAndInvite = () => {
       <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
         <p className="font-black text-slate-900">Invite a friend</p>
         <p className="text-xs text-slate-500">Share your link. Friends who join and verify their account: <b>{d.joined}</b>.</p>
+        {d.code && <p className="text-xs text-slate-500">Your referral code: <b className="font-mono break-all select-all">{d.code}</b></p>}
         <div className="flex gap-2 flex-wrap">
           <a className="h-10 px-4 inline-flex items-center rounded-xl bg-emerald-600 text-white text-sm font-bold" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(text)}`}>Share on WhatsApp</a>
           <button className="h-10 px-4 rounded-xl border border-slate-200 text-sm font-bold" onClick={() => { navigator.clipboard?.writeText(d.link).then(() => toast.success('Link copied')).catch(() => toast.error('Could not copy')); }}>Copy link</button>

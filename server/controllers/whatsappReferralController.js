@@ -23,7 +23,7 @@ const setWhatsAppOptIn = async (req, res) => {
 const getReferrals = async (req, res) => {
   try {
     const [joined, me] = await Promise.all([User.countDocuments({ referredBy: req.user.id, isVerified: true }), User.findById(req.user.id).select('whatsapp')]);
-    res.json({ link: inviteLink(req.user.id, process.env.FRONTEND_URL), joined, whatsapp: { optIn: !!me?.whatsapp?.optIn, number: me?.whatsapp?.number || '' } });
+    res.json({ code: String(req.user.id), link: inviteLink(req.user.id, process.env.FRONTEND_URL), joined, whatsapp: { optIn: !!me?.whatsapp?.optIn, number: me?.whatsapp?.number || '' } });
   } catch (err) { console.error('Referrals:', err.message); res.status(500).json({ msg: 'Server error' }); }
 };
 
