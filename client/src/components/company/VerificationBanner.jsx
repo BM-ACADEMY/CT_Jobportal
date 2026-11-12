@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ShieldCheck, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import ProofUploadForm from './ProofUploadForm';
 
 // Tells an employer, in plain words, whether their company is verified yet.
 // Until it is verified, their jobs are not shown on the public site.
@@ -27,6 +28,7 @@ const VerificationBanner = () => {
             Free email accounts can have one live job at a time, shown for 14 days. A company email or a paid plan lifts this.
           </p>
         )}
+        {status.limitedTier && <ProofUploadForm />}
       </div>
     </div>
   );

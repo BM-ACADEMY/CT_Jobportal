@@ -32,6 +32,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import { VerifiedByCallCard, ProofQueue } from "@/components/admin/CompanyTrustCards";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -211,6 +212,8 @@ const ManageCompanies = () => {
         <div className="h-px bg-slate-200 w-full" />
       </div>
 
+      <ProofQueue onDone={fetchCompanies} />
+
       {/* Metrics Row - Elegant Style */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {[
@@ -384,6 +387,14 @@ const ManageCompanies = () => {
                     )}
                   </div>
                 </Card>
+
+                <VerifiedByCallCard
+                  company={selectedCompany}
+                  onChange={(updated) => {
+                    setSelectedCompany((prev) => ({ ...prev, ...updated }));
+                    setCompanies((prev) => prev.map((c) => (c._id === updated._id ? { ...c, ...updated } : c)));
+                  }}
+                />
 
                 <Card className="p-8 rounded-[20px] border-slate-100 shadow-sm bg-white space-y-3">
                   <h3 className="text-base font-bold text-slate-900">Logo on the home page</h3>
