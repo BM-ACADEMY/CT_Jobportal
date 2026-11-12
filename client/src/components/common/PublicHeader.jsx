@@ -15,6 +15,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import MotionIcon from '@/components/home/MotionIcon';
 import BrandLogo from './BrandLogo';
+import { useT, T } from '@/i18n/LanguageContext';
+import LanguageToggle from '@/i18n/LanguageToggle';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
@@ -160,11 +162,11 @@ const PublicHeader = () => {
                 return (
                   <DropdownMenu key={link.to}>
                     <DropdownMenuTrigger className={`flex items-center gap-1.5 py-2 text-sm font-semibold outline-none ${isActive('/jobs') || isActive('/internships') || isActive('/drives') ? navActiveColor : navColor}`}>
-                      Find Jobs <ChevronDown size={14} className="text-slate-500" />
+                      <T k="lbl.Find Jobs">Find Jobs</T> <ChevronDown size={14} className="text-slate-500" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="rounded-xl p-1 min-w-[180px] bg-white z-50">
                       {JOBS_MENU.map((m) => (
-                        <DropdownMenuItem key={m.to} onClick={() => navigate(m.to)} className="cursor-pointer text-sm font-semibold">{m.label}</DropdownMenuItem>
+                        <DropdownMenuItem key={m.to} onClick={() => navigate(m.to)} className="cursor-pointer text-sm font-semibold"><T k={'lbl.' + m.label}>{m.label}</T></DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -178,7 +180,7 @@ const PublicHeader = () => {
                     isActive(link.to) ? navActiveColor : navColor
                   }`}
                 >
-                  {link.label}
+                  <T k={'lbl.' + link.label}>{link.label}</T>
                   {hasBadge && (
                     <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded ml-1 uppercase tracking-wider scale-90">
                       New
@@ -191,6 +193,7 @@ const PublicHeader = () => {
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
+            <LanguageToggle className="hidden md:inline-flex" />
             {user ? (
               <>
                 {/* Notification Bell Dropdown */}
@@ -304,9 +307,9 @@ const PublicHeader = () => {
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 rounded-2xl border border-slate-100 shadow-xl p-1.5">
-                    <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account</DropdownMenuLabel>
+                    <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider"><T k="lbl.Account">Account</T></DropdownMenuLabel>
                     <DropdownMenuItem onClick={handleDashboardRedirect} className="rounded-xl px-3 py-2.5 text-sm font-semibold cursor-pointer hover:bg-emerald-50 hover:text-[#138060]">
-                      <User size={15} className="mr-2.5" /> Dashboard
+                      <User size={15} className="mr-2.5" /> <T k="lbl.Dashboard">Dashboard</T>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -322,7 +325,7 @@ const PublicHeader = () => {
                       onClick={() => { logout(); navigate('/'); }}
                       className="rounded-xl px-3 py-2.5 text-sm font-semibold cursor-pointer text-red-600 hover:bg-red-50 focus:text-red-600"
                     >
-                      <LogOut size={15} className="mr-2.5" /> Logout
+                      <LogOut size={15} className="mr-2.5" /> <T k="lbl.Logout">Logout</T>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -333,13 +336,13 @@ const PublicHeader = () => {
                   to="/login"
                   className="text-[#138060] hover:text-[#0f664d] text-sm font-medium transition-colors"
                 >
-                  Login
+                  <T k="lbl.Login">Login</T>
                 </Link>
                 <Button
                   onClick={() => navigate('/register')}
                   className="group home-shine relative overflow-hidden h-10 pl-6 pr-2 rounded-full text-sm font-bold bg-[#138060] hover:bg-[#0f664d] text-white shadow-md shadow-emerald-700/20 hover:shadow-lg hover:shadow-emerald-700/25 transition-all cursor-pointer gap-3"
                 >
-                  Join free
+                  <T k="lbl.Join free">Join free</T>
                   <span className="w-7 h-7 rounded-full bg-white text-[#138060] flex items-center justify-center transition-transform duration-300 group-hover:translate-x-0.5">
                     <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={14} />
                   </span>
@@ -360,6 +363,7 @@ const PublicHeader = () => {
         {/* Mobile Menu */}
         {mobileOpen && (
           <div className="md:hidden bg-white border-t border-slate-100 px-6 py-5 space-y-1">
+            <LanguageToggle className="mb-2" />
             {NAV_LINKS.filter(link => !(link.label === 'Find Jobs' && (user?.role === 'recruiter' || user?.role === 'company'))).map(link => (
               <Link
                 key={link.to}
@@ -371,7 +375,7 @@ const PublicHeader = () => {
                 }`}
               >
                 <link.icon size={18} className={isActive(link.to) ? 'text-[#138060]' : 'text-slate-400'} />
-                {link.label}
+                <T k={'lbl.' + link.label}>{link.label}</T>
               </Link>
             ))}
 
@@ -382,13 +386,13 @@ const PublicHeader = () => {
                   onClick={() => navigate('/login')}
                   className="w-full h-11 rounded-full border-slate-200 text-slate-750 font-bold"
                 >
-                  Login
+                  <T k="lbl.Login">Login</T>
                 </Button>
                 <Button
                   onClick={() => navigate('/register')}
                   className="w-full h-11 rounded-full bg-[#138060] hover:bg-[#0f664d] text-white font-bold"
                 >
-                  Join free
+                  <T k="lbl.Join free">Join free</T>
                 </Button>
               </div>
             )}
@@ -396,10 +400,10 @@ const PublicHeader = () => {
             {user && (
               <div className="pt-4 border-t border-slate-100 mt-4 space-y-1">
                 <button onClick={handleDashboardRedirect} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">
-                  <User size={18} className="text-slate-400" /> Dashboard
+                  <User size={18} className="text-slate-400" /> <T k="lbl.Dashboard">Dashboard</T>
                 </button>
                 <button onClick={() => { logout(); navigate('/'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50">
-                  <LogOut size={18} /> Logout
+                  <LogOut size={18} /> <T k="lbl.Logout">Logout</T>
                 </button>
               </div>
             )}

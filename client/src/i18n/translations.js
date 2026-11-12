@@ -1,0 +1,252 @@
+// NOTE: The Tamil strings below were drafted by an AI and have NOT been reviewed by a
+// native Tamil reader. A native Tamil reader MUST QC this file before it is relied on
+// for launch. Until then, treat every Tamil value as a draft.
+//
+// How it works: `en` holds the exact English text used in the UI. `ta` holds the Tamil
+// for the same keys. A key missing from `ta` silently shows English. Keys starting with
+// "lbl." are looked up by the English label itself, e.g. lbl.Find Jobs.
+//
+// Do NOT add: legal pages (Terms, Privacy, Refund), server error messages, prices, GST,
+// or any number. Those stay as they are.
+
+export const en = {
+  // Header and navigation
+  'lbl.Home': 'Home',
+  'lbl.Find Jobs': 'Find Jobs',
+  'lbl.Walk-in Drives': 'Walk-in Drives',
+  'lbl.Internships': 'Internships',
+  'lbl.Companies': 'Companies',
+  'lbl.For Colleges': 'For Colleges',
+  'lbl.Plans': 'Plans',
+  'lbl.Blog': 'Blog',
+  'lbl.Contact': 'Contact',
+  'lbl.All jobs': 'All jobs',
+  'lbl.Login': 'Login',
+  'lbl.Join free': 'Join free',
+  'lbl.Dashboard': 'Dashboard',
+  'lbl.Logout': 'Logout',
+  'lbl.Account': 'Account',
+
+  // Footer headings and links
+  'lbl.Platform': 'Platform',
+  'lbl.Post a Job': 'Post a Job',
+  'lbl.Plans & Pricing': 'Plans & Pricing',
+  'lbl.How It Works': 'How It Works',
+  'lbl.Contact Us': 'Contact Us',
+  'lbl.Job Seeker Login': 'Job Seeker Login',
+  'lbl.Company Login': 'Company Login',
+  'lbl.Create Account': 'Create Account',
+
+  // Common buttons
+  'lbl.Apply': 'Apply',
+  'lbl.Apply for this job': 'Apply for this job',
+  'lbl.Apply on company site': 'Apply on company site',
+  'lbl.Save': 'Save',
+  'lbl.Submit': 'Submit',
+  'lbl.Search': 'Search',
+  'lbl.Clear all': 'Clear all',
+
+  // Home
+  'home.hero.title': 'Your Dream Job Is Waiting For You',
+  'home.hero.sub': 'Find jobs from employers in Puducherry, Tamil Nadu and beyond. Discover openings that match your skills, location, and career aspirations.',
+  'home.search.keywords': 'Job Title, Keywords',
+  'home.search.city': 'City, e.g. Puducherry, or Remote',
+  'lbl.Find Job': 'Find Job',
+  'lbl.Popular:': 'Popular:',
+  'lbl.Take a free skill test': 'Take a free skill test',
+  "lbl.I'm looking for a job": "I'm looking for a job",
+  "lbl.I'm hiring": "I'm hiring",
+  "lbl.I'm a college": "I'm a college",
+  'home.steps.title': 'Get Hired in 3 Simple Steps',
+  'lbl.Browse by Domain': 'Browse by Domain',
+  'lbl.Find Work in Every Field': 'Find Work in Every Field',
+  'lbl.Internships (free)': 'Internships (free)',
+  'lbl.Walk-in drives': 'Walk-in drives',
+
+  // Jobs page
+  'jobs.h1': 'Find your next opportunity',
+  'jobs.sub': 'Browse open jobs from companies across Tamil Nadu and beyond.',
+  'jobs.search.keywords': 'Job Title, Keywords',
+  'jobs.search.city': 'City or Remote',
+  'lbl.Filters': 'Filters',
+  'lbl.Place': 'Place',
+  'lbl.Job Type': 'Job Type',
+  'lbl.Pay per month': 'Pay per month',
+  'lbl.Experience': 'Experience',
+  'lbl.My education': 'My education',
+  'lbl.Work mode': 'Work mode',
+  'lbl.Part-time hours': 'Part-time hours',
+  'lbl.Posted': 'Posted',
+  'lbl.No matching jobs found': 'No matching jobs found',
+
+  // Plans page (labels only)
+  'lbl.Plans & pricing': 'Plans & pricing',
+  'plans.h1': 'Start free. Pay only for what you use.',
+  'plans.sub': 'Every audience has a free plan. The paid plans below are the ones on sale right now, at the same prices you will see at checkout.',
+  'lbl.Free to start': 'Free to start',
+  'lbl.Upgrade when you need it': 'Upgrade when you need it',
+  'lbl.Not sure which plan?': 'Not sure which plan?',
+  'lbl.Need a plan for your team or college?': 'Need a plan for your team or college?',
+  'lbl.Talk to us': 'Talk to us',
+
+  // For Colleges page
+  'lbl.For colleges & placement officers': 'For colleges & placement officers',
+  'colleges.h1': 'Run Campus Placements Without the Paperwork',
+  'lbl.Start Free': 'Start Free',
+  'lbl.Talk to Our Team': 'Talk to Our Team',
+  'lbl.Talk to our team': 'Talk to our team',
+  'lbl.Up and Running in Three Steps': 'Up and Running in Three Steps',
+  'lbl.Built So Students and Staff Say Yes': 'Built So Students and Staff Say Yes',
+  'lbl.Simple Plans for Colleges': 'Simple Plans for Colleges',
+  'lbl.Questions Placement Officers Ask': 'Questions Placement Officers Ask',
+
+  // Sign up and login
+  'login.heading': 'Welcome back',
+  'login.sub': 'Sign in to continue to your career dashboard.',
+  'lbl.Email address': 'Email address',
+  'lbl.Password': 'Password',
+  'lbl.Sign in': 'Sign in',
+  'lbl.Signing in...': 'Signing in...',
+  'register.heading': 'Create your account',
+  'register.sub': 'Join job seekers and employers on Velaivaaipu',
+  'lbl.Confirm Password': 'Confirm Password',
+  'lbl.Already have an account?': 'Already have an account?',
+  'lbl.Job Seeker': 'Job Seeker',
+  'lbl.Recruiter': 'Recruiter',
+  'lbl.Company': 'Company',
+  'lbl.College': 'College',
+
+  // College dashboard menu
+  'lbl.Students': 'Students',
+  'lbl.Campus Drives': 'Campus Drives',
+  'lbl.Student Verification': 'Student Verification',
+  'lbl.Placement Tools': 'Placement Tools',
+  'lbl.Calendar & Employers': 'Calendar & Employers',
+  'lbl.Reports': 'Reports',
+  'lbl.My Plan': 'My Plan',
+  'lbl.Payment History': 'Payment History',
+  'lbl.College Settings & Documents': 'College Settings & Documents',
+  'lbl.Help & Support': 'Help & Support',
+  'lbl.Review Velaivaaipu': 'Review Velaivaaipu',
+};
+
+export const ta = {
+  // Header and navigation
+  'lbl.Home': 'முகப்பு',
+  'lbl.Find Jobs': 'வேலை தேடுங்கள்',
+  'lbl.Walk-in Drives': 'வாக்-இன் டிரைவ்',
+  'lbl.Internships': 'இன்டர்ன்ஷிப்',
+  'lbl.Companies': 'நிறுவனங்கள்',
+  'lbl.For Colleges': 'கல்லூரிகளுக்கு',
+  'lbl.Plans': 'திட்டங்கள்',
+  'lbl.Blog': 'பிளாக்',
+  'lbl.Contact': 'தொடர்புக்கு',
+  'lbl.All jobs': 'எல்லா வேலைகளும்',
+  'lbl.Login': 'உள்நுழை',
+  'lbl.Join free': 'இலவசமாகச் சேருங்கள்',
+  'lbl.Dashboard': 'டாஷ்போர்டு',
+  'lbl.Logout': 'வெளியேறு',
+  'lbl.Account': 'கணக்கு',
+
+  // Footer headings and links
+  'lbl.Platform': 'தளம்',
+  'lbl.Post a Job': 'வேலை வெளியிடுங்கள்',
+  'lbl.Plans & Pricing': 'திட்டங்களும் கட்டணமும்',
+  'lbl.How It Works': 'இது எப்படி வேலை செய்கிறது',
+  'lbl.Contact Us': 'எங்களைத் தொடர்பு கொள்ளுங்கள்',
+  'lbl.Job Seeker Login': 'வேலை தேடுபவர் உள்நுழைவு',
+  'lbl.Company Login': 'நிறுவன உள்நுழைவு',
+  'lbl.Create Account': 'கணக்கு உருவாக்குங்கள்',
+
+  // Common buttons
+  'lbl.Apply': 'விண்ணப்பிக்கவும்',
+  'lbl.Apply for this job': 'இந்த வேலைக்கு விண்ணப்பிக்கவும்',
+  'lbl.Apply on company site': 'நிறுவன தளத்தில் விண்ணப்பிக்கவும்',
+  'lbl.Save': 'சேமி',
+  'lbl.Submit': 'சமர்ப்பிக்கவும்',
+  'lbl.Search': 'தேடு',
+  'lbl.Clear all': 'எல்லாவற்றையும் நீக்கு',
+
+  // Home
+  'home.hero.title': 'உங்கள் கனவு வேலை உங்களுக்காகக் காத்திருக்கிறது',
+  'home.hero.sub': 'புதுச்சேரி, தமிழ்நாடு மற்றும் அதற்கு அப்பாலும் உள்ள நிறுவனங்களின் வேலைகளைத் தேடுங்கள். உங்கள் திறமைக்கும், ஊருக்கும், கனவுக்கும் ஏற்ற வேலையைக் கண்டுபிடியுங்கள்.',
+  'home.search.keywords': 'வேலை பெயர், திறமை',
+  'home.search.city': 'ஊர், எ.கா. புதுச்சேரி, அல்லது வீட்டிலிருந்து வேலை',
+  'lbl.Find Job': 'வேலை தேடு',
+  'lbl.Popular:': 'அதிகம் தேடப்படுபவை:',
+  'lbl.Take a free skill test': 'இலவச திறன் தேர்வு எழுதுங்கள்',
+  "lbl.I'm looking for a job": 'நான் வேலை தேடுகிறேன்',
+  "lbl.I'm hiring": 'நான் ஆட்கள் தேடுகிறேன்',
+  "lbl.I'm a college": 'நான் ஒரு கல்லூரி',
+  'home.steps.title': '3 எளிய படிகளில் வேலை வாங்குங்கள்',
+  'lbl.Browse by Domain': 'துறை வாரியாகப் பாருங்கள்',
+  'lbl.Find Work in Every Field': 'எல்லாத் துறைகளிலும் வேலை தேடுங்கள்',
+  'lbl.Internships (free)': 'இன்டர்ன்ஷிப் (இலவசம்)',
+  'lbl.Walk-in drives': 'வாக்-இன் டிரைவ்',
+
+  // Jobs page
+  'jobs.h1': 'உங்கள் அடுத்த வேலை வாய்ப்பைக் கண்டுபிடியுங்கள்',
+  'jobs.sub': 'தமிழ்நாடு மற்றும் அதற்கு அப்பால் உள்ள நிறுவனங்களின் காலியிடங்களைப் பாருங்கள்.',
+  'jobs.search.keywords': 'வேலை பெயர், திறமை',
+  'jobs.search.city': 'ஊர் அல்லது வீட்டிலிருந்து வேலை',
+  'lbl.Filters': 'வடிகட்டிகள்',
+  'lbl.Place': 'இடம்',
+  'lbl.Job Type': 'வேலை வகை',
+  'lbl.Pay per month': 'மாத சம்பளம்',
+  'lbl.Experience': 'அனுபவம்',
+  'lbl.My education': 'என் படிப்பு',
+  'lbl.Work mode': 'வேலை முறை',
+  'lbl.Part-time hours': 'பார்ட்-டைம் நேரம்',
+  'lbl.Posted': 'பதிவிட்ட நாள்',
+  'lbl.No matching jobs found': 'பொருந்தும் வேலைகள் எதுவும் இல்லை',
+
+  // Plans page (labels only)
+  'lbl.Plans & pricing': 'திட்டங்களும் கட்டணமும்',
+  'plans.h1': 'இலவசமாகத் தொடங்குங்கள். பயன்படுத்துவதற்கு மட்டும் கட்டணம் செலுத்துங்கள்.',
+  'plans.sub': 'எல்லோருக்கும் ஒரு இலவசத் திட்டம் உண்டு. கீழே உள்ள கட்டணத் திட்டங்கள் இப்போது விற்பனையில் உள்ளவை, பணம் செலுத்தும்போது இதே கட்டணம்தான் இருக்கும்.',
+  'lbl.Free to start': 'இலவசமாகத் தொடங்கலாம்',
+  'lbl.Upgrade when you need it': 'தேவைப்படும்போது மேம்படுத்துங்கள்',
+  'lbl.Not sure which plan?': 'எந்தத் திட்டம் என்று தெரியவில்லையா?',
+  'lbl.Need a plan for your team or college?': 'உங்கள் குழுவுக்கோ கல்லூரிக்கோ திட்டம் வேண்டுமா?',
+  'lbl.Talk to us': 'எங்களிடம் பேசுங்கள்',
+
+  // For Colleges page
+  'lbl.For colleges & placement officers': 'கல்லூரிகளுக்கும் பிளேஸ்மெண்ட் அதிகாரிகளுக்கும்',
+  'colleges.h1': 'காகித வேலை இல்லாமல் கேம்பஸ் பிளேஸ்மெண்ட் நடத்துங்கள்',
+  'lbl.Start Free': 'இலவசமாகத் தொடங்குங்கள்',
+  'lbl.Talk to Our Team': 'எங்கள் குழுவிடம் பேசுங்கள்',
+  'lbl.Talk to our team': 'எங்கள் குழுவிடம் பேசுங்கள்',
+  'lbl.Up and Running in Three Steps': 'மூன்றே படிகளில் தொடங்கலாம்',
+  'lbl.Built So Students and Staff Say Yes': 'மாணவர்களும் ஆசிரியர்களும் விரும்பும் வகையில் உருவாக்கப்பட்டது',
+  'lbl.Simple Plans for Colleges': 'கல்லூரிகளுக்கான எளிய திட்டங்கள்',
+  'lbl.Questions Placement Officers Ask': 'பிளேஸ்மெண்ட் அதிகாரிகள் கேட்கும் கேள்விகள்',
+
+  // Sign up and login
+  'login.heading': 'மீண்டும் வருக',
+  'login.sub': 'உங்கள் கேரியர் டாஷ்போர்டுக்குச் செல்ல உள்நுழையுங்கள்.',
+  'lbl.Email address': 'மின்னஞ்சல் முகவரி',
+  'lbl.Password': 'கடவுச்சொல்',
+  'lbl.Sign in': 'உள்நுழை',
+  'lbl.Signing in...': 'உள்நுழைகிறது...',
+  'register.heading': 'உங்கள் கணக்கை உருவாக்குங்கள்',
+  'register.sub': 'வேலை தேடுபவர்களும் நிறுவனங்களும் இணையும் வேலைவாய்ப்பில் நீங்களும் சேருங்கள்',
+  'lbl.Confirm Password': 'கடவுச்சொல்லை உறுதிசெய்யுங்கள்',
+  'lbl.Already have an account?': 'ஏற்கனவே கணக்கு இருக்கிறதா?',
+  'lbl.Job Seeker': 'வேலை தேடுபவர்',
+  'lbl.Recruiter': 'ஆட்களைத் தேர்வு செய்பவர்',
+  'lbl.Company': 'நிறுவனம்',
+  'lbl.College': 'கல்லூரி',
+
+  // College dashboard menu
+  'lbl.Students': 'மாணவர்கள்',
+  'lbl.Campus Drives': 'கேம்பஸ் டிரைவ்கள்',
+  'lbl.Student Verification': 'மாணவர் சரிபார்ப்பு',
+  'lbl.Placement Tools': 'பிளேஸ்மெண்ட் கருவிகள்',
+  'lbl.Calendar & Employers': 'நாட்காட்டி & நிறுவனங்கள்',
+  'lbl.Reports': 'அறிக்கைகள்',
+  'lbl.My Plan': 'என் திட்டம்',
+  'lbl.Payment History': 'பணம் செலுத்திய விவரம்',
+  'lbl.College Settings & Documents': 'கல்லூரி அமைப்புகளும் ஆவணங்களும்',
+  'lbl.Help & Support': 'உதவி & ஆதரவு',
+  'lbl.Review Velaivaaipu': 'வேலைவாய்ப்பு பற்றிக் கருத்து சொல்லுங்கள்',
+};

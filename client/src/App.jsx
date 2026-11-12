@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './i18n/LanguageContext';
 import { SocketProvider } from './context/SocketContext';
 import AppRoutes from './routes/AppRoutes';
 import ScrollToTop from './components/common/ScrollToTop';
@@ -11,6 +12,7 @@ import './index.css';
 
 function App() {
   return (
+    <LanguageProvider>
     <AuthProvider>
       <SocketProvider>
         <Toaster position="top-center" richColors />
@@ -22,6 +24,7 @@ function App() {
         </Router>
       </SocketProvider>
     </AuthProvider>
+    </LanguageProvider>
   );
 }
 
