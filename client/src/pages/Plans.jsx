@@ -9,6 +9,7 @@ import Footer from '@/components/home/Footer';
 import PricingCard from '../components/subscription/PricingCard';
 import { useAuth } from '../context/AuthContext';
 import { PLAN_AUDIENCES, buildPlanFeatures, sortPlans } from '../data/planFeatures';
+import { useT, T } from '@/i18n/LanguageContext';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const EASE = [0.22, 1, 0.36, 1];
@@ -30,6 +31,7 @@ const REASSURANCE = [
 // is not for sale. Empty audiences say so instead of showing placeholder prices.
 const Plans = () => {
   const { user } = useAuth();
+  const { t, lang } = useT();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [plans, setPlans] = useState([]);
@@ -100,13 +102,13 @@ const Plans = () => {
           className="relative max-w-3xl mx-auto text-center"
         >
           <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#34B678] mb-4">
-            <span className="w-8 h-px bg-[#34B678]/50" /> Plans &amp; pricing <span className="w-8 h-px bg-[#34B678]/50" />
+            <span className="w-8 h-px bg-[#34B678]/50" /> <T k="lbl.Plans & pricing">Plans &amp; pricing</T> <span className="w-8 h-px bg-[#34B678]/50" />
           </span>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.05] text-[#10213D]">
-            Start free. <span className="text-[#34B678]">Pay only</span> for what you use.
+            {lang === 'ta' ? t('plans.h1', '') : (<>Start free. <span className="text-[#34B678]">Pay only</span> for what you use.</>)}
           </h1>
           <p className="mt-5 text-zinc-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-            Every audience has a free plan. The paid plans below are the ones on sale right now, at the same prices you will see at checkout.
+            {t('plans.sub', 'Every audience has a free plan. The paid plans below are the ones on sale right now, at the same prices you will see at checkout.')}
           </p>
         </motion.div>
       </section>
@@ -221,7 +223,7 @@ const Plans = () => {
           {REASSURANCE.map(({ icon: Icon, title, desc }) => (
             <div key={title} className="rounded-[1.5rem] bg-white ring-1 ring-zinc-200 p-6">
               <span className="w-11 h-11 rounded-xl bg-[#34B678]/10 text-[#34B678] flex items-center justify-center mb-4"><Icon size={20} /></span>
-              <h3 className="text-base font-bold text-[#10213D] m-0 mb-1.5">{title}</h3>
+              <h3 className="text-base font-bold text-[#10213D] m-0 mb-1.5"><T k={'lbl.' + title}>{title}</T></h3>
               <p className="text-sm text-zinc-600 leading-relaxed m-0">{desc}</p>
             </div>
           ))}
@@ -230,14 +232,14 @@ const Plans = () => {
         <div className="relative mt-10 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#3CC283] via-[#34B678] to-[#249a62] px-8 py-10 md:px-12 md:py-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <WaveLines id="plans-cta-waves" color="#fff" />
           <div className="relative">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white m-0">Need a plan for your team or college?</h2>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white m-0"><T k="lbl.Need a plan for your team or college?">Need a plan for your team or college?</T></h2>
             <p className="mt-2 text-white/90 m-0">Tell us how many people will use it and we will suggest the right fit.</p>
           </div>
           <Link
             to="/contact"
             className="relative shrink-0 inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-[#10213D] hover:bg-[#0b1830] text-white text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
           >
-            Talk to us <ArrowRight size={16} />
+            <T k="lbl.Talk to us">Talk to us</T> <ArrowRight size={16} />
           </Link>
         </div>
       </section>

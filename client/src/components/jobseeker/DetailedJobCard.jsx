@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Card, Typography, Tag, Button, Space, Divider } from 'antd';
 import { jobPath } from '../../utils/jobUrl';
 import { formatPay } from '../../data/jobFacets';
+import { T } from '@/i18n/LanguageContext';
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -193,7 +194,7 @@ const DetailedJobCard = ({ job, application, onRevoke }) => {
                   icon={<BookmarkPlus size={16} />}
                   className="flex items-center text-xs font-bold text-slate-600 hover:text-blue-600 hover:border-blue-600 uppercase tracking-wider rounded-sm px-6 h-9"
                 >
-                  Save
+                  <T k="lbl.Save">Save</T>
                 </Button>
               )}
             </Space>

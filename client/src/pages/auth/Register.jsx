@@ -28,6 +28,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { useT, T } from '@/i18n/LanguageContext';
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }).regex(/^[a-zA-Z\s]+$/, { message: "Name must contain only alphabets" }),
@@ -59,6 +60,7 @@ const registerSchema = z.object({
 
 const RegisterPage = () => {
   const { register, verifyOtp, resendOtp } = useAuth();
+  const { t } = useT();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedRole = searchParams.get('role');
@@ -267,10 +269,10 @@ const RegisterPage = () => {
             <div className="animate-in fade-in duration-500 space-y-6">
               {/* Heading */}
               <div className="space-y-1.5"><h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  Create your account
+                  {t('register.heading', 'Create your account')}
                 </h1>
                 <p className="text-slate-500 text-sm">
-                  Join job seekers and employers on Velaivaaipu
+                  {t('register.sub', 'Join job seekers and employers on Velaivaaipu')}
                 </p>
               </div>
 
@@ -294,7 +296,7 @@ const RegisterPage = () => {
                           : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
                     >
                       <role.Icon size={16} className={active ? 'text-emerald-600' : 'text-slate-400'} />
-                      {role.label}
+                      <T k={'lbl.' + role.label}>{role.label}</T>
                     </button>
                   );
                 })}
@@ -493,7 +495,7 @@ const RegisterPage = () => {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm font-medium text-slate-700">Confirm Password</FormLabel>
+                        <FormLabel className="text-sm font-medium text-slate-700"><T k="lbl.Confirm Password">Confirm Password</T></FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -585,9 +587,9 @@ const RegisterPage = () => {
               </Form>
 
               <p className="text-center text-sm text-slate-500 mt-6">
-                Already have an account?{' '}
+                <T k="lbl.Already have an account?">Already have an account?</T>{' '}
                 <Link to="/login" className="text-emerald-700 font-semibold hover:underline">
-                  Sign in
+                  <T k="lbl.Sign in">Sign in</T>
                 </Link>
               </p>
             </div>

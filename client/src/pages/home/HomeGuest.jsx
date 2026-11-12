@@ -28,6 +28,7 @@ import LogoStrips from '@/components/home/LogoStrips';
 import HireCta from '@/components/home/HireCta';
 import { popularTerms, MIN_POPULAR_TERMS } from '@/utils/popularSearches';
 import { trackEvent } from '@/utils/analytics';
+import { useT, T } from '@/i18n/LanguageContext';
 
 // A number below this is not worth showing on a public page.
 const MIN_STAT = 10;
@@ -73,6 +74,7 @@ const HomeGuest = () => {
   const [platformStats, setPlatformStats] = useState(null);
   const [skillTestCount, setSkillTestCount] = useState(0);
   const navigate = useNavigate();
+  const { t, lang } = useT();
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -153,6 +155,7 @@ const HomeGuest = () => {
             >
               {/* Headline */}
               <motion.h1 variants={heroItem} className="text-4xl md:text-5xl lg:text-[4.2rem] font-bold text-zinc-900 tracking-tight leading-[1.1]">
+                {lang === 'ta' ? t('home.hero.title', '') : (<>
                 Your{' '}
                 <span className="relative inline-block">
                   <span className="home-gradient-text">Dream</span>
@@ -171,10 +174,11 @@ const HomeGuest = () => {
                 </span>{' '}
                 Job Is<br />
                 Waiting For You
+              </>)}
               </motion.h1>
 
               <motion.p variants={heroItem} className="text-zinc-600 text-base max-w-lg leading-relaxed">
-                Find jobs from employers in Puducherry, Tamil Nadu and beyond. Discover openings that match your skills, location, and career aspirations.
+                {t('home.hero.sub', 'Find jobs from employers in Puducherry, Tamil Nadu and beyond. Discover openings that match your skills, location, and career aspirations.')}
               </motion.p>
 
               {/* Search card */}
@@ -190,7 +194,7 @@ const HomeGuest = () => {
                   <input
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Job Title, Keywords"
+                    placeholder={t('home.search.keywords', 'Job Title, Keywords')}
                     className="flex-1 min-w-0 bg-transparent outline-none text-zinc-800 font-medium placeholder:text-zinc-400 text-sm"
                   />
                 </label>
@@ -203,20 +207,20 @@ const HomeGuest = () => {
                   <input
                     value={locationQuery}
                     onChange={e => setLocationQuery(e.target.value)}
-                    placeholder="City, e.g. Puducherry, or Remote"
+                    placeholder={t('home.search.city', 'City, e.g. Puducherry, or Remote')}
                     className="flex-1 min-w-0 bg-transparent outline-none text-zinc-800 font-medium placeholder:text-zinc-400 text-sm"
                   />
                 </label>
 
                 <Button type="submit" className="group home-shine relative overflow-hidden h-12 rounded-xl px-8 text-sm font-bold bg-[#059669] hover:bg-[#047857] text-white shadow-md shadow-emerald-600/20 transition-all hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98] shrink-0 cursor-pointer">
-                  <MotionIcon icon={Search} animation="wiggle" trigger="hover" size={16} /> Find Job
+                  <MotionIcon icon={Search} animation="wiggle" trigger="hover" size={16} /> <T k="lbl.Find Job">Find Job</T>
                 </Button>
               </motion.form>
 
               {/* Popular searches */}
               {trendingSearches.length > 0 && (
               <motion.div variants={heroItem} className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-semibold text-zinc-500 mr-1">Popular:</span>
+                <span className="font-semibold text-zinc-500 mr-1"><T k="lbl.Popular:">Popular:</T></span>
                 {trendingSearches.slice(0, 4).map(term => (
                   <Link
                     key={term}
@@ -236,7 +240,7 @@ const HomeGuest = () => {
                   onClick={() => trackEvent('audience_click', { audience: 'skill_test' })}
                   className="inline-flex w-full sm:w-fit items-center justify-center gap-2 h-11 px-6 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-sm font-bold hover:bg-emerald-100 transition-colors"
                 >
-                  <BadgeCheck size={16} /> Take a free skill test
+                  <BadgeCheck size={16} /> <T k="lbl.Take a free skill test">Take a free skill test</T>
                 </Link>
                 <div className="flex flex-wrap items-center gap-2 text-xs" aria-label="Choose how you want to use Velaivaaipu">
                   {[
@@ -252,7 +256,7 @@ const HomeGuest = () => {
                       onClick={() => trackEvent('audience_click', { audience: item.audience })}
                       className="px-3.5 py-2 rounded-full bg-white border border-zinc-200 font-semibold text-zinc-700 hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
                     >
-                      {item.label}
+                      <T k={'lbl.' + item.label}>{item.label}</T>
                     </Link>
                   ))}
                 </div>
@@ -340,7 +344,7 @@ const HomeGuest = () => {
           />
         )}
 
-        <StepStory title="Get Hired in 3 Simple Steps" steps={howItWorks} />
+        <StepStory title={t('home.steps.title', 'Get Hired in 3 Simple Steps')} steps={howItWorks} />
 
         <SkillAssessment />
 
@@ -350,8 +354,8 @@ const HomeGuest = () => {
         <section className="py-24 bg-gradient-to-b from-white via-[#fafafa] to-[#fafafa] overflow-hidden">
           <div className="max-w-6xl mx-auto px-6">
             <Reveal className="text-center mb-16">
-              <SectionEyebrow>Browse by Domain</SectionEyebrow>
-              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Find Work in Every Field</h2>
+              <SectionEyebrow><T k="lbl.Browse by Domain">Browse by Domain</T></SectionEyebrow>
+              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight"><T k="lbl.Find Work in Every Field">Find Work in Every Field</T></h2>
               <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">Healthcare, hotels, shops, factories, offices and more. Pick your field and see who is hiring.</p>
             </Reveal>
             <CategoryCards />

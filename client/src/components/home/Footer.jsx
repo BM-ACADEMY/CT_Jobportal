@@ -3,17 +3,18 @@ import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import { ADDRESS, PHONE, EMAIL, SOCIALS } from '@/components/common/brandContact';
+import { T } from '@/i18n/LanguageContext';
 
 const PLATFORM = [{ to: '/jobs', label: 'Find Jobs' }, { to: '/companies', label: 'Companies' }, { to: '/register', label: 'Post a Job' }, { to: '/plans', label: 'Plans & Pricing' }, { to: '/how-it-works', label: 'How It Works' }, { to: '/contact', label: 'Contact Us' }];
 const ACCOUNT = [{ to: '/login', label: 'Job Seeker Login' }, { to: '/company-login', label: 'Company Login' }, { to: '/register', label: 'Create Account' }];
 
 const LinkColumn = ({ title, links }) => (
   <div>
-    <p className="text-xs font-bold text-[#10213D] uppercase tracking-[0.2em] mb-5">{title}</p>
+    <p className="text-xs font-bold text-[#10213D] uppercase tracking-[0.2em] mb-5"><T k={'lbl.' + title}>{title}</T></p>
     <ul className="space-y-3">
       {links.map(link => (
         <li key={link.label}>
-          <Link to={link.to} className="text-zinc-600 text-sm font-medium hover:text-[#34B678] transition-colors">{link.label}</Link>
+          <Link to={link.to} className="text-zinc-600 text-sm font-medium hover:text-[#34B678] transition-colors"><T k={'lbl.' + link.label}>{link.label}</T></Link>
         </li>
       ))}
     </ul>
@@ -72,7 +73,7 @@ const Footer = () => (
         <div className="lg:col-span-2 lg:col-start-6"><LinkColumn title="Platform" links={PLATFORM} /></div>
         <div className="lg:col-span-2"><LinkColumn title="Account" links={ACCOUNT} /></div>
         <div className="col-span-2 lg:col-span-3">
-          <p className="text-xs font-bold text-[#10213D] uppercase tracking-[0.2em] mb-5">Contact</p>
+          <p className="text-xs font-bold text-[#10213D] uppercase tracking-[0.2em] mb-5"><T k="lbl.Contact">Contact</T></p>
           <ul className="space-y-4 text-sm font-medium text-zinc-600">
             <li className="flex items-start gap-3">
               <span className="w-8 h-8 shrink-0 rounded-lg bg-white border border-emerald-100 text-[#34B678] flex items-center justify-center"><MapPin size={16} /></span>

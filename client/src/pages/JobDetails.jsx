@@ -18,6 +18,7 @@ import { jobIdFromParam, jobPath } from '../utils/jobUrl';
 import { trackEvent } from '../utils/analytics';
 import WaveLines from '@/components/common/WaveLines';
 import Footer from '@/components/home/Footer';
+import { T } from '@/i18n/LanguageContext';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -456,7 +457,7 @@ const JobDetails = () => {
                   onClick={handleApply}
                   className="hidden lg:inline-flex items-center gap-2 h-12 px-7 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-sm font-bold border-none cursor-pointer shadow-lg shadow-[#34B678]/30 transition"
                 >
-                  {externalUrl ? 'Apply on company site' : 'Apply for this job'} <ArrowRight size={16} />
+                  {externalUrl ? <T k="lbl.Apply on company site">Apply on company site</T> : <T k="lbl.Apply for this job">Apply for this job</T>} <ArrowRight size={16} />
                 </button>
               )}
             </div>

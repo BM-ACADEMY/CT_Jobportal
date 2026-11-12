@@ -18,6 +18,7 @@ import { trackEvent } from '../utils/analytics';
 import {
   QrFinder, SignupVisual, CertificateVisual, CsvVisual, ReportVisual, WhatsAppVisual, DrivesVisual,
 } from '@/components/college/BenefitVisuals';
+import { useT, T } from '@/i18n/LanguageContext';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const EASE = [0.22, 1, 0.36, 1];
@@ -187,6 +188,7 @@ const FaqItem = ({ item, open, onToggle, id }) => (
 );
 
 const ForColleges = () => {
+  const { t, lang } = useT();
   const [plans, setPlans] = useState([]);
   const [pack, setPack] = useState(null);
   const [openFaq, setOpenFaq] = useState(0);
@@ -217,9 +219,10 @@ const ForColleges = () => {
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             <motion.div variants={heroStagger} initial="hidden" animate="show" className="lg:col-span-7 space-y-7">
               <motion.p variants={heroItem} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#059669]">
-                <span className="w-8 h-px bg-[#00D492]/50" /> For colleges &amp; placement officers
+                <span className="w-8 h-px bg-[#00D492]/50" /> <T k="lbl.For colleges & placement officers">For colleges &amp; placement officers</T>
               </motion.p>
               <motion.h1 variants={heroItem} className="text-4xl md:text-5xl lg:text-[4rem] font-bold text-zinc-900 tracking-tight leading-[1.1]">
+                {lang === 'ta' ? t('colleges.h1', '') : (<>
                 Run Campus <span className="home-gradient-text">Placements</span>
                 <br />Without the{' '}
                 <span className="relative inline-block text-zinc-400">
@@ -256,6 +259,7 @@ const ForColleges = () => {
                     </g>
                   </svg>
                 </span>
+              </>)}
               </motion.h1>
 
               <motion.p variants={heroItem} className="text-zinc-600 text-base md:text-lg max-w-xl leading-relaxed">
@@ -265,12 +269,12 @@ const ForColleges = () => {
               <motion.div variants={heroItem} className="flex flex-col sm:flex-row gap-3">
                 <Link to="/register?role=college" onClick={startFree}>
                   <Button className="group home-shine relative overflow-hidden w-full sm:w-auto h-12 px-8 rounded-xl bg-[#059669] hover:bg-[#047857] text-white font-bold text-base shadow-md shadow-emerald-600/20 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98] cursor-pointer">
-                    Start Free <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={18} />
+                    <T k="lbl.Start Free">Start Free</T> <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={18} />
                   </Button>
                 </Link>
                 <Link to="/contact?segment=college&subject=Campus%20placement%20software">
                   <Button variant="outline" className="w-full sm:w-auto h-12 px-8 rounded-xl border-zinc-300 bg-white text-zinc-800 font-bold text-base hover:border-[#059669] hover:text-[#059669] hover:bg-white active:scale-[0.98] cursor-pointer">
-                    Talk to Our Team
+                    <T k="lbl.Talk to Our Team">Talk to Our Team</T>
                   </Button>
                 </Link>
               </motion.div>
@@ -309,7 +313,7 @@ const ForColleges = () => {
           <div className="max-w-6xl mx-auto px-6">
             <Reveal className="text-center mb-14">
               <SectionEyebrow>How it works</SectionEyebrow>
-              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Up and Running in Three Steps</h2>
+              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight"><T k="lbl.Up and Running in Three Steps">Up and Running in Three Steps</T></h2>
               <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">From sign-up to your first drive, without typing a single student in by hand.</p>
             </Reveal>
 
@@ -340,7 +344,7 @@ const ForColleges = () => {
           <div className="max-w-6xl mx-auto px-6">
             <Reveal className="text-center mb-14">
               <SectionEyebrow>Why colleges switch</SectionEyebrow>
-              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Built So Students and Staff Say Yes</h2>
+              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight"><T k="lbl.Built So Students and Staff Say Yes">Built So Students and Staff Say Yes</T></h2>
               <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">Less work for your placement cell, and nothing new for students to learn.</p>
             </Reveal>
 
@@ -369,7 +373,7 @@ const ForColleges = () => {
             <div className="max-w-6xl mx-auto px-6">
               <Reveal className="text-center mb-14">
                 <SectionEyebrow>Pricing</SectionEyebrow>
-                <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Simple Plans for Colleges</h2>
+                <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight"><T k="lbl.Simple Plans for Colleges">Simple Plans for Colleges</T></h2>
                 <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">Start free and upgrade only when you need more.</p>
               </Reveal>
               <motion.div
@@ -424,7 +428,7 @@ const ForColleges = () => {
                   <p className="m-0 mt-1 text-sm text-zinc-600">If you want to buy one of these plans, choose it above. If you need something customised, such as more students, several campuses or special reports, send us a message and our team will contact you.</p>
                 </div>
                 <Link to="/contact?segment=college&subject=Customised%20college%20plan" className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl text-sm font-bold bg-zinc-900 text-white whitespace-nowrap">
-                  Talk to our team <ArrowRight size={16} />
+                  <T k="lbl.Talk to our team">Talk to our team</T> <ArrowRight size={16} />
                 </Link>
               </div>
               {pack?.price > 0 && (
@@ -463,10 +467,10 @@ const ForColleges = () => {
               <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] mb-4 text-[#059669]">
                 <span className="w-8 h-px bg-[#00D492]/50" /> FAQ
               </span>
-              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Questions Placement Officers Ask</h2>
+              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight"><T k="lbl.Questions Placement Officers Ask">Questions Placement Officers Ask</T></h2>
               <p className="text-zinc-600 mt-4 text-sm md:text-base leading-relaxed">Something we have not answered? Our team will walk you through it.</p>
               <Link to="/contact" className="group mt-6 inline-flex items-center gap-1.5 text-sm font-bold text-zinc-900 hover:text-[#059669] transition-colors">
-                Talk to our team <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                <T k="lbl.Talk to our team">Talk to our team</T> <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Link>
             </Reveal>
             <div className="lg:col-span-8 space-y-3">
@@ -481,8 +485,8 @@ const ForColleges = () => {
           eyebrow="For Colleges & Placement Officers"
           title={<>Try It With <span className="text-[#10213D]">One Drive</span></>}
           text="Create your college account, set up a drive and share the QR code. If it is not right for you, you have lost nothing."
-          primary={{ to: '/register?role=college', label: 'Start Free', onClick: startFree }}
-          secondary={{ to: '/contact', label: 'Talk to Our Team' }}
+          primary={{ to: '/register?role=college', label: t('lbl.Start Free', 'Start Free'), onClick: startFree }}
+          secondary={{ to: '/contact', label: t('lbl.Talk to Our Team', 'Talk to Our Team') }}
         />
 
         <Footer />

@@ -9,6 +9,7 @@ import { Card, Tag } from 'antd';
 import { Input } from '@/components/ui/input';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
+import { T } from '@/i18n/LanguageContext';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -522,7 +523,7 @@ const Students = () => {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, email, or roll number..." className="pl-9 h-9 rounded-none border-[#d9d9d9] hover:border-[#39c884] focus:border-[#39c884] focus:ring-0 focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all placeholder:text-slate-400" />
         </div>
-        <Button type="submit" size="sm" className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white font-medium px-6 h-9 border-none cursor-pointer">Search</Button>
+        <Button type="submit" size="sm" className="rounded bg-[#39c884] hover:bg-[#2ea86e] text-white font-medium px-6 h-9 border-none cursor-pointer"><T k="lbl.Search">Search</T></Button>
       </form>
 
       {/* Filters */}

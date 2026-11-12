@@ -17,6 +17,7 @@ import { jobPath } from '../utils/jobUrl';
 import { getCityIntro, CITY_LINKS } from '../data/cityJobIntros';
 import { JOB_CATEGORIES } from '../data/jobCategories';
 import { EDUCATION_LEVELS, PART_TIME_SCHEDULES, MONTHLY_PAY_RANGES, POSTED_WITHIN, WORK_MODES, monthlyPay, educationFits, postedWithinDays, formatPay, jobFacts } from '../data/jobFacets';
+import { useT, T } from '@/i18n/LanguageContext';
 
 const SEARCH_FIELD_LABELS = {
   title: 'Job Title',
@@ -128,6 +129,7 @@ const Jobs = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'matched' ? 'matched' : 'all'); // 'all' or 'matched'
   
   const { user } = useAuth();
+  const { t, lang } = useT();
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
@@ -350,7 +352,7 @@ const Jobs = () => {
   const secClass = (id, count) => (secOpen(id, count) ? '' : '[&>*:not(:first-child)]:hidden');
   const secHead = (id, title, count) => (
     <button type="button" aria-expanded={secOpen(id, count)} onClick={() => setOpenSecs((o) => ({ ...o, [id]: !secOpen(id, count) }))} className="w-full flex items-center justify-between mb-3 min-h-9">
-      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em]">{title}</span>
+      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.18em]"><T k={'lbl.' + title}>{title}</T></span>
       <span className="flex items-center gap-2">
         {count > 0 && <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">{count}</span>}
         {secOpen(id, count) ? <ChevronUp size={15} className="text-slate-400" /> : <ChevronDown size={15} className="text-slate-400" />}
@@ -556,10 +558,10 @@ const Jobs = () => {
             {loading ? 'Loading opportunities...' : `${jobs.length} open ${jobs.length === 1 ? 'position' : 'positions'}`}
           </p>
           <h1 className="text-3xl md:text-5xl font-bold text-zinc-900 mb-3 tracking-tight leading-[1.12]">
-            Find your next <span className="text-[#00D492]">opportunity</span>
+            {lang === 'ta' ? t('jobs.h1', '') : (<>Find your next <span className="text-[#00D492]">opportunity</span></>)}
           </h1>
           <p className="text-zinc-500 text-sm font-normal max-w-md leading-relaxed mb-8">
-            Browse open jobs from companies across Tamil Nadu and beyond.
+            {t('jobs.sub', 'Browse open jobs from companies across Tamil Nadu and beyond.')}
           </p>
 
           {/* Search Bar */}
@@ -568,7 +570,7 @@ const Jobs = () => {
               <Search size={18} className="text-[#00D492] shrink-0" />
               <input
                 type="text"
-                placeholder="Job Title, Keywords"
+                placeholder={t('jobs.search.keywords', 'Job Title, Keywords')}
                 className="flex-1 bg-transparent outline-none text-zinc-800 font-medium placeholder:text-zinc-400 text-sm"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
@@ -586,7 +588,7 @@ const Jobs = () => {
               <MapPin size={18} className="text-[#00D492] shrink-0" />
               <input
                 type="text"
-                placeholder="City or Remote"
+                placeholder={t('jobs.search.city', 'City or Remote')}
                 className="flex-1 bg-transparent outline-none text-zinc-800 font-medium placeholder:text-zinc-400 text-sm"
                 value={locationTerm}
                 onChange={e => setLocationTerm(e.target.value)}
@@ -599,7 +601,7 @@ const Jobs = () => {
             </div>
 
             <Button className="h-12 rounded-xl px-8 text-sm font-bold bg-[#00D492] hover:bg-[#00b87d] text-white shadow-sm transition-all shrink-0 cursor-pointer">
-              Find Job
+              <T k="lbl.Find Job">Find Job</T>
             </Button>
           </div>
         </div>
@@ -613,11 +615,11 @@ const Jobs = () => {
             <div className="bg-white rounded-none border border-slate-100 shadow-sm p-6 sticky top-24">
               <div className="flex items-center justify-between mb-6">
                 <p className="font-bold text-slate-900 flex items-center gap-2">
-                  <SlidersHorizontal size={16} className="text-emerald-500" /> Filters
+                  <SlidersHorizontal size={16} className="text-emerald-500" /> <T k="lbl.Filters">Filters</T>
                 </p>
                 {hasActiveFilters && (
                   <button onClick={clearFilters} className="text-[11px] text-red-500 font-bold hover:text-red-600">
-                    Clear all
+                    <T k="lbl.Clear all">Clear all</T>
                   </button>
                 )}
               </div>
@@ -771,7 +773,7 @@ const Jobs = () => {
             ) : filteredJobs.length === 0 ? (
               <div className="flex flex-col items-center py-24 bg-white rounded-2xl border border-dashed border-slate-200 text-center">
                 <Briefcase size={40} className="text-slate-200 mb-4" />
-                <h3 className="text-lg font-bold text-slate-800 mb-2">No matching jobs found</h3>
+                <h3 className="text-lg font-bold text-slate-800 mb-2"><T k="lbl.No matching jobs found">No matching jobs found</T></h3>
                 <p className="text-slate-400 text-sm mb-6">Try adjusting your search or clearing filters</p>
                 {(() => {
                   const hints = removalHints();

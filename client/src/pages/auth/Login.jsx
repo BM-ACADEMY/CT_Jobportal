@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useT, T } from '@/i18n/LanguageContext';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Enter a valid email address" }),
@@ -25,6 +26,7 @@ const formSchema = z.object({
 
 const LoginPage = () => {
   const { login } = useAuth();
+  const { t } = useT();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
@@ -137,10 +139,10 @@ const LoginPage = () => {
           {/* Heading */}
           <div className="space-y-1.5">
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-              Welcome back
+              {t('login.heading', 'Welcome back')}
             </h1>
             <p className="text-slate-500 text-sm">
-              Sign in to continue to your career dashboard.
+              {t('login.sub', 'Sign in to continue to your career dashboard.')}
             </p>
           </div>
 
@@ -159,7 +161,7 @@ const LoginPage = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem className="space-y-1.5">
-                    <FormLabel className="text-sm font-medium text-slate-700">Email address</FormLabel>
+                    <FormLabel className="text-sm font-medium text-slate-700"><T k="lbl.Email address">Email address</T></FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -182,7 +184,7 @@ const LoginPage = () => {
                 render={({ field }) => (
                   <FormItem className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <FormLabel className="text-sm font-medium text-slate-700">Password</FormLabel>
+                      <FormLabel className="text-sm font-medium text-slate-700"><T k="lbl.Password">Password</T></FormLabel>
                       <Link to="/forgot-password" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">
                         Forgot password?
                       </Link>
@@ -218,7 +220,7 @@ const LoginPage = () => {
                 disabled={loading}
                 className="w-full h-11 rounded-lg text-sm font-semibold transition-all shadow-sm bg-emerald-700 text-white hover:bg-emerald-800"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? t('lbl.Signing in...', 'Signing in...') : t('lbl.Sign in', 'Sign in')}
               </Button>
             </form>
           </Form>

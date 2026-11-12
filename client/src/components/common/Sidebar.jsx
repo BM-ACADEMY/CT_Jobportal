@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_LABELS, taglineFor } from '../../data/microcopy';
 import { hasFeature } from '../subscription/FeatureGate';
+import { T } from '@/i18n/LanguageContext';
 
 // ─── Core nav (always visible) ───────────────────────────────────────────────
 const coreMenus = {
@@ -186,7 +187,7 @@ const NavItem = ({ item, active, isCollapsed }) => {
         ${active ? 'text-white' : 'text-slate-400 group-hover:text-[#34b678]'}`}>
         <Icon size={18} strokeWidth={active ? 2 : 1.5} />
       </div>
-      {!isCollapsed && <span className="text-xs font-medium flex-1 tracking-wide">{item.label}</span>}
+      {!isCollapsed && <span className="text-xs font-medium flex-1 tracking-wide"><T k={'lbl.' + item.label}>{item.label}</T></span>}
     </Link>
   );
 };
@@ -234,7 +235,7 @@ const CollapsibleNavItem = ({ item, location, isCollapsed }) => {
           ${isAnyChildActive ? 'text-white' : 'text-slate-400 group-hover:text-[#34b678]'}`}>
           <Icon size={18} strokeWidth={isAnyChildActive ? 2 : 1.5} />
         </div>
-        <span className="text-xs font-medium flex-1 tracking-wide">{item.label}</span>
+        <span className="text-xs font-medium flex-1 tracking-wide"><T k={'lbl.' + item.label}>{item.label}</T></span>
         <ChevronRight
           size={14}
           className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90 text-white' : ''}`}
@@ -257,7 +258,7 @@ const CollapsibleNavItem = ({ item, location, isCollapsed }) => {
               >
                 {childActive && <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#34b678]" />}
                 <span className="absolute left-1 text-slate-500">-</span>
-                <span className="flex-1 text-xs tracking-wide">{child.label}</span>
+                <span className="flex-1 text-xs tracking-wide"><T k={'lbl.' + child.label}>{child.label}</T></span>
               </Link>
             );
           })}
@@ -290,7 +291,7 @@ const PremiumNavItem = ({ item, active, unlocked, isCollapsed }) => {
       {!isCollapsed && (
         <>
           <span className={`text-xs font-medium flex-1 tracking-wide ${unlocked ? '' : 'opacity-50'}`}>
-            {item.label}
+            <T k={'lbl.' + item.label}>{item.label}</T>
           </span>
           {active ? (
             <div className="w-1.5 h-1.5 bg-[#34b678] rounded-full" />
