@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from "@/components/ui/badge";
 import { FileText, ShieldAlert } from 'lucide-react';
 
-const EFFECTIVE_DATE = 'November 19, 2026';
+const EFFECTIVE_DATE = 'November 16, 2026';
 // The assistant wording stays hidden until VITE_ASSISTANT_ENABLED=true (set it together with ASSISTANT_ENABLED on the server).
 const ASSISTANT_LIVE = import.meta.env.VITE_ASSISTANT_ENABLED === 'true';
 
