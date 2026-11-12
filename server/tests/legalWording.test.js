@@ -30,9 +30,9 @@ test('terms: Puducherry courts, GST line, college pack rules, grievance officer,
   assert.ok(/courts of Puducherry/.test(t) && !/courts of Chennai/.test(t));
   assert.ok(/GST at 18% is added at checkout/.test(t));
   assert.ok(/250 student places/.test(t) && /at most 2 packs/.test(t));
-  assert.ok(/Grievance Officer/.test(t) && /November 16, 2026/.test(t));
+  assert.ok(/Grievance Officer/.test(t) && /November 14, 2026/.test(t));
   const p = read('client/src/pages/PrivacyPolicy.jsx');
-  assert.ok(/Grievance Officer/.test(p) && /November 16, 2026/.test(p));
+  assert.ok(/Grievance Officer/.test(p) && /November 14, 2026/.test(p));
 });
 
 test('job page shows company size only when the company entered it; no "calls" promise', () => {
