@@ -10,6 +10,7 @@ import {
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import SponsoredBadge from '@/components/jobs/SponsoredBadge';
 import { fuzzySearch, matchesForKey, tokenize } from '../utils/fuzzySearch';
 import HighlightText from '../components/shared/HighlightText';
 import SEOHead from '../components/seo/SEOHead';
@@ -555,6 +556,7 @@ const Jobs = () => {
           <p className="text-sm font-semibold text-[#00D492] tracking-wide mb-3">
             {loading ? 'Loading opportunities...' : `${jobs.length} open ${jobs.length === 1 ? 'position' : 'positions'}`}
           </p>
+          <Link to="/government-jobs" className="inline-block text-sm font-semibold text-zinc-700 hover:text-[#00A372] underline underline-offset-4 mb-3">Government jobs</Link>
           <h1 className="text-3xl md:text-5xl font-bold text-zinc-900 mb-3 tracking-tight leading-[1.12]">
             Find your next <span className="text-[#00D492]">opportunity</span>
           </h1>
@@ -830,7 +832,7 @@ const Jobs = () => {
                                   <h3 className="font-bold text-slate-900 text-base group-hover:text-emerald-600 transition-colors">
                                     <HighlightText text={job.title} ranges={matchesForKey(job._fuzzyMatches, 'title')} />
                                   </h3>
-                                  {job.isSponsored && <span className="inline-flex items-center text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full shrink-0 uppercase">Sponsored</span>}
+                                  {job.isSponsored && <SponsoredBadge jobId={job._id} />}
                                   {job.isUrgent && <span className="inline-flex items-center text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full shrink-0 uppercase">Urgent hiring</span>}
                                   {job.isPriority && (
                                     <span title="Priority Hiring Partner" className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">

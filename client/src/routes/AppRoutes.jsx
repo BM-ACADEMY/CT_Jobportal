@@ -54,6 +54,10 @@ const ManageUsers = page('admin/ManageUsers');
 const UserProfile = page('admin/UserProfile');
 const ManageJobs = page('admin/ManageJobs');
 const ExternalJobs = page('admin/ExternalJobs');
+const GovernmentJobsAdmin = page('admin/GovernmentJobsAdmin');
+const AdminBanners = page('admin/Banners');
+const AdminReferrals = page('admin/Referrals');
+const GovernmentJobs = page('GovernmentJobs');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
 const ManageStaff = page('admin/ManageStaff');
 const ManageRenewals = page('admin/ManageRenewals');
@@ -194,6 +198,7 @@ const AppRoutes = () => {
         <Route path="/admin/services" element={<PrivateRoute roles={['admin']}><AdminServices /></PrivateRoute>} />
         <Route path="/internships" element={<InternshipsPage />} />
         <Route path="/jobs" element={<Jobs />} />
+        <Route path="/government-jobs" element={<GovernmentJobs />} />
         <Route path="/jobs/:location" element={<Jobs />} />
         <Route path="/job/:id" element={<JobDetails />} />
         <Route path="/companies" element={<Companies />} />
@@ -475,6 +480,30 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManageJobs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/government-jobs"
+          element={
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="government_jobs">
+              <GovernmentJobsAdmin />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/banners"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminBanners />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/referrals"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminReferrals />
             </PrivateRoute>
           }
         />

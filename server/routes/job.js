@@ -24,6 +24,8 @@ router.post('/quality-check', verifyToken, authorizeRoles('recruiter', 'company'
 router.post('/import-pipeline', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ats_pipeline'), upload.single('file'), importPipeline);
 // Team-managed recruiters (added by a company admin) only reach what their admin ticked
 // (middlewares/teamPermission.js). Everyone else in the role list passes straight through.
+// Sponsored buyers report: the company's own sponsored jobs with views, clicks and applies.
+router.get('/sponsored-report', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission(...JOB_LIST_KEYS), require('../controllers/sponsorStatsController').getSponsoredReport);
 router.get('/company-jobs', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission(...JOB_LIST_KEYS), getCompanyJobs);
 router.get('/company-jobs-stats', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission(...JOB_LIST_KEYS), getCompanyJobsWithStats);
 router.get('/analytics', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('analytics'), getRecruiterAnalytics);
@@ -34,6 +36,8 @@ router.get('/candidates/:candidateId/profile', verifyToken, authorizeRoles('recr
 router.get('/:jobId/matched-candidates', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ai_candidate_matching'), getAICandidateMatches);
 router.post('/:jobId/bulk-ai-match', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ai_candidate_matching', 'ats_pipeline'), bulkAiMatch);
 router.post('/:id/clone', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), cloneJob);
+// A sponsored job card was shown or clicked. Public, fire-and-forget, never fails the page.
+router.post('/:id/sponsor-event', rateLimit({ windowMs: 60 * 1000, max: 120 }), require('../controllers/sponsorStatsController').recordSponsorEvent);
 router.post('/:id/apply-click', require('../controllers/externalJobController').countExternalClick);
 router.post('/:id/renew', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), require('../controllers/visibilityController').renewJob);
 router.put('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), updateJob);

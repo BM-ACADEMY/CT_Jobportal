@@ -256,7 +256,7 @@ const cloneJob = async (req, res) => {
     newJobData.status = 'draft';
     newJobData.isCloned = true;
     // A copy never inherits paid, flagged or reported state.
-    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'shortLife', 'hiddenFromPublic', 'scamReviewed', 'scamFlags', 'reportCount', 'renewedAt', 'externalApply'].forEach((k) => { delete newJobData[k]; });
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'shortLife', 'hiddenFromPublic', 'scamReviewed', 'scamFlags', 'reportCount', 'isGovernment', 'department', 'lastDate', 'notificationUrl', 'sponsorViews', 'sponsorClicks', 'renewedAt', 'externalApply'].forEach((k) => { delete newJobData[k]; });
     if (newJobData.internship) newJobData.internship = { ...newJobData.internship, free: false };
 
     const newJob = new Job(newJobData);
@@ -374,7 +374,7 @@ const updateJob = async (req, res) => {
     const previousStatus = job.status;
     delete req.body.scamFlags; delete req.body.scamReviewed; // only the server and admin set these
     // Paid and counted fields are never set from the posting form: only an admin (sponsored, urgent) or the server (reports, free internship) can.
-    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'shortLife', 'hiddenFromPublic', 'company', 'recruiter', 'externalApply', 'applicantsCount', 'display_id', 'isCloned', '_id'].forEach((k) => { delete req.body[k]; });
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'shortLife', 'hiddenFromPublic', 'company', 'recruiter', 'isGovernment', 'department', 'lastDate', 'notificationUrl', 'sponsorViews', 'sponsorClicks', 'externalApply', 'applicantsCount', 'display_id', 'isCloned', '_id'].forEach((k) => { delete req.body[k]; });
     Object.keys(req.body).forEach((k) => { if (k.includes('.') || k.startsWith('$')) delete req.body[k]; });   // no dotted paths such as 'internship.free'
     if (req.body.internship !== undefined) {
       if (job.jobType !== 'Internship' && req.body.jobType !== 'Internship') { delete req.body.internship; }
@@ -472,6 +472,7 @@ const getAllJobs = async (req, res) => {
     const companyIds = (await Company.find(strict ? publicCompanyConditions() : { hiddenFromPublic: true }).select('_id').lean()).map((x) => x._id);
     const jobs = await Job.find({
       status: 'active',
+      isGovernment: { $ne: true }, // government jobs live on /government-jobs
       recruiter: { $nin: blockedIds },
       $and: [
         { $or: [
@@ -642,6 +643,7 @@ const getMatchingJobs = async (req, res) => {
     
     query.recruiter = { $nin: blockedIds };
     query.company = { $nin: blockedIds };
+    query.isGovernment = { $ne: true };
 
     if (user.hiddenJobs && user.hiddenJobs.length > 0) {
       query._id = { $nin: user.hiddenJobs };

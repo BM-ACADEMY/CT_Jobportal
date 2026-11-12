@@ -26,6 +26,15 @@ const jobSchema = new mongoose.Schema({
   sponsoredUntil: { type: Date, default: null },
   sponsoredNote: { type: String, default: '', maxlength: 200, select: false }, // payment note: never sent to the public
   urgentUntil: { type: Date, default: null },
+  // Sponsored buyers report: counted by controllers/sponsorStatsController.js while the job is sponsored. Totals only, never shown to the public.
+  sponsorViews: { type: Number, default: 0 },
+  sponsorClicks: { type: Number, default: 0 },
+  // Government job: posted only by the Super Admin or staff with the government_jobs permission (utils/governmentJobs.js).
+  // Candidates read the official notification at notificationUrl; the listing hides itself after lastDate.
+  isGovernment: { type: Boolean, default: false, index: true },
+  department: { type: String, default: undefined, trim: true, maxlength: 150 },
+  lastDate: { type: Date, default: undefined },
+  notificationUrl: { type: String, default: undefined, maxlength: 500 },
   shortLife: { type: Boolean, default: false }, // set by the server for the limited free tier: public for 14 days only, renewing does not extend it
   renewedAt: { type: Date, default: null }, // the company pressed Renew: keeps an old job on the public list for 45 more days
   hiddenFromPublic: { type: Boolean, default: false }, // Super Admin switch

@@ -42,6 +42,12 @@ router.get('/users/:id', requireAdminOr('users_view'), getUserDetails);
 router.get('/users/:id/applications', requireAdminOr('users_view'), getUserApplications);
 router.get('/roles', requireAdminOr('users_view'), getRoles);
 
+// Government jobs: the Super Admin, or staff the Super Admin gave the government_jobs permission. Companies get 403.
+const govJobs = require('../controllers/governmentJobController');
+router.get('/government-jobs', requireAdminOr('government_jobs'), govJobs.listGovernmentJobsAdmin);
+router.post('/government-jobs', requireAdminOr('government_jobs'), govJobs.createGovernmentJob);
+router.patch('/government-jobs/:id/close', requireAdminOr('government_jobs'), govJobs.closeGovernmentJob);
+
 router.use(authorizeRoles('admin'));
 
 // Employers' active-job limits: see them and raise them without a payment (Super Admin only).
@@ -127,5 +133,13 @@ router.delete('/jobs/:id', deleteJob);
 router.post('/jobs/:id/sponsor', require('../controllers/jobPromotionController').sponsorJob);
 router.post('/jobs/:id/unsponsor', require('../controllers/jobPromotionController').unsponsorJob);
 router.post('/jobs/:id/urgent', require('../controllers/jobPromotionController').urgentJob);
+
+// Banner slots (Home page) and referral counts: Super Admin only.
+const bannerCtl = require('../controllers/bannerController');
+router.get('/banners', bannerCtl.listBanners);
+router.post('/banners', bannerCtl.createBanner);
+router.put('/banners/:id', bannerCtl.updateBanner);
+router.delete('/banners/:id', bannerCtl.deleteBanner);
+router.get('/referrals', require('../controllers/adminReferralController').listReferrals);
 
 module.exports = router;
