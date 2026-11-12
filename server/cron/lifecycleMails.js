@@ -19,6 +19,7 @@ const Payment = require('../models/Payment');
 const { expiryStage, failedPaymentDue } = require('../utils/lifecycle/billing');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
 const policy = require('../utils/lifecycle/emailPolicy');
+const welcome = require('../utils/lifecycle/welcomeSeries');
 const Feedback = require('../models/Feedback');
 const { signFeedbackToken, ASK_AFTER_DAYS, ASK_WINDOW_DAYS } = require('../utils/paymentFeedback');
 const WalkInDrive = require('../models/WalkInDrive');
@@ -348,11 +349,26 @@ const paymentFeedbackAsk = async (state) => {
   }
 };
 
+// Welcome series: day 2 and day 5 after sign-up (day 0 is sent at verification). Per audience, once each (EmailLog key).
+const welcomeSeries = async (state) => {
+  const roles = await Role.find({ name: { $in: ['jobseeker', 'recruiter', 'company', 'college'] } }).select('_id name').lean();
+  const nameById = new Map(roles.map((r) => [String(r._id), r.name]));
+  const users = await User.find({ ...baseUserFilter, role: { $in: roles.map((r) => r._id) }, isTeamManaged: { $ne: true }, createdAt: { $gte: ago(12), $lte: ago(2) } }).limit(BATCH);
+  for (const u of users) {
+    const audience = welcome.audienceOf(nameById.get(String(u.role)));
+    if (!audience) continue;
+    for (const stage of welcome.dueStages(u.createdAt)) {
+      const sent = await deliver(state, u, welcome.keyFor(audience, stage), mails.wrap(welcome.welcomeMail(audience, stage, u), u._id), audience);
+      if (sent) break; // one mail per person per run
+    }
+  }
+};
+
 const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [paidWelcome, paymentFeedbackAsk, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, driveOrganiser, applicantsWeekly, jobClosing, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [paidWelcome, paymentFeedbackAsk, welcomeSeries, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, driveOrganiser, applicantsWeekly, jobClosing, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }
