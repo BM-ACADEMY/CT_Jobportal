@@ -483,7 +483,7 @@ const getAllJobs = async (req, res) => {
         ...publicJobConditions(strict ? { verifiedCompanyIds: companyIds } : { hiddenCompanyIds: companyIds })
       ]
     })
-      .populate('company', 'name logo location website')
+      .populate('company', 'name logo location website verifiedByCall')
       .populate({
         path: 'recruiter',
         select: 'subscription',
@@ -518,7 +518,7 @@ const getJobById = async (req, res) => {
       return res.status(404).json({ msg: 'Job not found' });
     }
     const job = await Job.findById(req.params.id)
-      .populate('company', 'name logo location website industry tagline about_us description is_verified company_size_range employeeCount')
+      .populate('company', 'name logo location website industry tagline about_us description is_verified verifiedByCall company_size_range employeeCount')
       .populate('recruiter', 'name email');
 
     if (!job) {
@@ -649,7 +649,7 @@ const getMatchingJobs = async (req, res) => {
     }
 
     const matchingJobs = await Job.find(query)
-      .populate('company', 'name logo location website')
+      .populate('company', 'name logo location website verifiedByCall')
       .sort({ createdAt: -1 })
       .limit(20);
 

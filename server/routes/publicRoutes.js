@@ -224,7 +224,7 @@ router.get('/companies', async (req, res) => {
 
       [companies, totalCompanies] = await Promise.all([
         Company.find(companyQuery)
-          .select('name display_name logo location industry description tagline employeeCount company_size_range foundedYear is_verified social_links work_model perks tech_stack about_us website createdAt')
+          .select('name display_name logo location industry description tagline employeeCount company_size_range foundedYear is_verified verifiedByCall social_links work_model perks tech_stack about_us website createdAt')
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),

@@ -132,6 +132,12 @@ const companySchema = new mongoose.Schema({
   verifiedAt: { type: Date, default: null },
   verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   verification_note: { type: String, trim: true, maxlength: 300, default: '' },
+  // "Verified employer": a telecaller phoned the company and confirmed it is real. Set only by an admin
+  // (PATCH /api/admin/companies/:id/verified-by-call). Separate from is_verified; it never verifies the company by itself.
+  verifiedByCall: { type: Boolean, default: false },
+  verifiedByCallAt: { type: Date, default: null },
+  verifiedByCallNote: { type: String, trim: true, maxlength: 300, default: '' },
+  verifiedByCallBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   tax_id_ein: {
     type: String,
     trim: true

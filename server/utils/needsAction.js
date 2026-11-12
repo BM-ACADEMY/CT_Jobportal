@@ -18,7 +18,7 @@ const SOURCES = [
     title: (x) => text(x.subject || 'No subject'), detail: (x) => text(`${x.name || ''} ${x.email || ''}`) },
   { key: 'reviews', kind: 'review', label: 'Review', link: '/admin/reviews',
     title: (x) => text(`${x.rating || ''} star review`), detail: (x) => text(x.comment) },
-  { key: 'requests', kind: 'request', label: 'Request', link: '/admin/requests',
+  { key: 'requests', kind: 'request', label: 'Request', link: '/admin/requests', linkFor: (x) => (x.type === 'company_proof' ? '/admin/companies' : ''),
     title: (x) => text(String(x.type || 'request').replace(/_/g, ' ')), detail: (x) => text(x.bookingName || x.bookingEmail) },
   { key: 'feedback', kind: 'feedback', label: 'Feedback', link: '/admin/feedback',
     title: (x) => text(`${x.rating || ''} star${x.text ? `: ${x.text}` : ''}`), detail: (x) => text(x.role) },
@@ -41,7 +41,7 @@ const buildNeedsAction = (groups = {}, assignments = [], now = new Date()) => {
       const ageHours = Math.max(0, Math.floor((now.getTime() - created) / HOUR));
       const owner = owners.get(`${src.kind}:${String(row._id)}`);
       items.push({
-        kind: src.kind, id: String(row._id), label: src.label, link: src.link,
+        kind: src.kind, id: String(row._id), label: src.label, link: (src.linkFor && src.linkFor(row)) || src.link,
         title: src.title(row), detail: src.detail(row),
         createdAt: new Date(created).toISOString(), ageHours, level: levelFor(ageHours),
         owner: owner ? { id: owner.ownerId, name: owner.ownerName } : null

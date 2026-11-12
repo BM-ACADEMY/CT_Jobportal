@@ -100,6 +100,10 @@ router.delete('/companies/:id', deleteCompany);
 router.patch('/companies/:id/logo-approval', require('../controllers/logoController').approveCompanyLogo);
 router.patch('/colleges/:id/logo', require('../controllers/logoController').setCollegeLogo);
 router.patch('/companies/:id/verify', require('../controllers/companyVerificationController').setCompanyVerified);
+router.patch('/companies/:id/verified-by-call', require('../controllers/companyVerificationController').setVerifiedByCall);
+router.get('/company-proofs', require('../controllers/companyProofController').listProofs);
+router.post('/company-proofs/:id/approve', require('../controllers/companyProofController').approveProof);
+router.post('/company-proofs/:id/reject', require('../controllers/companyProofController').rejectProof);
 
 router.get('/spend', require('../controllers/spendController').getSpend);
 router.post('/spend', require('../controllers/spendController').addSpend);

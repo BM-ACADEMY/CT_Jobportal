@@ -670,6 +670,7 @@ const getAdminRequests = async (req, res) => {
     // Staff (counsellor) are limited to the counselling-type requests; admin sees what was asked.
     const typeFilter = staffRequestTypeFilter(req, type);
     if (typeFilter !== undefined) query.type = typeFilter;
+    if (query.type === undefined) query.type = { $ne: 'company_proof' }; // proofs are handled on the Companies page
     if (status && status !== 'all') query.status = status;
     if (assignedTo && assignedTo !== 'all') {
       if (assignedTo === 'unassigned') query.assignedTo = { $exists: false };
