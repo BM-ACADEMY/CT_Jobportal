@@ -218,6 +218,7 @@ const registerUser = async (req, res) => {
           message: `${college.name} just registered (${name}${tpoPhone || phone ? `, ${tpoPhone || phone}` : ''}). Call them within 24 hours.`,
           type: 'general', link: '/admin/requests',
         }).catch(err => console.error('College call notice failed:', err.message));
+        require('../utils/requestOwnerAlert').alertRequestOwner({ io: req.io, title: 'New college: call within 24 hours', message: `${college.name} just registered (${name}). Please call them within 24 hours.` });
       } catch (err) { console.error('College call task failed:', err.message); }
     }
 

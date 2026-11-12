@@ -4,7 +4,30 @@
 // Models and senders are required lazily, so this file loads without a database.
 const LINK = '/admin/needs-action';
 
-const alertRequestOwner = async (request, { io, title, message, deps = {} } = {}) => {
+// Two call styles are supported:
+//   alertRequestOwner(request, { io, title, message })  - for an existing request record (assignment is saved)
+//   alertRequestOwner({ io, title, message, link, metadata }) - no record yet (college signup, pack and call requests):
+//     tells the person set for "request" in the routing rules, or does nothing and returns false if no one is set.
+const alertRequestOwner = async (request, opts) => {
+  if (request && request._id === undefined && opts === undefined) return alertByRule(request);
+  return alertForRequest(request, opts);
+};
+
+const alertByRule = async ({ io, title, message, link = '/admin/requests', metadata } = {}) => {
+  try {
+    const AdminRoutingRule = require('../models/AdminRoutingRule');
+    const { notifyUser } = require('./inAppNotifications');
+    const rule = await AdminRoutingRule.findOne({ kind: 'request' }).select('ownerId').lean();
+    if (!rule?.ownerId) return false;
+    await notifyUser({ io, recipientId: rule.ownerId, title, message, type: 'service_request', link, metadata });
+    return true;
+  } catch (err) {
+    console.error('Request owner alert failed:', err.message);
+    return false;
+  }
+};
+
+const alertForRequest = async (request, { io, title, message, deps = {} } = {}) => {
   try {
     const AdminAssignment = deps.AdminAssignment || require('../models/AdminAssignment');
     const AdminRoutingRule = deps.AdminRoutingRule || require('../models/AdminRoutingRule');
