@@ -3,28 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { 
-  MapPin, 
-  Briefcase, 
-  IndianRupee, 
-  Clock, 
-  Loader2, 
-  ArrowLeft, 
-  Building2, 
-  Globe, 
-  Users, 
-  Calendar, 
-  ChevronRight,
-  Share2,
-  Bookmark,
-  CheckCircle2,
-  Zap,
-  Info,
-  Sparkles,
-  TrendingUp
+import {
+  MapPin, Briefcase, IndianRupee, Clock, Loader2, ArrowLeft, Building2, Globe, Users,
+  Calendar, ChevronRight, Share2, Bookmark, Sparkles, TrendingUp, ShieldCheck, Laptop, CalendarClock, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { hasFeature } from '../components/subscription/FeatureGate';
@@ -32,11 +13,137 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { toast } from 'sonner';
 import JobApplicationModal from '../components/jobs/JobApplicationModal';
 import ShareModal from '../components/jobs/ShareModal';
-import ReportJobButton from '../components/jobs/ReportJobButton';
 import SEOHead from '../components/seo/SEOHead';
 import { jobIdFromParam, jobPath } from '../utils/jobUrl';
 import { trackEvent } from '../utils/analytics';
-import { formatPay, jobFacts } from '../data/jobFacets';
+import WaveLines from '@/components/common/WaveLines';
+import Footer from '@/components/home/Footer';
+
+const EASE = [0.22, 1, 0.36, 1];
+
+const formatSalary = (salary) => {
+  if (!salary || salary.isRangeHidden) return "Not Disclosed";
+  if (salary.min && salary.max) {
+    return `₹${(salary.min / 100000).toFixed(1)}-${(salary.max / 100000).toFixed(1)} LPA`;
+  }
+  if (salary.min) return `₹${(salary.min / 100000).toFixed(1)}+ LPA`;
+  return "Competitive";
+};
+
+const formatExperience = (exp) => {
+  if (!exp || (exp.min == null && exp.max == null)) return 'Not specified';
+  if (!exp.min && !exp.max) return 'Fresher';
+  if (exp.max == null || exp.max === exp.min) return `${exp.min}+ Yrs`;
+  return `${exp.min ?? 0}–${exp.max} Yrs`;
+};
+
+const formatDate = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null);
+
+// Concentric rings used as a quiet corner decoration on brand panels.
+const Rings = ({ opacity = 0.18, className = '-right-16 -top-16 w-48 h-48' }) => (
+  <svg className={`absolute pointer-events-none ${className}`} viewBox="0 0 200 200" fill="none" aria-hidden="true">
+    {[40, 60, 80, 100].map((r) => <circle key={r} cx="100" cy="100" r={r} stroke="#34B678" strokeOpacity={opacity} />)}
+  </svg>
+);
+
+// Recruiters paste descriptions as plain text. Turn it into blocks so it reads like a page:
+// "Key Responsibilities:" -> heading, "1. Lead Generation" -> numbered sub-heading,
+// runs of short lines -> a bullet list, long lines -> a paragraph.
+const BULLET_RE = /^[-•*–·▪●✓✔]\s*/;
+const NUMBERED_HEADING_RE = /^(\d{1,2})[.)]\s+(.{2,60})$/;
+const isHeading = (line) => {
+  const t = line.replace(BULLET_RE, '');
+  if (t.length > 60) return false;
+  if (/:$/.test(t)) return true;
+  // Short Title Case line with no sentence punctuation, e.g. "Preferred Skills & Experience".
+  const words = t.split(/\s+/);
+  return words.length >= 2 && words.length <= 6 && !/[.,;!?]$/.test(t) &&
+    words.every((w) => /^[A-Z&/(]/.test(w) || /^(and|of|to|for|the|in|with|&)$/i.test(w));
+};
+
+const parseDescription = (text) => {
+  const blocks = [];
+  let list = null;
+  const flushList = () => {
+    if (!list) return;
+    if (list.length === 1) blocks.push({ type: 'p', text: list[0] });
+    else blocks.push({ type: 'ul', items: list });
+    list = null;
+  };
+  String(text || '').split(/\r?\n/).forEach((raw) => {
+    const line = raw.trim();
+    if (!line) { flushList(); return; }
+    const numbered = line.match(NUMBERED_HEADING_RE);
+    if (numbered && !/[.]$/.test(numbered[2])) {
+      flushList();
+      blocks.push({ type: 'h4', num: numbered[1], text: numbered[2].replace(/:$/, '') });
+      return;
+    }
+    if (isHeading(line)) {
+      flushList();
+      blocks.push({ type: 'h3', text: line.replace(BULLET_RE, '').replace(/:$/, '') });
+      return;
+    }
+    if (line.length > 220) {
+      flushList();
+      blocks.push({ type: 'p', text: line });
+      return;
+    }
+    (list ||= []).push(line.replace(BULLET_RE, ''));
+  });
+  flushList();
+  return blocks;
+};
+
+const FormattedDescription = ({ text }) => {
+  const blocks = parseDescription(text);
+  return (
+    <div className="space-y-4 text-zinc-700 text-[15px] md:text-base leading-[1.8] break-words">
+      {blocks.map((b, i) => {
+        if (b.type === 'h3') {
+          return <h3 key={i} className={`m-0 text-lg font-bold text-[#10213D] ${i ? 'pt-4' : ''}`}>{b.text}</h3>;
+        }
+        if (b.type === 'h4') {
+          return (
+            <h4 key={i} className="m-0 pt-2 flex items-center gap-3 text-base font-bold text-[#10213D]">
+              <span className="w-7 h-7 shrink-0 rounded-lg bg-[#34B678]/10 text-[#1f8a57] text-xs font-bold flex items-center justify-center">{b.num}</span>
+              {b.text}
+            </h4>
+          );
+        }
+        if (b.type === 'ul') {
+          return (
+            <ul key={i} className="m-0 p-0 list-none space-y-2.5">
+              {b.items.map((item, j) => (
+                <li key={j} className="flex items-start gap-3">
+                  <span className="mt-[0.7em] w-1.5 h-1.5 shrink-0 rounded-full bg-[#34B678]" aria-hidden="true" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        return <p key={i} className="m-0">{b.text}</p>;
+      })}
+    </div>
+  );
+};
+
+const SectionTitle = ({ children }) => (
+  <h2 className="text-xl md:text-2xl font-bold tracking-tight text-[#10213D] m-0 mb-5">{children}</h2>
+);
+
+const CompanyLogo = ({ logo, name, size = 'w-20 h-20', fontSize = 30 }) => (
+  <div className={`${size} rounded-2xl bg-white ring-1 ring-zinc-200 overflow-hidden shrink-0 flex items-center justify-center shadow-sm`}>
+    {logo ? (
+      <img src={logo} alt={`${name} logo`} className="w-full h-full object-cover" />
+    ) : (
+      <span className="w-full h-full bg-[#34B678]/10 text-[#1f8a57] font-bold flex items-center justify-center" style={{ fontSize }}>
+        {name?.[0] || 'J'}
+      </span>
+    )}
+  </div>
+);
 
 const JobDetails = () => {
   const { id: routeParam } = useParams();
@@ -106,6 +213,10 @@ const JobDetails = () => {
     }
 
     // Gentle nudge, never a block: a thin profile lowers the chance of being shortlisted.
+    if (user.role === 'jobseeker' && (user.profile?.profileCompletion ?? 100) < 60) {
+      setShowProfileNudge(true);
+      return;
+    }
 
     setIsApplyModalOpen(true);
   };
@@ -135,7 +246,7 @@ const JobDetails = () => {
       toast.error("Only candidates can check their match score");
       return;
     }
-    
+
     if (!hasFeature(user, 'hasJobMatchAnalysis')) {
       toast.error("Premium Feature: Please upgrade your plan or purchase Job Match Analysis to use this.");
       navigate('/candidate/pay-per-features');
@@ -152,7 +263,7 @@ const JobDetails = () => {
       toast.success("Match score calculated!");
     } catch (error) {
       console.error('Error calculating match:', error);
-      toast.error(error.response?.status === 429 ? error.response.data?.msg : "Failed to calculate AI match score");
+      toast.error("Failed to calculate AI match score");
     } finally {
       setIsCalculatingMatch(false);
     }
@@ -163,7 +274,7 @@ const JobDetails = () => {
       toast.error("Only candidates can use salary benchmarking");
       return;
     }
-    
+
     if (!hasFeature(user, 'hasSalaryBenchmarking')) {
       toast.error("Premium Feature: Please upgrade your plan or purchase Salary Benchmarking to use this.");
       navigate('/candidate/pay-per-features');
@@ -175,52 +286,32 @@ const JobDetails = () => {
     });
   };
 
-  const handleShareJob = () => {
-    // Always open the custom premium share modal for a consistent experience
-    setIsShareModalOpen(true);
-  };
-
-  const copyToClipboard = (text) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        toast.success("Link copied! Share it with your friends.");
-      }).catch(err => {
-        fallbackCopyToClipboard(text);
-      });
-    } else {
-      fallbackCopyToClipboard(text);
-    }
-  };
-
-  const fallbackCopyToClipboard = (text) => {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      toast.success("Link copied! Share it with your friends.");
-    } catch (err) {
-      console.error('Could not copy text: ', err);
-      toast.error("Failed to copy link");
-    }
-    document.body.removeChild(textArea);
-  };
+  const handleShareJob = () => setIsShareModalOpen(true);
 
   const isJobSaved = user?.savedJobs?.some(savedId => String(savedId) === String(id));
 
-  const formatSalary = (salary) => formatPay(salary);
-
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
-          <Loader2 className="w-12 h-12 text-primary" />
-        </motion.div>
-        <p className="text-slate-400 font-semibold tracking-widest uppercase text-xs mt-4">Analyzing Opportunity...</p>
+      <div className="min-h-screen bg-white" role="status" aria-label="Loading job">
+        <div className="bg-[#f4faf7] border-b border-emerald-100 px-6 pt-28 pb-12">
+          <div className="max-w-6xl mx-auto animate-pulse">
+            <div className="h-4 w-48 rounded bg-emerald-100 mb-8" />
+            <div className="flex gap-5">
+              <div className="w-20 h-20 rounded-2xl bg-emerald-100 shrink-0" />
+              <div className="flex-1 space-y-3">
+                <div className="h-8 w-2/3 rounded-lg bg-emerald-100" />
+                <div className="h-4 w-1/3 rounded bg-emerald-100" />
+              </div>
+            </div>
+            <div className="mt-9 grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[0, 1, 2, 3].map(i => <div key={i} className="h-20 rounded-2xl bg-emerald-100/70" />)}
+            </div>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto px-6 py-10 grid lg:grid-cols-3 gap-8 animate-pulse">
+          <div className="lg:col-span-2 h-80 rounded-[1.75rem] bg-zinc-100" />
+          <div className="h-64 rounded-[1.75rem] bg-zinc-100" />
+        </div>
       </div>
     );
   }
@@ -232,15 +323,20 @@ const JobDetails = () => {
     return (
       <div className="min-h-screen bg-white">
         <SEOHead title={`${job.title || 'Job'} — position filled | Velaivaaipu`} description="This position has been filled. Browse the latest jobs on Velaivaaipu." path={jobPath(job)} robots="noindex, follow" />
-        <div className="max-w-2xl mx-auto px-6 pt-40 pb-24 text-center">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">This position has been filled</h1>
-          <p className="text-slate-500 mt-3">
-            {job.title ? `${job.title}${job.company?.name ? ` at ${job.company.name}` : ''} is no longer accepting applications.` : 'This job is no longer accepting applications.'}
-          </p>
-          <Link to="/jobs" className="inline-block mt-8 px-8 h-12 leading-[3rem] rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
-            Browse similar jobs
-          </Link>
+        <div className="relative overflow-hidden bg-[#f4faf7] border-b border-emerald-100 px-6 pt-36 pb-24 text-center">
+          <WaveLines id="job-closed-waves" />
+          <div className="relative max-w-2xl mx-auto">
+            <span className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-white text-[#34B678] flex items-center justify-center shadow-sm"><Briefcase size={24} /></span>
+            <h1 className="text-3xl md:text-4xl font-bold text-[#10213D] tracking-tight">This position has been filled</h1>
+            <p className="text-zinc-600 mt-3">
+              {job.title ? `${job.title}${job.company?.name ? ` at ${job.company.name}` : ''} is no longer accepting applications.` : 'This job is no longer accepting applications.'}
+            </p>
+            <Link to="/jobs" className="inline-flex items-center gap-2 mt-8 px-7 h-12 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white font-bold text-sm shadow-lg shadow-[#34B678]/25 transition-colors">
+              Browse similar jobs <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -260,376 +356,301 @@ const JobDetails = () => {
     jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: city, addressRegion: 'Tamil Nadu', addressCountry: 'IN' } },
     directApply: !job.externalApply?.url,
     ...(job.workMode === 'Remote' ? { jobLocationType: 'TELECOMMUTE', applicantLocationRequirements: { '@type': 'Country', name: 'IN' } } : {}),
-    ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: ({ month: 'MONTH', day: 'DAY', hour: 'HOUR' })[job.salary.unit] || 'YEAR' } } } : {}),
+    ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
   };
 
-  return (
-    <div className="min-h-screen bg-white pb-32">
-      <SEOHead title={seoTitle} description={seoDescription} path={jobPath(job)} schema={jobSchema} />
-      {/* ─── HEADER / BREADCRUMB ─── */}
-      <div className="max-w-7xl mx-auto px-6 pt-32 pb-12">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-primary transition-colors mb-4 group">
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          Back
-        </button>
-        <nav className="flex items-center gap-2 text-sm font-bold text-slate-400 mb-8">
-          <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-          <ChevronRight size={14} />
-          <Link to="/jobs" className="hover:text-primary transition-colors">Jobs</Link>
-          <ChevronRight size={14} />
-          <span className="text-slate-900 truncate max-w-[200px]">{job.title}</span>
-        </nav>
+  const canApply = user?.role !== 'recruiter' && user?.role !== 'company';
+  const salaryText = formatSalary(job.salary);
+  const salaryShown = salaryText.startsWith('₹');
+  const logoUrl = job.company?.logo ? `${API_DOMAIN}${job.company.logo}` : null;
+  const aboutCompany = job.company?.about_us || job.company?.description || job.company?.tagline;
+  const companySize = job.company?.company_size_range || job.company?.employeeCount;
 
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-          <div className="flex items-start gap-8">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-24 h-24 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 overflow-hidden shrink-0 shadow-sm"
-            >
-              {job.company?.logo ? (
-                <img src={`${API_DOMAIN}${job.company.logo}`} alt={job.company.name} className="w-full h-full object-cover" />
-              ) : (
-                <Building2 size={40} className="text-primary/20" />
-              )}
-            </motion.div>
-            <div>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-emerald-100 font-medium px-3">
-                    <Zap size={12} className="mr-1.5 fill-emerald-700" /> Hiring Now
-                  </Badge>
-                  <span className="text-[10px] font-medium text-slate-300 uppercase tracking-wide">
-                    Posted {new Date(job.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-3 tracking-tight leading-tight">
-                  {job.title}
-                </h1>
-                <div className="flex flex-wrap items-center gap-6">
-                  <div className="flex items-center gap-2 text-primary font-medium text-lg">
-                    {job.externalApply?.employerName || job.company?.name}
+  const facts = [
+    { label: 'Job type', value: job.jobType || 'Not specified', icon: Briefcase },
+    { label: 'Experience', value: formatExperience(job.experience), icon: Clock },
+    { label: 'Salary', value: salaryText, icon: IndianRupee },
+    { label: 'Work mode', value: job.workMode || 'In-office', icon: Laptop },
+  ];
+  const overview = [
+    { label: 'Openings', value: `${job.vacancies || 1} ${job.vacancies === 1 ? 'position' : 'positions'}`, icon: Users },
+    job.timings && { label: 'Timings', value: job.timings, icon: Clock },
+    job.shifts && { label: 'Shift', value: job.shifts, icon: Calendar },
+    { label: 'Posted', value: formatDate(job.createdAt), icon: CalendarClock },
+    job.validThrough && { label: 'Apply before', value: formatDate(job.validThrough), icon: CalendarClock },
+  ].filter(Boolean);
+
+  return (
+    <div className="min-h-screen bg-white overflow-x-clip pb-24 lg:pb-0">
+      <SEOHead title={seoTitle} description={seoDescription} path={jobPath(job)} schema={jobSchema} />
+
+      {/* Header */}
+      <header className="relative overflow-hidden bg-[#f4faf7] border-b border-emerald-100 px-6 pt-24 md:pt-28 pb-10 md:pb-12">
+        <WaveLines id="job-detail-waves" />
+        <div className="relative max-w-6xl mx-auto">
+          <div className="flex items-center gap-4 mb-8">
+            <button type="button" onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 shrink-0 rounded-xl bg-white ring-1 ring-zinc-200 text-zinc-500 hover:text-[#10213D] flex items-center justify-center border-none cursor-pointer transition">
+              <ArrowLeft size={16} />
+            </button>
+            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm font-medium text-zinc-500 min-w-0">
+              <Link to="/" className="hover:text-[#1f8a57] transition-colors">Home</Link>
+              <ChevronRight size={14} className="shrink-0" />
+              <Link to="/jobs" className="hover:text-[#1f8a57] transition-colors">Jobs</Link>
+              <ChevronRight size={14} className="shrink-0" />
+              <span className="text-[#10213D] font-semibold truncate">{job.title}</span>
+            </nav>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="flex flex-col lg:flex-row lg:items-end justify-between gap-8"
+          >
+            <div className="flex items-start gap-5 min-w-0">
+              <CompanyLogo logo={logoUrl} name={companyName} size="w-16 h-16 md:w-20 md:h-20" />
+              <div className="min-w-0">
+                {job.company?.industry && (
+                  <span className="inline-block rounded-lg bg-[#34B678]/10 text-[#1f8a57] px-3 py-1 text-xs font-semibold mb-3">{job.company.industry}</span>
+                )}
+                <h1 className="text-3xl md:text-[2.6rem] font-bold tracking-tight leading-tight text-[#10213D] m-0">{job.title}</h1>
+                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm md:text-base">
+                  <span className="inline-flex items-center gap-2 font-semibold text-[#10213D]">
+                    <Building2 size={17} className="text-zinc-400" /> {companyName}
                     {!externalUrl && job.company?.website && (
-                      <a href={job.company.website} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-primary transition-colors">
-                        <Globe size={16} />
+                      <a href={job.company.website} target="_blank" rel="noopener noreferrer" aria-label="Company website" className="text-zinc-400 hover:text-[#1f8a57] transition-colors">
+                        <Globe size={15} />
                       </a>
                     )}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400 font-bold">
-                    <MapPin size={18} className="text-slate-300" />
-                    {job.location || 'Remote'}
-                  </div>
+                  </span>
+                  <span className="inline-flex items-center gap-2 font-medium text-zinc-600"><MapPin size={17} className="text-zinc-400" /> {job.location || 'Remote'}</span>
+                  <span className="inline-flex items-center gap-2 font-medium text-zinc-500"><CalendarClock size={17} className="text-zinc-400" /> Posted {formatDate(job.createdAt)}</span>
                 </div>
-              </motion.div>
+              </div>
             </div>
-          </div>
-          
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center gap-4"
-          >
-            {user?.role !== 'recruiter' && user?.role !== 'company' && (
-              <Button 
-                onClick={handleSaveJob}
-                disabled={isSaving}
-                variant="outline" 
-                size="xl" 
-                className={`rounded-2xl h-16 w-16 p-0 border-slate-100 transition-all ${isJobSaved ? 'text-primary bg-primary/5 border-primary/20' : 'text-slate-400 hover:bg-slate-50 hover:text-primary'}`}
+
+            <div className="flex items-center gap-3 shrink-0">
+              {canApply && (
+                <button
+                  type="button"
+                  onClick={handleSaveJob}
+                  disabled={isSaving}
+                  aria-label={isJobSaved ? 'Remove from saved jobs' : 'Save job'}
+                  aria-pressed={!!isJobSaved}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center border-none cursor-pointer transition ring-1 ${isJobSaved ? 'bg-[#34B678]/10 ring-[#34B678]/40 text-[#1f8a57]' : 'bg-white ring-zinc-200 text-zinc-500 hover:text-[#10213D]'}`}
+                >
+                  {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Bookmark size={19} className={isJobSaved ? 'fill-[#34B678]' : ''} />}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleShareJob}
+                aria-label="Share job"
+                className="w-12 h-12 rounded-xl bg-white ring-1 ring-zinc-200 text-zinc-500 hover:text-[#10213D] flex items-center justify-center border-none cursor-pointer transition"
               >
-                <Bookmark size={24} className={isJobSaved ? 'fill-primary' : ''} />
-              </Button>
-            )}
-            <Button 
-              onClick={handleShareJob}
-              variant="outline" 
-              size="xl" 
-              className="rounded-2xl h-16 w-16 p-0 border-slate-100 hover:bg-slate-50 text-slate-400 hover:text-primary transition-all"
-            >
-              <Share2 size={24} />
-            </Button>
-            {user?.role !== 'recruiter' && user?.role !== 'company' && (
-              <Button 
-                onClick={handleApply}
-                size="xl" 
-                className="rounded-md px-10 h-14 bg-slate-900 hover:bg-primary text-white font-bold text-lg shadow-md transition-all hover:scale-[1.01]"
-              >
-                {externalUrl ? 'Apply on company site' : 'Apply for this job'}
-              </Button>
-            )}
+                <Share2 size={19} />
+              </button>
+              {canApply && (
+                <button
+                  type="button"
+                  onClick={handleApply}
+                  className="hidden lg:inline-flex items-center gap-2 h-12 px-7 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-sm font-bold border-none cursor-pointer shadow-lg shadow-[#34B678]/30 transition"
+                >
+                  {externalUrl ? 'Apply on company site' : 'Apply for this job'} <ArrowRight size={16} />
+                </button>
+              )}
+            </div>
           </motion.div>
-        </div>
-      </div>
 
-      {/* ─── MAIN CONTENT ─── */}
-      <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-3 gap-12">
-        
-        {/* Left Column: Details */}
-        <div className="lg:col-span-2 space-y-12">
-
-          {/* AI Match Banner (if jobseeker) */}
-          {user && user.role === 'jobseeker' && (
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50/30 rounded-2xl p-6 border border-emerald-100/50 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={20} className="text-emerald-500" />
-                  <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-widest">AI Profile Match</h3>
-                </div>
-                {matchAnalysis ? (
-                  <p className="text-slate-700 text-sm font-medium leading-relaxed">{matchAnalysis.verdict}</p>
-                ) : (
-                  <p className="text-slate-600 text-sm font-medium leading-relaxed">See how well your skills align with this role before applying.</p>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-4 shrink-0">
-                {matchAnalysis ? (
-                  <div className="text-center">
-                    <Badge className={`px-4 py-1 rounded-lg font-bold text-sm uppercase tracking-widest border-none ${matchAnalysis.matchPercentage >= 75 ? 'bg-emerald-100 text-emerald-700' : matchAnalysis.matchPercentage >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {matchAnalysis.matchPercentage}% Match
-                    </Badge>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={handleCalculateMatch}
-                    disabled={isCalculatingMatch}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl h-12 px-6 shadow-sm transition-all"
-                  >
-                    {isCalculatingMatch ? <Loader2 size={18} className="animate-spin mr-2" /> : <Sparkles size={18} className="mr-2" />}
-                    {isCalculatingMatch ? 'Analyzing...' : 'Check Match'}
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {job.internship && job.jobType === 'Internship' && (
-            <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-5 space-y-1">
-              <p className="font-bold text-slate-900">Internship details</p>
-              <p className="text-sm text-slate-700">{job.internship.durationMonths} {job.internship.durationMonths === 1 ? 'month' : 'months'} · {job.internship.stipendType === 'paid' ? `Stipend ₹${Number(job.internship.stipendAmount).toLocaleString('en-IN')} per month` : 'Unpaid'} · {({ onsite: 'On-site', remote: 'Remote', hybrid: 'Hybrid' })[job.internship.mode] || ''}</p>
-              <p className="text-sm text-emerald-700">{[job.internship.certificate && 'Completion certificate', job.internship.ppo && 'Pre-placement job offer possible'].filter(Boolean).join(' · ')}</p>
-              <p className="text-xs text-slate-500">A real internship never asks you for money. If it does, use Report this job.</p>
-            </div>
-          )}
-
-          {jobFacts(job).length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {jobFacts(job).map((f) => (
-                <span key={f} className="inline-flex items-center rounded-full bg-amber-50 text-amber-800 border border-amber-100 px-3 py-1 text-xs font-semibold">{f}</span>
-              ))}
-            </div>
-          )}
-
-          {/* Quick Info Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Job Type', value: job.jobType, icon: <Briefcase size={20} /> },
-              { label: 'Experience', value: `${job.experience?.min}-${job.experience?.max} Yrs`, icon: <Clock size={20} /> },
-              { label: 'Salary', value: formatSalary(job.salary), icon: <IndianRupee size={20} /> },
-              { label: 'Work Mode', value: job.workMode || 'In-office', icon: <Building2 size={20} /> },
-            ].map((item, i) => (
-              <div key={i} className="bg-slate-50/50 border border-slate-100 rounded-lg p-6 hover:border-primary/20 transition-colors flex flex-col justify-between">
-                <div>
-                  <div className="text-primary mb-3 bg-white w-10 h-10 rounded-md flex items-center justify-center shadow-sm">
-                    {item.icon}
-                  </div>
-                  <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wide mb-1">{item.label}</p>
-                  <p className="text-slate-900 font-semibold tracking-tight">{item.value}</p>
-                </div>
-                {item.label === 'Salary' && user?.role === 'jobseeker' && (
-                  <Button 
-                    onClick={handleSalaryBenchmarking} 
-                    variant="outline"
-                    className="mt-4 w-full text-xs h-8 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800"
-                  >
-                    <TrendingUp size={14} className="mr-1.5" /> Benchmark
-                  </Button>
+          {/* Key facts */}
+          <div className="mt-9 grid grid-cols-2 md:grid-cols-4 gap-3">
+            {facts.map(({ label, value, icon: Icon }) => (
+              <div key={label} className="rounded-2xl bg-white ring-1 ring-zinc-200/80 p-4 md:p-5">
+                <p className="m-0 flex items-center gap-2 text-xs font-semibold text-zinc-500">
+                  <Icon size={15} className="text-[#34B678]" /> {label}
+                </p>
+                <p className={`m-0 mt-2 font-bold text-sm md:text-base ${label === 'Salary' && !salaryShown ? 'text-zinc-500' : 'text-[#10213D]'}`}>{value}</p>
+                {label === 'Salary' && user?.role === 'jobseeker' && (
+                  <button type="button" onClick={handleSalaryBenchmarking} className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#1f8a57] hover:underline bg-transparent border-none p-0 cursor-pointer">
+                    <TrendingUp size={13} /> Compare salary
+                  </button>
                 )}
               </div>
             ))}
           </div>
+        </div>
+      </header>
 
-          {/* Description */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-8 w-1 bg-primary rounded-full" />
-              <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Job Description</h2>
-            </div>
-            <div className="prose prose-slate max-w-none">
-              {(() => {
-                // A description written as "- point" lines reads better as a list.
-                const lines = String(job.description || '').split('\n').map((l) => l.trim()).filter(Boolean);
-                const bullet = /^[-•*]\s+/;
-                if (lines.length > 1 && lines.every((l) => bullet.test(l))) {
-                  return <ul className="list-disc pl-6 space-y-2 text-slate-600 leading-[1.8] font-medium text-lg">{lines.map((l, i) => <li key={i}>{l.replace(bullet, '')}</li>)}</ul>;
-                }
-                return <div className="text-slate-600 leading-[1.8] font-medium text-lg whitespace-pre-wrap">{job.description}</div>;
-              })()}
-              <p className="mt-6 text-xs text-slate-500">A real employer never asks you for money to apply or to join. If this job asks you to pay, report it.</p>
-            </div>
+      {/* Body */}
+      <div className="max-w-6xl mx-auto px-6 py-10 md:py-14 grid lg:grid-cols-3 gap-8 lg:gap-10 items-start">
+        <main className="lg:col-span-2 space-y-8 min-w-0">
+          {/* AI match (jobseekers only) */}
+          {user && user.role === 'jobseeker' && (
+            <section className="relative overflow-hidden rounded-[1.75rem] bg-[#10213D] text-white p-6 md:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+              <Rings opacity={0.25} className="-right-16 -top-16 w-56 h-56" />
+              <div className="relative flex-1">
+                <p className="m-0 flex items-center gap-2 text-sm font-bold text-[#34B678]"><Sparkles size={16} /> AI profile match</p>
+                <p className="m-0 mt-2 text-sm text-white/80 leading-relaxed">
+                  {matchAnalysis ? matchAnalysis.verdict : 'See how well your skills fit this role before you apply.'}
+                </p>
+              </div>
+              <div className="relative shrink-0">
+                {matchAnalysis ? (
+                  <p className="m-0 text-center">
+                    <span className={`block text-4xl font-bold ${matchAnalysis.matchPercentage >= 75 ? 'text-[#34B678]' : matchAnalysis.matchPercentage >= 50 ? 'text-amber-300' : 'text-rose-300'}`}>
+                      {matchAnalysis.matchPercentage}%
+                    </span>
+                    <span className="text-xs font-semibold text-white/60">match</span>
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCalculateMatch}
+                    disabled={isCalculatingMatch}
+                    className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] disabled:opacity-70 text-white text-sm font-bold border-none cursor-pointer transition"
+                  >
+                    {isCalculatingMatch ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                    {isCalculatingMatch ? 'Checking…' : 'Check my match'}
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
+
+          <section className="rounded-[1.75rem] bg-white ring-1 ring-zinc-200/80 p-6 md:p-8">
+            <SectionTitle>Job description</SectionTitle>
+            <FormattedDescription text={job.description} />
           </section>
 
-          {/* Skills */}
-          {job.skillsRequired && job.skillsRequired.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-8">
-                <div className="h-8 w-1.5 bg-primary rounded-full" />
-                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Required Expertise</h2>
-              </div>
-              <div className="flex flex-wrap gap-3">
+          {job.skillsRequired?.length > 0 && (
+            <section className="rounded-[1.75rem] bg-white ring-1 ring-zinc-200/80 p-6 md:p-8">
+              <SectionTitle>Skills required</SectionTitle>
+              <ul className="flex flex-wrap gap-2.5 p-0 m-0 list-none">
                 {job.skillsRequired.map((skill, i) => (
-                  <Badge key={i} className="bg-white text-slate-700 hover:border-primary/50 border-slate-200 font-semibold py-2 px-4 rounded-lg text-sm shadow-sm transition-all cursor-default">
-                    {skill}
-                  </Badge>
+                  <li key={i} className="rounded-lg bg-[#f4faf7] ring-1 ring-emerald-100 px-3.5 py-2 text-sm font-semibold text-[#10213D]">{skill}</li>
                 ))}
-              </div>
+              </ul>
             </section>
           )}
 
-          {/* Additional Details if any */}
-          {job.additionalDetails && job.additionalDetails.length > 0 && (
-            <section className="bg-emerald-50/50 rounded-lg p-8 border border-emerald-100">
-              <div className="flex items-center gap-3 mb-8">
-                <Info size={20} className="text-emerald-600" />
-                <h2 className="text-lg font-semibold text-emerald-900 tracking-tight">Additional Information</h2>
-              </div>
-              <div className="grid md:grid-cols-2 gap-6">
+          {job.additionalDetails?.length > 0 && (
+            <section className="rounded-[1.75rem] bg-white ring-1 ring-zinc-200/80 p-6 md:p-8">
+              <SectionTitle>More details</SectionTitle>
+              <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-5 m-0">
                 {job.additionalDetails.map((detail, index) => (
-                  <div key={detail._id || index} className="flex flex-col gap-1">
-                    <span className="text-[10px] font-medium text-emerald-700/50 uppercase tracking-wide">{detail.key}</span>
-                    <span className="text-emerald-900 font-semibold leading-relaxed">{detail.value}</span>
+                  <div key={detail._id || index} className="border-l-2 border-[#34B678] pl-4">
+                    <dt className="text-xs font-semibold text-zinc-500">{detail.key}</dt>
+                    <dd className="m-0 mt-1 font-semibold text-[#10213D] leading-relaxed">{detail.value}</dd>
                   </div>
                 ))}
-              </div>
+              </dl>
             </section>
           )}
-        </div>
+        </main>
 
-        {/* Right Column: Sidebar */}
-        <div className="space-y-8">
-          
-          {/* Job Overview Card */}
-          <Card className="border-slate-100 rounded-xl overflow-hidden shadow-sm">
-            <CardHeader className="bg-slate-900 text-white p-6">
-              <CardTitle className="text-lg font-bold tracking-tight">Job Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-primary shrink-0">
-                  <Users size={18} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Vacancies</p>
-                  <p className="text-slate-900 font-semibold">{job.vacancies || 1} Positions</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-primary shrink-0">
-                  <Calendar size={18} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Timings</p>
-                  <p className="text-slate-900 font-medium">{job.timings || '9:00 AM - 6:00 PM'}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-primary shrink-0">
-                  <Clock size={18} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Shifts</p>
-                  <p className="text-slate-900 font-medium">{job.shifts || 'Day Shift'}</p>
-                </div>
-              </div>
-
-              <Separator className="bg-slate-50" />
-              
-              {externalUrl ? (
-                <p className="text-sm font-medium text-slate-500 leading-relaxed">
+        {/* Sidebar */}
+        <aside className="space-y-6 lg:sticky lg:top-24">
+          <div className="rounded-[1.75rem] bg-white p-2 ring-1 ring-zinc-200 shadow-[0_24px_60px_-36px_rgba(16,33,61,0.4)]">
+            <div className="relative overflow-hidden rounded-[1.4rem] bg-[#f4faf7] p-6">
+              <Rings />
+              <p className="relative m-0 text-xs font-semibold text-zinc-500">Salary</p>
+              <p className={`relative m-0 mt-1 text-3xl font-bold tracking-tight ${salaryShown ? 'text-[#10213D]' : 'text-zinc-500'}`}>{salaryText}</p>
+              {canApply && (
+                <button
+                  type="button"
+                  onClick={handleApply}
+                  className="relative mt-5 w-full h-12 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-sm font-bold border-none cursor-pointer shadow-lg shadow-[#34B678]/30 flex items-center justify-center gap-2 transition"
+                >
+                  {externalUrl ? 'Apply on company site' : 'Apply now'} <ArrowRight size={16} />
+                </button>
+              )}
+              {externalUrl && (
+                <p className="relative m-0 mt-3 text-xs font-medium text-zinc-600 leading-relaxed">
                   You will leave Velaivaaipu to apply{job.externalApply?.sourceName ? ` (${job.externalApply.sourceName})` : ''}. The employer handles your application. Never pay anyone to get a job.
                 </p>
-              ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 size={16} className="text-emerald-500" />
-                  <span className="text-sm font-bold text-slate-600">Direct Company Hiring</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 size={16} className="text-emerald-500" />
-                  <span className="text-sm font-bold text-slate-600">Immediate Joining</span>
-                </div>
-              </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <dl className="px-5 py-5 space-y-4 m-0">
+              {overview.map(({ label, value, icon: Icon }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-xl bg-[#34B678]/10 text-[#1f8a57] flex items-center justify-center shrink-0"><Icon size={16} /></span>
+                  <div className="min-w-0">
+                    <dt className="text-xs font-medium text-zinc-500">{label}</dt>
+                    <dd className="m-0 text-sm font-bold text-[#10213D]">{value}</dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          </div>
 
-          {/* Company Card (a job found on the web shows the real employer only, not our host company) */}
+          {/* A job found on the web shows the real employer only, not our host company. */}
           {!externalUrl && (
-          <Card className="border-slate-100 rounded-xl overflow-hidden shadow-sm bg-slate-50/30">
-            <CardContent className="p-8">
-              <h3 className="text-lg font-bold text-slate-900 mb-6 tracking-tight">About Company</h3>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-slate-100 overflow-hidden shrink-0 shadow-sm">
-                  {job.company?.logo ? (
-                    <img src={`${API_DOMAIN}${job.company.logo}`} alt={job.company.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Building2 size={24} className="text-primary/20" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-slate-900 font-semibold tracking-tight">{job.company?.name}{job.company?.is_verified && <span className="ml-2 align-middle text-[10px] font-bold uppercase text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">Verified</span>}</p>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{job.company?.location || 'India'}</p>
-                </div>
+          <div className="rounded-[1.75rem] bg-white ring-1 ring-zinc-200/80 p-6">
+            <h3 className="text-base font-bold text-[#10213D] m-0 mb-5">About the company</h3>
+            <div className="flex items-center gap-4">
+              <CompanyLogo logo={logoUrl} name={companyName} size="w-14 h-14" fontSize={22} />
+              <div className="min-w-0">
+                <p className="m-0 font-bold text-[#10213D] truncate">{companyName}</p>
+                <p className="m-0 text-sm text-zinc-500 truncate">{job.company?.location || job.location || 'India'}</p>
               </div>
-              {job.company?.description && (
-                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6 line-clamp-6">{job.company.description}</p>
-              )}
-              <div className="space-y-3">
-                {job.company?.website && (
-                  <a 
-                    href={job.company.website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-primary transition-all group"
-                  >
-                    <span className="text-sm font-bold text-slate-600">Visit Website</span>
-                    <Globe size={16} className="text-slate-300 group-hover:text-primary" />
-                  </a>
+            </div>
+            {aboutCompany && <p className="m-0 mt-5 text-sm text-zinc-600 leading-relaxed line-clamp-5">{aboutCompany}</p>}
+            {(companySize || job.company?.industry) && (
+              <dl className="mt-5 grid grid-cols-2 gap-3 m-0">
+                {job.company?.industry && (
+                  <div className="rounded-xl bg-[#f4faf7] p-3 min-w-0">
+                    <dt className="text-xs text-zinc-500">Industry</dt>
+                    <dd className="m-0 mt-0.5 text-sm font-bold text-[#10213D] truncate">{job.company.industry}</dd>
+                  </div>
                 )}
-                {job.company?.company_size_range && (
-                <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-100">
-                  <span className="text-sm font-semibold text-slate-600">Company Size</span>
-                  <span className="text-xs font-bold text-slate-900">{job.company.company_size_range}</span>
-                </div>
+                {companySize && (
+                  <div className="rounded-xl bg-[#f4faf7] p-3 min-w-0">
+                    <dt className="text-xs text-zinc-500">Team size</dt>
+                    <dd className="m-0 mt-0.5 text-sm font-bold text-[#10213D] truncate">{companySize}</dd>
+                  </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
+              </dl>
+            )}
+            {job.company?.website && (
+              <a
+                href={job.company.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 flex items-center justify-between h-11 px-4 rounded-xl ring-1 ring-zinc-200 text-sm font-semibold text-[#10213D] hover:ring-[#34B678]/60 hover:text-[#1f8a57] transition"
+              >
+                Visit website <Globe size={16} />
+              </a>
+            )}
+          </div>
           )}
 
-          {/* Safety Warning */}
-          <div className="p-8 rounded-xl border border-amber-100 bg-amber-50/50">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600">
-                <Info size={18} />
-              </div>
-              <h4 className="font-bold text-amber-900 text-sm tracking-tight">Job Safety Tip</h4>
-            </div>
-            <p className="text-xs font-bold text-amber-800/70 leading-relaxed">
-              Don't provide your bank or credit card details when applying for jobs. Velaivaaipu does not charge any money from job seekers.
+          <div className="rounded-[1.75rem] bg-amber-50 ring-1 ring-amber-100 p-6">
+            <p className="m-0 flex items-center gap-2 text-sm font-bold text-amber-900"><ShieldCheck size={17} className="text-amber-600" /> Stay safe</p>
+            <p className="m-0 mt-2 text-sm text-amber-900/80 leading-relaxed">
+              Never share bank or card details when applying. Velaivaaipu never charges job seekers to apply.
             </p>
           </div>
-        </div>
-
+        </aside>
       </div>
+
+      {/* Mobile apply bar */}
+      {canApply && (
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 bg-white/95 backdrop-blur border-t border-zinc-200 px-4 py-3 flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="m-0 text-xs text-zinc-500 truncate">{companyName}</p>
+            <p className={`m-0 text-sm font-bold truncate ${salaryShown ? 'text-[#10213D]' : 'text-zinc-500'}`}>{salaryText}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleApply}
+            className="h-12 px-6 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-sm font-bold border-none cursor-pointer shadow-lg shadow-[#34B678]/30 inline-flex items-center gap-2"
+          >
+            {externalUrl ? 'Apply on company site' : 'Apply now'} <ArrowRight size={16} />
+          </button>
+        </div>
+      )}
+
+      <Footer />
 
       <Dialog open={showProfileNudge} onOpenChange={setShowProfileNudge}>
         <DialogContent className="max-w-sm rounded-2xl p-6">
@@ -644,20 +665,16 @@ const JobDetails = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="max-w-6xl mx-auto px-6 pb-10">
-        <ReportJobButton jobId={job._id} posterId={job.recruiter?._id || job.recruiter} />
-      </div>
-
-      <JobApplicationModal 
-        isOpen={isApplyModalOpen} 
-        onClose={() => setIsApplyModalOpen(false)} 
+      <JobApplicationModal
+        isOpen={isApplyModalOpen}
+        onClose={() => setIsApplyModalOpen(false)}
         job={job}
         user={user}
       />
 
-      <ShareModal 
-        isOpen={isShareModalOpen} 
-        onClose={() => setIsShareModalOpen(false)} 
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
         jobTitle={job.title}
         companyName={job.company?.name}
         shareUrl={window.location.href}

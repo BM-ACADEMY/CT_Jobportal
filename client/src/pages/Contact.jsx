@@ -1,71 +1,50 @@
-import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Link } from 'react-router-dom';
 import {
-  Mail, Phone, MapPin, Clock, Send, MessageSquare,
-  Briefcase, HeadphonesIcon, CheckCircle2, ArrowRight,
-  Link2, Camera, HelpCircle, ChevronDown
+  Mail, Phone, MapPin, Clock, Send, CheckCircle2, ArrowUpRight, Plus,
+  GraduationCap, Building2, UserRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
-import SEOHead from '../components/seo/SEOHead';
-import { motion as Motion } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
+import Footer from '@/components/home/Footer';
+import WaveLines from '@/components/common/WaveLines';
+import { ADDRESS, PHONE, EMAIL, MAP_EMBED, MAP_LINK, SOCIALS } from '@/components/common/brandContact';
 
-const CONTACT_CARDS = [
-  {
-    icon: Mail,
-    title: 'Email Us',
-    desc: 'We typically reply within 24 hours.',
-    value: 'hello@velaivaaipu.in',
-    color: 'text-[#00D492]',
-    bg: 'bg-[#00D492]/10',
-  },
-  {
-    icon: Phone,
-    title: 'Call Us',
-    desc: 'Mon–Fri, 10 AM to 7 PM IST.',
-    value: '+91 99445 09441',
-    color: 'text-[#00D492]',
-    bg: 'bg-[#00D492]/10',
-  },
-  {
-    icon: MapPin,
-    title: 'Visit Us',
-    desc: 'Our registered office.',
-    value: '78 Lenin St, Kosapalayam, Puducherry 605013',
-    color: 'text-[#00D492]',
-    bg: 'bg-[#00D492]/10',
-  },
+const EASE = [0.22, 1, 0.36, 1];
+
+const SEGMENTS = [
+  { value: 'jobseeker', label: 'Job seeker', icon: UserRound },
+  { value: 'company', label: 'Company', icon: Building2 },
+  { value: 'college', label: 'College', icon: GraduationCap },
+];
+
+const HOURS = [
+  { day: 'Monday – Friday', time: '10:00 AM – 7:00 PM' },
+  { day: 'Sunday', time: 'Closed' },
 ];
 
 const FAQS = [
-  { 
-    q: 'How do I post a job on Velaivaaipu?', 
-    a: 'Register or log in as a company or recruiter, then go to your dashboard and click "Post a Job". Our team checks new companies, and jobs from a company show publicly once it is verified. Until then you can see them in your dashboard.',
-    icon: Briefcase
-  },
-  { 
-    q: 'Is it free to create a job seeker account?', 
-    a: 'Yes! Creating a job seeker account is completely free. We also offer premium subscription plans with advanced features for faster job discovery.',
-    icon: HelpCircle
-  },
-  { 
-    q: 'How do subscription plans work?', 
-    a: 'The Plans page lists what each plan includes and what it costs, with GST shown before you pay. Start free, and upgrade only if you need more.',
-    icon: Clock
-  },
-  { 
-    q: 'How can I contact a recruiter directly?', 
-    a: 'Open the job or company page and use the apply or message option shown there. Which contact options you see depends on your plan. The Plans page has the details.',
-    icon: MessageSquare
-  },
-  { 
-    q: 'How do I reset my password?', 
-    a: 'Click "Forgot Password" on the login page. We\'ll send a reset link to your registered email within a few minutes.',
-    icon: HeadphonesIcon
-  },
+  { q: 'How do I post a job on Velaivaaipu?', a: 'Register or log in as a company or recruiter, then go to your dashboard and click "Post a Job". Our team checks new companies, and jobs from a company show publicly once it is verified. Until then you can see them in your dashboard.' },
+  { q: 'Is it free to create a job seeker account?', a: 'Yes. Creating a job seeker account is completely free. Premium plans add features for faster job discovery.' },
+  { q: 'How do subscription plans work?', a: 'The Plans page lists what each plan includes and what it costs, with GST shown before you pay. Start free, and upgrade only if you need more.' },
+  { q: 'How can I contact a recruiter directly?', a: 'Open the job or company page and use the apply or message option shown there. Which contact options you see depends on your plan. The Plans page has the details.' },
+  { q: 'How do I reset my password?', a: 'Click "Forgot Password" on the login page. We\'ll send a reset link to your registered email within a few minutes.' },
 ];
+
+// company_website is a hidden spam trap: real people never fill it, so the server drops any message that has it.
+const EMPTY_FORM = { name: '', email: '', subject: '', message: '', segment: '', company_website: '' };
+
+const inputCls = 'w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-900 text-sm font-medium outline-none transition placeholder:text-zinc-400 focus:border-[#34B678] focus:ring-4 focus:ring-[#34B678]/15';
+
+const Field = ({ label, required, htmlFor, children }) => (
+  <div>
+    <label htmlFor={htmlFor} className="block text-sm font-semibold text-zinc-700 mb-2">
+      {label} {required && <span className="text-[#34B678]">*</span>}
+    </label>
+    {children}
+  </div>
+);
 
 const Contact = () => {
   // A link such as /contact?segment=college&subject=Custom%20plan opens the form already filled in.
@@ -76,23 +55,16 @@ const Contact = () => {
       segment = ['jobseeker', 'company', 'college'].includes(q.get('segment')) ? q.get('segment') : '';
       subject = String(q.get('subject') || '').slice(0, 100);
     } catch (e) { /* ignore */ }
-    return { name: '', email: '', subject, message: '', segment, company_website: '' };
+    return { ...EMPTY_FORM, subject, segment };
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [openFaq, setOpenFaq] = useState(null);
+  const [openFaq, setOpenFaq] = useState(0);
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const [botToken, setBotToken] = useState('');
-  const [botReset, setBotReset] = useState(0);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (turnstileEnabled() && !botToken) {
-      toast.error('Please complete the "I am human" check.');
-      return;
-    }
     if (!form.name || !form.email || !form.message) {
       toast.error('Please fill in all required fields.');
       return;
@@ -100,307 +72,266 @@ const Contact = () => {
     setSubmitting(true);
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      await axios.post(`${apiUrl}/public/contact`, { ...form, ...(botToken ? { turnstileToken: botToken } : {}) });
+      await axios.post(`${apiUrl}/public/contact`, form);
       setSubmitted(true);
       toast.success('Message sent! We\'ll get back to you soon.');
     } catch (err) {
       console.error('Contact Form Error:', err);
       toast.error(err.response?.data?.msg || 'Failed to send message. Please try again.');
-      setBotReset((n) => n + 1);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100/60">
-
-      <SEOHead title="Contact Velaivaaipu" description="Contact the Velaivaaipu team for help with jobs, hiring, plans or your account." path="/contact" />
-      {/* Hero section with clean light office background image and soft black overlay */}
-      <div className="bg-zinc-950 py-24 px-6 relative overflow-hidden border-b border-zinc-900">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-[0.4]"
-          style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1740560051533-3acef26ace95?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8Y29udGFjdCUyMHVzfGVufDB8fDB8fHww")' }}
-        />
-        {/* Light black overlay */}
-        <div className="absolute inset-0 bg-black/45 pointer-events-none" />
-
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <Motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-              <MessageSquare size={13} className="text-[#00D492]" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-white">Get in Touch</span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-5 tracking-tight">
-              How Can We <span className="text-[#00D492]">Help You?</span>
+    <div className="min-h-screen bg-white overflow-x-clip">
+      {/* Intro */}
+      <section className="relative overflow-hidden bg-[#f4faf7] border-b border-emerald-100">
+        <WaveLines id="contact-hero-waves" color="#34B678" />
+        <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-16 md:pt-24 md:pb-20">
+          <Motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }} className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#34B678] mb-4">
+              <span className="w-8 h-px bg-[#34B678]/50" /> Contact us
+            </span>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.05] text-[#10213D]">
+              Talk to a real person at <span className="text-[#34B678]">Velaivaaipu.</span>
             </h1>
-            <p className="text-zinc-300 text-base md:text-lg max-w-xl mx-auto leading-relaxed font-normal">
-              Our team is ready to assist you with any questions about jobs, subscriptions, or your account.
+            <p className="mt-5 text-zinc-600 text-base md:text-lg leading-relaxed max-w-xl">
+              Questions about jobs, hiring, campus drives or your account. Send a message and our Puducherry team replies within one working day.
             </p>
           </Motion.div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-6xl mx-auto px-6 py-16">
+      {/* Details + form */}
+      <section className="relative max-w-6xl mx-auto px-6 -mt-8 md:-mt-10 pb-20">
+        <Motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.1, ease: EASE }}
+          className="grid lg:grid-cols-5 rounded-[2rem] bg-white shadow-[0_30px_80px_-30px_rgba(16,33,61,0.25)] ring-1 ring-zinc-100 overflow-hidden"
+        >
+          {/* Direct contact panel */}
+          <aside className="relative lg:col-span-2 overflow-hidden bg-gradient-to-br from-[#3CC283] via-[#34B678] to-[#249a62] p-8 md:p-10 text-white">
+            {/* Concentric rings from the bottom-right corner; fixed size, so they never stretch
+                with the panel's height the way the wave lines did */}
+            <svg className="absolute -right-40 -bottom-40 w-[520px] h-[520px] pointer-events-none" viewBox="0 0 520 520" fill="none" aria-hidden="true">
+              {Array.from({ length: 9 }, (_, i) => (
+                <circle key={i} cx="260" cy="260" r={60 + i * 26} stroke="#fff" strokeOpacity={0.22 - i * 0.02} strokeWidth="1" />
+              ))}
+            </svg>
+            <div className="absolute -left-20 -top-20 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+            <div className="relative">
+              <h2 className="text-2xl font-bold tracking-tight">Reach us directly</h2>
+              <p className="mt-2 text-white/85 text-sm leading-relaxed">Prefer email or a call? Use whichever is easier for you.</p>
 
-        {/* Contact Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-          {CONTACT_CARDS.map((card, i) => (
-            <Motion.div
-              key={i}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
-              className="bg-zinc-50 border border-zinc-300 shadow-md shadow-zinc-200/50 p-6 flex items-start gap-5 hover:shadow-lg transition-all"
-            >
-              <div className={`w-12 h-12 rounded-2xl ${card.bg} flex items-center justify-center shrink-0`}>
-                <card.icon size={22} className={card.color} />
-              </div>
-              <div>
-                <p className="font-bold text-zinc-800 mb-0.5">{card.title}</p>
-                <p className="text-zinc-400 text-xs font-semibold mb-2">{card.desc}</p>
-                <p className="text-sm font-bold text-zinc-950">{card.value}</p>
-              </div>
-            </Motion.div>
-          ))}
-        </div>
-
-        {/* Main: Form + Info */}
-        <div className="grid lg:grid-cols-5 gap-10 mb-20">
-
-          {/* Form */}
-          <div className="lg:col-span-3">
-            <div className="bg-zinc-50 border border-zinc-300 shadow-md shadow-zinc-200/50 rounded-2xl p-8">
-              {submitted ? (
-                <Motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center text-center py-10"
-                >
-                  <div className="w-20 h-20 bg-[#00D492]/10 rounded-full flex items-center justify-center mb-6">
-                    <CheckCircle2 size={36} className="text-[#00D492]" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-zinc-900 mb-3">Message Sent!</h3>
-                  <p className="text-zinc-500 font-medium mb-8 max-w-xs leading-relaxed">
-                    Thank you for reaching out. Our team will reply to your email within 24 hours.
-                  </p>
-                  <Button
-                    onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '', segment: '', company_website: '' }); }}
-                    className="h-11 px-8 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold cursor-pointer"
-                  >
-                    Send Another Message
-                  </Button>
-                </Motion.div>
-              ) : (
-                <>
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-zinc-900 tracking-tight mb-1">Send a Message</h2>
-                    <p className="text-zinc-500 text-sm font-semibold">Fill the form below and we'll get back to you shortly.</p>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Hidden trap field: people never see it, bots fill it in */}
-                    <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
-                      <label>Leave this empty
-                        <input type="text" name="company_website" tabIndex={-1} autoComplete="off" value={form.company_website} onChange={handleChange} />
-                      </label>
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">
-                          Full Name <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={form.name}
-                          onChange={handleChange}
-                          placeholder="Rahul Sharma"
-                          className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-850 font-medium text-sm outline-none focus:border-[#00D492] focus:ring-4 focus:ring-[#00D492]/10 transition-all placeholder:text-zinc-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">
-                          Email <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          value={form.email}
-                          onChange={handleChange}
-                          placeholder="rahul@example.com"
-                          className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-850 font-medium text-sm outline-none focus:border-[#00D492] focus:ring-4 focus:ring-[#00D492]/10 transition-all placeholder:text-zinc-400"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">I am a</label>
-                      <select
-                        name="segment"
-                        value={form.segment}
-                        onChange={handleChange}
-                        className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-850 font-medium text-sm outline-none focus:border-[#00D492] focus:ring-4 focus:ring-[#00D492]/10 transition-all"
-                      >
-                        <option value="">Select (optional)</option>
-                        <option value="jobseeker">Job seeker / student</option>
-                        <option value="company">Company hiring</option>
-                        <option value="college">College / placement officer</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">Subject</label>
-                      <input
-                        type="text"
-                        name="subject"
-                        value={form.subject}
-                        onChange={handleChange}
-                        placeholder="How can we help?"
-                        className="w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-850 font-medium text-sm outline-none focus:border-[#00D492] focus:ring-4 focus:ring-[#00D492]/10 transition-all placeholder:text-zinc-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-wider">
-                        Message <span className="text-red-400">*</span>
-                      </label>
-                      <textarea
-                        name="message"
-                        value={form.message}
-                        onChange={handleChange}
-                        rows={5}
-                        placeholder="Tell us more about your query..."
-                        className="w-full px-4 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-850 font-medium text-sm outline-none focus:border-[#00D492] focus:ring-4 focus:ring-[#00D492]/10 transition-all placeholder:text-zinc-400 resize-none"
-                      />
-                    </div>
-
-                    <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
-
-
-                    <Button
-                      type="submit"
-                      disabled={submitting}
-                      className="h-12 w-full rounded-xl bg-[#00D492] hover:bg-[#00b87d] text-white font-bold text-sm shadow-sm transition-all disabled:opacity-60 cursor-pointer"
+              <ul className="mt-8 space-y-3">
+                {[
+                  { icon: Mail, label: 'Email', value: EMAIL, href: `mailto:${EMAIL}` },
+                  { icon: Phone, label: 'Phone', value: PHONE.label, href: PHONE.href },
+                  { icon: MapPin, label: 'Office', value: ADDRESS, href: MAP_LINK, external: true },
+                ].map(item => (
+                  <li key={item.label}>
+                    <a
+                      href={item.href}
+                      {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      className="group flex items-start gap-4 rounded-2xl bg-white/10 hover:bg-white/15 p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                     >
-                      {submitting ? (
-                        <span className="flex items-center gap-2 justify-center"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending...</span>
-                      ) : (
-                        <span className="flex items-center gap-2 justify-center"><Send size={16} /> Send Message</span>
-                      )}
-                    </Button>
-                  </form>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Info Sidebar */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Office Hours */}
-            <div className="bg-zinc-50 rounded-2xl border border-zinc-300 shadow-md shadow-zinc-200/50 p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-                  <Clock size={18} className="text-amber-600" />
-                </div>
-                <div>
-                  <p className="font-bold text-zinc-800 text-sm">Office Hours</p>
-                  <p className="text-zinc-400 text-xs font-semibold">When we're available</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { day: 'Monday – Friday', time: '10:00 AM – 7:00 PM' },
-                  { day: 'Sunday', time: 'Closed' },
-                ].map((row, i) => (
-                  <div key={i} className="flex justify-between items-center py-2.5 border-b border-zinc-50 last:border-0">
-                    <span className="text-zinc-650 text-sm font-medium">{row.day}</span>
-                    <span className={`text-sm font-bold ${row.time === 'Closed' ? 'text-red-400' : 'text-zinc-800'}`}>{row.time}</span>
-                  </div>
+                      <span className="w-10 h-10 shrink-0 rounded-xl bg-white text-[#249a62] flex items-center justify-center"><item.icon size={18} /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-semibold uppercase tracking-wider text-white/70">{item.label}</span>
+                        <span className="block text-sm font-semibold leading-relaxed break-words">{item.value}</span>
+                      </span>
+                      <ArrowUpRight size={16} className="shrink-0 mt-1 opacity-60 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    </a>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
 
-            {/* Support Types */}
-            <div className="bg-zinc-50 rounded-2xl border border-zinc-300 shadow-md shadow-zinc-200/50 p-6">
-              <p className="font-bold text-zinc-800 text-sm mb-5">What We Can Help With</p>
-              <div className="space-y-4">
-                {[
-                  { icon: Briefcase, label: 'Job Search Assistance', color: 'text-[#00D492]', bg: 'bg-[#00D492]/10' },
-                  { icon: HeadphonesIcon, label: 'Account & Technical Support', color: 'text-[#00D492]', bg: 'bg-[#00D492]/10' },
-                  { icon: MessageSquare, label: 'Subscription & Billing', color: 'text-[#00D492]', bg: 'bg-[#00D492]/10' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}>
-                      <item.icon size={16} className={item.color} />
+              <div className="mt-8 rounded-2xl bg-[#10213D]/15 p-5">
+                <p className="flex items-center gap-2 text-sm font-bold"><Clock size={16} /> Office hours</p>
+                <dl className="mt-3 space-y-2 text-sm">
+                  {HOURS.map(row => (
+                    <div key={row.day} className="flex justify-between gap-4">
+                      <dt className="text-white/80">{row.day}</dt>
+                      <dd className="font-semibold">{row.time}</dd>
                     </div>
-                    <span className="text-zinc-700 text-sm font-semibold">{item.label}</span>
-                  </div>
-                ))}
+                  ))}
+                </dl>
               </div>
-            </div>
 
-            {/* Social Links */}
-            <div className="bg-zinc-50 border border-zinc-300 shadow-md shadow-zinc-200/50 rounded-2xl p-6">
-              <p className="font-bold text-zinc-800 text-sm mb-2">Follow Us</p>
-              <p className="text-zinc-400 text-xs font-semibold mb-5">Stay updated with job alerts and career tips.</p>
-              <div className="flex gap-3">
-                {[
-                  { icon: Camera, label: 'Instagram', href: 'https://www.instagram.com/velaivaaipu_/' },
-                  { icon: Link2, label: 'Facebook', href: 'https://www.facebook.com/profile.php?id=61594638677591' },
-                ].map((s, i) => (
-                  <a key={i} href={s.href} target="_blank" rel="noopener noreferrer" className="h-10 px-3 gap-2 rounded-xl bg-zinc-200/60 hover:bg-[#00D492] hover:text-white flex items-center justify-center text-zinc-650 text-sm font-semibold transition-all" aria-label={s.label}>
-                    <s.icon size={17} /> {s.label}
+              <div className="mt-8 flex items-center gap-3">
+                {SOCIALS.map(({ label, href, icon: Icon, bg }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Velaivaaipu on ${label}`}
+                    className={`w-10 h-10 rounded-xl ${bg} text-white flex items-center justify-center ring-2 ring-white/30 transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-white`}
+                  >
+                    <Icon className="w-5 h-5" />
                   </a>
                 ))}
               </div>
             </div>
+          </aside>
+
+          {/* Form */}
+          <div className="lg:col-span-3 p-8 md:p-12">
+            <AnimatePresence mode="wait">
+              {submitted ? (
+                <Motion.div
+                  key="done"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="h-full flex flex-col items-start justify-center py-10"
+                >
+                  <span className="w-16 h-16 rounded-2xl bg-[#34B678]/10 text-[#34B678] flex items-center justify-center mb-6"><CheckCircle2 size={32} /></span>
+                  <h3 className="text-3xl font-bold tracking-tight text-[#10213D]">Message sent.</h3>
+                  <p className="mt-3 text-zinc-600 leading-relaxed max-w-sm">
+                    Thanks, {form.name.split(' ')[0] || 'there'}. We'll reply to <span className="font-semibold text-zinc-800">{form.email}</span> within one working day.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setSubmitted(false); setForm(EMPTY_FORM); }}
+                    className="mt-8 h-12 px-7 rounded-xl bg-[#10213D] hover:bg-[#0b1830] text-white text-sm font-bold transition-colors cursor-pointer"
+                  >
+                    Send another message
+                  </button>
+                </Motion.div>
+              ) : (
+                <Motion.form key="form" onSubmit={handleSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6" noValidate>
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#10213D]">Send us a message</h2>
+                    <p className="mt-1 text-sm text-zinc-500">Fields marked * are required.</p>
+                  </div>
+
+                  <fieldset>
+                    <legend className="block text-sm font-semibold text-zinc-700 mb-2">I am a</legend>
+                    <div className="grid grid-cols-3 gap-2">
+                      {SEGMENTS.map(s => {
+                        const active = form.segment === s.value;
+                        return (
+                          <label
+                            key={s.value}
+                            className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 h-auto sm:h-12 py-3 sm:py-0 rounded-xl border text-sm font-semibold cursor-pointer transition has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-[#34B678]/20 ${active ? 'border-[#34B678] bg-[#34B678]/10 text-[#1f8a57]' : 'border-zinc-200 text-zinc-600 hover:border-zinc-300'}`}
+                          >
+                            <input
+                              type="radio"
+                              name="segment"
+                              value={s.value}
+                              checked={active}
+                              onChange={handleChange}
+                              onClick={() => active && setForm(prev => ({ ...prev, segment: '' }))}
+                              className="sr-only"
+                            />
+                            <s.icon size={16} /> {s.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <Field label="Full name" required htmlFor="c-name">
+                      <input id="c-name" type="text" name="name" autoComplete="name" value={form.name} onChange={handleChange} placeholder="Rahul Sharma" className={inputCls} />
+                    </Field>
+                    <Field label="Email" required htmlFor="c-email">
+                      <input id="c-email" type="email" name="email" autoComplete="email" value={form.email} onChange={handleChange} placeholder="rahul@example.com" className={inputCls} />
+                    </Field>
+                  </div>
+
+                  <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }}>
+                    <input type="text" name="company_website" tabIndex={-1} autoComplete="off" value={form.company_website} onChange={handleChange} />
+                  </div>
+
+                  <Field label="Subject" htmlFor="c-subject">
+                    <input id="c-subject" type="text" name="subject" value={form.subject} onChange={handleChange} placeholder="What is this about?" className={inputCls} />
+                  </Field>
+
+                  <Field label="Message" required htmlFor="c-message">
+                    <textarea id="c-message" name="message" rows={5} value={form.message} onChange={handleChange} placeholder="Tell us a little more…" className={`${inputCls} h-auto py-3 resize-none`} />
+                  </Field>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-1">
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="home-shine relative overflow-hidden h-12 px-8 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-sm font-bold inline-flex items-center justify-center gap-2 shadow-lg shadow-[#34B678]/25 transition disabled:opacity-60 cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#34B678]/30"
+                    >
+                      {submitting
+                        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</>
+                        : <><Send size={16} /> Send message</>}
+                    </button>
+                    <p className="text-xs text-zinc-500">We never share your details. See our <Link to="/privacy-policy" className="underline hover:text-[#34B678]">privacy policy</Link>.</p>
+                  </div>
+                </Motion.form>
+              )}
+            </AnimatePresence>
+          </div>
+        </Motion.div>
+      </section>
+
+      {/* FAQ + map */}
+      <section className="max-w-6xl mx-auto px-6 pb-24 grid lg:grid-cols-12 gap-12">
+        <div className="lg:col-span-5">
+          <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#34B678] mb-3">
+            <span className="w-8 h-px bg-[#34B678]/50" /> Quick answers
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-[#10213D]">Before you write in</h2>
+          <p className="mt-3 text-zinc-600 leading-relaxed">Most questions are answered here. Still stuck? The form above reaches us directly.</p>
+
+          <div className="mt-8 rounded-[1.5rem] overflow-hidden ring-1 ring-zinc-200 bg-zinc-100 aspect-[4/3]">
+            <iframe
+              title="Velaivaaipu office on Google Maps"
+              src={MAP_EMBED}
+              className="w-full h-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </div>
         </div>
 
-        {/* FAQ Section: Untitled UI Style */}
-        <div className="bg-zinc-50 rounded-2xl border border-zinc-300 shadow-md shadow-zinc-200/50 p-8 md:p-12">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-zinc-900 tracking-tight mb-3">Frequently Asked Questions</h2>
-            <p className="text-zinc-500 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
-              These are the most commonly asked questions about Velaivaaipu. Can't find what you're looking for? Contact our support team above.
-            </p>
-          </div>
-          
-          <div className="max-w-3xl mx-auto divide-y divide-zinc-200">
-            {FAQS.map((faq, i) => (
-              <div key={i} className="py-5">
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center gap-4 text-left hover:text-[#00D492] transition-colors cursor-pointer group"
-                >
-                  {/* Left Icon Badge */}
-                  <div className="w-10 h-10 rounded-xl border border-zinc-200 bg-white flex items-center justify-center text-zinc-500 shrink-0 shadow-sm group-hover:border-[#00D492] group-hover:text-[#00D492] transition-all">
-                    <faq.icon size={18} className="stroke-[1.5]" />
-                  </div>
-                  
-                  <span className="font-semibold text-zinc-850 text-sm md:text-base flex-1 pr-4">{faq.q}</span>
-                  
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-zinc-400 group-hover:text-[#00D492] transition-colors">
-                    <ChevronDown size={18} className={`transition-transform duration-300 ${openFaq === i ? 'rotate-180 text-[#00D492]' : ''}`} />
-                  </div>
-                </button>
-                {openFaq === i && (
-                  <Motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="pl-14 pr-8 mt-3"
+        <div className="lg:col-span-7 lg:pt-10">
+          <ul className="divide-y divide-zinc-200 border-y border-zinc-200">
+            {FAQS.map((faq, i) => {
+              const open = openFaq === i;
+              return (
+                <li key={faq.q}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(open ? null : i)}
+                    aria-expanded={open}
+                    className="w-full flex items-center gap-4 py-5 text-left cursor-pointer group focus-visible:outline-none"
                   >
-                    <p className="text-zinc-500 text-sm md:text-[14.5px] leading-relaxed pt-1">{faq.a}</p>
-                  </Motion.div>
-                )}
-              </div>
-            ))}
-          </div>
+                    <span className={`flex-1 text-base md:text-lg font-semibold transition-colors ${open ? 'text-[#10213D]' : 'text-zinc-700 group-hover:text-[#10213D]'}`}>{faq.q}</span>
+                    <span className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition group-focus-visible:ring-4 group-focus-visible:ring-[#34B678]/25 ${open ? 'bg-[#34B678] text-white rotate-45' : 'bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200'}`}>
+                      <Plus size={18} />
+                    </span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {open && (
+                      <Motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: EASE }}
+                        className="overflow-hidden"
+                      >
+                        <p className="pb-6 pr-12 text-zinc-600 leading-relaxed">{faq.a}</p>
+                      </Motion.div>
+                    )}
+                  </AnimatePresence>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-      </div>
+      </section>
+
+      <Footer />
     </div>
   );
 };

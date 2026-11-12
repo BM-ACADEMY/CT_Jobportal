@@ -224,17 +224,36 @@ const ForColleges = () => {
                 <br />Without the{' '}
                 <span className="relative inline-block text-zinc-400">
                   Paperwork
-                  <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-4" viewBox="0 0 200 16" preserveAspectRatio="none" aria-hidden="true">
-                    <motion.path
-                      d="M2 10 C 60 4, 140 12, 198 6"
-                      fill="none"
-                      stroke="#00D492"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: 1 }}
-                      transition={{ duration: 0.8, delay: 0.9, ease: 'easeInOut' }}
-                    />
+                  {/* Red pencil scribble: two hand-drawn passes (there and back) with a grainy,
+                      ragged edge from the turbulence filter, drawn on after the heading lands */}
+                  <svg className="absolute -left-[3%] top-1/2 -translate-y-1/2 w-[106%] h-[0.6em] overflow-visible" viewBox="0 0 200 30" preserveAspectRatio="none" aria-hidden="true">
+                    <defs>
+                      <filter id="red-pencil" x="-5%" y="-50%" width="110%" height="200%">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="grain" />
+                        <feDisplacementMap in="SourceGraphic" in2="grain" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="rough" />
+                        <feComponentTransfer in="grain" result="speckle">
+                          <feFuncA type="table" tableValues="0.55 1" />
+                        </feComponentTransfer>
+                        <feComposite in="rough" in2="speckle" operator="in" />
+                      </filter>
+                    </defs>
+                    <g filter="url(#red-pencil)" fill="none" stroke="#D92D20" strokeLinecap="round" strokeLinejoin="round">
+                      <motion.path
+                        d="M3 17 C 30 13, 58 19, 92 14 S 160 12, 197 10"
+                        strokeWidth="3.4"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.55, delay: 0.9, ease: [0.65, 0, 0.35, 1] }}
+                      />
+                      <motion.path
+                        d="M195 14 C 160 18, 120 15, 84 19 S 30 21, 6 22"
+                        strokeWidth="2.6"
+                        strokeOpacity="0.85"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.45, delay: 1.45, ease: [0.65, 0, 0.35, 1] }}
+                      />
+                    </g>
                   </svg>
                 </span>
               </motion.h1>
