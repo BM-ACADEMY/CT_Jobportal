@@ -201,3 +201,9 @@ test('the notice route is admin only, drafts only, with no crawler or schedule',
   assert.doesNotMatch(read('utils/fairNotice.js'), /node-cron|setInterval|cron\.schedule/i);
   assert.match(read('routes/jobFairs.js'), /post\('\/admin\/from-notice', verifyToken, authorizeRoles\('admin'\)/);
 });
+
+test('client wiring: check-in route is admin only; stall form only for company roles on own fairs', () => {
+  assert.match(client('routes/AppRoutes.jsx'), /path="\/admin\/job-fairs\/:id\/checkin"\s+element=\{\s*<PrivateRoute roles=\{\['admin'\]\}>/);
+  assert.match(client('pages/fairs/JobFairDetail.jsx'), /f\.kind === 'own' && !f\.closed && \['company', 'recruiter'\]\.includes\(user\?\.role\)/);
+  assert.match(client('pages/admin/JobFairsAdmin.jsx'), /Not decided yet\. Leave blank/);
+});
