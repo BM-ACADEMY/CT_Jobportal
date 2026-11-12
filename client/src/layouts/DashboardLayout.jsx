@@ -7,6 +7,7 @@ import SEOHead from '../components/seo/SEOHead';
 import { OnboardingProvider } from '../context/OnboardingContext';
 import AssistantWidget from '../components/assistant/AssistantWidget';
 import FeedbackButton from '../components/feedback/FeedbackButton';
+import HelpButton from '../components/feedback/HelpButton';
 import WelcomeTour from '../components/onboarding/WelcomeTour';
 import OnboardingChecklistCard from '../components/onboarding/OnboardingChecklistCard';
 import IncompleteProfileBanner from '../components/onboarding/IncompleteProfileBanner';
@@ -115,6 +116,7 @@ const DashboardLayoutInner = () => {
       <WelcomeTour />
       <AssistantWidget />
       {!pathname.startsWith('/admin') && <FeedbackButton />}
+      {!pathname.startsWith('/admin') && <HelpButton />}
     </div>
   );
 };

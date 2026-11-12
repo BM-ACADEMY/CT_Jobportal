@@ -58,6 +58,11 @@ router.patch('/brand-leads/:userId', require('../controllers/brandLeadController
 router.patch('/jobs/:id/hide', require('../controllers/visibilityController').hideJob);
 router.patch('/companies/:id/hide', require('../controllers/visibilityController').hideCompany);
 router.get('/services-overview', require('../controllers/adminServicesController').getServicesOverview);
+// Duplicate colleges: list and merge (Super Admin only; the controller checks the role again).
+router.get('/college-duplicates', require('../controllers/collegeMergeController').listDuplicates);
+router.post('/colleges/merge', require('../controllers/collegeMergeController').merge);
+// Balance board: live jobs against job seekers by field of work (Super Admin only).
+router.get('/balance-board', require('../controllers/balanceBoardController').getBalanceBoard);
 router.get('/advisor', require('../controllers/advisorController').getAdvisor);
 router.post('/advisor/generate', require('../controllers/advisorController').generate);
 router.post('/advisor/ask', require('../controllers/advisorController').ask);

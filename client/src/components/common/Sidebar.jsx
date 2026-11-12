@@ -79,6 +79,8 @@ const coreMenus = {
     { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages', group: 'Daily' },
     { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges', group: 'Daily' },
     { icon: GraduationCap,   label: 'College Funnel',    path: '/admin/college-funnel', group: 'Daily' },
+    { icon: GraduationCap,   label: 'Duplicate Colleges', path: '/admin/duplicate-colleges', group: 'Daily' },
+    { icon: LayoutDashboard, label: 'Balance Board',     path: '/admin/balance-board', group: 'Daily' },
     {
       icon: CreditCard,
       label: 'Subscriptions',

@@ -6,6 +6,7 @@ const runCourseFollowUps = require('./courseFollowUps');
 const runLifecycleMails = require('./lifecycleMails');
 const runDriveReminders = require('./driveReminders');
 const runWeeklyAdvisor = require('./advisorWeekly');
+const runSpikeAlerts = require('./spikeAlerts');
 const { runFreeCollegeSummaries } = require('./freeCollegeSummary');
 const { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts, runCollegeRoleReminders, runCollegeLimitNudges } = require('./adminFollowUp');
 const { isPrincipalReportEnabled, runMonthlyPrincipalReports } = require('../utils/collegeTools');
@@ -42,6 +43,9 @@ const startCronJobs = () => {
   // Walk-in drive reminders: day before (18:00) and morning of (07:00) India time. Off unless DRIVE_REMINDERS_ENABLED=true.
   cron.schedule('0 18 * * *', () => runDriveReminders('day_before'), { timezone: 'Asia/Kolkata' });
   cron.schedule('0 7 * * *', () => runDriveReminders('morning'), { timezone: 'Asia/Kolkata' });
+
+  // Spike alerts to the Super Admin (sign-ups, OTP requests, job reports per hour). On unless SPIKE_ALERTS_ENABLED=false.
+  cron.schedule('*/10 * * * *', () => runSpikeAlerts());
 
   // Business advisor weekly note, Monday 08:00 India time. Off unless ADVISOR_ENABLED=true.
   cron.schedule('0 8 * * 1', () => runWeeklyAdvisor(), { timezone: 'Asia/Kolkata' });

@@ -235,6 +235,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/help-requests', require('./routes/helpRequests'));
 app.use('/api/settings', settingsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/interviews', interviewRoutes);

@@ -136,6 +136,8 @@ const WalkInDrives = page('company/WalkInDrives');
 const WalkInManage = page('company/WalkInManage');
 const AdminCollegeVerification = page('admin/CollegeVerification');
 const AdminCollegeFunnel = page('admin/CollegeFunnel');
+const AdminDuplicateColleges = page('admin/DuplicateColleges');
+const AdminBalanceBoard = page('admin/BalanceBoard');
 const CollegeKycDetails = page('admin/CollegeKycDetails');
 const CollegeDashboard = page('college/Dashboard');
 const CollegeStudents = page('college/Students');
@@ -488,6 +490,8 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route path="/admin/duplicate-colleges" element={<PrivateRoute roles={['admin']}><AdminDuplicateColleges /></PrivateRoute>} />
+        <Route path="/admin/balance-board" element={<PrivateRoute roles={['admin']}><AdminBalanceBoard /></PrivateRoute>} />
         <Route
           path="/admin/college-funnel"
           element={
