@@ -1,4 +1,5 @@
 const College = require('../models/College');
+const { alertRequestOwner } = require('../utils/requestOwnerAlert');
 const CollegePackPayment = require('../models/CollegePackPayment');
 const AdminRequest = require('../models/AdminRequest');
 const User = require('../models/User');
@@ -57,6 +58,7 @@ const requestPack = async (req, res) => {
     // In-app alert plus the standard email to every Super Admin. Staff are not told: they cannot open this type.
     notifyRoles({ io: req.io, roles: ['admin'], title: 'College asked for a student pack', message: `${college.name} asked for ${check.packs} pack(s) (${check.students} students, Rs ${check.total} with GST).`, type: 'service_request', link: '/admin/requests', metadata: { requestId: request._id, requestType: 'student_pack' } })
       .catch(err => console.error('Pack request alert failed:', err.message));
+    alertRequestOwner({ io: req.io, title: 'College asked for a student pack', message: `${college.name} asked for ${check.packs} pack(s). Please contact them within 24 hours.`, metadata: { requestId: request._id, requestType: 'student_pack' } });
     notifyUser({ io: req.io, recipientId: req.user.id, ...receivedMessage('student_pack', user?.name), type: 'service_received', metadata: { requestId: request._id } })
       .catch(err => console.error('Pack request receipt failed:', err.message));
     res.status(201).json({ msg: 'Request sent. Our team will contact you within 24 hours.' });
@@ -93,6 +95,7 @@ const requestUpgradeCall = async (req, res) => {
     });
     notifyRoles({ io: req.io, roles: ['admin'], title: 'College asked for a call about more students', message: `${college.name} is interested in ${INTERESTS[interest]}.`, type: 'service_request', link: '/admin/requests' })
       .catch((err) => console.error('Upgrade call alert failed:', err.message));
+    alertRequestOwner({ io: req.io, title: 'College asked for a call about more students', message: `${college.name} is interested in ${INTERESTS[interest]}. Please call within 24 hours.` });
     res.status(201).json({ msg: 'Thank you. Our team will call you within 24 hours.' });
   } catch (e) { console.error('Upgrade call:', e.message); res.status(500).json({ msg: 'Could not send the request' }); }
 };
