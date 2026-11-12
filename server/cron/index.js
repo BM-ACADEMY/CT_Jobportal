@@ -8,6 +8,7 @@ const runDriveReminders = require('./driveReminders');
 const runWeeklyAdvisor = require('./advisorWeekly');
 const { runFreeCollegeSummaries } = require('./freeCollegeSummary');
 const { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts, runCollegeRoleReminders, runCollegeLimitNudges } = require('./adminFollowUp');
+const { isPrincipalReportEnabled, runMonthlyPrincipalReports } = require('../utils/collegeTools');
 
 // Called once after the Mongo connection is established (see server/index.js).
 const startCronJobs = () => {
@@ -44,6 +45,12 @@ const startCronJobs = () => {
 
   // Business advisor weekly note, Monday 08:00 India time. Off unless ADVISOR_ENABLED=true.
   cron.schedule('0 8 * * 1', () => runWeeklyAdvisor(), { timezone: 'Asia/Kolkata' });
+
+  // Monthly principal summary email, 1st of the month 09:00 India time. Registered only when
+  // COLLEGE_PRINCIPAL_REPORT_ENABLED=true; never sends to a college without a stored principal email.
+  if (isPrincipalReportEnabled()) {
+    cron.schedule('0 9 1 * *', () => runMonthlyPrincipalReports().catch(() => {}), { timezone: 'Asia/Kolkata' });
+  }
 
   console.log('[Cron] Scheduled jobs started: interview reminders (every 15m), placement reports (daily 07:00), job expiry (hourly)');
 };

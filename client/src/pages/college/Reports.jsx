@@ -22,6 +22,7 @@ const CollegeReports = () => {
   const [generatingReport, setGeneratingReport] = useState(false);
   const [generatingMou, setGeneratingMou] = useState(false);
   const [downloadingSummary, setDownloadingSummary] = useState(false);
+  const [sendingPrincipal, setSendingPrincipal] = useState(false);
   const defaultAcademicYear = `${new Date().getFullYear() - 1}-${String(new Date().getFullYear()).slice(-2)}`;
   const [academicYear, setAcademicYear] = useState(defaultAcademicYear);
   const [selectedDepartments, setSelectedDepartments] = useState([]);
@@ -195,6 +196,32 @@ const CollegeReports = () => {
     toast.success('Access code copied to clipboard!');
   };
 
+  const sendToPrincipal = async () => {
+    setSendingPrincipal(true);
+    try {
+      const res = await axios.post(`${API}/college/reports/send-to-principal`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(res.data?.msg || 'Report sent');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not send the report');
+    } finally {
+      setSendingPrincipal(false);
+    }
+  };
+
+  const downloadOnePager = async () => {
+    try {
+      const res = await axios.get(`${API}/college/reports/one-page-pdf`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data?.college?.code || 'campus'}_placement_summary_1page.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Failed to create the placement summary');
+    }
+  };
+
   const downloadSummaryReport = async () => {
     setDownloadingSummary(true);
     try {
@@ -244,6 +271,21 @@ const CollegeReports = () => {
             className="rounded border-[#d9d9d9] text-slate-700 hover:text-[#39c884] hover:border-[#39c884] hover:bg-white text-xs font-medium gap-2 px-5 h-9 cursor-pointer"
           >
             <RefreshCw size={14} className={generatingReport ? 'animate-spin' : ''} /> {generatingReport ? 'Generating...' : 'Generate Report Now'}
+          </Button>
+          <Button
+            onClick={sendToPrincipal}
+            disabled={sendingPrincipal}
+            variant="outline"
+            className="rounded border-[#d9d9d9] text-slate-700 hover:text-[#39c884] hover:border-[#39c884] hover:bg-white text-xs font-medium gap-2 px-5 h-9 cursor-pointer"
+          >
+            {sendingPrincipal ? 'Sending...' : 'Send report to principal'}
+          </Button>
+          <Button
+            onClick={downloadOnePager}
+            variant="outline"
+            className="rounded border-[#d9d9d9] text-slate-700 hover:text-[#39c884] hover:border-[#39c884] hover:bg-white text-xs font-medium gap-2 px-5 h-9 cursor-pointer"
+          >
+            <Download size={14} /> Placement summary (1 page)
           </Button>
           <Button
             onClick={downloadSummaryReport}

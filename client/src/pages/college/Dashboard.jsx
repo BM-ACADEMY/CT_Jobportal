@@ -13,6 +13,7 @@ import {
   ShieldCheck, BarChart2, Clock, Send, Plus
 } from 'lucide-react';
 import { Button, Card, Tag, Typography, Modal, Input } from 'antd';
+import MilestonesCard from '@/components/college/MilestonesCard';
 const { Title, Text } = Typography;
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -382,6 +383,8 @@ const CollegeDashboard = () => {
           )}
         </div>
       </div>
+
+      <MilestonesCard token={token} />
 
       {/* Recent Students */}
       <div className="bg-white p-6 border border-slate-200 shadow-sm rounded-none">

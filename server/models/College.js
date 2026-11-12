@@ -42,6 +42,7 @@ const collegeSchema = new mongoose.Schema({
     lowercase: true,
     default: ''
   },
+  principalReportLastSentAt: { type: Date },
   collegeEmail: {
     type: String,
     trim: true,
