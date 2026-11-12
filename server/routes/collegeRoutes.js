@@ -191,6 +191,13 @@ router.post('/reports/:id/send', verifyToken, authorizeRoles('college'), sendPla
 router.get('/me/quote-pack/:packs', verifyToken, authorizeRoles('college'), require('../controllers/collegePackController').downloadPackQuote);
 router.get('/me/quote/:planId', verifyToken, authorizeRoles('college'), downloadPlanQuote);
 router.get('/reports/summary-pdf', verifyToken, authorizeRoles('college'), downloadSummaryReport);
+
+// College tools: one-page PDF, send summary to principal, milestones card, "what you get".
+const collegeTools = require('../controllers/collegeToolsController');
+router.get('/reports/one-page-pdf', verifyToken, authorizeRoles('college'), requireCollegePermission('reports'), collegeTools.downloadOnePagePdf);
+router.post('/reports/send-to-principal', verifyToken, authorizeRoles('college'), requireCollegePermission('reports'), collegeTools.sendReportToPrincipal);
+router.get('/milestones', verifyToken, authorizeRoles('college'), collegeTools.getMilestones);
+router.get('/what-you-get', verifyToken, authorizeRoles('college'), collegeTools.getWhatYouGet);
 router.get('/accreditation/overview', verifyToken, authorizeRoles('college'), getOverview);
 router.get('/accreditation/employers', verifyToken, authorizeRoles('college'), searchEmployers);
 router.get('/accreditation/template/:type', verifyToken, authorizeRoles('college'), getImportTemplate);
