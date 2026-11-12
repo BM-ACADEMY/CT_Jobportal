@@ -4,11 +4,12 @@ import HomeGuest from './home/HomeGuest';
 import HomeJobseeker from './home/HomeJobseeker';
 import HomeRecruiter from './home/HomeRecruiter';
 import HomeCollege from './home/HomeCollege';
+import HomeBanner from '../components/home/HomeBanner';
 
 // Renders a different Home experience depending on who's logged in.
 // admin/subadmin/org_employee/drive_incharge have their own dashboards
 // elsewhere in the app, so they see the guest/marketing view here.
-const HomePage = () => {
+const HomeContent = () => {
   const { user } = useAuth();
 
   if (!user) return <HomeGuest />;
@@ -17,5 +18,13 @@ const HomePage = () => {
   if (user.role === 'college') return <HomeCollege />;
   return <HomeGuest />;
 };
+
+// The active "home-top" banner (admin-managed) sits above every home view; it renders nothing when none is active.
+const HomePage = () => (
+  <>
+    <HomeBanner />
+    <HomeContent />
+  </>
+);
 
 export default HomePage;
