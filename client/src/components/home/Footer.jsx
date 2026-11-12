@@ -4,7 +4,7 @@ import { MapPin, Phone, Mail } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
 import { ADDRESS, PHONE, EMAIL, SOCIALS } from '@/components/common/brandContact';
 
-const PLATFORM = [{ to: '/jobs', label: 'Find Jobs' }, { to: '/companies', label: 'Companies' }, { to: '/register', label: 'Post a Job' }, { to: '/plans', label: 'Plans & Pricing' }, { to: '/how-it-works', label: 'How It Works' }, { to: '/contact', label: 'Contact Us' }];
+const PLATFORM = [{ to: '/jobs', label: 'Find Jobs' }, { to: '/companies', label: 'Companies' }, { to: '/job-fairs', label: 'Job Fairs' }, { to: '/register', label: 'Post a Job' }, { to: '/plans', label: 'Plans & Pricing' }, { to: '/how-it-works', label: 'How It Works' }, { to: '/contact', label: 'Contact Us' }];
 const ACCOUNT = [{ to: '/login', label: 'Job Seeker Login' }, { to: '/company-login', label: 'Company Login' }, { to: '/register', label: 'Create Account' }];
 
 const LinkColumn = ({ title, links }) => (

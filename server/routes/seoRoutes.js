@@ -70,6 +70,7 @@ router.get('/sitemap.xml', async (req, res) => {
     const companyDocs = await Company.find(strict ? publicCompanyConditions() : { hiddenFromPublic: true }).select('_id updatedAt').sort({ updatedAt: -1 }).limit(2000).lean();
     const ids = companyDocs.map((c) => c._id);
     const companyList = strict ? companyDocs : [];
+    const fairs = await require('../models/JobFair').find({ status: 'published' }).select('slug updatedAt').sort({ date: -1 }).limit(200).lean().catch(() => []);
     const [jobs, companies, posts] = await Promise.all([
       Job.find({ status: 'active', $and: [{ $or: [{ validThrough: { $gte: now } }, { validThrough: null }] }, ...publicJobConditions(strict ? { verifiedCompanyIds: ids } : { hiddenCompanyIds: ids })] }).select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
       strict ? companyList : Company.find(publicCompanyConditions()).select('updatedAt').sort({ updatedAt: -1 }).limit(2000).lean(),
@@ -78,7 +79,7 @@ router.get('/sitemap.xml', async (req, res) => {
     res.set('Content-Type', 'application/xml; charset=utf-8').set('Cache-Control', 'public, s-maxage=900');
     let skipPaths = [];
     try { const c = await cityCounts(); skipPaths = Object.keys(c).filter((p) => c[p] < cityMinJobs()); } catch { /* keep all city pages if counting fails */ }
-    return res.send(buildSitemap({ jobs, companies, posts, skipPaths }));
+    return res.send(buildSitemap({ jobs, companies, posts, fairs, skipPaths }));
   } catch (err) {
     console.error('[SEO] sitemap failed, serving the static pages:', err.message);
     res.set('Content-Type', 'application/xml; charset=utf-8');

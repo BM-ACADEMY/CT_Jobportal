@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import { Loader2, CalendarDays } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -28,12 +29,46 @@ const JobFairsAdmin = () => {
       setF(EMPTY); await load();
     } catch (err) { toast.error(err.response?.data?.msg || 'Could not save'); } finally { setSaving(false); }
   };
+  const [noticeUrl, setNoticeUrl] = useState('');
+  const [stallPrice, setStallPrice] = useState('');
+  const [stalls, setStalls] = useState({});
+  useEffect(() => { axios.get(`${API}/job-fairs/admin/stall-price`).then((r) => setStallPrice(r.data.fairStallPrice ?? '')).catch(() => {}); }, []);
+  const fromNotice = async () => {
+    setSaving(true);
+    try { await axios.post(`${API}/job-fairs/admin/from-notice`, { url: noticeUrl }); toast.success('Draft created. Check it below, then publish.'); setNoticeUrl(''); await load(); }
+    catch (err) { toast.error(err.response?.data?.msg || 'Could not read that link. Add the fair by hand.'); } finally { setSaving(false); }
+  };
+  const savePrice = async () => { try { await axios.patch(`${API}/job-fairs/admin/stall-price`, { fairStallPrice: stallPrice === '' ? null : Number(stallPrice) }); toast.success('Saved'); } catch (err) { toast.error(err.response?.data?.msg || 'Failed'); } };
+  const sendMail = async (x, audience, label) => {
+    try {
+      const p = await axios.post(`${API}/job-fairs/admin/${x._id}/send-mail`, { audience, preview: true });
+      if (p.data.enabled === false) return toast.error('Fair mails are switched off on the server.');
+      if (!p.data.eligible) return toast('No one new to mail for this group.');
+      if (!window.confirm(`Send the fair mail to ${p.data.eligible} ${label}? Nobody gets it twice.`)) return;
+      const r = await axios.post(`${API}/job-fairs/admin/${x._id}/send-mail`, { audience });
+      toast.success(`Sending to ${r.data.queued} people in the background.`);
+    } catch (err) { toast.error(err.response?.data?.msg || 'Could not send'); }
+  };
+  const openStalls = async (x) => {
+    if (stalls[x._id]) return setStalls((s) => ({ ...s, [x._id]: null }));
+    try { const r = await axios.get(`${API}/job-fairs/admin/${x._id}/stalls`); setStalls((s) => ({ ...s, [x._id]: r.data })); } catch { toast.error('Could not load stalls'); }
+  };
+  const stallStatus = async (x, st, status) => {
+    try { await axios.patch(`${API}/job-fairs/admin/stalls/${st._id}`, { status }); const r = await axios.get(`${API}/job-fairs/admin/${x._id}/stalls`); setStalls((s) => ({ ...s, [x._id]: r.data })); } catch (err) { toast.error(err.response?.data?.msg || 'Failed'); }
+  };
   const setStatus = async (id, status) => { try { await axios.patch(`${API}/job-fairs/admin/${id}`, { status }); await load(); } catch (err) { toast.error(err.response?.data?.msg || 'Failed'); } };
 
   return (
     <div className="space-y-5 max-w-3xl">
       <h1 className="text-xl font-black text-slate-900 flex items-center gap-2"><CalendarDays size={20} className="text-emerald-600" /> Job Fairs</h1>
       <p className="text-xs text-slate-500">Add a fair from the official notice. Government fairs need the department name and the official link. Only tick the Supported by tag when we really help (listing, reminders, free kit).</p>
+      <div className="bg-white rounded-2xl border border-slate-100 p-4 grid gap-2">
+        <p className="text-sm font-bold">Start a draft from an official notice link</p>
+        <p className="text-xs text-slate-500">We read the page once and fill the title, date and venue as best we can. It is always saved as a draft. Check every detail before you publish.</p>
+        <div className="flex gap-2"><input className={input} placeholder="https://official notice link" value={noticeUrl} onChange={(e) => setNoticeUrl(e.target.value)} /><button type="button" disabled={saving || !noticeUrl} onClick={fromNotice} className="h-11 px-4 rounded-xl bg-slate-900 text-white font-bold text-sm shrink-0">Create draft</button></div>
+        <p className="text-sm font-bold pt-2">Stall price for our own fairs (rupees)</p>
+        <div className="flex gap-2"><input className={input} type="number" min="0" placeholder="Not decided yet. Leave blank" value={stallPrice} onChange={(e) => setStallPrice(e.target.value)} /><button type="button" onClick={savePrice} className="h-11 px-4 rounded-xl border border-slate-200 font-bold text-sm shrink-0">Save</button></div>
+      </div>
       <div className="bg-white rounded-2xl border border-slate-100 p-4 grid gap-3">
         <input className={input} placeholder="Fair title" value={f.title} onChange={set('title')} />
         <select className={input} value={f.kind} onChange={set('kind')}><option value="government">Government fair</option><option value="own">Our own or partner fair</option></select>
@@ -57,11 +92,30 @@ const JobFairsAdmin = () => {
         <div key={x._id} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-1">
           <div className="flex justify-between gap-2"><b>{x.title}</b><span className="text-xs font-bold text-slate-500">{x.status}</span></div>
           <p className="text-xs text-slate-500">{new Date(x.date).toLocaleDateString('en-IN')} · {[x.venue?.city, x.venue?.district].filter(Boolean).join(', ')} · {x.going} going</p>
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-wrap gap-2 pt-1">
             {x.status !== 'published' && <button type="button" onClick={() => setStatus(x._id, 'published')} className="h-8 px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold">Publish</button>}
             {x.status === 'published' && <button type="button" onClick={() => setStatus(x._id, 'closed')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Close</button>}
+            {x.status === 'published' && [['seeker', 'job seekers', 'Mail seekers'], ['company', 'companies', 'Mail companies'], ['college', 'colleges', 'Mail colleges']].map(([k, l, b]) => (
+              <button key={k} type="button" onClick={() => sendMail(x, k, l)} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">{b}</button>
+            ))}
+            {x.kind === 'own' && <button type="button" onClick={() => openStalls(x)} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Stalls</button>}
+            {x.kind === 'own' && <Link to={`/admin/job-fairs/${x._id}/checkin`} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold inline-flex items-center">Check-in</Link>}
             <a href={`${API}/job-fairs/${x.slug}/card.svg`} target="_blank" rel="noopener noreferrer" className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold inline-flex items-center">Poster card</a>
           </div>
+          {stalls[x._id] && (
+            <div className="pt-2 space-y-2">
+              {stalls[x._id].length === 0 ? <p className="text-xs text-slate-500">No stall requests yet.</p> : stalls[x._id].map((st) => (
+                <div key={st._id} className="border border-slate-100 rounded-xl p-2 text-xs space-y-1">
+                  <p><b>{st.name}</b> · {st.contactName} · {st.phone} · {st.status}</p>
+                  <p className="text-slate-600">{st.need}</p>
+                  <div className="flex gap-2">
+                    {st.status !== 'approved' && <button type="button" onClick={() => stallStatus(x, st, 'approved')} className="h-7 px-3 rounded-lg bg-emerald-600 text-white font-bold">Approve</button>}
+                    {st.status !== 'declined' && <button type="button" onClick={() => stallStatus(x, st, 'declined')} className="h-7 px-3 rounded-lg border border-slate-200 font-bold">Decline</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>

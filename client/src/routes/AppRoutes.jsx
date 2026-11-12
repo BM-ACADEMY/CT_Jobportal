@@ -131,6 +131,7 @@ const PublicDriveDetail = page('drives/DriveDetail');
 const PublicJobFairs = page('fairs/JobFairs');
 const PublicJobFairDetail = page('fairs/JobFairDetail');
 const AdminJobFairs = page('admin/JobFairsAdmin');
+const AdminFairCheckIn = page('admin/FairCheckIn');
 const DrivePass = page('drives/DrivePass');
 const WalkInDrives = page('company/WalkInDrives');
 const WalkInManage = page('company/WalkInManage');
@@ -661,6 +662,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminJobFairs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/job-fairs/:id/checkin"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminFairCheckIn />
             </PrivateRoute>
           }
         />
