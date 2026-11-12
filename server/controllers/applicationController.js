@@ -22,6 +22,7 @@ const trackOutcome = (event, applicantId, jobId) => {
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const STATUS_LABELS = {
+  completed: 'Internship completed',
   pending: 'Pending Review',
   reviewed: 'Reviewed',
   shortlisted: 'Shortlisted',
@@ -309,18 +310,21 @@ exports.getJobApplicants = async (req, res) => {
   }
 };
 
+const { statusUpdateExtras } = require('../utils/internshipCertificate');
+
 exports.updateApplicationStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, isPriority } = req.body;
 
-    const existing = await Application.findById(id).select('status job');
+    const existing = await Application.findById(id).select('status job createdAt firstResponseAt certificateCode');
     if (!existing) return res.status(404).json({ msg: 'Application not found' });
     const statusChanged = status !== undefined && status !== existing.status;
 
+    const statusJob = await Job.findById(existing.job).select('recruiter company jobType internship');
     if (req.user.role !== 'admin') {
       const [job, user] = await Promise.all([
-        Job.findById(existing.job).select('recruiter company'),
+        Promise.resolve(statusJob),
         User.findById(req.user.id)
       ]);
       const isOwner = job && job.recruiter.toString() === req.user.id;
@@ -332,6 +336,11 @@ exports.updateApplicationStatus = async (req, res) => {
 
     const updateFields = {};
     if (status !== undefined) updateFields.status = status;
+    if (statusChanged) {
+      const extras = statusUpdateExtras({ existing, job: statusJob, status });
+      if (extras.error) return res.status(400).json({ msg: extras.error });
+      Object.assign(updateFields, extras.set);
+    }
     if (isPriority !== undefined) updateFields.isPriority = isPriority;
 
     const application = await Application.findByIdAndUpdate(

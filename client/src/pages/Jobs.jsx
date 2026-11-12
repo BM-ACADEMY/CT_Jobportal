@@ -14,6 +14,7 @@ import { fuzzySearch, matchesForKey, tokenize } from '../utils/fuzzySearch';
 import HighlightText from '../components/shared/HighlightText';
 import SEOHead from '../components/seo/SEOHead';
 import { jobPath } from '../utils/jobUrl';
+import { walkInActive, walkInLabel } from '../utils/walkIn';
 import { getCityIntro, CITY_LINKS } from '../data/cityJobIntros';
 import { JOB_CATEGORIES } from '../data/jobCategories';
 import { EDUCATION_LEVELS, PART_TIME_SCHEDULES, MONTHLY_PAY_RANGES, POSTED_WITHIN, WORK_MODES, monthlyPay, educationFits, postedWithinDays, formatPay, jobFacts } from '../data/jobFacets';
@@ -123,6 +124,7 @@ const Jobs = () => {
   const [postedDays, setPostedDays] = useState(0);
   const [selectedSchedules, setSelectedSchedules] = useState([]);
   const [noExperience, setNoExperience] = useState(false);
+  const [walkInOnly, setWalkInOnly] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'matched' ? 'matched' : 'all'); // 'all' or 'matched'
@@ -208,7 +210,8 @@ const Jobs = () => {
       const matchesNoExp = skip === 'noExp' || !noExperience || job.freshersWelcome === true || !(job.experience?.min > 0);
 
       const matchesSchedule = skip === 'hours' || selectedSchedules.length === 0 || selectedSchedules.includes(job.partTime?.schedule);
-      return matchesType && matchesSalary && matchesExperience && matchesCategory && matchesEducation && matchesMode && matchesPosted && matchesNoExp && matchesSchedule;
+      const matchesWalkIn = skip !== 'walkIn' ? (!walkInOnly || walkInActive(job)) : true;
+      return matchesType && matchesSalary && matchesExperience && matchesCategory && matchesEducation && matchesMode && matchesPosted && matchesNoExp && matchesSchedule && matchesWalkIn;
   };
 
   const filteredJobs = useMemo(() => {
@@ -229,7 +232,7 @@ const Jobs = () => {
     }
 
     return result;
-  }, [jobs, activeTab, searchTerm, locationTerm, selectedCategory, selectedTypes, selectedSalary, selectedExperience, selectedEducation, selectedModes, postedDays, noExperience, selectedSchedules, sortBy]);
+  }, [jobs, activeTab, searchTerm, locationTerm, selectedCategory, selectedTypes, selectedSalary, selectedExperience, selectedEducation, selectedModes, postedDays, noExperience, selectedSchedules, walkInOnly, sortBy]);
 
   // When nothing matches: which single filter, if removed, would bring jobs back (most jobs first, at most 3).
   const removalHints = () => {
@@ -245,6 +248,7 @@ const Jobs = () => {
     add(postedDays > 0, POSTED_WITHIN.find((x) => x.days === postedDays)?.label, 'posted', () => setPostedDays(0));
     add(noExperience, 'No experience needed', 'noExp', () => setNoExperience(false));
     add(selectedSchedules.length > 0, 'Part-time hours', 'hours', () => setSelectedSchedules([]));
+    add(walkInOnly, 'Walk-in', 'walkIn', () => setWalkInOnly(false));
     const out = opts.map((o) => ({ ...o, count: base.filter((j) => jobPasses(j, o.skip)).length }));
     if (locationTerm.trim()) out.push({ label: locationTerm.trim(), count: rankJobs(searchTerm, '').filter((j) => jobPasses(j)).length, undo: () => setLocationTerm('') });
     return out.filter((o) => o.count > 0).sort((a, b) => b.count - a.count).slice(0, 3);
@@ -268,6 +272,7 @@ const Jobs = () => {
     setPostedDays(0);
     setSelectedSchedules([]);
     setNoExperience(false);
+    setWalkInOnly(false);
     setSortBy('newest');
   };
 
@@ -286,7 +291,7 @@ const Jobs = () => {
   }, [jobs]);
   const toggleMode = (m) => setSelectedModes((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
   const extraFilterCount = (selectedEducation ? 1 : 0) + selectedModes.length + (postedDays ? 1 : 0) + (noExperience ? 1 : 0) + selectedSchedules.length;
-  const hasActiveFilters = searchTerm || locationTerm || selectedCategory || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0 || extraFilterCount > 0;
+  const hasActiveFilters = searchTerm || locationTerm || selectedCategory || selectedTypes.length > 0 || selectedSalary > 0 || selectedExperience > 0 || extraFilterCount > 0 || walkInOnly;
 
   const searchedLocation = locationTerm.trim()
     .replace(/\s+/g, ' ')
@@ -697,6 +702,7 @@ const Jobs = () => {
                 { label: 'Contract', on: selectedTypes.includes('Contract'), toggle: () => toggleType('Contract') },
                 { label: 'Work from home', on: selectedModes.includes('Remote'), toggle: () => toggleMode('Remote') },
                 { label: 'No experience needed', on: noExperience, toggle: () => setNoExperience(!noExperience) },
+                { label: 'Walk-in', on: walkInOnly, toggle: () => setWalkInOnly(!walkInOnly) },
                 { label: 'Posted today', on: postedDays === 1, toggle: () => setPostedDays(postedDays === 1 ? 0 : 1) },
                 { label: 'New this week', on: postedDays === 7, toggle: () => setPostedDays(postedDays === 7 ? 0 : 7) },
                 { label: 'Under ₹10,000', on: selectedSalary === 1, toggle: () => setSelectedSalary(selectedSalary === 1 ? 0 : 1) },
@@ -831,6 +837,7 @@ const Jobs = () => {
                                     <HighlightText text={job.title} ranges={matchesForKey(job._fuzzyMatches, 'title')} />
                                   </h3>
                                   {job.isSponsored && <span className="inline-flex items-center text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full shrink-0 uppercase">Sponsored</span>}
+                                  {walkInActive(job) && <span title={job.walkIn.venue ? `Venue: ${job.walkIn.venue}` : undefined} className="inline-flex items-center text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-full shrink-0 uppercase">{walkInLabel(job)}</span>}
                                   {job.isUrgent && <span className="inline-flex items-center text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full shrink-0 uppercase">Urgent hiring</span>}
                                   {job.isPriority && (
                                     <span title="Priority Hiring Partner" className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">

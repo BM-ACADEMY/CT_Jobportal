@@ -22,6 +22,7 @@ const blockForContent = async (req, user, title, description) => {
 const { withPromotion } = require('../utils/jobPromotion');
 const { cleanInternship, freeInternshipSlot } = require('../utils/internship');
 const { cleanFacets, cleanSalary } = require('../utils/jobFacets');
+const { cleanWalkIn } = require('../utils/walkIn');
 const Company = require('../models/Company');
 const { vagueLocation, VAGUE_LOCATION_MESSAGE } = require('../utils/jobLocation');
 const { publicJobConditions, publicCompanyConditions, hideUnverified } = require('../utils/publicVisibility');
@@ -139,6 +140,13 @@ const createJob = async (req, res) => {
       if (vagueLocation(location, workMode)) return res.status(400).json({ msg: VAGUE_LOCATION_MESSAGE });
     }
 
+    let walkInData;
+    if (req.body.walkIn !== undefined) {
+      const w = cleanWalkIn(req.body.walkIn);
+      if (w.error) return res.status(400).json({ msg: w.error });
+      if (w.data.enabled) walkInData = w.data;
+    }
+
     const newJob = new Job({
       title,
       description,
@@ -155,6 +163,7 @@ const createJob = async (req, res) => {
       additionalDetails,
       category: cleanCategory(category) || guessCategory({ title, skillsRequired }),
       ...(internshipData ? { internship: { ...internshipData, free: freeInternship } } : {}),
+      ...(walkInData ? { walkIn: walkInData } : {}),
       status: status || 'active',
       postedAs: finalPostedAs,
       company: user.company || undefined,
@@ -383,6 +392,11 @@ const updateJob = async (req, res) => {
         if (r.error) return res.status(400).json({ msg: r.error });
         req.body.internship = { ...r.data, free: !!job.internship?.free };   // free is never taken from the form
       }
+    }
+    if (req.body.walkIn !== undefined) {
+      const w = cleanWalkIn(req.body.walkIn);
+      if (w.error) return res.status(400).json({ msg: w.error });
+      req.body.walkIn = w.data;
     }
     if (req.body.category !== undefined) req.body.category = cleanCategory(req.body.category); // an unknown value clears it
     if (req.body.salary !== undefined) req.body.salary = cleanSalary(req.body.salary);

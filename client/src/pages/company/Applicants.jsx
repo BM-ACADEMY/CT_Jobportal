@@ -57,6 +57,7 @@ const Applicants = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [jobType, setJobType] = useState('');
   const [calculatingMatch, setCalculatingMatch] = useState({});
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [inviteModal, setInviteModal] = useState({ open: false, applicationIds: [] });
@@ -169,6 +170,12 @@ const Applicants = () => {
     fetchApplicants();
   }, [jobId]);
 
+  // Only to know whether this is an internship (selecting an intern and marking it completed). Failure just hides those actions.
+  useEffect(() => {
+    setJobType('');
+    axios.get(`${API_BASE_URL}/jobs/${jobId}`).then((r) => setJobType(r.data?.jobType || '')).catch(() => {});
+  }, [jobId]);
+
   const fetchApplicants = async () => {
     try {
       setLoading(true);
@@ -197,7 +204,7 @@ const Applicants = () => {
       ));
     } catch (err) {
       console.error(err);
-      toast.error("Failed to update status");
+      toast.error(err.response?.data?.msg || "Failed to update status");
     }
   };
 
@@ -274,7 +281,9 @@ const Applicants = () => {
       pending: "bg-amber-50 text-amber-700 border-amber-100",
       shortlisted: "bg-emerald-50 text-emerald-700 border-emerald-100",
       rejected: "bg-rose-50 text-rose-700 border-rose-100",
-      reviewed: "bg-emerald-50 text-emerald-700 border-emerald-100"
+      reviewed: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      accepted: "bg-violet-50 text-violet-700 border-violet-100",
+      completed: "bg-violet-50 text-violet-700 border-violet-100"
     };
     return configs[status] || "bg-muted text-muted-foreground";
   };
@@ -527,6 +536,16 @@ const Applicants = () => {
                         <DropdownMenuItem onClick={() => updateStatus(app._id, 'reviewed')} className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5 text-emerald-600">
                           <CheckCircle size={14} /> Mark Reviewed
                         </DropdownMenuItem>
+                        {jobType === 'Internship' && !['accepted', 'completed'].includes(app.status) && (
+                          <DropdownMenuItem onClick={() => updateStatus(app._id, 'accepted')} className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5 text-violet-600">
+                            <CheckCircle size={14} /> Select as intern
+                          </DropdownMenuItem>
+                        )}
+                        {jobType === 'Internship' && app.status === 'accepted' && (
+                          <DropdownMenuItem onClick={() => updateStatus(app._id, 'completed')} className="rounded-lg font-bold text-xs uppercase tracking-widest gap-2 py-2.5 text-violet-600">
+                            <CheckCircle size={14} /> Mark internship completed
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

@@ -4,6 +4,7 @@ const { runScheduledPlacementReports } = require('./reportScheduler');
 const expireJobs = require('./expireJobs');
 const runCourseFollowUps = require('./courseFollowUps');
 const runLifecycleMails = require('./lifecycleMails');
+const runRecruiterNudge = require('./recruiterNudge');
 const runDriveReminders = require('./driveReminders');
 const runWeeklyAdvisor = require('./advisorWeekly');
 const runSpikeAlerts = require('./spikeAlerts');
@@ -55,6 +56,9 @@ const startCronJobs = () => {
   if (isPrincipalReportEnabled()) {
     cron.schedule('0 9 1 * *', () => runMonthlyPrincipalReports().catch(() => {}), { timezone: 'Asia/Kolkata' });
   }
+
+  // Nudge recruiters who leave applicants unread for 3+ days, once a day at 11:00 India time. Off unless RECRUITER_NUDGE_ENABLED=true.
+  cron.schedule('0 11 * * *', () => runRecruiterNudge().catch((err) => console.error('[RecruiterNudge]', err.message)), { timezone: 'Asia/Kolkata' });
 
   console.log('[Cron] Scheduled jobs started: interview reminders (every 15m), placement reports (daily 07:00), job expiry (hourly)');
 };
