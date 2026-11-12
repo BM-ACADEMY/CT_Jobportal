@@ -9,12 +9,14 @@ export const STAFF_PERMISSIONS = [
   { key: 'requests_assign', label: 'Assign those requests to a counsellor or recruiter', area: 'Requests' },
   { key: 'colleges_view', label: 'See colleges awaiting verification', area: 'College verification', path: '/admin/colleges' },
   { key: 'colleges_verify', label: 'Approve or reject a college', area: 'College verification' },
+  { key: 'government_jobs', label: 'Post and close government jobs', area: 'Government jobs', path: '/admin/government-jobs' },
 ];
 
 export const STAFF_ROLES = {
   support: { label: 'Support', permissions: ['tickets_view', 'tickets_update', 'users_view'] },
   counsellor: { label: 'Counsellor', permissions: ['requests_view', 'requests_update', 'requests_assign'] },
   college_verifier: { label: 'College verifier', permissions: ['colleges_view', 'colleges_verify'] },
+  government_jobs_editor: { label: 'Government jobs editor', permissions: ['government_jobs'] },
 };
 
 // Menu entries a staff member gets, from their permissions.

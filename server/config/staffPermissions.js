@@ -11,6 +11,7 @@ const STAFF_PERMISSIONS = [
   { key: 'requests_assign', label: 'Assign those requests to a counsellor or recruiter', area: 'Requests' },
   { key: 'colleges_view', label: 'See colleges awaiting verification', area: 'College verification', path: '/admin/colleges' },
   { key: 'colleges_verify', label: 'Approve or reject a college', area: 'College verification' },
+  { key: 'government_jobs', label: 'Post and close government jobs', area: 'Government jobs', path: '/admin/government-jobs' },
 ];
 const STAFF_PERMISSION_KEYS = STAFF_PERMISSIONS.map(p => p.key);
 
@@ -19,6 +20,7 @@ const STAFF_ROLES = {
   support: { label: 'Support', permissions: ['tickets_view', 'tickets_update', 'users_view'] },
   counsellor: { label: 'Counsellor', permissions: ['requests_view', 'requests_update', 'requests_assign'] },
   college_verifier: { label: 'College verifier', permissions: ['colleges_view', 'colleges_verify'] },
+  government_jobs_editor: { label: 'Government jobs editor', permissions: ['government_jobs'] },
 };
 const STAFF_ROLE_KEYS = Object.keys(STAFF_ROLES);
 
