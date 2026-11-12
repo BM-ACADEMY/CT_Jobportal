@@ -63,4 +63,35 @@ const setCompanyVerified = async (req, res) => {
   }
 };
 
-module.exports = { setCompanyVerified };
+// Admin: "Verified employer" flag, set when a telecaller phoned the company and confirmed it is real.
+//   PATCH /api/admin/companies/:id/verified-by-call   body: { value: boolean, note: string }
+// Admin only: registered after authorizeRoles('admin') in adminRoutes.js, and checked again here so staff or any other role
+// can never set it even if the route is moved. It is separate from is_verified and does not verify the company.
+const setVerifiedByCall = async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') return res.status(403).json({ msg: 'Only the admin can set this.' });
+    const { id } = req.params;
+    if (!OBJECT_ID.test(String(id || ''))) return res.status(400).json({ msg: 'Invalid company id.' });
+    const value = req.body && req.body.value;
+    if (typeof value !== 'boolean') return res.status(400).json({ msg: 'Send value as true or false.' });
+    const note = String((req.body && req.body.note) || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+    if (note.length < 5) return res.status(400).json({ msg: 'Write who called and what they confirmed (at least 5 characters).' });
+
+    const company = await Company.findById(id);
+    if (!company) return res.status(404).json({ msg: 'Company not found.' });
+    company.verifiedByCall = value;
+    company.verifiedByCallAt = value ? new Date() : null;
+    company.verifiedByCallBy = value ? (req.user.id || req.user._id) || null : null;
+    company.verifiedByCallNote = note;
+    await company.save();
+    res.json({
+      msg: value ? 'Marked as a verified employer.' : 'Verified employer mark removed.',
+      company: { _id: company._id, verifiedByCall: company.verifiedByCall, verifiedByCallAt: company.verifiedByCallAt, verifiedByCallNote: company.verifiedByCallNote },
+    });
+  } catch (err) {
+    console.error('Set verified by call error:', err.message);
+    res.status(500).json({ msg: 'Could not update the verified employer mark.' });
+  }
+};
+
+module.exports = { setCompanyVerified, setVerifiedByCall };

@@ -6,6 +6,7 @@ const { isLimitedTier, shortLifeCutoff, LIMITED_MSG, LIMITED_MAX_ACTIVE } = requ
 // A job with vulgar, abusive or adult wording is not posted. The poster is told why and can edit and try again,
 // and the admins get a notification so a repeat poster can be spotted (and the company hidden in one tap).
 const CONTENT_BLOCK_MSG = 'This job was not posted because the title or description has vulgar, abusive or adult wording. Please remove it and post again. If you think this is a mistake, contact hello@velaivaaipu.in.';
+const { withMatchReasons } = require('../utils/matchReasons');
 // Free-email accounts: one live job at a time (a job older than 14 days no longer counts, it is off the public site).
 const limitedTierFull = async (user, excludeJobId) => {
   if (!isLimitedTier(user)) return false;
@@ -496,7 +497,7 @@ const getAllJobs = async (req, res) => {
         ...publicJobConditions(strict ? { verifiedCompanyIds: companyIds } : { hiddenCompanyIds: companyIds })
       ]
     })
-      .populate('company', 'name logo location website')
+      .populate('company', 'name logo location website verifiedByCall')
       .populate({
         path: 'recruiter',
         select: 'subscription',
@@ -531,7 +532,7 @@ const getJobById = async (req, res) => {
       return res.status(404).json({ msg: 'Job not found' });
     }
     const job = await Job.findById(req.params.id)
-      .populate('company', 'name logo location website industry tagline about_us description is_verified company_size_range employeeCount')
+      .populate('company', 'name logo location website industry tagline about_us description is_verified verifiedByCall company_size_range employeeCount')
       .populate('recruiter', 'name email');
 
     if (!job) {
@@ -588,7 +589,7 @@ const getMatchingJobs = async (req, res) => {
     // to the original matching below so the page never breaks.
     if (engineEnabled()) {
       try {
-        return res.json(await getRankedMatches(user, { Job, User, Application }));
+        return res.json(withMatchReasons(user, await getRankedMatches(user, { Job, User, Application })));
       } catch (engineErr) {
         console.error('Relevance engine failed, using classic matching:', engineErr.message);
       }
@@ -662,11 +663,11 @@ const getMatchingJobs = async (req, res) => {
     }
 
     const matchingJobs = await Job.find(query)
-      .populate('company', 'name logo location website')
+      .populate('company', 'name logo location website verifiedByCall')
       .sort({ createdAt: -1 })
       .limit(20);
 
-    res.json(matchingJobs);
+    res.json(withMatchReasons(user, matchingJobs));
 
   } catch (err) {
     console.error('Get Matching Jobs Error:', err);

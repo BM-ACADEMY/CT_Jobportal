@@ -10,6 +10,7 @@ import {
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import VerifiedEmployerBadge from '@/components/shared/VerifiedEmployerBadge';
 import { fuzzySearch, matchesForKey, tokenize } from '../utils/fuzzySearch';
 import HighlightText from '../components/shared/HighlightText';
 import SEOHead from '../components/seo/SEOHead';
@@ -848,8 +849,17 @@ const Jobs = () => {
                                 <p className="text-slate-500 text-sm font-medium mt-0.5 flex items-center gap-1.5">
                                   <Building2 size={13} className="text-slate-400" />
                                   <HighlightText text={job.company?.name || 'Employer on Velaivaaipu'} ranges={matchesForKey(job._fuzzyMatches, 'company.name')} />
+                                  <VerifiedEmployerBadge company={job.company} />
                                 </p>
-                                {job.relevance?.reasons?.length > 0 && (
+                                {Array.isArray(job.matchReasons) && job.matchReasons.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {job.matchReasons.slice(0, 2).map((r) => (
+                              <span key={r} className="text-[11px] font-semibold text-[#1f8a57] bg-[#34B678]/10 rounded-full px-2.5 py-1">{r}</span>
+                            ))}
+                          </div>
+                        )}
+
+                        {job.relevance?.reasons?.length > 0 && (
                                   <p className="text-emerald-700 text-xs font-semibold mt-1.5 flex items-center gap-1">
                                     <Sparkles size={11} className="shrink-0" /> Why this job: {job.relevance.reasons.slice(0, 3).join(' · ')}
                                   </p>

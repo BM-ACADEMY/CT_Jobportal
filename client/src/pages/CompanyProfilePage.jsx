@@ -8,6 +8,7 @@ import {
   ShieldCheck, Info, ArrowLeft, Loader2, Link2, ExternalLink
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import VerifiedEmployerBadge from "@/components/shared/VerifiedEmployerBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -113,6 +114,7 @@ const CompanyProfilePage = () => {
                     <CheckCircle2 size={12} className="mr-1.5" /> Verified
                   </Badge>
                 )}
+                <VerifiedEmployerBadge company={company} />
               </div>
               <p className="text-lg text-slate-500 font-medium max-w-2xl">{company.tagline || company.industry}</p>
               
