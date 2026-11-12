@@ -26,4 +26,17 @@ const getEmailReport = async (req, res) => {
   }
 };
 
-module.exports = { getEmailReport };
+// GET /api/admin/email-report/by-type : sent counts per mail type for the last 7 and 30 days (see utils/lifecycle/emailCounts.js).
+const getEmailCountsByType = async (req, res) => {
+  try {
+    const { countByType } = require('../utils/lifecycle/emailCounts');
+    const since = new Date(Date.now() - 30 * 86400000);
+    const logs = await EmailLog.find({ sentAt: { $gte: since } }).select('key sentAt').lean();
+    res.json({ enabled: process.env.LIFECYCLE_EMAILS_ENABLED === 'true', ...countByType(logs) });
+  } catch (err) {
+    console.error('Email counts error:', err.message);
+    res.status(500).json({ message: 'Could not load the email counts.' });
+  }
+};
+
+module.exports = { getEmailReport, getEmailCountsByType };

@@ -368,7 +368,7 @@ const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [paidWelcome, paymentFeedbackAsk, welcomeSeries, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, driveOrganiser, applicantsWeekly, jobClosing, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [paidWelcome, paymentFeedbackAsk, profileIncomplete, welcomeSeries, skillTestInvite, skillGap, jobMails, weeklyJobs, driveOrganiser, applicantsWeekly, jobClosing, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }
