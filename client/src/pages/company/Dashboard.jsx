@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
 import VerificationBanner from '@/components/company/VerificationBanner';
 import FirstSteps from '@/components/company/FirstSteps';
+import SponsoredResults from '@/components/company/SponsoredResults';
 
 const CompanyDashboard = () => {
   const navigate = useNavigate();
@@ -93,6 +94,7 @@ const CompanyDashboard = () => {
 
       <VerificationBanner />
       <FirstSteps jobCount={stats.totalJobs} loading={loading} />
+      <SponsoredResults />
 
       {/* Stats - Premium Glassmorphic Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
