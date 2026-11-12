@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { COLLEGE_DATA_SAFETY_LINE } from '@/data/collegePrivacy';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   InputOTP,
@@ -516,6 +517,12 @@ const RegisterPage = () => {
                       </FormItem>
                     )}
                   />
+
+                  {selectedRole === 'college' && (
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed mb-3 rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2">
+                      {COLLEGE_DATA_SAFETY_LINE}
+                    </p>
+                  )}
 
                   <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
                     By creating an account, you agree to our{' '}
