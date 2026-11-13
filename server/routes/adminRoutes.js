@@ -72,6 +72,8 @@ router.post('/advisor/ideas/:id', require('../controllers/advisorController').se
 router.get('/drives', require('../controllers/walkInDriveController').adminListDrives);
 router.post('/drives/:id/review', require('../controllers/walkInDriveController').reviewDrive);
 router.post('/drives/:id/mark-paid', require('../controllers/walkInDriveController').markPaid);
+router.get('/drives/organisers', require('../controllers/walkInDriveController').adminOrganisers);
+router.post('/drives/create', require('../controllers/walkInDriveController').adminCreateDrive);
 router.get('/skill-tests', require('../controllers/skillTestAdminController').getSkillTestSummary);
 router.get('/job-limits', listJobLimits);
 router.post('/job-limits/grant', grantJobLimits);
