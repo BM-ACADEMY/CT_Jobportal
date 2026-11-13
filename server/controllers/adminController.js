@@ -1,3 +1,4 @@
+const { ensureOrgCompany } = require('../utils/ensureOrgCompany');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
@@ -344,6 +345,10 @@ const updateUserVerificationStatus = async (req, res) => {
     }
     const user = await User.findByIdAndUpdate(req.params.id, { profileVerificationStatus: status }, { new: true }).select('-password').populate('role', 'name');
     if (!user) return res.status(404).json({ msg: 'User not found' });
+    if (status === 'Verified') {
+      // Verified organizations must appear on the public Companies page.
+      await ensureOrgCompany(user).catch(err => console.error('ensureOrgCompany failed:', err.message));
+    }
     if (status !== 'Pending') {
       notifyUser({
         io: req.io,
@@ -368,7 +373,7 @@ const updateUserVerificationStatus = async (req, res) => {
 // @route   GET /api/admin/companies
 const getCompanies = async (req, res) => {
   try {
-    const companies = await Company.find().populate('userId', 'name email').sort({ createdAt: -1 });
+    const companies = await Company.find().sort({ createdAt: -1 });
     res.json(companies);
   } catch (err) {
     console.error('Get Companies Error:', err.message);
