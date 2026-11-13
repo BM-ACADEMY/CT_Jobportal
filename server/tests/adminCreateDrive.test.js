@@ -51,3 +51,11 @@ test('both new routes sit below the admin-only gate', () => {
   const gate = src.indexOf("authorizeRoles('admin')");
   assert.ok(gate > 0 && gate < src.indexOf("'/drives/create'") && gate < src.indexOf("'/drives/organisers'"));
 });
+
+test('public Drives page shows the organiser price list from the server settings, not hard-coded prices', () => {
+  const fs = require('fs');
+  const src = fs.readFileSync(require.resolve('../../client/src/pages/drives/Drives.jsx'), 'utf8');
+  assert.match(src, /<OrganiserPlans \/>/);
+  assert.match(src, /\/drives\/plans/);
+  assert.doesNotMatch(src, /999|2,?999/);
+});
