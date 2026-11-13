@@ -355,11 +355,12 @@ const loginUser = async (req, res) => {
     }
 
     if (!user.isVerified) {
-      // Setup new OTP and resend
-      const otp = generateOTP();
+      // Send the code again. A code that is still valid is sent as it is (see utils/otpReuse.js), so a slow mail never leaves a dead code.
+      const plan = require('../utils/otpReuse').planOtp(user, generateOTP);
+      const otp = plan.otp;
       user.otp = otp;
-    user.otpAttempts = 0;
-      user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      user.otpAttempts = plan.otpAttempts;
+      user.otpExpiry = plan.otpExpiry;
       await user.save();
 
       const htmlContent = otpEmail({ title: 'Verify your account', name: user.name, otp, intro: "You tried to log in, but your email isn't verified yet. Use this code to verify it." });
@@ -645,11 +646,13 @@ const resendOtp = async (req, res) => {
       return res.status(400).json({ msg: 'Account is already verified. Please login.' });
     }
 
-    const otp = generateOTP();
-    
+    // A code that is still valid is sent again as it is (see utils/otpReuse.js), so a slow mail never leaves a dead code.
+    const plan = require('../utils/otpReuse').planOtp(user, generateOTP);
+    const otp = plan.otp;
+
     user.otp = otp;
-    user.otpAttempts = 0;
-    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.otpAttempts = plan.otpAttempts;
+    user.otpExpiry = plan.otpExpiry;
     await user.save();
 
     const htmlContent = otpEmail({ title: 'Your new verification code', name: user.name, otp, intro: 'You asked for a new verification code. Use it to continue.' });
