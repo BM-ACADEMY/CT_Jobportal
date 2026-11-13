@@ -124,6 +124,38 @@ const createDrive = async (req, res) => {
   } catch (err) { return fail(res, err, 'create'); }
 };
 
+// A person who turns up without a pass: the desk registers them with a name and mobile number and checks them in at once.
+// Uses the same overall limit and token counter as a normal check-in.
+const walkUp = async (req, res) => {
+  try {
+    const d = await mine(req); if (!d) return res.status(404).json({ msg: 'Drive not found' });
+    if (d.status !== 'published') return res.status(400).json({ msg: 'Only a published drive can check people in' });
+    const name = R.str(req.body?.name, 100);
+    const phone = R.cleanPhone(req.body?.phone);
+    if (name.length < 2) return res.status(400).json({ msg: 'Please enter the name' });
+    if (!phone) return res.status(400).json({ msg: 'Please enter a valid 10-digit mobile number' });
+    let reg = await DriveRegistration.findOne({ drive: d._id, phone });
+    if (!reg) {
+      const limits = cfg.effectiveLimits(d);
+      const { registered } = await slotCountsFor(d._id);
+      if (registered >= limits.maxRegistrations) return res.status(409).json({ msg: 'This drive has reached its registration limit. Add more registrations from Plan and add-ons.' });
+      const slot = d.slots.some((x) => x.label === R.str(req.body?.slot, 40)) ? R.str(req.body?.slot, 40) : d.slots[0]?.label;
+      for (let tries = 0; tries < 5 && !reg; tries++) {
+        try { reg = await DriveRegistration.create({ drive: d._id, name, phone, slot, answers: [], code: R.makeCode() }); }
+        catch (e) { if (e.code !== 11000) throw e; reg = await DriveRegistration.findOne({ drive: d._id, phone }); }
+      }
+      if (!reg) return res.status(500).json({ msg: 'Server error' });
+    }
+    if (reg.status !== 'registered') return res.json({ already: true, name: reg.name, tokenNumber: reg.tokenNumber, status: reg.status });
+    const claimed = await DriveRegistration.findOneAndUpdate({ _id: reg._id, status: 'registered' }, { $set: { status: 'checked_in', checkedInAt: new Date() } }, { new: true });
+    if (!claimed) { const now = await DriveRegistration.findById(reg._id).lean(); return res.json({ already: true, name: reg.name, tokenNumber: now?.tokenNumber, status: now?.status }); }
+    const upd = await WalkInDrive.findByIdAndUpdate(d._id, { $inc: { nextToken: 1 } }, { new: false });
+    claimed.tokenNumber = upd.nextToken;
+    await claimed.save();
+    res.status(201).json({ name: claimed.name, tokenNumber: claimed.tokenNumber, slot: claimed.slot, status: claimed.status });
+  } catch (err) { return fail(res, err, 'walk up'); }
+};
+
 const myDrives = async (req, res) => {
   try {
     const drives = await WalkInDrive.find({ organiser: req.user.id }).sort({ date: -1 }).limit(100);
@@ -342,4 +374,4 @@ const adminCreateDrive = async (req, res) => {
   } catch (err) { return fail(res, err, 'admin create'); }
 };
 
-module.exports = { listDrives, getDrive, driveQr, registerForDrive, getRegistration, registrationQr, createDrive, myDrives, manageDrive, inviteSeekers, checkIn, updateRegistration, requestAddon, sendThanks, report, adminListDrives, reviewDrive, markPaid, adminCreateDrive, adminOrganisers };
+module.exports = { walkUp, listDrives, getDrive, driveQr, registerForDrive, getRegistration, registrationQr, createDrive, myDrives, manageDrive, inviteSeekers, checkIn, updateRegistration, requestAddon, sendThanks, report, adminListDrives, reviewDrive, markPaid, adminCreateDrive, adminOrganisers };
