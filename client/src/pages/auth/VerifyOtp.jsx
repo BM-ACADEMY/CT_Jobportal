@@ -176,6 +176,9 @@ const VerifyOtpPage = () => {
               {resending ? 'Sending...' : timer > 0 ? `Resend Code in ${timer}s` : 'Resend Code'}
             </button>
           </p>
+          <p className="mt-3 text-xs text-muted-foreground" data-testid="spam-hint">
+            Can't find it? Check your Spam or Promotions folder. The code stays valid for 10 minutes.
+          </p>
         </div>
 
       </div>

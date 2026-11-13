@@ -657,6 +657,10 @@ const RegisterPage = () => {
                   </button>
                 </p>
 
+                <p className="text-xs text-muted-foreground mt-3" data-testid="spam-hint">
+                  Can't find it? Check your Spam or Promotions folder. The code stays valid for 10 minutes.
+                </p>
+
                 <p className="text-sm text-muted-foreground font-bold mt-4">
                   Wrong email?{' '}
                   <button 
