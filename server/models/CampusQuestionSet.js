@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 // Sets are generated ahead of time (scripts/generateQuestionBank.js) so students never wait for, or depend on, a live AI call.
 const campusQuestionSetSchema = new mongoose.Schema({
   category: { type: String, required: true, index: true },
+  // easy, medium or hard. Sets saved before levels existed have no value and count as medium.
+  level: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
   questions: [{
     id: { type: Number, required: true },
     question: { type: String, required: true },

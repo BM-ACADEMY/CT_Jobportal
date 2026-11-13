@@ -54,6 +54,7 @@ const {
   getAllCollegesForAdmin,
   getCollegeByIdForAdmin,
   adminVerifyCollege,
+  adminAskCollegeInfo,
   generatePrincipalPasskey,
   getPrincipalExecutiveReport,
   updateDriveRoundStatus,
@@ -70,6 +71,8 @@ const {
   generateMou,
   getPlacementReports,
   generatePlacementReport,
+  sendPlacementReport,
+  downloadPlanQuote,
   downloadSummaryReport,
   getMyCollegeStudent,
   joinCollege,
@@ -138,11 +141,12 @@ const requireDriveAccess = async (req, res, next) => {
 };
 
 // ── Public routes (no auth) ─────────────────────────────────────────────────
+router.get('/public/student-pack-info', require('../controllers/collegePackController').packInfo);
 router.get('/public/drive/:driveCode', getPublicDrive);
 router.post('/public/drive/:driveCode/register', publicRegisterLimiter, publicRegister);
 router.get('/public/assessment', publicSubmitLimiter, getPublicAssessment);
 router.post('/public/submit-assessment', publicSubmitLimiter, submitAssessment);
-router.post('/public/principal-report/:passkey', getPrincipalExecutiveReport);
+router.post('/public/principal-report/:passkey', rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: 'Too many attempts. Please wait a few minutes.' }), getPrincipalExecutiveReport);
 router.get('/drives/incharge/verify/:driveId/:token', verifyInchargeInvite);
 router.post('/drives/incharge/accept-existing/:driveId/:token', acceptInchargeInviteExisting);
 router.post('/drives/incharge/accept-new/:driveId/:token', acceptInchargeInviteNew);
@@ -154,10 +158,15 @@ router.post('/public/company-drive/:token/sign-file', signCompanyDriveFile);
 // Admin, or a staff member with the matching permission (college verifier role).
 router.get('/admin/all-colleges', verifyToken, requireAdminOr('colleges_view'), getAllCollegesForAdmin);
 router.get('/admin/colleges/:collegeId', verifyToken, requireAdminOr('colleges_view'), getCollegeByIdForAdmin);
+router.put('/admin/colleges/:collegeId/test', verifyToken, requireAdminOr('colleges_verify'), require('../controllers/collegeTestFlagController').setCollegeTestFlag);
 router.put('/admin/verify/:collegeId', verifyToken, requireAdminOr('colleges_verify'), adminVerifyCollege);
+router.post('/admin/ask-info/:collegeId', verifyToken, requireAdminOr('colleges_verify'), adminAskCollegeInfo);
 
 // ── TPO authenticated routes ────────────────────────────────────────────────
 router.get('/dashboard', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), getDashboard);
+router.get('/me/student-pack', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), require('../controllers/collegePackController').myPackStatus);
+router.post('/me/upgrade-call', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), require('../controllers/collegePackController').requestUpgradeCall);
+router.post('/me/student-pack-request', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), require('../controllers/collegePackController').requestPack);
 router.get('/me/dashboard-stats', verifyToken, authorizeRoles('college'), getDashboardStats);
 router.get('/profile', verifyToken, authorizeRoles('college'), getProfile);
 router.put('/profile', verifyToken, authorizeRoles('college'), updateProfile);
@@ -178,6 +187,9 @@ router.delete('/operations/employers/:employerId/scorecards/:scorecardId', verif
 router.get('/mou', verifyToken, authorizeRoles('college'), generateMou);
 router.get('/reports', verifyToken, authorizeRoles('college'), getPlacementReports);
 router.post('/reports/generate', verifyToken, authorizeRoles('college'), generatePlacementReport);
+router.post('/reports/:id/send', verifyToken, authorizeRoles('college'), sendPlacementReport);
+router.get('/me/quote-pack/:packs', verifyToken, authorizeRoles('college'), require('../controllers/collegePackController').downloadPackQuote);
+router.get('/me/quote/:planId', verifyToken, authorizeRoles('college'), downloadPlanQuote);
 router.get('/reports/summary-pdf', verifyToken, authorizeRoles('college'), downloadSummaryReport);
 router.get('/accreditation/overview', verifyToken, authorizeRoles('college'), getOverview);
 router.get('/accreditation/employers', verifyToken, authorizeRoles('college'), searchEmployers);
@@ -210,6 +222,7 @@ router.post('/drives/incharge/link/:driveId/:token', verifyToken, linkInchargeIn
 // Students
 router.get('/academic-years', verifyToken, authorizeRoles('college'), getAcademicYears);
 router.get('/students', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), getStudents);
+router.get('/internships', verifyToken, authorizeRoles('college'), requireCollegePermission('students'), require('../controllers/collegeInternshipController').getCollegeInternships);
 router.get('/students-profile-completion', verifyToken, authorizeRoles('college'), getProfileCompletionDashboard);
 router.get('/students/csv-template', verifyToken, authorizeRoles('college'), getCsvTemplate);
 router.get('/students/credentials-export', verifyToken, authorizeRoles('college'), exportCredentialsSheet);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import HomeSummaryCard from '@/components/home/HomeSummaryCard';
 import OnboardingStrip from '@/components/onboarding/OnboardingStrip';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -19,6 +20,7 @@ import PlacementHighlights from '@/components/home/PlacementHighlights';
 import CollegeList from '@/components/home/CollegeList';
 import PayPerCarousel from '@/components/home/PayPerCarousel';
 import TestimonialCarousel from '@/components/home/TestimonialCarousel';
+import { SHOW_AT_LEAST } from '@/config/socialProof';
 
 const formatCount = (n) => {
   if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr+`;
@@ -52,11 +54,12 @@ const HomeCollege = () => {
     { label: 'Students Placed', value: formatCount(platformStats.studentsPlacedCount), icon: Users },
     { label: 'Hiring Companies', value: formatCount(platformStats.companiesCount), icon: Building2 },
     { label: 'Active Jobs', value: formatCount(platformStats.activeJobsCount), icon: Briefcase },
-  ];
+  ].filter((c, i) => [platformStats.collegesOnboardedCount, platformStats.studentsPlacedCount, platformStats.companiesCount, platformStats.activeJobsCount][i] >= SHOW_AT_LEAST.stat);
 
   return (
     <div className="w-full overflow-x-hidden bg-white">
       <OnboardingStrip />
+      <HomeSummaryCard />
 
       <HeroShell>
         <div className="grid lg:grid-cols-12 gap-16 items-center">
@@ -132,9 +135,9 @@ const HomeCollege = () => {
 
       {statCards.length > 0 && <StatBento cards={statCards} />}
 
-      <TestimonialCarousel roleFilter="college" eyebrow="From TPOs Like You" title="What Colleges Say" subtitle="Institutions running their placements with us." />
+      <TestimonialCarousel roleFilter="college" strict eyebrow="From TPOs Like You" title="What Colleges Say" subtitle="Institutions running their placements with us." />
 
-      <CollegeList />
+      <CollegeList minToShow={SHOW_AT_LEAST.colleges} />
 
       {(user?.role === 'college') && (
         <PayPerCarousel role="college" title="Pay Only For What Your Campus Needs" subtitle="Drive management, bulk exports, verified badges, and more." />

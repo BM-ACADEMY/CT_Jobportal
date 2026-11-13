@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import SEOHead from '../seo/SEOHead';
 
 // Shared layout for the legal pages (Privacy Policy, Refund Policy).
-export const SUPPORT_EMAIL = 'support@velaivaaipu.in';
+export const SUPPORT_EMAIL = 'hello@velaivaaipu.in';
 // Registered business (from the incorporation records). Confirm with your CA / legal adviser before launch.
 export const LEGAL_ENTITY = 'Afra Ventures Private Limited';
 export const LEGAL_ADDRESS = '78 Lenin St, Kosapalayam, Puducherry 605013, India';

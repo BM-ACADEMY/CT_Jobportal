@@ -15,7 +15,15 @@ const mails = require('../utils/lifecycle/mails');
 const { getTopCandidatesForJob, engineEnabled } = require('../utils/matchingJobs');
 const { rankForMail, alertFrequency, ALERT_PERIOD_DAYS } = require('../utils/lifecycle/jobMatch');
 const Application = require('../models/Application');
+const Payment = require('../models/Payment');
+const { expiryStage, failedPaymentDue } = require('../utils/lifecycle/billing');
 const { computeBatchStats, periodId } = require('../utils/lifecycle/stats');
+const policy = require('../utils/lifecycle/emailPolicy');
+const Feedback = require('../models/Feedback');
+const { signFeedbackToken, ASK_AFTER_DAYS, ASK_WINDOW_DAYS } = require('../utils/paymentFeedback');
+const WalkInDrive = require('../models/WalkInDrive');
+const DriveRegistration = require('../models/DriveRegistration');
+const { istDayStart } = require('../utils/driveRules');
 const { getCategory, PASS_RATIO } = require('../config/courseMap');
 
 const DAY = 86400000;
@@ -37,6 +45,10 @@ const deliver = async (state, user, key, mail, audience = 'seeker') => {
   if (!realEmail(user) || optedOut(user)) return false;
   const recent = await EmailLog.exists({ user: user._id, sentAt: { $gte: ago(20 / 24) } });
   if (recent) return false;
+  if (!policy.isTransactional(key)) { // weekly cap: never more than a few marketing-style mails a week
+    const lastWeek = await EmailLog.countDocuments({ user: user._id, sentAt: { $gte: ago(7) }, key: { $not: /^(plan_|pay_|paid_)/ } });
+    if (!policy.underWeeklyCap(audience, lastWeek)) return false;
+  }
   try {
     await EmailLog.create({ user: user._id, key });
   } catch (err) {
@@ -176,6 +188,38 @@ const companyProfileNudge = async (state) => {
   }
 };
 
+// Unverified companies with a live job: one mail, then one more a week later (max two). Their jobs stay hidden from the public until verified.
+const companyVerifyNudge = async (state) => {
+  const roles = await Role.find({ name: { $in: ['recruiter', 'company'] } }).select('_id');
+  const users = await User.find({ ...baseUserFilter, role: { $in: roles.map((r) => r._id) }, company: { $ne: null } }).limit(BATCH);
+  for (const u of users) {
+    const co = await Company.findById(u.company).select('is_verified hiddenFromPublic createdAt').lean();
+    if (!co || co.is_verified || co.hiddenFromPublic) continue;
+    if (!(await Job.exists({ recruiter: u._id, status: 'active' }))) continue;
+    const first = await EmailLog.findOne({ user: u._id, key: 'co_verify_d1' }).select('sentAt').lean();
+    if (!first) { await deliver(state, u, 'co_verify_d1', mails.wrap(mails.companyVerify(u, 'first'), u._id), 'company'); continue; }
+    if (Date.now() - new Date(first.sentAt).getTime() >= 7 * DAY) await deliver(state, u, 'co_verify_d7', mails.wrap(mails.companyVerify(u, 'second'), u._id), 'company');
+  }
+};
+
+// Plan ending (7 days, 1 day, just ended) and a retry mail after a failed payment. Mails only: payments and Razorpay are not touched.
+const billingMails = async (state) => {
+  const soon = await User.find({ ...baseUserFilter, subscription: { $ne: null }, subscriptionExpiry: { $gte: ago(3), $lte: new Date(Date.now() + 8 * DAY) } }).populate('subscription', 'name price').limit(BATCH);
+  for (const u of soon) {
+    if (!(u.subscription && u.subscription.price > 0)) continue; // free plans do not end
+    const s = expiryStage(u.subscriptionExpiry);
+    if (s) await deliver(state, u, s.key, mails.wrap(mails.planEnding(u, s.stage, u.subscription.name), u._id), 'company');
+  }
+  const failed = await Payment.find({ status: 'failed', createdAt: { $gte: ago(2) } }).select('user').lean();
+  for (const uid of [...new Set(failed.map((p) => String(p.user)))].slice(0, BATCH)) {
+    const user = await User.findOne({ ...baseUserFilter, _id: uid });
+    if (!user) continue;
+    const recent = await Payment.find({ user: uid, createdAt: { $gte: ago(2) } }).populate('plan', 'name').select('status createdAt plan').lean();
+    const due = failedPaymentDue(recent);
+    if (due) await deliver(state, user, due.key, mails.wrap(mails.paymentRetry(user, recent.find((p) => p.status === 'failed')?.plan?.name), user._id), 'company');
+  }
+};
+
 // New colleges: verify (day 3), create a first drive (day 4), share the QR when a drive has no students (day 7).
 const collegeOnboarding = async (state) => {
   const colleges = await College.find({ createdAt: { $gte: ago(45), $lte: ago(3) } }).populate('tpoUser', 'name email emailPrefs').limit(BATCH);
@@ -203,11 +247,112 @@ const collegeMails = async (state) => {
   }
 };
 
+// Free weekly jobs mail for job seekers (Tue-Thu). Skips people with no real match, people who just applied, and paid-alert holders (they have their own).
+const weeklyJobs = async (state) => {
+  const now = new Date();
+  if (!policy.isDigestDay(now)) return;
+  const role = await Role.findOne({ name: 'jobseeker' }).select('_id');
+  const fresh = await Job.find({ status: 'active', validThrough: { $gt: now }, createdAt: { $gte: ago(7) } })
+    .populate('company', 'name').sort({ createdAt: -1 }).limit(400).lean();
+  if (!fresh.length) return;
+  const week = `weekly-${periodId(7, now)}`;
+  const done = (await EmailLog.find({ key: week }).select('user').lean()).map((l) => l.user);
+  const users = await User.find({
+    ...baseUserFilter, role: role._id, _id: { $nin: done },
+    'profile.profileCompletion': { $gte: 40 },
+    $or: [{ lastLoginAt: { $gte: ago(90) } }, { lastLoginAt: null, createdAt: { $gte: ago(90) } }],
+  }).limit(BATCH);
+  for (const u of users) {
+    if (state.sent >= MAX_PER_RUN) break;
+    if (alertFrequency(u, now)) continue;
+    const last = await Application.findOne({ applicant: u._id }).sort({ createdAt: -1 }).select('createdAt').lean();
+    if (policy.recentlyApplied(last?.createdAt)) continue;
+    const jobs = rankForMail(u, fresh, 5, { appliedJobIds: await appliedJobIds(u) });
+    if (jobs.length) await deliver(state, u, week, mails.wrap(mails.weeklyJobs(u, jobs), u._id));
+  }
+};
+
+// Once after a completed payment (first 3 days): what they bought and where to start. Not counted against the weekly cap.
+const paidWelcome = async (state) => {
+  const payments = await Payment.find({ status: 'completed', amount: { $gt: 0 }, createdAt: { $gte: ago(3), $lte: ago(1 / 24) } })
+    .populate('plan', 'name').populate('payPerFeature', 'name').sort({ createdAt: -1 }).limit(BATCH).lean();
+  const roles = await Role.find({ name: { $in: ['jobseeker', 'recruiter', 'company', 'college'] } }).lean();
+  const nameOf = Object.fromEntries(roles.map((r) => [String(r._id), r.name]));
+  for (const p of payments) {
+    const user = await User.findOne({ ...baseUserFilter, _id: p.user });
+    if (!user) continue;
+    const rn = nameOf[String(user.role)];
+    const audience = rn === 'jobseeker' ? 'seeker' : rn === 'college' ? 'college' : 'company';
+    await deliver(state, user, `paid_welcome-${p._id}`, mails.wrap(mails.paidWelcome(user, { audience, itemName: p.plan?.name || p.payPerFeature?.name }), user._id), audience);
+  }
+};
+
+// Weekly (Tue-Thu) to recruiters: how many people applied to their jobs in the last 7 days and how many wait for review.
+const applicantsWeekly = async (state) => {
+  const now = new Date();
+  if (!policy.isDigestDay(now)) return;
+  const apps = await Application.find({ createdAt: { $gte: ago(7) }, status: { $ne: 'withdrawn' } }).select('job status').lean();
+  if (!apps.length) return;
+  const jobs = await Job.find({ _id: { $in: [...new Set(apps.map((a) => a.job))] } }).select('recruiter title').lean();
+  const byRecruiter = new Map();
+  for (const j of jobs) {
+    const mine = apps.filter((a) => String(a.job) === String(j._id));
+    const r = byRecruiter.get(String(j.recruiter)) || { total: 0, pending: 0, best: { title: '', n: 0 } };
+    r.total += mine.length; r.pending += mine.filter((a) => a.status === 'pending').length;
+    if (mine.length > r.best.n) r.best = { title: j.title, n: mine.length };
+    byRecruiter.set(String(j.recruiter), r);
+  }
+  const week = `co_applicants-${periodId(7, now)}`;
+  for (const [id, r] of [...byRecruiter].slice(0, BATCH)) {
+    const u = await User.findOne({ ...baseUserFilter, _id: id });
+    if (u) await deliver(state, u, week, mails.wrap(mails.applicantsWeekly(u, { total: r.total, pending: r.pending, topJob: r.best.title }), u._id), 'company');
+  }
+};
+
+// One mail per job, 1 to 3 days before it closes.
+const jobClosing = async (state) => {
+  const jobs = await Job.find({ status: 'active', validThrough: { $gt: new Date(Date.now() + 12 * 3600000), $lte: ago(-3) } }).select('title validThrough recruiter shortLife').limit(BATCH).lean();
+  for (const j of jobs) {
+    const u = await User.findOne({ ...baseUserFilter, _id: j.recruiter });
+    if (u) await deliver(state, u, `co_job_closing-${j._id}`, mails.wrap(mails.jobClosing(u, j, { shortLife: !!j.shortLife }), u._id), 'company');
+  }
+};
+
+// Walk-in drive organiser: a heads-up the day before and a follow-up the day after. (Candidates get their own reminders from cron/driveReminders.js.)
+const driveOrganiser = async (state) => {
+  const today = istDayStart(new Date()).getTime();
+  const drives = await WalkInDrive.find({ status: 'published', date: { $gte: new Date(today - DAY), $lt: new Date(today + 2 * DAY) } }).limit(BATCH);
+  for (const d of drives) {
+    const u = await User.findOne({ ...baseUserFilter, _id: d.organiser });
+    if (!u) continue;
+    const at = istDayStart(d.date).getTime();
+    const registered = await DriveRegistration.countDocuments({ drive: d._id });
+    if (at === today + DAY) { if (registered) await deliver(state, u, `co_drive_pre-${d._id}`, mails.wrap(mails.drivePre(u, d, { registered }), u._id), 'company'); }
+    else if (at === today - DAY && registered) {
+      const checkedIn = await DriveRegistration.countDocuments({ drive: d._id, status: { $ne: 'registered' } });
+      await deliver(state, u, `co_drive_post-${d._id}`, mails.wrap(mails.drivePost(u, d, { registered, checkedIn }), u._id), 'company');
+    }
+  }
+};
+
+// A week after a completed payment: did it deliver what they expected? Once per payment, skipped when they already answered.
+const paymentFeedbackAsk = async (state) => {
+  const payments = await Payment.find({ status: 'completed', amount: { $gt: 0 }, createdAt: { $gte: ago(ASK_WINDOW_DAYS), $lte: ago(ASK_AFTER_DAYS) } })
+    .populate('plan', 'name').populate('payPerFeature', 'name').sort({ createdAt: -1 }).limit(BATCH).lean();
+  for (const p of payments) {
+    if (await Feedback.exists({ payment: p._id })) continue;
+    const user = await User.findOne({ ...baseUserFilter, _id: p.user });
+    if (!user) continue;
+    const itemName = p.plan?.name || p.payPerFeature?.name || '';
+    await deliver(state, user, `paid_feedback-${p._id}`, mails.wrap(mails.paymentFeedbackAsk(user, { itemName, token: signFeedbackToken(user._id, p._id) }), user._id), 'company');
+  }
+};
+
 const runLifecycleMails = async () => {
   if (!enabled()) return;
   const state = { sent: 0 };
   // Order matters: the first rule that mails a person today wins (one mail per person per day).
-  for (const rule of [profileIncomplete, skillTestInvite, skillGap, jobMails, companyProfileNudge, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
+  for (const rule of [paidWelcome, paymentFeedbackAsk, profileIncomplete, skillTestInvite, skillGap, jobMails, weeklyJobs, driveOrganiser, applicantsWeekly, jobClosing, companyProfileNudge, companyVerifyNudge, billingMails, topCandidatesMail, employerMails, collegeOnboarding, collegeMails]) {
     try { await rule(state); } catch (err) { console.error(`[Cron] Lifecycle rule ${rule.name} failed:`, err.message); }
     if (state.sent >= MAX_PER_RUN) break;
   }

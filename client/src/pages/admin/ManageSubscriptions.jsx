@@ -884,11 +884,16 @@ const StaticFeatureInput = ({ field, form, onChange }) => {
 // ── GST Settings Panel ────────────────────────────────────────────────────────
 const GstSettingsPanel = () => {
   const [gst, setGst] = useState('');
+  const [savedGst, setSavedGst] = useState('');
+  // Locked by default so the rate cannot be changed by a stray tap. Unlock, edit, then confirm.
+  const [locked, setLocked] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     axios.get(`${API}/settings`).then(res => {
-      setGst(String(res.data.gstPercentage ?? 0));
+      const v = String(res.data.gstPercentage ?? 0);
+      setGst(v);
+      setSavedGst(v);
     }).catch(() => {});
   }, []);
 
@@ -898,6 +903,8 @@ const GstSettingsPanel = () => {
       toast.error('GST must be between 0 and 100');
       return;
     }
+    if (String(val) === savedGst) { setLocked(true); return; }
+    if (!window.confirm(`Change GST from ${savedGst}% to ${val}% for every new payment? Plans and checkout will use the new rate straight away.`)) return;
     setSaving(true);
     try {
       const res = await axios.patch(
@@ -906,6 +913,8 @@ const GstSettingsPanel = () => {
         { headers: authHeader() }
       );
       setGst(String(res.data.gstPercentage));
+      setSavedGst(String(res.data.gstPercentage));
+      setLocked(true);
       toast.success('GST rate updated');
     } catch {
       toast.error('Failed to save GST rate');
@@ -934,18 +943,34 @@ const GstSettingsPanel = () => {
             step="0.01"
             value={gst}
             onChange={e => setGst(e.target.value)}
-            className="h-10 w-28 rounded-xl border-slate-200 text-sm pr-8 text-right font-bold"
+            disabled={locked}
+            className="h-10 w-28 rounded-xl border-slate-200 text-sm pr-8 text-right font-bold disabled:bg-slate-50 disabled:text-slate-500"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">%</span>
         </div>
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="h-10 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs uppercase tracking-widest gap-2"
-        >
-          {saving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
-          Save
-        </Button>
+        {locked ? (
+          <Button
+            variant="outline"
+            onClick={() => setLocked(false)}
+            className="h-10 px-5 rounded-xl font-bold text-xs uppercase tracking-widest"
+          >
+            Change
+          </Button>
+        ) : (
+          <>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="h-10 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs uppercase tracking-widest gap-2"
+            >
+              {saving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
+              Save
+            </Button>
+            <Button variant="outline" onClick={() => { setGst(savedGst); setLocked(true); }} className="h-10 px-4 rounded-xl font-bold text-xs uppercase tracking-widest">
+              Cancel
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ const SELF_DELETE_BLOCKED_ROLES = ['admin', 'subadmin', 'company', 'college'];
 // Returns { ok: true } or { ok: false, msg }.
 const canSelfDelete = ({ role, ownsCompany = false, ownsCollege = false }) => {
   if (SELF_DELETE_BLOCKED_ROLES.includes(role) || ownsCompany || ownsCollege) {
-    return { ok: false, msg: 'Organisation and admin accounts are closed by our team so that jobs, payments and people are handled properly. Please write to support@velaivaaipu.in from your registered email.' };
+    return { ok: false, msg: 'Organisation and admin accounts are closed by our team so that jobs, payments and people are handled properly. Please write to hello@velaivaaipu.in from your registered email.' };
   }
   return { ok: true };
 };

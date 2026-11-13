@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Users, Building2, Briefcase, TrendingUp, ShieldCheck, Activity, ChevronRight, DollarSign, PieChart as PieChartIcon } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444', '#ec4899'];
@@ -11,6 +10,23 @@ const COLORS = ['#10b981', '#6366f1', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444'
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ users: 0, jobs: 0, companies: 0, totalRevenue: 0, revenueData: [], subscriptionData: [] });
   const [loading, setLoading] = useState(true);
+  const [health, setHealth] = useState(null); // null = checking, then { ok, db, time }
+
+  // Real site check (GET /api/health), repeated every minute while this page is open.
+  useEffect(() => {
+    let stop = false;
+    const check = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/health`, { timeout: 8000 });
+        if (!stop) setHealth(res.data);
+      } catch {
+        if (!stop) setHealth({ ok: false, db: 'down', time: new Date().toISOString() });
+      }
+    };
+    check();
+    const id = setInterval(check, 60000);
+    return () => { stop = true; clearInterval(id); };
+  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -36,17 +52,17 @@ const AdminDashboard = () => {
         <div className="relative z-10 space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-indigo-500/20 border border-indigo-500/30 backdrop-blur-md mb-2">
              <Activity size={12} className="text-indigo-400" />
-             <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Platform Telemetry</span>
+             <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Today at a glance</span>
           </div>
-          <h1 className="text-4xl font-black text-white tracking-tight">System Overview</h1>
-          <p className="text-base text-slate-400 font-medium max-w-xl">Real-time intelligence and administrative audit telemetry for infrastructure health monitoring.</p>
+          <h1 className="text-4xl font-black text-white tracking-tight">Dashboard</h1>
+          <p className="text-base text-slate-400 font-medium max-w-xl">Users, jobs, money received and what is waiting for you. All numbers are real.</p>
         </div>
       </div>
       
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Revenue', value: loading ? '...' : `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
+          { label: 'Total Revenue', value: loading ? '...' : `₹${Math.round(stats.totalRevenue || 0).toLocaleString('en-IN')}`, sub: loading ? '' : `₹${Math.round(stats.onlineRevenue || 0).toLocaleString('en-IN')} online · ₹${Math.round(stats.manualRevenue?.total || 0).toLocaleString('en-IN')} paid by hand (${stats.manualRevenue?.count || 0}), with GST`, icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
           { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, sub: loading ? '' : Object.entries(stats.usersByRole || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${k.replace(/_/g, ' ')}`).join(' · '), color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'hover:border-emerald-200' },
           { label: 'Jobs', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'hover:border-blue-200' },
           { label: 'Organizations', value: loading ? '...' : stats.companies, color: 'text-violet-600', bg: 'bg-violet-50', icon: Building2, border: 'hover:border-violet-200' }
@@ -69,6 +85,20 @@ const AdminDashboard = () => {
         ))}
       </div>
 
+      {/* Today (India time) */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'New users today', value: stats.today?.newUsers },
+          { label: 'New jobs today', value: stats.today?.newJobs },
+          { label: 'Applications today', value: stats.today?.applications },
+        ].map((t) => (
+          <div key={t.label} className="rounded-2xl border border-slate-200 bg-white px-5 py-4">
+            <p className="text-2xl font-black tabular-nums text-slate-900">{loading ? '...' : (t.value ?? 0)}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t.label}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Main Section */}
       <div className="flex flex-col xl:flex-row gap-8">
         {/* Revenue Line Chart */}
@@ -77,10 +107,10 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between mb-8">
                <div className="flex items-center gap-3">
                   <TrendingUp size={18} className="text-emerald-600" />
-                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">Revenue Growth</h2>
+                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">Money received</h2>
                </div>
                <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
-                  Monthly Trajectory
+                  By month
                </div>
             </div>
 
@@ -88,6 +118,11 @@ const AdminDashboard = () => {
               {loading ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Graph...</p>
+                </div>
+              ) : !(stats.revenueData || []).some((m) => m.revenue > 0) ? (
+                <div className="w-full h-full min-h-[350px] flex flex-col items-center justify-center text-center">
+                  <p className="text-sm font-bold text-slate-500">No payments yet</p>
+                  <p className="text-xs text-slate-400 mt-1">Money received online or marked paid by hand will show here, month by month.</p>
                 </div>
               ) : stats.revenueData?.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -180,101 +215,63 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* System Telemetry Section */}
-      <div className="flex flex-col xl:flex-row gap-8 mt-8">
-        {/* Audit Logs */}
-        <div className="flex-1 min-w-0">
-          <section className="bg-white p-8 rounded-[24px] border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
-               <div className="flex items-center gap-3">
-                  <Activity size={18} className="text-emerald-600" />
-                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">System Telemetry</h2>
-               </div>
-               <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
-                  Live Audit
-               </div>
-            </div>
+      {/* Site status: a real check of the server and database */}
+      <section
+        className={`rounded-[24px] border p-5 flex items-center justify-between gap-4 ${health === null ? 'bg-white border-slate-200' : health.ok ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-300'}`}
+        role="status"
+        aria-live="polite"
+      >
+        <div className="flex items-center gap-3">
+          <span className={`w-3 h-3 rounded-full ${health === null ? 'bg-slate-300' : health.ok ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`} />
+          <div>
+            <p className="text-sm font-bold text-slate-900">
+              {health === null ? 'Checking the site...' : health.ok ? 'Site and database are up' : 'The site cannot reach its database'}
+            </p>
+            <p className="text-xs text-slate-500">
+              {health === null ? ' ' : health.ok ? 'Checked just now, repeats every minute.' : 'Tell Sneha now. New sign-ups and payments may fail.'}
+            </p>
+          </div>
+        </div>
+      </section>
 
-            <div className="space-y-4">
-              {[
-                { msg: 'Global system synchronization finalized', time: '12:30 PM', status: 'SUCCESS' },
-                { msg: 'Administrative session authorized: Root Admin', time: '11:45 AM', status: 'SECURITY' },
-                { msg: 'Relational database integrity verified', time: '10:15 AM', status: 'STABLE' },
-                { msg: 'New organization registration request: TechCorp', time: '09:30 AM', status: 'PENDING' },
-                { msg: 'Automated backup sequence initiated', time: '08:00 AM', status: 'SYSTEM' },
-              ].map((log, i) => (
-                <div key={i} className="p-4 bg-slate-50/50 hover:bg-slate-50 rounded-xl transition-all flex items-center justify-between group border border-transparent hover:border-slate-100">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                       <ShieldCheck size={16} className="text-slate-400" />
-                    </div>
-                    <div>
-                       <p className="text-sm font-bold text-slate-800">{log.msg}</p>
-                       <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">{log.time}</p>
-                    </div>
-                  </div>
-                  <span className={`text-[9px] font-bold uppercase tracking-tight px-2 py-0.5 rounded-md border ${
-                    log.status === 'SECURITY' ? 'bg-red-50 text-red-600 border-red-100' : 
-                    log.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                    'bg-slate-100 text-slate-500 border-slate-200'
-                  }`}>
-                    {log.status}
-                  </span>
+      {/* Waiting on you: real counts only */}
+      <section className="bg-white p-8 rounded-[24px] border border-slate-200 shadow-sm mt-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <Activity size={18} className="text-emerald-600" />
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Waiting on you</h2>
+          </div>
+          <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
+            <Link to="/admin/needs-action">See all with owners</Link>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {[
+            { label: 'Colleges waiting for verification', count: stats.needsAction?.collegesPending, to: '/admin/colleges' },
+            { label: 'Support tickets open', count: stats.needsAction?.ticketsOpen, to: '/admin/tickets' },
+            { label: 'New contact messages', count: stats.needsAction?.messagesNew, to: '/admin/messages' },
+            { label: 'Reviews waiting for approval', count: stats.needsAction?.reviewsPending, to: '/admin/reviews' },
+            { label: 'Requests waiting', count: stats.needsAction?.requestsPending, to: '/admin/requests' },
+            { label: 'Jobs flagged as possible scams', count: stats.needsAction?.jobsFlagged, to: '/admin/jobs' },
+          ].map((row) => (
+            <Link key={row.to} to={row.to} className="p-4 bg-slate-50/50 hover:bg-slate-50 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-slate-100">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                  <ShieldCheck size={16} className="text-slate-400" />
                 </div>
-              ))}
-            </div>
-            
-            <Button variant="ghost" className="w-full mt-6 text-emerald-600 font-bold uppercase tracking-widest text-[10px] hover:bg-emerald-50 rounded-xl">
-               Access Full Audit History <ChevronRight size={14} className="ml-1" />
-            </Button>
-          </section>
+                <p className="text-sm font-bold text-slate-800">{row.label}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`text-sm font-black tabular-nums px-2.5 py-0.5 rounded-md border ${row.count > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                  {loading ? '...' : (row.count ?? 0)}
+                </span>
+                <ChevronRight size={14} className="text-slate-400" />
+              </div>
+            </Link>
+          ))}
         </div>
-
-        {/* Sidebar Widgets */}
-        <div className="xl:w-[380px] flex flex-col gap-8">
-            <Card className="rounded-[32px] bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8 relative overflow-hidden group h-64 flex flex-col justify-end shadow-2xl shadow-slate-900/10 border-none hover:-translate-y-1 transition-transform duration-500">
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
-                 <TrendingUp size={120} />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent opacity-80" />
-              <div className="relative z-10 space-y-4">
-                 <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-xl backdrop-blur-md">Platform Integrity</Badge>
-                 <h3 className="text-2xl font-black leading-tight tracking-tight">Infrastructure status is currently Optimal.</h3>
-                 <div className="flex items-center gap-4 mt-6">
-                    <div className="flex -space-x-3">
-                       {[1,2,3].map(i => (
-                         <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700/80 backdrop-blur-md shadow-sm" />
-                       ))}
-                    </div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">99.99% Uptime</span>
-                 </div>
-              </div>
-           </Card>
-
-           <section className="bg-white p-8 rounded-[32px] border border-slate-200/60 shadow-sm hover:shadow-lg hover:border-slate-300 transition-all duration-500">
-              <div className="flex items-center justify-between mb-8">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Activity size={12} /> Resource telemetry</h4>
-              </div>
-              <div className="space-y-6">
-                 {[
-                   { label: 'Compute capacity', val: 78, color: 'bg-indigo-500', bg: 'bg-indigo-100' },
-                   { label: 'Storage metrics', val: 42, color: 'bg-emerald-500', bg: 'bg-emerald-100' },
-                   { label: 'Network throughput', val: 12, color: 'bg-blue-400', bg: 'bg-blue-100' }
-                 ].map((item, i) => (
-                   <div key={i} className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                         <span>{item.label}</span>
-                         <span className="text-slate-900 font-black">{item.val}%</span>
-                      </div>
-                      <div className={`h-2.5 ${item.bg} rounded-full overflow-hidden`}>
-                         <div className={`h-full ${item.color} rounded-full transition-all duration-1000 shadow-sm`} style={{ width: `${item.val}%` }} />
-                      </div>
-                   </div>
-                 ))}
-              </div>
-           </section>
-        </div>
-      </div>
+      </section>
     </div>
   );
 };

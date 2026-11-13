@@ -4,6 +4,7 @@
 // job seekers who registered or logged in and saved their result.
 const FreeTestAttempt = require('../models/FreeTestAttempt');
 const SkillTestResult = require('../models/SkillTestResult');
+const { planSummary, suggestFor } = require('../utils/userUsage');
 
 const clampDays = (raw) => Math.min(365, Math.max(1, parseInt(raw, 10) || 30));
 const pct = (num, den) => (den ? Math.round((num / den) * 100) : 0);
@@ -31,7 +32,7 @@ const getSkillTestSummary = async (req, res) => {
         { $limit: 30 },
       ]),
       SkillTestResult.countDocuments(range),
-      SkillTestResult.find(range).sort({ createdAt: -1 }).limit(100).populate('user', 'name email phone'),
+      SkillTestResult.find(range).sort({ createdAt: -1 }).limit(100).populate('user', 'name email phone subscriptionDetails subscriptionExpiry'),
     ]);
 
     const t = totalsRows[0] || { attempts: 0, passed: 0, avg: 0 };
@@ -43,12 +44,17 @@ const getSkillTestSummary = async (req, res) => {
         passRate: pct(t.passed, t.attempts),
         averagePercentage: Math.round(t.avg || 0),
         savedResults: saved,
-        // Share of tests that ended with a saved result on a registered account.
-        savedShare: pct(saved, t.attempts),
+        // Free tests (no account) and saved results (logged-in job seekers) come from two different
+        // collections, so one is not a share of the other. Kept at most 100 for any old caller.
+        savedShare: Math.min(100, pct(saved, t.attempts)),
       },
       byDay: byDayRows.map((r) => ({ date: r._id, attempts: r.attempts })),
       bySkill: bySkillRows.map((r) => ({ skill: r._id, attempts: r.attempts, passRate: pct(r.passed, r.attempts), averagePercentage: Math.round(r.avg || 0) })),
-      recent: recent.map((r) => ({
+      recent: recent.map((r) => {
+        const plan = planSummary({ details: r.user?.subscriptionDetails, expiry: r.user?.subscriptionExpiry });
+        return {
+        plan: plan.state === 'active' ? 'Paid' : plan.state === 'expired' ? 'Expired' : 'Free',
+        suggestion: suggestFor({ role: 'jobseeker', plan, latestTest: { skill: r.skill, percentage: r.percentage, passed: !!r.passed } }),
         _id: r._id,
         name: r.user?.name || '',
         email: r.user?.email || '',
@@ -57,7 +63,8 @@ const getSkillTestSummary = async (req, res) => {
         percentage: r.percentage,
         passed: !!r.passed,
         createdAt: r.createdAt,
-      })),
+        };
+      }),
     });
   } catch (err) {
     console.error('Skill test summary error:', err.message);

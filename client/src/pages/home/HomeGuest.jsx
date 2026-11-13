@@ -21,6 +21,10 @@ import TrendingSearches from '@/components/home/TrendingSearches';
 import SkillAssessment from '@/components/home/SkillAssessment';
 import MotionIcon from '@/components/home/MotionIcon';
 import CategoryCards from '@/components/home/CategoryCards';
+import UpcomingDrives from '@/components/home/UpcomingDrives';
+import HomeInternships from '@/components/home/HomeInternships';
+import WhoAreYou from '@/components/home/WhoAreYou';
+import LogoStrips from '@/components/home/LogoStrips';
 import HireCta from '@/components/home/HireCta';
 import { popularTerms, MIN_POPULAR_TERMS } from '@/utils/popularSearches';
 import { trackEvent } from '@/utils/analytics';
@@ -103,7 +107,7 @@ const HomeGuest = () => {
   const trendingSearches = useMemo(() => popularTerms(jobs), [jobs]);
 
   const recentJobs = useMemo(
-    () => [...jobs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3),
+    () => [...jobs].sort((a, b) => (Number(!!b.isSponsored) - Number(!!a.isSponsored)) || (new Date(b.createdAt) - new Date(a.createdAt))).slice(0, 3),
     [jobs]
   );
 
@@ -115,7 +119,7 @@ const HomeGuest = () => {
     { label: 'Open Jobs', raw: platformStats.openJobs ?? platformStats.activeJobsCount, icon: Briefcase },
     { label: 'Companies Hiring', raw: platformStats.companiesHiring ?? platformStats.companiesCount, icon: Building2, invert: true },
     { label: 'Colleges', raw: platformStats.collegesOnboardedCount, icon: GraduationCap },
-    { label: 'Students', raw: platformStats.students ?? platformStats.jobseekersCount, icon: Users },
+    { label: 'Job Seekers', raw: platformStats.students ?? platformStats.jobseekersCount, icon: Users },
     { label: 'Free Skill Tests', raw: skillTestCount, icon: ClipboardCheck },
     { label: 'Avg Rating', raw: platformStats.reviewsCount, icon: Star, display: `${Number(platformStats.avgRating || 0).toFixed(1)}\u2605` },
   ]
@@ -127,7 +131,7 @@ const HomeGuest = () => {
     { label: 'Companies Hiring', raw: platformStats.companiesHiring },
     { label: 'Open Jobs', raw: platformStats.openJobs },
     { label: 'Colleges', raw: platformStats.collegesOnboardedCount },
-    { label: 'Students', raw: platformStats.students },
+    { label: 'Job Seekers', raw: platformStats.students },
     { label: 'Free Skill Tests', raw: skillTestCount },
   ]
     .filter((c) => Number(c.raw) >= MIN_STAT)
@@ -239,6 +243,8 @@ const HomeGuest = () => {
                     { label: "I'm looking for a job", to: '/jobs', audience: 'job_seeker' },
                     { label: "I'm hiring", to: '/company-login', audience: 'company' },
                     { label: "I'm a college", to: '/for-colleges', audience: 'college' },
+                    { label: 'Internships (free)', to: '/internships', audience: 'internships' },
+                    { label: 'Walk-in drives', to: '/drives', audience: 'drives' },
                   ].map(item => (
                     <Link
                       key={item.audience}
@@ -345,10 +351,14 @@ const HomeGuest = () => {
           <div className="max-w-6xl mx-auto px-6">
             <Reveal className="text-center mb-16">
               <SectionEyebrow>Browse by Domain</SectionEyebrow>
-              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Explore Job Categories</h2>
-              <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">Find opportunities across diverse industries and domains.</p>
+              <h2 className="text-3xl md:text-5xl font-bold text-zinc-900 tracking-tight">Find Work in Every Field</h2>
+              <p className="text-zinc-600 mt-3 font-medium text-sm md:text-base">Healthcare, hotels, shops, factories, offices and more. Pick your field and see who is hiring.</p>
             </Reveal>
             <CategoryCards />
+        <WhoAreYou />
+        <HomeInternships />
+        <UpcomingDrives />
+        <LogoStrips />
           </div>
         </section>
 

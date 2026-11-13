@@ -94,6 +94,10 @@ const userSchema = new mongoose.Schema({
     interestedDomain: [{ type: String }],
     shifts: [{ type: String }],
     preferredRole: { type: String, default: '' },
+    // Up to 3 fields of work the person is interested in (config/jobCategories.js keys); gives matching a small boost.
+    interestedCategories: [{ type: String }],
+    // Filled by quick apply: fresher, under_2_years, 2_to_5_years, over_5_years.
+    experienceLevel: { type: String, enum: ['', 'fresher', 'under_2_years', '2_to_5_years', 'over_5_years'], default: '' },
     resumeUrl: { type: String, default: '' },
     resumeName: { type: String, default: '' },
     portfolioUrl: { type: String, default: '' },
@@ -325,6 +329,28 @@ const userSchema = new mongoose.Schema({
   onboarding: {
     tourSeenAt: { type: Date, default: null }
   },
+  // WhatsApp alerts consent. Recorded now; messages are sent only once a WhatsApp Business account is connected.
+  whatsapp: {
+    optIn: { type: Boolean, default: false },
+    number: { type: String, default: '' },
+    optInAt: { type: Date, default: null },
+    optOutAt: { type: Date, default: null }
+  },
+  // Agreed (optionally) to be contacted by sister brands about training and hiring. Only these people can appear as brand leads.
+  brandConsent: {
+    contact: { type: Boolean, default: false },
+    at: { type: Date, default: null },
+    withdrawnAt: { type: Date, default: null },
+    source: { type: String, default: '' }
+  },
+  // Ad or post link tags kept at sign-up (utm source, medium, campaign), so we can see which channel brings people.
+  signupSource: {
+    source: { type: String, default: '' },
+    medium: { type: String, default: '' },
+    campaign: { type: String, default: '' }
+  },
+  // Who invited this person (set at sign-up from an invite link).
+  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
   // Marketing / lifecycle mail preference. Receipts and security mails are never affected.
   emailPrefs: {
     marketingOptOut: { type: Boolean, default: false },

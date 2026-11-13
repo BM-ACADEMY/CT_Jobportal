@@ -3,6 +3,20 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowUpRight, Calendar, Clock } from 'lucide-react';
 import { BLOGS, RECENT_BLOGS } from '../../data/blogs';
+import { useAdminBlogCards } from '../../data/useBlogPosts';
+import { useAuth } from '../../context/AuthContext';
+
+// Posts written for employers and recruiters are not useful on a student or college screen.
+const RECRUITER_ONLY = ['For Recruiters & Employers', 'Recruitment & HR Guidance'];
+const HIDE_RECRUITER_POSTS_FOR = ['jobseeker', 'college', 'drive_incharge'];
+
+// Posts the admin wrote come first, then the built-in ones; employer-only posts are hidden from students and colleges.
+const useVisibleBlogs = (base) => {
+  const newPosts = useAdminBlogCards();
+  const { user } = useAuth();
+  const hide = HIDE_RECRUITER_POSTS_FOR.includes(user?.role);
+  return [...newPosts, ...base].filter((b) => !(hide && RECRUITER_ONLY.includes(b.category)));
+};
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -17,14 +31,16 @@ const Meta = ({ blog, light = false }) => (
 );
 
 // Small sidebar version used inside dashboards (unchanged layout).
-const Compact = () => (
+const Compact = () => {
+  const blogs = useVisibleBlogs(RECENT_BLOGS).slice(0, 2);
+  return (
   <section aria-labelledby="recent-blogs-title">
     <div className="mb-4">
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-1">Career insights</p>
       <h2 id="recent-blogs-title" className="text-base font-bold text-slate-900">Latest from our blog</h2>
     </div>
     <div className="space-y-4">
-      {RECENT_BLOGS.map((blog) => (
+      {blogs.map((blog) => (
         <article key={blog.slug} className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-shadow">
           <img src={blog.image} alt="" className="h-24 w-full object-cover" />
           <div className="p-4">
@@ -36,7 +52,7 @@ const Compact = () => (
             <div className="mt-3 pt-3 flex items-center gap-2.5 border-t border-slate-100">
               <div className="h-8 w-8 text-[10px] flex shrink-0 items-center justify-center rounded-none bg-emerald-500 font-black text-white" aria-hidden="true">V</div>
               <div className="min-w-0">
-                <p className="text-xs truncate font-bold text-slate-900">{blog.author || 'Velai Vaaipu'}</p>
+                <p className="text-xs truncate font-bold text-slate-900">{blog.author || 'Velaivaaipu'}</p>
                 <time dateTime={blog.date} className="block text-[11px] text-slate-500">{blog.date}</time>
               </div>
             </div>
@@ -46,12 +62,14 @@ const Compact = () => (
     </div>
     <Link to="/blog" className="mt-4 inline-flex text-xs font-bold text-emerald-600 hover:text-emerald-700">See all articles →</Link>
   </section>
-);
+  );
+};
 
 // Magazine layout: one featured story with a revealing photo, and a reading list beside it.
 const RecentBlogs = ({ compact = false }) => {
+  const visible = useVisibleBlogs(BLOGS);
   if (compact) return <Compact />;
-  const [featured, ...rest] = BLOGS.slice(0, 3);
+  const [featured, ...rest] = visible.slice(0, 3);
   if (!featured) return null;
 
   return (

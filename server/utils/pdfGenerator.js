@@ -422,4 +422,54 @@ const generatePlacementReportPdf = (college, stats, periodLabel) => {
   return bufferFromDoc(doc);
 };
 
-module.exports = { generateMouPdf, generateCertificatePdf, generatePlacementReportPdf, generateSummaryReportPdf };
+// @desc  One-page price quote a TPO can hand to the principal. `q` comes from utils/collegeQuote.buildQuote.
+const generateQuotePdf = (q) => {
+  const doc = new PDFDocument({ size: 'A4', margin: 55 });
+  const rs = (n) => `Rs ${Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  doc.fontSize(20).font('Helvetica-Bold').fillColor('#0f172a').text('PRICE QUOTE', { align: 'left' });
+  doc.fontSize(10).font('Helvetica').fillColor('#475569').text(q.issuer + (q.issuerLine ? ` · ${q.issuerLine}` : ''));
+  doc.moveDown(0.8);
+  doc.fillColor('#0f172a').fontSize(10);
+  doc.text(`Quote number: ${q.number}`);
+  doc.text(`Date: ${q.date}`);
+  doc.text(`Valid until: ${q.validUntil}`);
+  doc.moveDown(0.8);
+
+  doc.font('Helvetica-Bold').fontSize(11).text('Prepared for');
+  doc.font('Helvetica').fontSize(10.5).text(q.to.name);
+  if (q.to.principal) doc.text(`Attention: ${q.to.principal}`);
+  if (q.to.location) doc.text(q.to.location);
+  doc.moveDown(1);
+
+  doc.font('Helvetica-Bold').fontSize(12).text(`${q.plan.name} (${q.plan.duration})`);
+  if (q.plan.capacity) doc.font('Helvetica').fontSize(10.5).text(`Student capacity: ${q.plan.capacity}`);
+  if (q.plan.seats) doc.font('Helvetica').fontSize(10.5).text(`Team seats: ${q.plan.seats}`);
+  doc.moveDown(0.6);
+  doc.font('Helvetica-Bold').fontSize(10.5).text('What is included');
+  doc.font('Helvetica').fontSize(10).list(q.plan.features.length ? q.plan.features : ['Student onboarding and placement tools'], { bulletRadius: 1.5 });
+  doc.moveDown(1);
+
+  const left = doc.page.margins.left; const right = doc.page.width - doc.page.margins.right;
+  const row = (label, value, bold) => {
+    const y = doc.y;
+    doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(bold ? 12 : 10.5).fillColor('#0f172a');
+    doc.text(label, left, y, { width: 250, continued: false });
+    doc.text(value, left + 250, y, { width: right - left - 250, align: 'right' });
+    doc.moveDown(0.3);
+  };
+  row('Plan price', rs(q.base));
+  row('GST (18%)', rs(q.gst));
+  doc.moveTo(left, doc.y).lineTo(right, doc.y).strokeColor('#cbd5e1').stroke(); doc.moveDown(0.3);
+  row('Total payable', rs(q.total), true);
+  doc.moveDown(1);
+
+  doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a').text('How to pay');
+  doc.font('Helvetica').fontSize(10);
+  if (q.bank.length) q.bank.forEach((l) => doc.text(l)); else doc.text('Bank details are shared by our team with your purchase order. Write to hello@velaivaaipu.in.');
+  doc.moveDown(0.6);
+  doc.fillColor('#475569').fontSize(9).text('Your plan starts when payment is confirmed. Prices are in Indian rupees. This quote is not a tax invoice; an invoice is issued after payment.');
+  return bufferFromDoc(doc);
+};
+
+module.exports = { generateMouPdf, generateCertificatePdf, generatePlacementReportPdf, generateSummaryReportPdf, generateQuotePdf };

@@ -1,0 +1,122 @@
+const College = require('../models/College');
+const CollegePackPayment = require('../models/CollegePackPayment');
+const AdminRequest = require('../models/AdminRequest');
+const User = require('../models/User');
+const { planPack, effectiveStudentLimit, activeExtra, checkRequest } = require('../utils/collegePack');
+const { notifyRoles, notifyUser } = require('../utils/inAppNotifications');
+const { receivedMessage } = require('../utils/serviceRequestMessages');
+const { PACK } = require('../config/collegePack');
+
+const HEX = /^[0-9a-fA-F]{24}$/;
+
+// POST /api/admin/colleges/:id/student-pack {packs, note}   (Super Admin only)
+// The amount is worked out here from the fixed pack price plus 18% GST. It is never taken from the request.
+const recordPack = async (req, res) => {
+  try {
+    if (!HEX.test(req.params.id)) return res.status(400).json({ msg: 'Bad college id' });
+    const note = String(req.body?.note || '').trim().slice(0, 200);
+    if (note.length < 5) return res.status(400).json({ msg: 'Please write how it was paid (for example: UPI, 12 Nov).' });
+    const college = await College.findById(req.params.id);
+    if (!college) return res.status(404).json({ msg: 'College not found' });
+    if (college.verificationStatus !== 'verified') return res.status(400).json({ msg: 'Verify the college before adding a pack.' });
+    const plan = planPack(college, req.body?.packs);
+    if (plan.error) return res.status(400).json({ msg: plan.error });
+    // Two taps or a retry a few seconds apart must not record the same pack twice.
+    const justNow = await CollegePackPayment.findOne({ college: college._id, createdAt: { $gte: new Date(Date.now() - 30000) } }).lean();
+    if (justNow) return res.status(409).json({ msg: 'A pack was just recorded for this college. Refresh the page to see it before adding another.' });
+    const payment = await CollegePackPayment.create({ college: college._id, packs: plan.packs, students: plan.students, amount: plan.total, note, by: String(req.user?.id || '') });
+    // The college's open request is now dealt with, so its dashboard button comes back.
+    await AdminRequest.updateMany({ type: 'student_pack', college: college._id, status: { $in: ['pending', 'approved'] } }, { $set: { status: 'completed' } }).catch(() => {});
+    college.extraStudents = plan.extraStudents;
+    college.extraUntil = plan.extraUntil;
+    try { await college.save(); } catch (saveErr) {
+      // Capacity was not added, so the payment record must not stay behind (a retry would count it twice).
+      await CollegePackPayment.deleteOne({ _id: payment._id }).catch(() => {});
+      throw saveErr;
+    }
+    res.json({ msg: `Added ${plan.students} students.`, paid: plan.total, studentLimit: effectiveStudentLimit(college), extraStudents: college.extraStudents, extraUntil: college.extraUntil });
+  } catch (e) { console.error('College pack:', e.message); res.status(500).json({ msg: 'Could not save' }); }
+};
+
+// POST /api/college/me/student-pack-request {packs, note}   (college dashboard)
+// Raises a request only. The Super Admin records the payment later, which is what adds the students.
+const requestPack = async (req, res) => {
+  try {
+    const college = await College.findOne({ $or: [{ tpoUser: req.user.id }, { teamMembers: { $elemMatch: { user: req.user.id, isActive: true } } }] });
+    if (!college) return res.status(404).json({ msg: 'No college linked to your account.' });
+    if (college.verificationStatus !== 'verified') return res.status(400).json({ msg: 'Your college must be verified before you can add a pack.' });
+    const pending = await AdminRequest.exists({ type: 'student_pack', college: college._id, status: { $in: ['pending', 'approved'] } });
+    const check = checkRequest(college, req.body?.packs, !!pending);
+    if (check.error) return res.status(400).json({ msg: check.error });
+    const user = await User.findById(req.user.id).select('name email phone');
+    const request = await AdminRequest.create({
+      user: req.user.id, type: 'student_pack', college: college._id, packs: check.packs,
+      bookingName: user?.name, bookingEmail: user?.email, bookingPhone: user?.phone,
+      notes: `${college.name}: ${check.packs} pack(s), ${check.students} students, ${check.total} incl. GST. ${String(req.body?.note || '').trim().slice(0, 300)}`.trim()
+    });
+    // In-app alert plus the standard email to every Super Admin. Staff are not told: they cannot open this type.
+    notifyRoles({ io: req.io, roles: ['admin'], title: 'College asked for a student pack', message: `${college.name} asked for ${check.packs} pack(s) (${check.students} students, Rs ${check.total} with GST).`, type: 'service_request', link: '/admin/requests', metadata: { requestId: request._id, requestType: 'student_pack' } })
+      .catch(err => console.error('Pack request alert failed:', err.message));
+    notifyUser({ io: req.io, recipientId: req.user.id, ...receivedMessage('student_pack', user?.name), type: 'service_received', metadata: { requestId: request._id } })
+      .catch(err => console.error('Pack request receipt failed:', err.message));
+    res.status(201).json({ msg: 'Request sent. Our team will contact you within 24 hours.' });
+  } catch (e) { console.error('Pack request:', e.message); res.status(500).json({ msg: 'Could not send the request' }); }
+};
+
+// GET /api/college/me/student-pack  → what the college can still add, and whether a request is open
+const myPackStatus = async (req, res) => {
+  try {
+    const college = await College.findOne({ $or: [{ tpoUser: req.user.id }, { teamMembers: { $elemMatch: { user: req.user.id, isActive: true } } }] });
+    if (!college) return res.status(404).json({ msg: 'No college linked' });
+    const have = Math.round(activeExtra(college) / PACK.students);
+    const pending = !!(await AdminRequest.exists({ type: 'student_pack', college: college._id, status: { $in: ['pending', 'approved'] } }));
+    res.json({ ...PACK, havePacks: have, canRequest: college.verificationStatus === 'verified' && (college.studentLimit || 100) < 100000 && have < PACK.maxPacks && !pending, pending, studentLimit: effectiveStudentLimit(college) });
+  } catch (e) { res.status(500).json({ msg: 'Could not load' }); }
+};
+
+const INTERESTS = { pack: 'a student pack', plan: 'a bigger plan', custom: 'a customised plan', unsure: 'not sure yet, wants advice' };
+
+// POST /api/college/me/upgrade-call {interest, note}  → "please call me about more students" (one open request at a time)
+const requestUpgradeCall = async (req, res) => {
+  try {
+    const college = await College.findOne({ $or: [{ tpoUser: req.user.id }, { teamMembers: { $elemMatch: { user: req.user.id, isActive: true } } }] });
+    if (!college) return res.status(404).json({ msg: 'No college linked to your account.' });
+    const open = await AdminRequest.exists({ type: 'college_upgrade', college: college._id, status: { $in: ['pending', 'approved'] } });
+    const interest = INTERESTS[req.body?.interest] ? req.body.interest : 'unsure';
+    const note = String(req.body?.note || '').trim().slice(0, 300);
+    if (open) return res.json({ msg: 'We already have your request. Our team will call you soon.' });
+    const user = await User.findById(req.user.id).select('name email phone');
+    await AdminRequest.create({
+      user: req.user.id, type: 'college_upgrade', college: college._id,
+      bookingName: user?.name, bookingEmail: user?.email, bookingPhone: user?.phone || college.collegePhone,
+      notes: `${college.name} asked for a call about more students. Interested in: ${INTERESTS[interest]}. ${note}`.trim()
+    });
+    notifyRoles({ io: req.io, roles: ['admin'], title: 'College asked for a call about more students', message: `${college.name} is interested in ${INTERESTS[interest]}.`, type: 'service_request', link: '/admin/requests' })
+      .catch((err) => console.error('Upgrade call alert failed:', err.message));
+    res.status(201).json({ msg: 'Thank you. Our team will call you within 24 hours.' });
+  } catch (e) { console.error('Upgrade call:', e.message); res.status(500).json({ msg: 'Could not send the request' }); }
+};
+
+// GET /api/college/me/quote-pack/:packs  → one-page quote (with 18% GST) for 1 or 2 student packs
+const downloadPackQuote = async (req, res) => {
+  try {
+    const n = Number(req.params.packs);
+    if (!Number.isInteger(n) || n < 1 || n > PACK.maxPacks) return res.status(404).json({ msg: 'Choose 1 or ' + PACK.maxPacks + ' packs' });
+    const college = await College.findOne({ $or: [{ tpoUser: req.user.id }, { teamMembers: { $elemMatch: { user: req.user.id, isActive: true } } }] });
+    if (!college) return res.status(404).json({ msg: 'No college linked to your account.' });
+    const { buildQuote } = require('../utils/collegeQuote');
+    const { generateQuotePdf } = require('../utils/pdfGenerator');
+    const plan = {
+      name: n === 1 ? 'Student Pack (1 pack)' : `Student Packs (${n} packs)`, price: PACK.price * n, duration: 'one year',
+      features: [{ name: `Adds ${PACK.students * n} students to your plan for one year`, isActive: true, value: true }, { name: 'Added by our team after payment is confirmed', isActive: true, value: true }],
+    };
+    const pdf = await generateQuotePdf(buildQuote({ college, plan }));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="quote-student-pack-${n}.pdf"`);
+    res.send(pdf);
+  } catch (e) { console.error('Pack quote:', e.message); res.status(500).json({ msg: 'Could not make the quote' }); }
+};
+
+const packInfo = (req, res) => res.json(PACK);
+
+module.exports = { recordPack, packInfo, requestPack, myPackStatus, requestUpgradeCall, downloadPackQuote };

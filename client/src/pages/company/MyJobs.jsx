@@ -1,3 +1,4 @@
+import VerificationBanner from '@/components/company/VerificationBanner';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -84,6 +85,27 @@ const MyJobs = () => {
     });
   };
 
+  const handleRenew = async (jobId) => {
+    try {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}/renew`, {}, { headers });
+      message.success('Renewed. This job stays on the public page for 45 more days.');
+    } catch (err) {
+      message.error(err.response?.data?.msg || 'Failed to renew');
+    }
+  };
+
+  // Uses a Sponsored add-on the company bought. Without one, it opens the add-ons page to buy one.
+  const handleSponsor = async (jobId) => {
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}/sponsor-addon`, {}, { headers });
+      message.success(`Sponsored for ${res.data.days} days. It shows at the top of the Jobs page with a Sponsored label.`);
+      fetchJobs();
+    } catch (err) {
+      if (err.response?.data?.code === 'no_sponsor_pack') { message.info('Buy a Sponsored add-on first, then come back and sponsor this job.'); navigate('/company/unlocks'); return; }
+      message.error(err.response?.data?.msg || 'Could not sponsor this job');
+    }
+  };
+
   const handleClone = async (jobId) => {
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/jobs/${jobId}/clone`, {}, { headers });
@@ -132,6 +154,8 @@ const MyJobs = () => {
       <Menu.Item key="2" icon={<EditOutlined />} onClick={() => navigate(`/company/jobs/new?edit=${job._id}`)}>
         Edit Job
       </Menu.Item>
+      {job.status === 'active' && <Menu.Item key="renew" onClick={() => handleRenew(job._id)}>Renew (45 days)</Menu.Item>}
+      {job.status === 'active' && !(job.sponsoredUntil && new Date(job.sponsoredUntil) > new Date()) && <Menu.Item key="sponsor" onClick={() => handleSponsor(job._id)}>Sponsor this job</Menu.Item>}
       <Menu.Item key="3" icon={<CopyOutlined />} onClick={() => handleClone(job._id)}>
         Clone Job
       </Menu.Item>
@@ -154,6 +178,7 @@ const MyJobs = () => {
     <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex-1 min-w-0 space-y-12">
       <PageSOPBanner pageKey="myJobs" />
+      <VerificationBanner />
       
       {/* Premium Welcome Header */}
       <Card variant="borderless" styles={{ body: { padding: 0 } }} style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)', borderRadius: 0 }} className="relative shadow-sm overflow-hidden group">
@@ -173,7 +198,7 @@ const MyJobs = () => {
                  </div>
                  <h2 className="text-2xl font-black text-white tracking-tight m-0">My Job Listings</h2>
                  <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
-                   Manage all your posted positions, analyze applicant flow, and track engagement dynamically.
+                   Manage all your posted positions, analyze applicant flow, and track engagement.
                  </p>
                  {quota && !quota.unlimited && (
                    <div style={{ marginTop: 8 }}>
@@ -341,6 +366,7 @@ const MyJobs = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                       <Text strong style={{ fontSize: 16 }}>{job.title}</Text>
                       {job.isCloned && <Tag color="blue" style={{ borderRadius: 0 }}>Cloned</Tag>}
+                      {job.sponsoredUntil && new Date(job.sponsoredUntil) > new Date() && <Tag color="gold" style={{ borderRadius: 0 }}>Sponsored until {new Date(job.sponsoredUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</Tag>}
                       <Tag color={STATUS_COLOR[job.status] || 'default'} style={{ borderRadius: 0, textTransform: 'uppercase', fontSize: 10, fontWeight: 700 }}>
                         {job.status}
                       </Tag>

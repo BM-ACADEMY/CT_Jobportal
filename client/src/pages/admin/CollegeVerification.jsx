@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { hasStaffPermission } from '../../config/staffPermissions';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { GraduationCap, CheckCircle2, XCircle, Clock, FileText, Search, Eye } from 'lucide-react';
+import { GraduationCap, CheckCircle2, XCircle, Clock, FileText, Search, Eye, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +25,7 @@ const CollegeVerification = () => {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [showTest, setShowTest] = useState(false);
   const navigate = useNavigate();
 
   const fetchColleges = async () => {
@@ -32,6 +33,7 @@ const CollegeVerification = () => {
     try {
       const params = { page, limit: 20 };
       if (search) params.search = search;
+      if (showTest) params.includeTest = 'true';
       const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/college/admin/all-colleges`, { params });
       setColleges(res.data.colleges);
       setTotal(res.data.total);
@@ -43,7 +45,7 @@ const CollegeVerification = () => {
     }
   };
 
-  useEffect(() => { fetchColleges(); }, [page]);
+  useEffect(() => { fetchColleges(); }, [page, showTest]);
 
   const handleSearchEnter = (e) => {
     if (e.key !== 'Enter') return;
@@ -64,6 +66,19 @@ const CollegeVerification = () => {
     }
   };
 
+  const markTest = async (collegeId, isTest) => {
+    setActing(collegeId);
+    try {
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/college/admin/colleges/${collegeId}/test`, { isTest });
+      toast.success(isTest ? 'Marked as test college' : 'Marked as real college');
+      fetchColleges();
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to update');
+    } finally {
+      setActing(null);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
@@ -75,9 +90,15 @@ const CollegeVerification = () => {
         </p>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={handleSearchEnter} placeholder="Search by name or code..." className="pl-10 h-10 rounded-xl" />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={handleSearchEnter} placeholder="Search by name or code..." className="pl-10 h-10 rounded-xl" />
+        </div>
+        <label className="flex items-center gap-2 text-xs font-bold text-slate-500 cursor-pointer select-none">
+          <input type="checkbox" checked={showTest} onChange={e => { setPage(1); setShowTest(e.target.checked); }} />
+          Show test colleges
+        </label>
       </div>
 
       {loading ? (
@@ -95,8 +116,12 @@ const CollegeVerification = () => {
                 <div className="flex items-center gap-2">
                   <p className="font-bold text-slate-900 text-sm truncate">{c.name}</p>
                   <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${statusStyles[c.verificationStatus] || statusStyles.pending}`}>{c.verificationStatus}</span>
+                  {c.isTest && <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">Test</span>}
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">{c.code} · TPO: {c.tpoUser?.name} ({c.tpoUser?.email}) · {c.collegeEmail || '—'} · {c.collegePhone || '—'}</p>
+                {!c.proofDocumentUrl && c.verificationStatus !== 'verified' && (
+                  <p className="text-[10px] font-bold text-amber-600 mt-1">No proof document uploaded. Check with the college before verifying.</p>
+                )}
                 {c.proofDocumentUrl && (
                   <a
                     href={c.proofDocumentUrl.startsWith('http') ? c.proofDocumentUrl : `${import.meta.env.VITE_API_DOMAIN}${c.proofDocumentUrl}`}
@@ -112,11 +137,14 @@ const CollegeVerification = () => {
                   <Eye size={13} /> View
                 </Button>
                 {canVerify && <>
-                <Button size="sm" disabled={acting === c._id || c.verificationStatus === 'verified'} onClick={() => act(c._id, 'verified')} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1 h-9">
+                <Button size="sm" disabled={acting === c._id || c.verificationStatus === 'verified'} onClick={() => (c.proofDocumentUrl ? act(c._id, 'verified') : (toast.info('No proof uploaded. Add a note on the next page, or ask the college for proof.'), navigate(`/admin/colleges/${c._id}`)))} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1 h-9">
                   <CheckCircle2 size={13} /> Verify
                 </Button>
                 <Button size="sm" variant="outline" disabled={acting === c._id || c.verificationStatus === 'rejected'} onClick={() => act(c._id, 'rejected')} className="rounded-lg text-xs font-bold gap-1 h-9 border-red-200 text-red-600 hover:bg-red-50">
                   <XCircle size={13} /> Reject
+                </Button>
+                <Button size="sm" variant="outline" disabled={acting === c._id} onClick={() => markTest(c._id, !c.isTest)} className="rounded-lg text-xs font-bold gap-1 h-9 text-slate-600">
+                  <FlaskConical size={13} /> {c.isTest ? 'Mark real' : 'Mark test'}
                 </Button>
                 {c.verificationStatus !== 'pending' && (
                   <Button size="sm" variant="outline" disabled={acting === c._id} onClick={() => act(c._id, 'pending')} className="rounded-lg text-xs font-bold gap-1 h-9">

@@ -10,9 +10,9 @@ const MESH = [
 ].join(', ');
 
 // Light hero wrapper: static mesh gradient and a masked dot grid.
-const HeroShell = ({ children }) => {
+const HeroShell = ({ children, compact = false }) => {
   return (
-    <section className="relative min-h-[88vh] flex items-center overflow-hidden" style={{ backgroundImage: MESH }}>
+    <section className={`relative ${compact ? 'lg:min-h-[88vh]' : 'min-h-[88vh]'} flex items-center overflow-hidden`} style={{ backgroundImage: MESH }}>
       {/* Dot grid, faded toward the edges */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -27,7 +27,7 @@ const HeroShell = ({ children }) => {
       {/* Fade into the following white section */}
       <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-white pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 pt-24 pb-16 relative z-10">
+      <div className={`max-w-7xl mx-auto w-full px-6 lg:px-8 ${compact ? 'pt-12 pb-10 lg:pt-24 lg:pb-16' : 'pt-24 pb-16'} relative z-10`}>
         {children}
       </div>
     </section>

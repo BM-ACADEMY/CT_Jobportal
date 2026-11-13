@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const User = require('../models/User');
 const Role = require('../models/Role');
+const { emailKind } = require('../utils/emailKind');
 const Company = require('../models/Company');
 const TeamActivityLog = require('../models/TeamActivityLog');
 const sendEmail = require('../utils/sendEmail');
@@ -94,6 +95,13 @@ const updateRecruiterProfile = async (req, res) => {
       if (!company) {
         // Create new company
         company = new Company(sanitizedCompanyData);
+        // A new company whose person confirmed a company email (OTP) and whose website is on that same domain is verified
+        // straight away, so it needs no review. Anything else stays pending for the team to check or ask for proof.
+        if (user.isVerified && emailKind(user.email, sanitizedCompanyData.website).matchesWebsite) {
+          company.is_verified = true;
+          company.verifiedAt = new Date();
+          company.verification_note = 'Auto-verified: confirmed company email matches the website';
+        }
       } else {
         // Update existing
         Object.keys(sanitizedCompanyData).forEach(key => {
@@ -104,6 +112,7 @@ const updateRecruiterProfile = async (req, res) => {
       // Handle logo upload
       if (req.files && req.files['logo']) {
         company.logo = `/uploads/${req.files['logo'][0].filename}`;
+        company.logoApproved = false; // a new file must be checked again before it shows on the home page
       }
 
       // Handle gallery images from companyData

@@ -2,7 +2,9 @@
 const express = require('express');
 const Job = require('../models/Job');
 const Company = require('../models/Company');
-const { buildJobResponse, buildSitemap, getShell, jobIdFromSlug } = require('../utils/seoPages');
+const BlogPost = require('../models/BlogPost');
+const { publicJobConditions, publicCompanyConditions, hideUnverified } = require('../utils/publicVisibility');
+const { CITY_PAGES, buildPageResponse, normalizePath, cityMinJobs, buildJobResponse, buildSitemap, getShell, jobIdFromSlug } = require('../utils/seoPages');
 
 const router = express.Router();
 const send = (res, out, tag) => {
@@ -17,7 +19,7 @@ router.get('/job/:slug', async (req, res) => {
     shell = await getShell();
     const id = jobIdFromSlug(req.params.slug);
     if (!id) return send(res, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60' }, body: shell }, 'shell-no-id');
-    const job = await Job.findById(id).populate('company', 'name logo website').lean();
+    const job = await Job.findById(id).populate('company', 'name logo website is_verified hiddenFromPublic').lean();
     return send(res, buildJobResponse({ slug: req.params.slug, job, shell }));
   } catch (err) {
     console.error('[SEO] job page failed, serving the plain app:', err.message);
@@ -27,15 +29,56 @@ router.get('/job/:slug', async (req, res) => {
   }
 });
 
+// How many public jobs a city page would show (same rules as the public list). Cached for a few minutes.
+let cityCache = { at: 0, counts: null };
+const cityCounts = async () => {
+  if (cityCache.counts && Date.now() - cityCache.at < 300000) return cityCache.counts;
+  const strict = hideUnverified();
+  const companyDocs = await Company.find(strict ? publicCompanyConditions() : { hiddenFromPublic: true }).select('_id').lean();
+  const ids = companyDocs.map((c) => c._id);
+  const now = new Date();
+  const counts = {};
+  for (const [path, { match }] of Object.entries(CITY_PAGES)) {
+    counts[path] = await Job.countDocuments({ status: 'active', location: match, $and: [{ $or: [{ validThrough: { $gte: now } }, { validThrough: null }] }, ...publicJobConditions(strict ? { verifiedCompanyIds: ids } : { hiddenCompanyIds: ids })] });
+  }
+  cityCache = { at: Date.now(), counts };
+  return counts;
+};
+
+// nginx sends the main public pages here: GET /seo/page/for-colleges, /seo/page/jobs/chennai, /seo/page (home)
+router.get(['/page', '/page/*splat'], async (req, res) => {
+  let shell = '';
+  try {
+    shell = await getShell();
+    const path = normalizePath(`/${[].concat(req.params.splat || []).join('/')}`);
+    let openJobs = null;
+    if (CITY_PAGES[path]) { try { openJobs = (await cityCounts())[path]; } catch (e) { console.error('[SEO] city count failed:', e.message); } }
+    return send(res, buildPageResponse({ path, shell, openJobs }));
+  } catch (err) {
+    console.error('[SEO] page failed, serving the plain app:', err.message);
+    if (!shell) return res.status(502).send('Temporarily unavailable');
+    res.set('X-Velaivaaipu-SEO', 'shell-error').set('Content-Type', 'text/html; charset=utf-8');
+    return res.status(200).send(shell);
+  }
+});
+
 router.get('/sitemap.xml', async (req, res) => {
   try {
     const now = new Date();
-    const [jobs, companies] = await Promise.all([
-      Job.find({ status: 'active', $or: [{ validThrough: { $gte: now } }, { validThrough: null }] }).select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
-      Company.find({}).select('updatedAt').sort({ updatedAt: -1 }).limit(2000).lean(),
+    // Same rules as the public lists: verified companies, jobs under 45 days (or renewed), nothing admin-hidden.
+    const strict = hideUnverified();
+    const companyDocs = await Company.find(strict ? publicCompanyConditions() : { hiddenFromPublic: true }).select('_id updatedAt').sort({ updatedAt: -1 }).limit(2000).lean();
+    const ids = companyDocs.map((c) => c._id);
+    const companyList = strict ? companyDocs : [];
+    const [jobs, companies, posts] = await Promise.all([
+      Job.find({ status: 'active', $and: [{ $or: [{ validThrough: { $gte: now } }, { validThrough: null }] }, ...publicJobConditions(strict ? { verifiedCompanyIds: ids } : { hiddenCompanyIds: ids })] }).select('title location updatedAt').sort({ updatedAt: -1 }).limit(5000).lean(),
+      strict ? companyList : Company.find(publicCompanyConditions()).select('updatedAt').sort({ updatedAt: -1 }).limit(2000).lean(),
+      BlogPost.find({ status: 'published', publishedAt: { $lte: now } }).select('slug updatedAt').sort({ publishedAt: -1 }).limit(1000).lean().catch(() => []),
     ]);
     res.set('Content-Type', 'application/xml; charset=utf-8').set('Cache-Control', 'public, s-maxage=900');
-    return res.send(buildSitemap({ jobs, companies }));
+    let skipPaths = [];
+    try { const c = await cityCounts(); skipPaths = Object.keys(c).filter((p) => c[p] < cityMinJobs()); } catch { /* keep all city pages if counting fails */ }
+    return res.send(buildSitemap({ jobs, companies, posts, skipPaths }));
   } catch (err) {
     console.error('[SEO] sitemap failed, serving the static pages:', err.message);
     res.set('Content-Type', 'application/xml; charset=utf-8');

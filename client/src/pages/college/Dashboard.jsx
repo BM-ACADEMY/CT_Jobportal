@@ -1,3 +1,5 @@
+import StudentKit from '@/components/college/StudentKit';
+import PlanQuotes from '@/components/college/PlanQuotes';
 import React, { useState, useEffect } from 'react';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +12,7 @@ import {
   Award, UserCheck, Building2, ArrowRight, BookOpen, QrCode,
   ShieldCheck, BarChart2, Clock, Send, Plus
 } from 'lucide-react';
-import { Button, Card, Tag, Typography } from 'antd';
+import { Button, Card, Tag, Typography, Modal, Input } from 'antd';
 const { Title, Text } = Typography;
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -20,13 +22,13 @@ const StatCard = ({ icon: Icon, label, value, bgGradient, subtext, onClick }) =>
     onClick={onClick}
     className={`rounded-xl border border-slate-200 bg-slate-50/60 p-5 space-y-4 hover:-translate-y-1 transition-all duration-300 ${onClick ? 'cursor-pointer' : ''}`}
   >
-    <div className="flex items-center gap-4 relative overflow-hidden">
-      <div className={`w-14 h-14 bg-gradient-to-br ${bgGradient} rounded-none flex items-center justify-center shrink-0 border border-white/50 shadow-sm relative z-10`}>
+    <div className="flex items-center gap-3 relative">
+      <div className={`w-12 h-12 bg-gradient-to-br ${bgGradient} rounded-none flex items-center justify-center shrink-0 border border-white/50 shadow-sm relative z-10`}>
         <Icon size={22} className="text-white" />
       </div>
-      <div className="relative z-10">
-        <p className="text-3xl font-black tracking-tight text-slate-800">{value}</p>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+      <div className="relative z-10 min-w-0">
+        <p className={`${typeof value === 'string' && !/^[\d.,%]+$/.test(value) ? 'text-xl' : 'text-3xl'} font-black tracking-tight text-slate-800 break-words`}>{value}</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 leading-tight break-words">{label}</p>
         {subtext && <p className="text-[9px] text-slate-400 font-semibold mt-1">{subtext}</p>}
       </div>
     </div>
@@ -41,6 +43,28 @@ const CollegeDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ department: '', batchYear: '' });
+  const [pack, setPack] = useState(null);
+  const [packOpen, setPackOpen] = useState(false);
+  const [packN, setPackN] = useState(1);
+  const [packNote, setPackNote] = useState('');
+  const [packBusy, setPackBusy] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/college/me/student-pack`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => setPack(r.data)).catch(() => setPack(null));
+  }, []);
+
+  const sendPackRequest = async () => {
+    setPackBusy(true);
+    try {
+      const r = await axios.post(`${API}/college/me/student-pack-request`, { packs: packN, note: packNote }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(r.data?.msg || 'Request sent');
+      setPackOpen(false); setPackNote('');
+      setPack(p => (p ? { ...p, pending: true, canRequest: false } : p));
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not send the request');
+    } finally { setPackBusy(false); }
+  };
 
   useEffect(() => {
     fetchDashboard();
@@ -121,7 +145,7 @@ const CollegeDashboard = () => {
                 </div>
                 <h2 className="text-2xl font-black text-white tracking-tight m-0">{college.name}</h2>
                 <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
-                  Manage your institution's placement drives, student verification, and analytics dynamically.
+                  Manage your institution's placement drives, student verification and results in one place.
                 </p>
               </div>
             </div>
@@ -143,10 +167,30 @@ const CollegeDashboard = () => {
               >
                 Students
               </Button>
+              {pack && (pack.canRequest || pack.pending) && (
+                <Button
+                  ghost
+                  disabled={!pack.canRequest}
+                  onClick={() => setPackOpen(true)}
+                  icon={<Plus size={16} />}
+                  style={{ borderRadius: 0, height: 44, padding: '0 24px', fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1, borderColor: 'rgba(255,255,255,0.15)', color: '#fff' }}
+                >
+                  {pack.pending ? 'Pack requested' : `Add ${pack.students} students`}
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </Card>
+      <Modal open={packOpen} onCancel={() => setPackOpen(false)} onOk={sendPackRequest} confirmLoading={packBusy} okText="Send request" title={`Add ${pack?.students || 250} students`}>
+        <p style={{ marginBottom: 8 }}>Each pack adds {pack?.students} students for a year. Price: ₹{pack?.price?.toLocaleString('en-IN')} + 18% GST per pack. You can have up to {pack?.maxPacks} packs.</p>
+        <p style={{ marginBottom: 4 }}>How many packs?</p>
+        <select value={packN} onChange={e => setPackN(Number(e.target.value))} style={{ border: '1px solid #d9d9d9', padding: '6px 10px', marginBottom: 12 }}>
+          {Array.from({ length: Math.max(1, (pack?.maxPacks || 2) - (pack?.havePacks || 0)) }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n} pack{n > 1 ? 's' : ''}: ₹{(n * (pack?.price || 0) * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })} with GST</option>)}
+        </select>
+        <Input.TextArea value={packNote} onChange={e => setPackNote(e.target.value)} maxLength={300} rows={2} placeholder="Anything we should know (optional)" />
+        <p style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>Our team will contact you within 24 hours with payment details. The students are added once payment is confirmed.</p>
+      </Modal>
 
       {/* Title & Filters Row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
@@ -177,7 +221,7 @@ const CollegeDashboard = () => {
       </div>
 
       {/* Stats - Grid of Gradient Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard icon={Users} label="Total Students" value={totalStudents} bgGradient="from-[#6b62fc] to-[#8d7cff]" />
         <StatCard icon={BookOpen} label="Registered" value={stats.registered} bgGradient="from-[#a855f7] to-[#c084fc]" />
         <StatCard icon={Briefcase} label="Applied" value={stats.applied} bgGradient="from-[#f97316] to-[#fb923c]" />
@@ -185,6 +229,48 @@ const CollegeDashboard = () => {
         <StatCard icon={CheckCircle2} label="Placed" value={stats.placed} bgGradient="from-[#10b981] to-[#34d399]" />
         <StatCard icon={TrendingUp} label="Success Rate" value={`${successRate}%`} bgGradient="from-[#f43f5e] to-[#fb7185]" />
       </div>
+
+      {(() => {
+        const limit = pack?.studentLimit; const used = totalStudents || 0;
+        if (!limit || limit >= 100000) return null;
+        const pct = (used / limit) * 100;
+        if (pct < 70) return null;
+        const full = pct >= 100;
+        const goQuotes = () => { const el = document.getElementById('plan-quotes'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+        const askCall = async (interest) => {
+          try {
+            const r = await axios.post(`${API}/college/me/upgrade-call`, { interest }, { headers: { Authorization: `Bearer ${token}` } });
+            toast.success(r.data?.msg || 'Request sent');
+          } catch (err) { toast.error(err.response?.data?.msg || 'Could not send the request'); }
+        };
+        const optionClass = 'text-left border border-slate-200 bg-white px-3 py-3 cursor-pointer hover:border-[#1b496d]';
+        return (
+          <div className={`border px-4 py-4 ${full ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'}`} role="status">
+            <p className="m-0 text-sm font-bold text-slate-800">{full ? 'Your student limit is full' : 'Your student limit is filling up'}: {used} of {limit} students</p>
+            <p className="m-0 mt-1 text-xs text-slate-600">{full ? 'New students cannot join or be uploaded until you add more room.' : 'Add room before the last students are turned away.'} Choose what suits your college:</p>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {pack?.canRequest && (
+                <button type="button" className={optionClass} onClick={() => setPackOpen(true)}>
+                  <span className="block text-sm font-bold text-slate-800">Add a student pack</span>
+                  <span className="block text-xs text-slate-500">+{pack.students} students for a year, ₹{Number(pack.price).toLocaleString('en-IN')} + GST. Best for a small gap.</span>
+                </button>
+              )}
+              <button type="button" className={optionClass} onClick={goQuotes}>
+                <span className="block text-sm font-bold text-slate-800">Move to a bigger plan</span>
+                <span className="block text-xs text-slate-500">More students, reports and drive invites. Get a quote for your principal.</span>
+              </button>
+              <button type="button" className={optionClass} onClick={() => askCall(pack?.canRequest ? 'unsure' : 'plan')}>
+                <span className="block text-sm font-bold text-slate-800">Ask us to call you</span>
+                <span className="block text-xs text-slate-500">Not sure which is right? Our team will call within 24 hours.</span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {(totalStudents || 0) < 50 && <StudentKit collegeName={college?.name} />}
+
+      <div id="plan-quotes"><PlanQuotes /></div>
 
       {/* Secondary Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -206,7 +292,7 @@ const CollegeDashboard = () => {
                { label: 'Shortlisted', value: placementFunnel.shortlistsReceived, bgGradient: 'from-indigo-600 to-purple-500', desc: 'Selected profiles' },
                { label: 'Interviews', value: placementFunnel.interviewsScheduled, bgGradient: 'from-violet-600 to-fuchsia-500', desc: 'Conducted interviews' },
                { label: 'Offers Made', value: placementFunnel.offersMade, bgGradient: 'from-[#10b981] to-[#34d399]', desc: 'Offers accepted' },
-               { label: 'Avg. Salary', value: `₹${placementFunnel.averagePlacementSalary} LPA`, bgGradient: 'from-[#f97316] to-[#fb923c]', desc: 'Average Package' }
+               { label: 'Avg. Salary', value: Number(placementFunnel.averagePlacementSalary) > 0 ? `₹${placementFunnel.averagePlacementSalary} LPA` : '—', bgGradient: 'from-[#f97316] to-[#fb923c]', desc: 'Average Package' }
             ].map((metric, i) => (
               <div key={i} className={`flex-1 p-5 rounded-none shadow-sm bg-gradient-to-br ${metric.bgGradient} text-white hover:shadow-md transition-all duration-300 flex flex-col justify-between`}>
                 <div>

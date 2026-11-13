@@ -61,6 +61,10 @@ const companySchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Logo strips on the home page. showLogo = the company agreed; logoApproved = an admin checked the file (admin only).
+  showLogo: { type: Boolean, default: false },
+  logoApproved: { type: Boolean, default: false },
+  hiddenFromPublic: { type: Boolean, default: false }, // Super Admin switch: keeps a test or doubtful company off public pages
   logo_url: {
     type: String,
     default: ''

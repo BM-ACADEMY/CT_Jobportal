@@ -62,6 +62,9 @@ import PageSOPBanner from '@/components/common/PageSOPBanner';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import { signUploadUrl } from "@/utils/signedFiles";
+import { JOB_CATEGORIES } from "@/data/jobCategories";
+import WhatsAppAndInvite from "@/components/profile/WhatsAppAndInvite";
+import BrandConsent from "@/components/profile/BrandConsent";
 
 const API_USER_URL = `${import.meta.env.VITE_API_BASE_URL}/user`;
 const API_COLLEGE_URL = `${import.meta.env.VITE_API_BASE_URL}/college`;
@@ -156,6 +159,7 @@ const Settings = () => {
             interestedDomain: user?.profile?.interestedDomain || [],
             shifts: user?.profile?.shifts || [],
             preferredRole: user?.profile?.preferredRole || '',
+            interestedCategories: user?.profile?.interestedCategories || [],
             resumeUrl: user?.profile?.resumeUrl || '',
             resumeName: user?.profile?.resumeName || '',
             documents: user?.profile?.documents || [],
@@ -384,6 +388,7 @@ const Settings = () => {
                     interestedDomain: user?.profile?.interestedDomain || [],
                     shifts: user?.profile?.shifts || [],
                     preferredRole: user?.profile?.preferredRole || '',
+            interestedCategories: user?.profile?.interestedCategories || [],
                     resumeUrl: user?.profile?.resumeUrl || '',
                     resumeName: user?.profile?.resumeName || '',
                     documents: user?.profile?.documents || [],
@@ -435,6 +440,7 @@ const Settings = () => {
                 interestedDomain: user?.profile?.interestedDomain || [],
                 shifts: user?.profile?.shifts || [],
                 preferredRole: user?.profile?.preferredRole || '',
+            interestedCategories: user?.profile?.interestedCategories || [],
                 resumeUrl: user?.profile?.resumeUrl || '',
                 resumeName: user?.profile?.resumeName || '',
                 documents: user?.profile?.documents || [],
@@ -978,6 +984,8 @@ const Settings = () => {
     return (
         <div className="max-w-5xl mx-auto space-y-10 py-8 px-4 animate-in fade-in duration-500">
             <PageSOPBanner pageKey="jobseekerSettings" />
+            <WhatsAppAndInvite />
+            <BrandConsent />
             {/* Header Section */}
             <div className="bg-white rounded-[24px] border border-slate-200 p-6 md:p-8 shadow-sm mb-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/4 pointer-events-none" />
@@ -1753,6 +1761,34 @@ const Settings = () => {
                         </CardHeader>
                         <CardContent className="p-8 space-y-10">
                             
+                            {/* Fields of work (up to 3): a small boost in "For You" matching */}
+                            <div className="space-y-4">
+                                <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Fields I want to work in (pick up to 3)</Label>
+                                <div className="flex flex-wrap gap-2.5" role="group" aria-label="Fields of work">
+                                    {JOB_CATEGORIES.filter((c) => isEditing || (formData.profile.interestedCategories || []).includes(c.key)).map((c) => {
+                                        const picked = (formData.profile.interestedCategories || []).includes(c.key);
+                                        return (
+                                            <button
+                                                key={c.key}
+                                                type="button"
+                                                aria-pressed={picked}
+                                                disabled={!isEditing}
+                                                onClick={() => {
+                                                    const current = formData.profile.interestedCategories || [];
+                                                    if (!picked && current.length >= 3) { toast.error('Pick up to 3 fields'); return; }
+                                                    const next = picked ? current.filter((k) => k !== c.key) : [...current, c.key];
+                                                    setFormData({ ...formData, profile: { ...formData.profile, interestedCategories: next } });
+                                                }}
+                                                className={`h-9 px-3.5 rounded-full border text-[11px] font-bold transition-colors ${picked ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-200'} ${isEditing ? 'hover:border-emerald-300' : 'cursor-default'}`}
+                                            >
+                                                {c.label}
+                                            </button>
+                                        );
+                                    })}
+                                    {!isEditing && (formData.profile.interestedCategories || []).length === 0 && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
+                                </div>
+                            </div>
+
                             {/* Job Titles */}
                             <div className="space-y-4">
                                 <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Preferred Professional Designations</Label>

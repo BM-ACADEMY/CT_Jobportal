@@ -4,7 +4,7 @@ import axios from 'axios';
 import { motion, MotionConfig, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, QrCode, FileSpreadsheet, CalendarCheck, FileBarChart,
-  MessageCircle, ArrowRight, CheckCircle2, Building2, Award, BadgeCheck, Plus, Check,
+  MessageCircle, ArrowRight, CheckCircle2, Building2, Award, BadgeCheck, Plus, Check, ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SEOHead from '../components/seo/SEOHead';
@@ -82,7 +82,7 @@ const DriveVisual = () => (
 );
 
 const steps = [
-  { icon: GraduationCap, title: 'Register your college', desc: 'Sign up as a TPO. Our team verifies your institution, usually within a working day.', tint: 'bg-sky-50', badge: 'bg-sky-600', Visual: VerifyVisual },
+  { icon: GraduationCap, title: 'Register your college', desc: 'Sign up as the placement officer (TPO). Our team verifies your institution, usually within a working day.', tint: 'bg-sky-50', badge: 'bg-sky-600', Visual: VerifyVisual },
   { icon: QrCode, title: 'Get your students in', desc: 'Upload a CSV once, or put a QR code on the notice board. Students join with just a name and WhatsApp number.', tint: 'bg-orange-50', badge: 'bg-orange-500', Visual: StudentsVisual },
   { icon: CalendarCheck, title: 'Run your drives', desc: 'Create a drive, invite companies, move students through every round and see the status live.', tint: 'bg-emerald-50', badge: 'bg-emerald-600', Visual: DriveVisual },
 ];
@@ -93,6 +93,8 @@ const benefits = [
   { icon: FileSpreadsheet, title: 'Bring your existing student list', desc: 'Bulk-upload a CSV by department and batch. Accounts are created for you.', Visual: CsvVisual },
   { icon: FileBarChart, title: 'Reports for your principal', desc: 'Placement numbers by drive and department, plus a one-link executive summary you can share with management.', span: 'lg:col-span-2', Visual: ReportVisual, split: true },
   { icon: MessageCircle, title: 'WhatsApp updates', desc: 'Students hear about new rounds and interview schedules on the app they already use.', span: 'lg:col-span-2', Visual: WhatsAppVisual, split: true },
+  { icon: GraduationCap, title: 'Student internships in one view', desc: 'See which internships your students applied to, and who was shortlisted or selected, without chasing them.' },
+  { icon: Building2, title: 'Free internships and walk-in drives', desc: 'Your students can find paid and unpaid internships from verified companies and join walk-in hiring drives near them, all free.' },
   { icon: Building2, title: 'Company drives in one place', desc: 'Invite companies to a drive, track who accepted, and keep every round and result together.', Visual: DrivesVisual },
 ];
 
@@ -102,11 +104,51 @@ const faqs = [
   { q: 'What does it cost?', a: 'You can start on the free plan with no card. Paid plans add things like co-branded certificates, company drive invites, WhatsApp interview invites and scheduled reports. Current prices are listed above.' },
   { q: 'Will companies actually come to our drives?', a: 'Paid plans let you invite companies to each drive and track their replies. We cannot promise which companies will accept, since your own placement relationships still matter, but everything runs from one dashboard.' },
   { q: 'I need reports for my principal and accreditation files.', a: 'The platform gives you placement reports by drive and department, and a shareable executive summary link for your principal.' },
-  { q: 'What happens to our students’ data?', a: 'It is used to run your placement drives and the services students sign up for. Please read our Terms before you start, and contact us if you want details on how your students’ data is handled.' },
+  { q: 'What happens to our students’ data?', a: 'It is used to run your placement drives and the services students sign up for. We do not sell personal data. Students can ask us to correct or delete their data, or close their account. The details are in our Privacy Policy.' },
 ];
 
 const rupees = (n) => `₹${Number(n).toLocaleString('en-IN')}`;
 const capacityOf = (plan) => (plan.features || []).find((f) => f.name === 'Student Capacity' && f.isActive)?.value;
+
+// Every feature of every plan in one table. Built from the plan data itself, so it never disagrees with the cards.
+const PlanCompare = ({ plans }) => {
+  const names = [];
+  plans.forEach((p) => (p.features || []).forEach((f) => { if (f.name !== 'Student Capacity' && !names.includes(f.name)) names.push(f.name); }));
+  if (plans.length < 2 || names.length === 0) return null;
+  const cell = (p, name) => {
+    const f = (p.features || []).find((x) => x.name === name);
+    if (!f || !f.isActive || f.value === false) return <span className="text-zinc-300" aria-label="Not included">—</span>;
+    if (f.value === true || f.value === undefined || f.value === null || f.value === '') return <CheckCircle2 size={16} className="text-[#059669] inline" aria-label="Included" />;
+    return <span className="text-xs font-semibold text-zinc-700">{typeof f.value === 'number' ? f.value.toLocaleString('en-IN') : String(f.value)}</span>;
+  };
+  return (
+    <details className="mt-8 rounded-2xl border border-zinc-200 bg-white">
+      <summary className="cursor-pointer px-5 py-4 text-sm font-bold text-zinc-900">Compare all features side by side</summary>
+      <div className="overflow-x-auto px-2 pb-4">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wider text-zinc-500">
+              <th className="px-3 py-2 font-bold">Feature</th>
+              {plans.map((p) => <th key={p._id} className="px-3 py-2 font-bold text-center">{p.name}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-zinc-100">
+              <td className="px-3 py-2 text-zinc-700">Students</td>
+              {plans.map((p) => { const c = capacityOf(p); return <td key={p._id} className="px-3 py-2 text-center text-xs font-semibold text-zinc-700">{c === undefined ? '—' : typeof c === 'number' ? c.toLocaleString('en-IN') : String(c)}</td>; })}
+            </tr>
+            {names.map((n) => (
+              <tr key={n} className="border-t border-zinc-100">
+                <td className="px-3 py-2 text-zinc-700">{n}</td>
+                {plans.map((p) => <td key={p._id} className="px-3 py-2 text-center">{cell(p, n)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+};
 
 const FaqItem = ({ item, open, onToggle, id }) => (
   <div className={`rounded-2xl border transition-colors ${open ? 'border-emerald-200 bg-emerald-50/50' : 'border-zinc-200 bg-white hover:border-emerald-200'}`}>
@@ -146,9 +188,11 @@ const FaqItem = ({ item, open, onToggle, id }) => (
 
 const ForColleges = () => {
   const [plans, setPlans] = useState([]);
+  const [pack, setPack] = useState(null);
   const [openFaq, setOpenFaq] = useState(0);
 
   useEffect(() => {
+    axios.get(`${API}/college/public/student-pack-info`).then((res) => setPack(res.data)).catch(() => {});
     axios.get(`${API}/subscriptions`)
       .then((res) => {
         const college = (res.data || []).filter((p) => p.role === 'college' && p.isActive);
@@ -169,7 +213,7 @@ const ForColleges = () => {
         />
 
         {/* Hero */}
-        <HeroShell>
+        <HeroShell compact>
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             <motion.div variants={heroStagger} initial="hidden" animate="show" className="lg:col-span-7 space-y-7">
               <motion.p variants={heroItem} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-[#059669]">
@@ -215,7 +259,7 @@ const ForColleges = () => {
               </motion.h1>
 
               <motion.p variants={heroItem} className="text-zinc-600 text-base md:text-lg max-w-xl leading-relaxed">
-                Bring students in with a QR code, run drives with companies, and give your principal a clear report, all from one dashboard.
+                Campus placement software for colleges in Tamil Nadu and Puducherry. Bring students in with a QR code, run drives with companies, and give your principal a clear report, all from one dashboard.
               </motion.p>
 
               <motion.div variants={heroItem} className="flex flex-col sm:flex-row gap-3">
@@ -224,7 +268,7 @@ const ForColleges = () => {
                     Start Free <MotionIcon icon={ArrowRight} animation="nudge" trigger="hover" size={18} />
                   </Button>
                 </Link>
-                <Link to="/contact">
+                <Link to="/contact?segment=college&subject=Campus%20placement%20software">
                   <Button variant="outline" className="w-full sm:w-auto h-12 px-8 rounded-xl border-zinc-300 bg-white text-zinc-800 font-bold text-base hover:border-[#059669] hover:text-[#059669] hover:bg-white active:scale-[0.98] cursor-pointer">
                     Talk to Our Team
                   </Button>
@@ -373,9 +417,44 @@ const ForColleges = () => {
                 })}
               </motion.div>
               <p className="text-center text-xs text-zinc-400 mt-6">Prices shown are what you will see at checkout. GST may apply.</p>
+              <PlanCompare plans={plans} />
+              <div className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <p className="m-0 text-base font-bold text-zinc-900">Want something different for your college?</p>
+                  <p className="m-0 mt-1 text-sm text-zinc-600">If you want to buy one of these plans, choose it above. If you need something customised, such as more students, several campuses or special reports, send us a message and our team will contact you.</p>
+                </div>
+                <Link to="/contact?segment=college&subject=Customised%20college%20plan" className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl text-sm font-bold bg-zinc-900 text-white whitespace-nowrap">
+                  Talk to our team <ArrowRight size={16} />
+                </Link>
+              </div>
+              {pack?.price > 0 && (
+                <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <p className="m-0 text-base font-bold text-zinc-900">Need a little more room? Add a student pack</p>
+                    <p className="m-0 mt-1 text-sm text-zinc-600">
+                      +{pack.students} students for a year at {rupees(pack.price)} + GST, up to {pack.maxPacks} packs. Request it from your dashboard once your college is verified. Our team adds the students after payment.
+                    </p>
+                  </div>
+                  <p className="m-0 text-3xl font-bold tracking-tight text-zinc-900 whitespace-nowrap">{rupees(pack.price)}<span className="text-sm font-semibold text-zinc-400"> / {pack.students} students</span></p>
+                </div>
+              )}
             </div>
           </section>
         )}
+
+        {/* Data safety */}
+        <section className="max-w-4xl mx-auto px-6 py-16">
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6 md:p-8">
+            <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm"><ShieldCheck size={18} /> How we look after your students’ data</div>
+            <ul className="mt-4 space-y-2 text-sm text-slate-700 list-none p-0">
+              <li>We do not sell personal data, to companies or anyone else.</li>
+              <li>Student details are used to run your drives and the services your students sign up for.</li>
+              <li>Students can ask us to correct or delete their data, or close their account, at any time.</li>
+              <li>Your principal’s report opens only with a private link and a code that you share. You can issue a new code whenever you want.</li>
+            </ul>
+            <p className="mt-4 text-xs text-slate-500">Read the full <Link to="/privacy-policy" className="underline">Privacy Policy</Link>, or write to hello@velaivaaipu.in with any question before you sign up.</p>
+          </div>
+        </section>
 
         {/* FAQ */}
         <section className={`py-24 ${plans.length > 0 ? 'bg-[#fafafa]' : 'bg-white'}`}>

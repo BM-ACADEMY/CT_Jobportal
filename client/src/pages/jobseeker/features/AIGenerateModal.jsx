@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Loader2, FileText, CheckCircle, Percent, Target, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
@@ -21,6 +21,11 @@ const AIGenerateModal = ({ onClose, onSuccess }) => {
   });
 
   const [loading, setLoading] = useState(false);
+  // Free uses left this month, so nobody is surprised by a stop. Hidden for paid plans.
+  const [free, setFree] = useState(null);
+  const loadFree = () => axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/free-ai-status`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+    .then((r) => setFree(r.data)).catch(() => setFree(null));
+  useEffect(() => { loadFree(); }, []);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -33,7 +38,8 @@ const AIGenerateModal = ({ onClose, onSuccess }) => {
       onSuccess(res.data);
     } catch (err) {
       console.error(err);
-      alert('Failed to generate resume. Please try again.');
+      alert(err.response?.status === 429 ? err.response.data?.msg : 'Failed to generate resume. Please try again.');
+      loadFree();
     } finally {
       setLoading(false);
     }
@@ -58,9 +64,11 @@ const AIGenerateModal = ({ onClose, onSuccess }) => {
       });
       setAnalysisResult(res.data);
       setResultMode(true);
+      loadFree();
     } catch (err) {
       console.error(err);
-      alert('Failed to analyse resume. Please try again.');
+      alert(err.response?.status === 429 ? err.response.data?.msg : 'Failed to analyse resume. Please try again.');
+      loadFree();
     } finally {
       setLoading(false);
     }
@@ -151,6 +159,15 @@ const AIGenerateModal = ({ onClose, onSuccess }) => {
             <div>
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">AI Resume Studio</h2>
               <p className="text-xs text-slate-500 font-medium">Generate or analyse professional resumes</p>
+              {free && !free.paid && free.limited && (() => {
+                const f = free.features; const when = (d) => new Date(d).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+                const line = (x, name) => (x.left > 0 ? `${x.left} ${name}` : `no ${name} now${x.nextAt ? ` (next one on ${when(x.nextAt)})` : ''}`);
+                return (
+                  <p className="text-xs text-emerald-700 font-semibold mt-1">
+                    Free for you now: {line(f.resume_build, 'resume builds')}, {line(f.resume_check, 'resume checks')}. A used one comes back after {free.windowDays} days.
+                  </p>
+                );
+              })()}
             </div>
           </div>
           <button onClick={onClose} className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-[12px] transition-colors text-slate-400 hover:text-slate-600">

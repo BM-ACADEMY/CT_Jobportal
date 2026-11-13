@@ -44,16 +44,24 @@ const ManageReviews = () => {
     }
   };
 
-  const updateStatus = async (id, status) => {
+  const FLAG_TEXT = { too_short: 'very short', has_link: 'has a link', has_phone: 'has a phone number', looks_like_advert: 'looks like a job advert', repeated: 'repeated words' };
+
+  const updateStatus = async (id, status, confirm = false) => {
     setProcessing(id);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`${API}/reviews/admin/${id}`, { status }, {
+      await axios.patch(`${API}/reviews/admin/${id}`, { status, ...(confirm ? { confirm: true } : {}) }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(`Review ${status}`);
       setReviews(reviews.map(r => r._id === id ? { ...r, status } : r));
     } catch (err) {
+      if (err.response?.status === 409 && err.response?.data?.code === 'FLAGGED') {
+        const why = (err.response.data.flags || []).map((f) => FLAG_TEXT[f] || f).join(', ');
+        setProcessing(null);
+        if (window.confirm(`This review ${why}. Show it on the website anyway?`)) updateStatus(id, status, true);
+        return;
+      }
       toast.error('Failed to update review status');
     } finally {
       setProcessing(null);
@@ -128,6 +136,11 @@ const ManageReviews = () => {
               <div className="flex-1 bg-slate-50 rounded-xl p-4 border border-slate-100 relative">
                 <MessageSquareQuote size={20} className="absolute top-2 right-2 text-slate-200" />
                 <p className="text-sm text-slate-700 italic pr-4">{r.comment}</p>
+                {(r.flags || []).length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {r.flags.map((f) => <span key={f} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">Check: {FLAG_TEXT[f] || f}</span>)}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">

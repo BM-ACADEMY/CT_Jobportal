@@ -63,6 +63,7 @@ const MarqueeRow = ({ items, reverse, apiDomain }) => {
 // than 3 match the filter, and renders nothing while there are no reviews.
 const TestimonialCarousel = ({
   roleFilter = null,
+  strict = false,
   eyebrow = 'Real Stories',
   title = 'Success Stories',
   subtitle = 'What people say about Velaivaaipu.',
@@ -82,7 +83,8 @@ const TestimonialCarousel = ({
   const filtered = roleFilter
     ? reviews.filter(r => r.user?.role?.name === roleFilter)
     : reviews;
-  const list = filtered.length >= 3 ? filtered : reviews;
+  // strict: never fall back to other groups' reviews (a college page must not show job seekers under "What Colleges Say").
+  const list = filtered.length >= 3 ? filtered : (strict ? [] : reviews);
   if (list.length === 0) return null;
 
   // Two rows from 4 reviews up; fewer go in a single row.

@@ -148,7 +148,7 @@ const getDashboard = async (req, res) => {
         status: college.subscriptionTier,
         nextRenewalDate: college.nextRenewalDate,
         autoRenewEnabled: college.autoRenewEnabled,
-        studentLimit: college.studentLimit || 100
+        studentLimit: require('../utils/collegePack').effectiveStudentLimit(college)
       },
       stats,
       totalStudents,
@@ -272,7 +272,7 @@ const getDashboardStats = async (req, res) => {
         planId: college.subscription || null,
         nextRenewalDate: college.nextRenewalDate,
         autoRenewEnabled: college.autoRenewEnabled,
-        studentLimit: college.studentLimit || 100
+        studentLimit: require('../utils/collegePack').effectiveStudentLimit(college)
       },
       filters: { department: department || null, batchYear: batchYear ? parseInt(batchYear) : null },
       stats,
@@ -1370,7 +1370,7 @@ const csvImport = async (req, res) => {
 
     // Get current total students for limit check
     const currentStudentCount = await CollegeStudent.countDocuments({ college: college._id });
-    const studentLimit = college.studentLimit || 100;
+    const studentLimit = require('../utils/collegePack').effectiveStudentLimit(college);
 
     for (let i = 0; i < records.length; i++) {
       if (currentStudentCount + results.imported >= studentLimit) {
@@ -1901,7 +1901,7 @@ const publicRegister = async (req, res) => {
     // Enforce the college's plan-driven student capacity — this is the self-registration path,
     // so unlike CSV import there's no admin around to see a partial-import error; block cleanly.
     const currentStudentCount = await CollegeStudent.countDocuments({ college: drive.college._id });
-    const studentLimit = drive.college.studentLimit || 100;
+    const studentLimit = require('../utils/collegePack').effectiveStudentLimit(drive.college);
     if (currentStudentCount >= studentLimit) {
       return res.status(403).json({ msg: 'This college has reached its student capacity for the current plan. Please contact your placement officer.' });
     }
@@ -2158,8 +2158,9 @@ const uploadProofDocument = async (req, res) => {
 // @route   GET /api/college/admin/all-colleges
 const getAllCollegesForAdmin = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
+    const { page = 1, limit = 20, search, includeTest } = req.query;
     const filter = {};
+    if (includeTest !== 'true') filter.isTest = { $ne: true };
     if (search) {
       const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       filter.$or = [{ name: regex }, { code: regex }];
@@ -2194,21 +2195,38 @@ const getCollegeByIdForAdmin = async (req, res) => {
   }
 };
 
+const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cleanNote = (v, max = 500) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+
 // @route   PUT /api/college/admin/verify/:collegeId
+// Body: { status: 'verified' | 'rejected' | 'pending', note?: string }
+// A college with no proof document can only be verified with a written note saying how it was
+// checked. A rejection can carry a reason, which is sent to the college.
 const adminVerifyCollege = async (req, res) => {
   try {
     const { status } = req.body; // 'verified' or 'rejected'
     if (!['verified', 'rejected', 'pending'].includes(status)) {
       return res.status(400).json({ msg: 'Invalid status' });
     }
+    const note = cleanNote(req.body.note);
 
     const college = await College.findById(req.params.collegeId).populate('tpoUser', 'name email phone');
     if (!college) return res.status(404).json({ msg: 'College not found' });
+
+    if (status === 'verified' && !college.proofDocumentUrl && note.length < 10) {
+      return res.status(400).json({
+        code: 'PROOF_OR_NOTE_REQUIRED',
+        msg: 'Add a note (at least 10 characters) saying how you checked this college, for example: called the principal office on 9 Nov.'
+      });
+    }
 
     college.verificationStatus = status;
     if (status === 'verified') {
       college.verifiedBy = req.user.id;
       college.verifiedAt = new Date();
+      if (note) college.verificationNote = note;
+    } else if (status === 'rejected' && note) {
+      college.verificationNote = note;
     }
     await college.save();
 
@@ -2219,7 +2237,7 @@ const adminVerifyCollege = async (req, res) => {
         title: status === 'verified' ? 'College verification approved' : 'College verification rejected',
         message: status === 'verified'
           ? `${college.name} is now verified.`
-          : `${college.name} verification was rejected. Please review and resubmit your proof.`,
+          : `${college.name} verification was rejected.${note ? ` Reason: ${note}.` : ''} Please review and resubmit your proof.`,
         type: 'college_verification',
         link: '/college/settings',
         email: false, // the verification email below already covers this
@@ -2234,10 +2252,10 @@ const adminVerifyCollege = async (req, res) => {
         email: recipientEmail,
         subject: approved ? `[Velaivaaipu] ${college.name} is now verified` : `[Velaivaaipu] ${college.name} verification was rejected`,
         html: emailWrapper(approved ? 'College Verified' : 'Verification Rejected', `
-          <p>Hi ${college.tpoUser?.name || college.principalName || 'there'},</p>
+          <p>Hi ${escapeHtml(college.tpoUser?.name || college.principalName || 'there')},</p>
           ${approved
-            ? `<p>Great news — <strong>${college.name}</strong> has been verified on Velaivaaipu. You now have full access to campus placement features.</p>`
-            : `<p>Your college verification submission for <strong>${college.name}</strong> was rejected. Please review and re-upload your authorization proof document in Settings.</p>`}
+            ? `<p>Great news — <strong>${escapeHtml(college.name)}</strong> has been verified on Velaivaaipu. You now have full access to campus placement features.</p>`
+            : `<p>Your college verification submission for <strong>${escapeHtml(college.name)}</strong> was rejected.${note ? ` Reason: <strong>${escapeHtml(note)}</strong>.` : ''} Please review your details in Settings and register again, or reply to this email.</p>`}
         `)
       }).catch(() => {});
     }
@@ -2251,13 +2269,61 @@ const adminVerifyCollege = async (req, res) => {
           college.tpoUser?.name || college.principalName || 'there',
           'College Verification',
           approved ? 'Approved' : 'Rejected',
-          approved ? 'Verification successful! Your college now has full access to campus placement features.' : 'Please re-upload your authorization proof document',
+          approved ? 'Verification successful! Your college now has full access to campus placement features.' : 'Please review your details and reply to us',
           `${FRONTEND_URL}/college/settings`
         ]
       }).catch(() => {});
     }
 
     res.json({ msg: `College marked as ${status}`, college });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server Error', error: err.message });
+  }
+};
+
+// @route   POST /api/college/admin/ask-info/:collegeId
+// Body: { message }. Asks the college for proof or details. The status does not change.
+const adminAskCollegeInfo = async (req, res) => {
+  try {
+    const message = cleanNote(req.body?.message);
+    if (message.length < 10) return res.status(400).json({ msg: 'Write what you need from the college (at least 10 characters).' });
+
+    const college = await College.findById(req.params.collegeId).populate('tpoUser', 'name email phone');
+    if (!college) return res.status(404).json({ msg: 'College not found' });
+
+    college.infoRequests = [...(college.infoRequests || []), { message, askedBy: req.user.id, askedAt: new Date() }];
+    await college.save();
+
+    if (college.tpoUser?._id) {
+      notifyUser({
+        io: req.io,
+        recipientId: college.tpoUser._id,
+        title: 'Velaivaaipu needs a detail for verification',
+        message,
+        type: 'college_verification',
+        link: '/college/settings',
+        email: false,
+        metadata: { collegeId: college._id, status: college.verificationStatus }
+      }).catch(err => console.error('College info request notification failed:', err.message));
+    }
+
+    const recipientEmail = college.principalEmail || college.tpoUser?.email || college.collegeEmail;
+    let emailed = false;
+    if (recipientEmail) {
+      emailed = true;
+      sendEmail({
+        email: recipientEmail,
+        subject: `[Velaivaaipu] ${college.name}: we need one more detail to verify you`,
+        html: emailWrapper('One more detail needed', `
+          <p>Hi ${escapeHtml(college.tpoUser?.name || college.principalName || 'there')},</p>
+          <p>To finish verifying <strong>${escapeHtml(college.name)}</strong> we need a quick detail from you:</p>
+          <p style="padding:12px;background:#f1f5f9;border-radius:8px">${escapeHtml(message)}</p>
+          <p>Please reply to this email, or update it in <a href="${FRONTEND_URL}/college/settings">College Settings</a>.</p>
+        `)
+      }).catch(() => {});
+    }
+
+    res.json({ msg: emailed ? 'Message sent to the college' : 'Saved. The college has no email, so only the in-app alert was sent.', college });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error', error: err.message });
   }
@@ -2277,6 +2343,7 @@ const generatePrincipalPasskey = async (req, res) => {
     const code = String(crypto.randomInt(1000, 10000));
     college.principalAccessCode = code;
     college.principalAccessCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // valid 24h
+    college.principalAccessAttempts = 0;
     await college.save();
 
     const executiveUrl = `${FRONTEND_URL}/principal/executive-summary/${college.principalPasskey}`;
@@ -2296,18 +2363,15 @@ const generatePrincipalPasskey = async (req, res) => {
 // @desc    Verify the 4-digit access code and, if it matches, return the executive report.
 //          The link alone is not sufficient — an incorrect/missing/expired code is Unauthorized.
 // @route   POST /api/college/public/principal-report/:passkey
+const { checkPrincipalCode, tryPrincipalAccess } = require('../utils/principalCode');
+const { sendReportAgain } = require('../utils/reportEmail');
 const getPrincipalExecutiveReport = async (req, res) => {
   try {
     const { code } = req.body;
-    const college = await College.findOne({ principalPasskey: req.params.passkey });
-    if (!college) return res.status(404).json({ msg: 'Invalid executive link' });
-
-    if (!college.principalAccessCode || !college.principalAccessCodeExpiry || college.principalAccessCodeExpiry < new Date()) {
-      return res.status(401).json({ msg: 'This access code has expired. Ask the TPO to share a new one.' });
-    }
-    if (!code || String(code) !== college.principalAccessCode) {
-      return res.status(401).json({ msg: 'Unauthorized: incorrect access code.' });
-    }
+    // One answer for every failure (unknown link, expired code, locked, wrong code), so nobody can tell which part was right.
+    const refuse = () => res.status(401).json({ msg: 'This link or code is not valid, or the code has expired. Ask the TPO to share them again.' });
+    const college = await tryPrincipalAccess(College, req.params.passkey, code);
+    if (!college) return refuse();
 
     const totalStudents = await CollegeStudent.countDocuments({ college: college._id });
     const statusCounts = await CollegeStudent.aggregate([
@@ -2632,7 +2696,7 @@ const generatePlacementReportForCollege = async (college) => {
       email,
       subject: `[Velaivaaipu] ${college.name} Placement Report — ${periodLabel}`,
       html
-    }))).then(() => { report.sentToPrincipal = true; report.save(); }).catch(() => {});
+    }))).then(() => { report.sentToPrincipal = true; report.sentAt = new Date(); report.save(); }).catch(() => {});
   }
 
   const tpoUserId = college.tpoUser?._id || college.tpoUser;
@@ -2653,6 +2717,46 @@ const generatePlacementReportForCollege = async (college) => {
   }
 
   return report;
+};
+
+// @desc    One tap: email an existing report again to the principal and the other report recipients.
+// @route   POST /api/college/reports/:id/send
+const sendPlacementReport = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(String(req.params.id || ''))) return res.status(404).json({ msg: 'Report not found' });
+    const college = await getCollegeForTPO(req.user.id);
+    const report = await CollegePlacementReport.findOne({ _id: req.params.id, college: college._id });
+    if (!report) return res.status(404).json({ msg: 'Report not found' });
+    const r = await sendReportAgain({ college, report, sendEmail, emailWrapper, frontendUrl: FRONTEND_URL });
+    if (!r.ok) return res.status(r.code).json({ msg: r.msg });
+    report.sentToPrincipal = true; report.sentAt = new Date(); await report.save();
+    res.json({ msg: `Report sent to ${r.sentTo.join(', ')}`, sentTo: r.sentTo, sentAt: report.sentAt });
+  } catch (err) {
+    if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
+    console.error('Send placement report error:', err.message);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+};
+
+// @desc    A one-page price quote (with 18% GST) for a paid campus plan, to hand to the principal.
+// @route   GET /api/college/me/quote/:planId
+const downloadPlanQuote = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(String(req.params.planId || ''))) return res.status(404).json({ msg: 'Plan not found' });
+    const college = await getCollegeForTPO(req.user.id);
+    const plan = await Subscription.findOne({ _id: req.params.planId, role: 'college', isActive: true, price: { $gt: 0 } }).lean();
+    if (!plan) return res.status(404).json({ msg: 'Plan not found' });
+    const { buildQuote } = require('../utils/collegeQuote');
+    const { generateQuotePdf } = require('../utils/pdfGenerator');
+    const pdf = await generateQuotePdf(buildQuote({ college, plan }));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="quote-${String(plan.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf"`);
+    res.send(pdf);
+  } catch (err) {
+    if (err.message === 'NO_COLLEGE') return res.status(404).json({ msg: 'No college linked' });
+    console.error('Plan quote error:', err.message);
+    res.status(500).json({ msg: 'Could not make the quote' });
+  }
 };
 
 // @route   POST /api/college/reports/generate
@@ -3101,6 +3205,7 @@ module.exports = {
   getAllCollegesForAdmin,
   getCollegeByIdForAdmin,
   adminVerifyCollege,
+  adminAskCollegeInfo,
   generatePrincipalPasskey,
   getPrincipalExecutiveReport,
   updateDriveRoundStatus,
@@ -3117,6 +3222,8 @@ module.exports = {
   generateMou,
   getPlacementReports,
   generatePlacementReport,
+  sendPlacementReport,
+  downloadPlanQuote,
   generatePlacementReportForCollege,
   downloadSummaryReport,
   getMyCollegeStudent,

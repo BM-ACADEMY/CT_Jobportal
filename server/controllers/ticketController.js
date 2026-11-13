@@ -43,6 +43,14 @@ const createTicket = async (req, res) => {
       metadata: { ticketId: ticket._id, severity, category }
     }).catch(err => console.error('Ticket notification failed:', err.message));
 
+    // Acknowledge straight away so the person knows it arrived (alert plus mail).
+    notifyUser({
+      io: req.io, recipientId: req.user.id,
+      title: 'We received your support ticket',
+      message: `Your ticket #${String(ticket._id).slice(-6).toUpperCase()} is with our team. We reply within 24 hours.`,
+      type: 'ticket_received', link: '/tickets/my', metadata: { ticketId: ticket._id }
+    }).catch(err => console.error('Ticket acknowledgement failed:', err.message));
+
     res.status(201).json(ticket);
   } catch (err) {
     console.error('Create Ticket Error:', err.message);
@@ -130,7 +138,8 @@ const updateTicket = async (req, res) => {
 
     if (!ticket) return res.status(404).json({ msg: 'Ticket not found' });
 
-    notifyUser({
+    // A ticket whose user account was deleted still saves; there is just nobody to notify.
+    if (ticket.user?._id) notifyUser({
       io: req.io,
       recipientId: ticket.user._id,
       title: 'Support ticket updated',
@@ -155,7 +164,7 @@ const getTicketById = async (req, res) => {
 
     // Only owner or admin can view
     if (
-      ticket.user._id.toString() !== req.user.id &&
+      ticket.user?._id?.toString() !== req.user.id &&
       req.user.role !== 'admin'
     ) {
       return res.status(403).json({ msg: 'Access denied' });
@@ -183,4 +192,30 @@ const getSupportContact = async (req, res) => {
   }
 };
 
-module.exports = { createTicket, getMyTickets, getAllTickets, updateTicket, getTicketById, getSupportContact };
+// @desc  AI drafts a reply for the admin to read, edit and send. It sends and saves nothing.
+// @route POST /api/tickets/admin/:id/draft-reply
+const draftReply = async (req, res) => {
+  try {
+    const { buildMessages, cleanDraft } = require('../utils/ticketDraft');
+    const { resolveProvider, chatCompletion } = require('../utils/aiHelper');
+    const { monthlyCap, capReached } = require('../utils/advisorMetrics');
+    const { usedThisMonth } = require('../utils/advisorService');
+    const TicketDraftUse = require('../models/TicketDraftUse');
+    const ticket = await Ticket.findById(req.params.id).lean();
+    if (!ticket) return res.status(404).json({ msg: 'Ticket not found' });
+    const used = await usedThisMonth({ AdvisorReport: require('../models/AdvisorReport'), TicketDraftUse });
+    if (capReached(used, monthlyCap())) return res.status(429).json({ code: 'AI_CAP', msg: 'The monthly AI limit is reached. Please write this reply yourself.' });
+    const provider = resolveProvider('ASSISTANT');
+    if (provider.error) return res.status(503).json({ code: 'AI_OFF', msg: 'AI drafts are not switched on. Please write this reply yourself.' });
+    const out = await chatCompletion({ provider, messages: buildMessages(ticket), maxTokens: 300 });
+    const draft = cleanDraft(out.text);
+    if (!draft) return res.status(502).json({ msg: 'The AI gave no usable reply. Please write it yourself.' });
+    await TicketDraftUse.create({ ticket: ticket._id, by: req.user.id });
+    res.json({ draft });
+  } catch (err) {
+    console.error('Ticket draft error:', err.message);
+    res.status(502).json({ msg: 'Could not get a draft right now. Please write it yourself.' });
+  }
+};
+
+module.exports = { draftReply, createTicket, getMyTickets, getAllTickets, updateTicket, getTicketById, getSupportContact };

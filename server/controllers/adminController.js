@@ -9,11 +9,19 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Payment = require('../models/Payment');
 const Subscription = require('../models/Subscription');
+const Review = require('../models/Review');
+const WalkInDrive = require('../models/WalkInDrive');
+const SponsorPayment = require('../models/SponsorPayment');
+const CollegePackPayment = require('../models/CollegePackPayment');
+const { manualPaymentRows, sponsorRows, packRows, sumRows } = require('../utils/manualIncome');
+const { istDayStart } = require('../utils/istDay');
 const sendEmail = require('../utils/sendEmail');
 const { notifyUser } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved } = require('../utils/jobNotifications');
 const { emailWrapper } = require('../utils/emailTemplates');
 const { REVENUE_START, chartStart } = require('../utils/revenueWindow');
+const { mergePlanTotals } = require('../utils/planTotals');
+const { newOtp, hashOtp, twoFactorRequired, checkOtp, OTP_TTL_MS } = require('../utils/adminOtp');
 
 const generateToken = (id, roleName) => {
   return jwt.sign(
@@ -39,21 +47,19 @@ const loginAdmin = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid Credentials' });
     }
 
-    if (admin.twoFactorAuth && admin.twoFactorAuth.enabled) {
-      // Generate 4-digit OTP
-      const otp = Math.floor(1000 + Math.random() * 9000).toString();
-      
-      admin.twoFactorAuth.otp = otp;
-      admin.twoFactorAuth.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    if (twoFactorRequired(admin)) {
+      const otp = newOtp();
+      if (!admin.twoFactorAuth) admin.twoFactorAuth = {};
+      admin.twoFactorAuth.loginOtp = hashOtp(otp); // only the hash is stored (the email-change code uses its own fields)
+      admin.twoFactorAuth.loginOtpExpires = new Date(Date.now() + OTP_TTL_MS);
+      admin.twoFactorAuth.otpAttempts = 0;
       await admin.save();
 
-      // Send Email
-      const emailOptions = {
+      await sendEmail({
         email: admin.email,
-        subject: 'Admin Login 2FA OTP',
-        html: `<p>Your 4-digit Admin Login OTP is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
-      };
-      await sendEmail(emailOptions);
+        subject: 'Admin Login Code',
+        html: `<p>Your 6-digit admin login code is: <strong>${otp}</strong>. It expires in 10 minutes. If this was not you, change your password.</p>`
+      });
 
       return res.json({ require2FA: true, adminId: admin._id });
     }
@@ -71,7 +77,7 @@ const loginAdmin = async (req, res) => {
         role: admin.role,
         avatar: admin.profilePicture,
         admin_id: admin.admin_id,
-        twoFactorAuth: admin.twoFactorAuth
+        twoFactorAuth: { enabled: !!admin.twoFactorAuth?.enabled }
       }
     });
   } catch (err) {
@@ -91,13 +97,22 @@ const verifyAdminLoginOTP = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid Admin' });
     }
 
-    if (!admin.twoFactorAuth || admin.twoFactorAuth.otp !== otp || admin.twoFactorAuth.otpExpires < new Date()) {
-      return res.status(400).json({ msg: 'Invalid or expired OTP' });
+    const tf = admin.twoFactorAuth || {};
+    const check = checkOtp({ storedHash: tf.loginOtp, expires: tf.loginOtpExpires, attempts: tf.otpAttempts || 0 }, otp);
+    if (check.status !== 'ok') {
+      if (check.status === 'wrong' || check.status === 'locked') {
+        admin.twoFactorAuth.otpAttempts = check.nextAttempts;
+        if (check.status === 'locked') { admin.twoFactorAuth.loginOtp = undefined; admin.twoFactorAuth.loginOtpExpires = undefined; }
+        await admin.save();
+      }
+      const msg = check.status === 'locked' ? 'Too many wrong codes. Please log in again.' : 'Invalid or expired code';
+      return res.status(400).json({ msg });
     }
 
     // Clear OTP
-    admin.twoFactorAuth.otp = undefined;
-    admin.twoFactorAuth.otpExpires = undefined;
+    admin.twoFactorAuth.loginOtp = undefined;
+    admin.twoFactorAuth.loginOtpExpires = undefined;
+    admin.twoFactorAuth.otpAttempts = 0;
     admin.lastLogin = new Date();
     await admin.save();
 
@@ -112,7 +127,7 @@ const verifyAdminLoginOTP = async (req, res) => {
         role: admin.role,
         avatar: admin.profilePicture,
         admin_id: admin.admin_id,
-        twoFactorAuth: admin.twoFactorAuth
+        twoFactorAuth: { enabled: !!admin.twoFactorAuth?.enabled }
       }
     });
   } catch (err) {
@@ -143,7 +158,23 @@ const getDashboardStats = async (req, res) => {
       { $match: { status: 'completed', createdAt: { $gte: REVENUE_START } } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
-    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+    const onlineRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+
+    // Money received by hand (walk-in drive plans and add-ons marked paid) is not a Razorpay payment, so it is added here
+    const drives = await WalkInDrive.find({ $or: [{ paid: true }, { 'addons.paid': true }] }).select('plan paid paidAt addons').lean().catch(() => []);
+    const sponsorPays = await SponsorPayment.find({ receivedAt: { $gte: REVENUE_START } }).select('amount receivedAt').lean().catch(() => []);
+    const packPays = await CollegePackPayment.find({ receivedAt: { $gte: REVENUE_START } }).select('amount receivedAt').lean().catch(() => []);
+    const manualRows = [...manualPaymentRows(drives, { from: REVENUE_START }), ...sponsorRows(sponsorPays, { from: REVENUE_START }), ...packRows(packPays, { from: REVENUE_START })];
+    const manual = sumRows(manualRows);
+    const totalRevenue = onlineRevenue + manual.total;
+
+    // Today (India time): what changed since midnight
+    const dayStart = istDayStart();
+    const [newUsersToday, newJobsToday, applicationsToday] = await Promise.all([
+      User.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0),
+      Job.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0),
+      Application.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0)
+    ]);
 
     // 2. Revenue Data (Last 4 months)
     const fourMonthsAgo = chartStart();
@@ -188,6 +219,11 @@ const getDashboardStats = async (req, res) => {
         match.revenue = r.revenue;
       }
     });
+    manualRows.forEach(r => {
+      if (!r.at) return;
+      const match = last4MonthsData.find(m => m.year === r.at.getFullYear() && m.month === r.at.getMonth() + 1);
+      if (match) match.revenue += r.total;
+    });
 
     const revenueData = last4MonthsData.map(m => ({ name: m.name, revenue: m.revenue }));
 
@@ -207,14 +243,32 @@ const getDashboardStats = async (req, res) => {
       { $project: { name: "$subDetails.name", value: "$count" } }
     ]);
 
+    // One plan can appear several times (one row per plan document); show each plan name once
+    const subscriptionMerged = mergePlanTotals(subscriptionResult);
+
+    // Real counts of things waiting for an admin. A failed count shows 0 rather than breaking the page.
+    const count = (model, filter) => model.countDocuments(filter).catch(() => 0);
+    const [collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending, jobsFlagged] = await Promise.all([
+      count(require('../models/College'), { verificationStatus: 'pending', isTest: { $ne: true } }),
+      count(require('../models/Ticket'), { status: { $in: ['open', 'in_progress'] } }),
+      count(require('../models/ContactMessage'), { status: 'new' }),
+      count(Review, { status: 'pending' }),
+      count(require('../models/AdminRequest'), { status: 'pending' }),
+      count(Job, { 'scamFlags.0': { $exists: true }, scamReviewed: { $ne: true }, status: { $ne: 'closed' } })
+    ]);
+
     res.json({
       users: userCount,
       companies: companyCount,
       jobs: jobCount,
+      needsAction: { collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending, jobsFlagged },
       usersByRole,
       totalRevenue,
+      onlineRevenue,
+      manualRevenue: { total: manual.total, count: manual.count },
+      today: { newUsers: newUsersToday, newJobs: newJobsToday, applications: applicationsToday },
       revenueData,
-      subscriptionData: subscriptionResult
+      subscriptionData: subscriptionMerged
     });
   } catch (err) {
     console.error('Stats Error:', err.message);

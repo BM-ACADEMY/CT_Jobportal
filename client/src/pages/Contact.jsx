@@ -20,20 +20,20 @@ const SEGMENTS = [
 ];
 
 const HOURS = [
-  { day: 'Monday – Friday', time: '9:00 AM – 6:00 PM' },
-  { day: 'Saturday', time: '10:00 AM – 2:00 PM' },
+  { day: 'Monday – Friday', time: '10:00 AM – 7:00 PM' },
   { day: 'Sunday', time: 'Closed' },
 ];
 
 const FAQS = [
-  { q: 'How do I post a job on Velaivaaipu?', a: 'Register or log in as a company or recruiter, then go to your dashboard and click "Post a Job". Fill in the details and your listing goes live instantly.' },
+  { q: 'How do I post a job on Velaivaaipu?', a: 'Register or log in as a company or recruiter, then go to your dashboard and click "Post a Job". Our team checks new companies, and jobs from a company show publicly once it is verified. Until then you can see them in your dashboard.' },
   { q: 'Is it free to create a job seeker account?', a: 'Yes. Creating a job seeker account is completely free. Premium plans add features for faster job discovery.' },
-  { q: 'How do subscription plans work?', a: 'Plans unlock premium features like the resume builder, profile boost, direct messaging with recruiters and career counselling. They are billed monthly, quarterly or yearly.' },
-  { q: 'How can I contact a recruiter directly?', a: 'With a premium plan you can message recruiters directly from their job listings or company profiles.' },
+  { q: 'How do subscription plans work?', a: 'The Plans page lists what each plan includes and what it costs, with GST shown before you pay. Start free, and upgrade only if you need more.' },
+  { q: 'How can I contact a recruiter directly?', a: 'Open the job or company page and use the apply or message option shown there. Which contact options you see depends on your plan. The Plans page has the details.' },
   { q: 'How do I reset my password?', a: 'Click "Forgot Password" on the login page. We\'ll send a reset link to your registered email within a few minutes.' },
 ];
 
-const EMPTY_FORM = { name: '', email: '', subject: '', message: '', segment: '' };
+// company_website is a hidden spam trap: real people never fill it, so the server drops any message that has it.
+const EMPTY_FORM = { name: '', email: '', subject: '', message: '', segment: '', company_website: '' };
 
 const inputCls = 'w-full h-12 px-4 rounded-xl border border-zinc-200 bg-white text-zinc-900 text-sm font-medium outline-none transition placeholder:text-zinc-400 focus:border-[#34B678] focus:ring-4 focus:ring-[#34B678]/15';
 
@@ -47,7 +47,16 @@ const Field = ({ label, required, htmlFor, children }) => (
 );
 
 const Contact = () => {
-  const [form, setForm] = useState(EMPTY_FORM);
+  // A link such as /contact?segment=college&subject=Custom%20plan opens the form already filled in.
+  const [form, setForm] = useState(() => {
+    let segment = ''; let subject = '';
+    try {
+      const q = new URLSearchParams(window.location.search);
+      segment = ['jobseeker', 'company', 'college'].includes(q.get('segment')) ? q.get('segment') : '';
+      subject = String(q.get('subject') || '').slice(0, 100);
+    } catch (e) { /* ignore */ }
+    return { ...EMPTY_FORM, subject, segment };
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
@@ -232,6 +241,10 @@ const Contact = () => {
                     <Field label="Email" required htmlFor="c-email">
                       <input id="c-email" type="email" name="email" autoComplete="email" value={form.email} onChange={handleChange} placeholder="rahul@example.com" className={inputCls} />
                     </Field>
+                  </div>
+
+                  <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }}>
+                    <input type="text" name="company_website" tabIndex={-1} autoComplete="off" value={form.company_website} onChange={handleChange} />
                   </div>
 
                   <Field label="Subject" htmlFor="c-subject">

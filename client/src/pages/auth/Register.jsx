@@ -1,3 +1,5 @@
+import { JOB_CATEGORIES } from '@/data/jobCategories';
+import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -61,6 +63,7 @@ const RegisterPage = () => {
   const [searchParams] = useSearchParams();
   const requestedRole = searchParams.get('role');
   const [selectedRole, setSelectedRole] = useState(['jobseeker', 'recruiter', 'company', 'college'].includes(requestedRole) ? requestedRole : 'jobseeker');
+  const [brandConsent, setBrandConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
@@ -116,7 +119,12 @@ const RegisterPage = () => {
 
   const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company';
 
+  const [interests, setInterests] = useState([]); // job seekers: up to 3 fields of work (optional)
+  const [botToken, setBotToken] = useState('');
+  const [botReset, setBotReset] = useState(0);
+
   const onSubmit = async (values) => {
+    if (turnstileEnabled() && !botToken) { setError('Please complete the "I am human" check.'); return; }
     if (selectedRole === 'college') {
       if (!values.collegeName?.trim() || !values.collegeEmail?.trim() || !values.collegePhone?.trim()) {
         setError('Please fill in College Name, College Email, and College Phone.');
@@ -131,6 +139,10 @@ const RegisterPage = () => {
       phone: `${values.countryCode}${values.mobileNumber}`,
       password: values.password,
       role: selectedRole,
+      ...(botToken ? { turnstileToken: botToken } : {}),
+      ...(searchParams.get('ref') ? { ref: searchParams.get('ref') } : {}),
+      ...(brandConsent ? { brandConsent: true } : {}),
+      ...(selectedRole === 'jobseeker' && interests.length ? { interestedCategories: interests } : {}),
       ...(selectedRole === 'college' ? {
         collegeName: values.collegeName,
         collegeEmail: values.collegeEmail,
@@ -139,6 +151,8 @@ const RegisterPage = () => {
       } : {}),
     });
     setLoading(false);
+    if (!result.success) setBotReset((n) => n + 1); // a used token cannot be used twice
+    
     
     if (result.success) {
       if (result.requireOtp) {
@@ -324,18 +338,23 @@ const RegisterPage = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'College Email' : 'Email Address'}</FormLabel>
+                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'College Email' : (selectedRole === 'recruiter' || selectedRole === 'company') ? 'Company Email (best)' : 'Email Address'}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <Input 
-                              placeholder={selectedRole === 'college' ? 'TPO email address' : 'Email address'} 
+                              placeholder={selectedRole === 'college' ? 'TPO email address' : (selectedRole === 'recruiter' || selectedRole === 'company') ? 'name@yourcompany.com' : 'Email address'} 
                               {...field} 
                               onChange={(e) => field.onChange(e.target.value.toLowerCase())}
                               className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
                             />
                           </div>
                         </FormControl>
+                        {(selectedRole === 'recruiter' || selectedRole === 'company') && (
+                          <p className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-md px-2.5 py-1.5">
+                            Sign up with your company email and list your company free, verified at once. Gmail and other free emails also work: one live job at a time for 14 days, after a quick proof check.
+                          </p>
+                        )}
                         <FormMessage className="text-xs font-medium text-rose-500" />
                       </FormItem>
                     )}
@@ -434,6 +453,9 @@ const RegisterPage = () => {
                           </FormItem>
                         )}
                       />
+                      <p className="text-xs text-slate-500 leading-relaxed m-0">
+                        Our team will call you within 24 hours to help you start. We do not sell student data. <a href="/privacy-policy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a>
+                      </p>
                     </>
                   )}
 
@@ -500,6 +522,57 @@ const RegisterPage = () => {
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
                     <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
                   </p>
+
+                  <label className="flex items-start gap-2 text-xs text-slate-600 font-medium leading-relaxed mb-4 cursor-pointer">
+                    <input type="checkbox" className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600" checked={brandConsent} onChange={(e) => setBrandConsent(e.target.checked)} />
+                    <span>Optional: allow Velaivaaipu and its sister brands (BM Academy, CoreTalents) to contact me about training and hiring services. You can change this any time in Settings.</span>
+                  </label>
+
+                  {selectedRole === 'jobseeker' && (
+
+                    <div>
+
+                      <p className="text-xs font-bold text-slate-500 mb-2">Which fields do you want to work in? (optional, up to 3)</p>
+
+                      <div className="flex flex-wrap gap-2" role="group" aria-label="Fields of work">
+
+                        {JOB_CATEGORIES.map((c) => {
+
+                          const picked = interests.includes(c.key);
+
+                          return (
+
+                            <button
+
+                              key={c.key}
+
+                              type="button"
+
+                              aria-pressed={picked}
+
+                              onClick={() => setInterests((cur) => (picked ? cur.filter((k) => k !== c.key) : cur.length >= 3 ? cur : [...cur, c.key]))}
+
+                              className={`h-9 px-3 rounded-full border text-xs font-bold transition-colors ${picked ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}
+
+                            >
+
+                              {c.label}
+
+                            </button>
+
+                          );
+
+                        })}
+
+                      </div>
+
+                    </div>
+
+                  )}
+
+
+                  <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
+
 
                   <Button
                     type="submit"

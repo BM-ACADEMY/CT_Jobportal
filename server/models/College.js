@@ -27,6 +27,10 @@ const collegeSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Partner colleges strip: set by an admin after the college agreed (written or by phone, noted).
+  showLogo: { type: Boolean, default: false },
+  logoApproved: { type: Boolean, default: false },
+  logoConsentNote: { type: String, default: '', maxlength: 200 },
   principalName: {
     type: String,
     trim: true,
@@ -84,6 +88,9 @@ const collegeSchema = new mongoose.Schema({
     type: Number,
     default: 100 // matches the Campus Free plan's Student Capacity — see scripts/seedCampusPlans.js
   },
+  // Student packs bought on top of the plan (see utils/collegePack.js). They count only until extraUntil.
+  extraStudents: { type: Number, default: 0 },
+  extraUntil: { type: Date, default: null },
   subscriptionExpiry: {
     type: Date
   },
@@ -118,6 +125,17 @@ const collegeSchema = new mongoose.Schema({
     enum: ['pending', 'verified', 'rejected'],
     default: 'pending'
   },
+  // Set by an admin for test or demo colleges. They stay in the database but are hidden from the
+  // verification list by default and are not counted in admin totals.
+  isTest: { type: Boolean, default: false, index: true },
+  // Why an admin verified without a proof document (how it was checked), or why it was rejected.
+  verificationNote: { type: String, default: '', maxlength: 500 },
+  // Messages an admin sent asking the college for proof or details. The status stays as it was.
+  infoRequests: [{
+    message: { type: String, maxlength: 500 },
+    askedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    askedAt: { type: Date, default: Date.now }
+  }],
   verifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -136,6 +154,7 @@ const collegeSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  principalAccessAttempts: { type: Number, default: 0 }, // wrong tries on the current code; reset when a new code is issued
   principalAccessCodeExpiry: {
     type: Date,
     default: null

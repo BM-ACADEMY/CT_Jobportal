@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { GraduationCap, MapPin, ShieldCheck } from 'lucide-react';
 
-const CollegeList = ({ limit = 8 }) => {
+const CollegeList = ({ limit = 8, minToShow = 1 }) => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const API_DOMAIN = import.meta.env.VITE_API_DOMAIN;
   const [colleges, setColleges] = useState([]);
@@ -16,7 +16,7 @@ const CollegeList = ({ limit = 8 }) => {
       .finally(() => setLoading(false));
   }, [API_BASE_URL, limit]);
 
-  if (!loading && colleges.length === 0) return null;
+  if (!loading && colleges.length < minToShow) return null;
 
   return (
     <section className="py-24 bg-slate-50">

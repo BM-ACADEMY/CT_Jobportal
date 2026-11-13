@@ -35,6 +35,7 @@ const payPerRoutes = require('./routes/payPerRoutes');
 const collegeRoutes = require('./routes/collegeRoutes');
 const skillTestRoutes = require('./routes/skillTestRoutes');
 const whatsappRoutes = require('./routes/whatsapp');
+const blogRoutes = require('./routes/blogRoutes');
 const emailWebhookRoutes = require('./routes/emailWebhook');
 const recommendationRoutes = require('./routes/recommendationRoutes');
 const assistantRoutes = require('./routes/assistantRoutes');
@@ -244,11 +245,21 @@ app.use('/api/pay-per', payPerRoutes);
 app.use('/api/college', collegeRoutes);
 app.use('/api/skill-tests', skillTestRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/blogs', blogRoutes);
 app.use('/api/webhooks/email', emailWebhookRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/feedback', require('./routes/feedbackRoutes'));
+app.use('/api/drives', require('./routes/drives'));
+app.use('/api/job-fairs', require('./routes/jobFairs'));
+app.use('/api/home', require('./routes/home'));
+// Public status check for the admin dashboard and uptime monitors. Answers 503 when the database is down.
+app.get('/api/health', async (req, res) => {
+  const result = await require('./utils/health').checkHealthCached(mongoose);
+  res.status(result.ok ? 200 : 503).json(result);
+});
 app.use('/api/push', pushRoutes);
 app.use('/api/files', fileRoutes);
 

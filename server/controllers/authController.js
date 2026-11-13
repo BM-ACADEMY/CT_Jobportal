@@ -9,7 +9,9 @@ const Company = require('../models/Company');
 const Subscription = require('../models/Subscription');
 const CampusDrive = require('../models/CampusDrive');
 const sendEmail = require('../utils/sendEmail');
+const { otpEmail } = require('../utils/emailTemplates');
 const { hasCompanyAccess } = require('../utils/companyAccess');
+const { cleanInterestedCategories } = require('../config/jobCategories');
 const { isSelfServeRole } = require('../utils/selfServeRoles');
 const { sendWelcomeEmail } = require('../utils/lifecycleEmails');
 
@@ -90,11 +92,17 @@ const { notifyRoles } = require('../utils/inAppNotifications');
 
 // @desc    Register a new user (sends OTP)
 // @route   POST /api/auth/register
+const { cleanReferrer } = require('../utils/referral');
+
 const registerUser = async (req, res) => {
   try {
     const { name, password, role, collegeName, collegeEmail, collegePhone, tpoPhone, phone } = req.body;
     const email = cleanEmail(req.body.email);
     const normalizedEmail = email;
+    // Job seekers need a usable mobile number: counsellors and recruiters call them, and tests tie results to it.
+    if (role === 'jobseeker' && !require('../utils/phoneRule').valid(phone)) {
+      return res.status(400).json({ msg: 'Please enter a valid mobile number.' });
+    }
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       return res.status(400).json({ msg: 'Please enter a valid email address' });
     }
@@ -143,10 +151,20 @@ const registerUser = async (req, res) => {
       otp,
       otpExpiry,
       profile: {
-        phone: phone || (role === 'college' && tpoPhone ? tpoPhone : '')
+        phone: phone || (role === 'college' && tpoPhone ? tpoPhone : ''),
+        interestedCategories: role === 'jobseeker' ? cleanInterestedCategories(req.body.interestedCategories) : []
       },
       ...(role === 'college' && tpoPhone ? {} : {}), // Keep college-specific profile logic as needed or handle above
     });
+
+    // Optional tick at sign-up: allow sister brands to contact about training and hiring.
+    if (req.body.brandConsent === true) user.brandConsent = { contact: true, at: new Date(), withdrawnAt: null, source: 'signup' };
+
+    user.signupSource = require('../utils/signupSource').cleanUtm(req.body.utm);
+
+    // Invite link: remember who invited this person, only if that account really exists.
+    const inviter = cleanReferrer(req.body.ref);
+    if (inviter && role === 'jobseeker' && await User.exists({ _id: inviter })) user.referredBy = inviter;
 
     await user.save();
 
@@ -186,20 +204,25 @@ const registerUser = async (req, res) => {
       await college.save();
       user.collegeProfile = { college: college._id, designation: 'TPO' };
       await user.save();
+
+      // A new college gets a call within 24 hours. Goes into Needs action so someone owns it. Never blocks signup.
+      try {
+        const AdminRequest = require('../models/AdminRequest');
+        await AdminRequest.create({
+          user: user._id, type: 'college_call', college: college._id,
+          bookingName: name, bookingPhone: tpoPhone || phone || collegePhone || '', bookingEmail: normalizedEmail,
+          notes: `New college signed up: ${college.name}. Call the TPO within 24 hours to welcome them and help with the first student upload.`,
+        });
+        notifyRoles({
+          io: req.io, roles: ['admin'], title: 'New college: call within 24 hours',
+          message: `${college.name} just registered (${name}${tpoPhone || phone ? `, ${tpoPhone || phone}` : ''}). Call them within 24 hours.`,
+          type: 'general', link: '/admin/requests',
+        }).catch(err => console.error('College call notice failed:', err.message));
+      } catch (err) { console.error('College call task failed:', err.message); }
     }
 
     // Send OTP Email
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-        <h2 style="color: #1d4ed8;">Welcome to Velaivaaipu!</h2>
-        <p style="font-size: 16px;">Hi ${name},</p>
-        <p style="font-size: 16px;">Thank you for registering. Please use the following OTP to verify your email address. It is valid for 10 minutes.</p>
-        <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
-          ${otp}
-        </div>
-        <p style="font-size: 14px; color: #6b7280;">If you didn't request this, you can safely ignore this email.</p>
-      </div>
-    `;
+    const htmlContent = otpEmail({ title: 'Welcome to Velaivaaipu', name, otp, intro: 'Thank you for registering. Use this code to verify your email address.' });
 
     const emailSent = await sendEmail({
       email,
@@ -339,16 +362,7 @@ const loginUser = async (req, res) => {
       user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
 
-      const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-          <h2 style="color: #1d4ed8;">Verify Your Account</h2>
-          <p style="font-size: 16px;">Hi ${user.name}, you tried to log in but your account isn't verified.</p>
-          <p style="font-size: 16px;">Your new OTP is:</p>
-          <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
-            ${otp}
-          </div>
-        </div>
-      `;
+      const htmlContent = otpEmail({ title: 'Verify your account', name: user.name, otp, intro: "You tried to log in, but your email isn't verified yet. Use this code to verify it." });
       const emailSent = await sendEmail({ email, subject: 'Verify Your Email - Velaivaaipu', html: htmlContent });
       
       const msg = emailSent 
@@ -456,17 +470,7 @@ const forgotPassword = async (req, res) => {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-        <h2 style="color: #1d4ed8;">Password Reset Request</h2>
-        <p style="font-size: 16px;">Hi ${user.name},</p>
-        <p style="font-size: 16px;">You requested to reset your password. Use the following OTP to securely verify your identity.</p>
-        <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
-          ${otp}
-        </div>
-        <p style="font-size: 14px; color: #6b7280;">If you didn't request a password reset, you can safely ignore this email.</p>
-      </div>
-    `;
+    const htmlContent = otpEmail({ title: 'Reset your password', name: user.name, otp, intro: 'You asked to reset your password. Use this code to confirm it is you.', safety: "If you didn't ask to reset your password, you can safely ignore this email; your password will not change. Never share this code with anyone." });
 
     const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Velaivaaipu', html: htmlContent });
 
@@ -579,11 +583,19 @@ const getUserProfile = async (req, res) => {
       employerCompanyName = employer?.name || null;
     }
 
+    // A small summary for the employer notices (verification banner, first-steps checklist). Employers only.
+    let companyStatus = null;
+    if (['company', 'recruiter'].includes(roleName) && user.company) {
+      const c = await Company.findById(user.company).select('is_verified logo logo_url description').lean();
+      if (c) companyStatus = { verified: !!c.is_verified, limitedTier: require('../utils/companyTier').isLimitedTier(user), hasLogo: !!(c.logo || c.logo_url), hasDescription: !!String(c.description || '').trim() };
+    }
+
     res.json({
       id: user._id,
       name: user.name,
       email: user.email,
       role: roleName,
+      companyStatus,
       avatar: user.avatar,
       coverPic: user.coverPic,
       profile: user.profile,
@@ -640,17 +652,7 @@ const resendOtp = async (req, res) => {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
 
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; color: #333;">
-        <h2 style="color: #1d4ed8;">Your New OTP Code</h2>
-        <p style="font-size: 16px;">Hi ${user.name},</p>
-        <p style="font-size: 16px;">You requested a new verification code. It is valid for 10 minutes.</p>
-        <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #111827;">
-          ${otp}
-        </div>
-        <p style="font-size: 14px; color: #6b7280;">If you didn't request this, please ignore this email.</p>
-      </div>
-    `;
+    const htmlContent = otpEmail({ title: 'Your new verification code', name: user.name, otp, intro: 'You asked for a new verification code. Use it to continue.' });
 
     const emailSent = await sendEmail({
       email: normalizedEmail,

@@ -5,6 +5,8 @@ const Role = require('../models/Role');
 const mongoose = require('mongoose');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const { notifyUser, notifyRoles, notifyUsers } = require('../utils/inAppNotifications');
+const { receivedMessage, askForReviewOnce } = require('../utils/serviceRequestMessages');
+const { freeLeft } = require('../utils/freeCounselling');
 
 const notifyAdminsOfServiceRequest = (req, request, user) => notifyRoles({
   io: req.io,
@@ -63,6 +65,15 @@ const submitCounsellingRequest = async (req, res) => {
       }
     }
 
+    // Nothing else covers it: the free first session.
+    if (!hasFeature) {
+      const counted = await AdminRequest.countDocuments({ user: req.user.id, type: 'counselling', status: { $ne: 'cancelled' } });
+      if (freeLeft(counted) > 0) {
+        hasFeature = true;
+        source = 'free';
+      }
+    }
+
     if (!hasFeature) {
       return res.status(403).json({ msg: 'Career counselling limit reached or not included in your active features.' });
     }
@@ -86,7 +97,11 @@ const submitCounsellingRequest = async (req, res) => {
       notes,
     });
     await request.save();
+    // Only a ticked box counts as consent. Unticked or missing changes nothing.
+    require('../utils/brandConsentGrant').grantFromForm(user, req.body);
     notifyAdminsOfServiceRequest(req, request, user);
+    notifyUser({ io: req.io, recipientId: user._id, ...receivedMessage('counselling', user.name), type: 'service_received', metadata: { requestId: request._id } })
+      .catch(err => console.error('Counselling received message failed:', err.message));
 
     if (source === 'plan' && limit > 0) {
       user.counsellingSessionsUsed = (user.counsellingSessionsUsed || 0) + 1;
@@ -171,6 +186,8 @@ const submitMockInterviewRequest = async (req, res) => {
     });
     await request.save();
     notifyAdminsOfServiceRequest(req, request, user);
+    notifyUser({ io: req.io, recipientId: user._id, ...receivedMessage('mock_interview', user.name), type: 'service_received', metadata: { requestId: request._id } })
+      .catch(err => console.error('Mock interview received message failed:', err.message));
 
     if (source === 'plan' && limit > 0) {
       user.mockInterviewsUsed = (user.mockInterviewsUsed || 0) + 1;
@@ -483,6 +500,8 @@ const getMySessions = async (req, res) => {
 
     res.json({
       counsellingSessionsUsed: user?.counsellingSessionsUsed || 0,
+      // The free first session left (0 once one request is booked and not cancelled).
+      freeSessionsLeft: freeLeft(sessions.filter(s => s.status !== 'cancelled').length),
       sessions,
       counts,
     });
@@ -703,6 +722,9 @@ const updateRequestStatus = async (req, res) => {
 
     await request.save();
     res.json({ msg: 'Request updated successfully', request });
+    // The new-college call is an internal task for our team; the college is not messaged when it is ticked off.
+    if (request.type === 'college_call' || request.type === 'college_upgrade') return;
+    askForReviewOnce({ request, notify: notifyUser, io: req.io }).catch(err => console.error('Review ask failed:', err.message));
 
     notifyUser({
       io: req.io,
@@ -710,7 +732,7 @@ const updateRequestStatus = async (req, res) => {
       title: 'Service request updated',
       message: `Your ${request.type.replaceAll('_', ' ')} request is now ${request.status}.`,
       type: 'service_status',
-      link: request.type === 'mock_interview' ? '/candidate/mock-interviews' : '/candidate/career-counselling',
+      link: request.type === 'mock_interview' ? '/candidate/mock-interviews' : request.type === 'student_pack' ? '/college/dashboard' : '/candidate/career-counselling',
       metadata: { requestId: request._id, status: request.status }
     }).catch(err => console.error('Service status notification failed:', err.message));
   } catch (err) {
@@ -731,6 +753,8 @@ const adminAssignRequest = async (req, res) => {
     const request = await AdminRequest.findById(req.params.id).populate('user', 'name');
     if (!request) return res.status(404).json({ msg: 'Request not found' });
     if (!staffMayTouchRequestType(req, request.type)) return res.status(403).json({ msg: 'Staff accounts cannot assign this type of request.' });
+    if (request.type === 'student_pack') return res.status(400).json({ msg: 'Student pack requests are handled by contacting the college, not assigned.' });
+    if (request.type === 'college_call' || request.type === 'college_upgrade') return res.status(400).json({ msg: 'This is a call task for our team, not assigned to a recruiter.' });
 
     request.assignedToPool = assignedToPool || [];
     request.assignedTo = null;
@@ -851,7 +875,7 @@ const updateAssignedRequest = async (req, res) => {
       if (slot2EndTime) request.slot2EndTime = slot2EndTime;
       
       // Default to native link if not provided
-      request.meetingLink = meetingLink ? meetingLink : `http://localhost:5173/meeting/${request._id}`;
+      request.meetingLink = meetingLink ? meetingLink : `${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/meeting/${request._id}`;
     }
     
     if (status === 'approved' && previousStatus === 'pending') {
@@ -895,6 +919,7 @@ const updateAssignedRequest = async (req, res) => {
     }
 
     res.json({ msg: 'Request updated successfully', request });
+    askForReviewOnce({ request, notify: notifyUser, io: req.io }).catch(err => console.error('Review ask failed:', err.message));
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }

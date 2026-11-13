@@ -25,7 +25,7 @@ const PrivacyPolicy = () => (
   <LegalPage
     title="Privacy Policy"
     icon={ShieldCheck}
-    effective="October 22, 2026"
+    effective="November 14, 2026"
     intro="Explains what data we collect, why, and the choices you have."
     sections={SECTIONS}
     seoPath="/privacy-policy"
@@ -76,6 +76,7 @@ const PrivacyPolicy = () => (
 
     <Section id="processors" title="6. Services we use">
       {/* DRAFT wording for the AI assistant. A lawyer must review it, and OpenAI's current API data terms must be checked, before the assistant is switched on (see docs/AI_ASSISTANT.md). */}
+      <p>Some jobs are marked "Apply on company site". When you tap Apply on one of them, you go to the employer's own website. We count that tap but do not receive what you submit there. The employer's privacy policy applies from then on.</p>
       <p>We use trusted providers to run the platform: Razorpay (payments), Meta WhatsApp Business (messages), Google and LinkedIn (sign-in), Google Analytics and Meta Pixel (analytics and advertising measurement), AI model providers accessed through OpenRouter (for AI features such as skill tests, resume review and candidate matching; the text you submit for those features, such as your resume, is sent to them to produce the result), email delivery services, and cloud hosting. They process data on our behalf or under their own privacy terms. Some of them store data on servers outside India.</p>
       {ASSISTANT_LIVE && <p><strong>Velaivaaipu assistant (job seekers).</strong> If you use the assistant, your question and a short summary of your own career profile are sent to OpenAI to produce the answer: your headline, preferred role, location, skills, degree names, past job titles, how complete your profile is, and the jobs we suggested to you. We do not send your name, email, phone number, photo, password, payment details or resume text, and we do not keep the text of your conversation; we only count how many messages you send. OpenAI handles that data under its own terms and privacy policy. Do not type passwords, OTPs, card details or ID numbers into the assistant. Its answers can be wrong; check important details yourself.</p>}
     </Section>
@@ -102,6 +103,7 @@ const PrivacyPolicy = () => (
 
     <Section id="contact" title="12. Contact and grievances">
       <p>Write to <strong>{SUPPORT_EMAIL}</strong> or use our <Link to="/contact" className="font-bold text-emerald-700 hover:underline">Contact page</Link> for any privacy question or complaint.</p>
+      <p>Grievance Officer: Mohamed Kamarudeen B, Authorised Signatory, Afra Ventures Private Limited, <strong>{SUPPORT_EMAIL}</strong> (subject "Grievance"). We acknowledge within 24 hours and aim to resolve within 15 days.</p>
     </Section>
   </LegalPage>
 );

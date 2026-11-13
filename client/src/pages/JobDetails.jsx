@@ -187,7 +187,15 @@ const JobDetails = () => {
 
   const [showProfileNudge, setShowProfileNudge] = useState(false);
 
+  // Job found on the web: the candidate applies on the employer's own site (no login needed).
+  const externalUrl = job?.externalApply?.url || '';
   const handleApply = () => {
+    if (externalUrl) {
+      window.open(externalUrl, '_blank', 'noopener,noreferrer');
+      axios.post(`${API_BASE_URL}/jobs/${job._id}/apply-click`).catch(() => {});
+      trackEvent && trackEvent('external_apply_click', { job_id: job._id });
+      return;
+    }
     if (!user) {
       toast.error("Please login to apply for this job");
       navigate('/login');
@@ -333,20 +341,20 @@ const JobDetails = () => {
     );
   }
 
-  const companyName = job.company?.name || 'Velaivaaipu';
+  const companyName = job.externalApply?.employerName || job.company?.name || 'Velaivaaipu';
   const city = job.location || 'Tamil Nadu';
   const fullJobTitle = `${job.title} Job in ${city} – ${companyName} | Velaivaaipu`;
   const seoTitle = fullJobTitle.length <= 60 ? fullJobTitle : `${job.title} Job in ${city} | Velaivaaipu`;
-  const seoDescription = `${companyName} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}${job.jobType ? `, ${String(job.jobType).toLowerCase()}` : ''}. Check the job details and apply online free on Velaivaaipu.`;
+  const seoDescription = `${companyName} is hiring ${job.title} in ${city}. ${job.vacancies || 1} opening${job.vacancies === 1 ? '' : 's'}${job.jobType ? `, ${String(job.jobType).toLowerCase()}` : ''}. ${job.externalApply?.url ? 'Check the details and apply on the employer site.' : 'Check the job details and apply online free on Velaivaaipu.'}`;
   const jobSchema = {
     '@context': 'https://schema.org', '@type': 'JobPosting',
     title: job.title, description: job.description,
     identifier: { '@type': 'PropertyValue', name: 'Velaivaaipu', value: job.display_id || job._id },
     datePosted: job.createdAt, validThrough: job.validThrough,
     employmentType: String(job.jobType || 'FULL_TIME').toUpperCase().replace(/[ -]/g, '_'),
-    hiringOrganization: { '@type': 'Organization', name: companyName, sameAs: job.company?.website },
+    hiringOrganization: { '@type': 'Organization', name: companyName, sameAs: job.externalApply?.url ? undefined : job.company?.website },
     jobLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressLocality: city, addressRegion: 'Tamil Nadu', addressCountry: 'IN' } },
-    directApply: true,
+    directApply: !job.externalApply?.url,
     ...(job.workMode === 'Remote' ? { jobLocationType: 'TELECOMMUTE', applicantLocationRequirements: { '@type': 'Country', name: 'IN' } } : {}),
     ...(!job.salary?.isRangeHidden && job.salary?.min ? { baseSalary: { '@type': 'MonetaryAmount', currency: job.salary.currency || 'INR', value: { '@type': 'QuantitativeValue', minValue: job.salary.min, maxValue: job.salary.max || job.salary.min, unitText: 'YEAR' } } } : {}),
   };
@@ -409,7 +417,7 @@ const JobDetails = () => {
                 <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm md:text-base">
                   <span className="inline-flex items-center gap-2 font-semibold text-[#10213D]">
                     <Building2 size={17} className="text-zinc-400" /> {companyName}
-                    {job.company?.website && (
+                    {!externalUrl && job.company?.website && (
                       <a href={job.company.website} target="_blank" rel="noopener noreferrer" aria-label="Company website" className="text-zinc-400 hover:text-[#1f8a57] transition-colors">
                         <Globe size={15} />
                       </a>
@@ -448,7 +456,7 @@ const JobDetails = () => {
                   onClick={handleApply}
                   className="hidden lg:inline-flex items-center gap-2 h-12 px-7 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-sm font-bold border-none cursor-pointer shadow-lg shadow-[#34B678]/30 transition"
                 >
-                  Apply for this job <ArrowRight size={16} />
+                  {externalUrl ? 'Apply on company site' : 'Apply for this job'} <ArrowRight size={16} />
                 </button>
               )}
             </div>
@@ -553,8 +561,13 @@ const JobDetails = () => {
                   onClick={handleApply}
                   className="relative mt-5 w-full h-12 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-sm font-bold border-none cursor-pointer shadow-lg shadow-[#34B678]/30 flex items-center justify-center gap-2 transition"
                 >
-                  Apply now <ArrowRight size={16} />
+                  {externalUrl ? 'Apply on company site' : 'Apply now'} <ArrowRight size={16} />
                 </button>
+              )}
+              {externalUrl && (
+                <p className="relative m-0 mt-3 text-xs font-medium text-zinc-600 leading-relaxed">
+                  You will leave Velaivaaipu to apply{job.externalApply?.sourceName ? ` (${job.externalApply.sourceName})` : ''}. The employer handles your application. Never pay anyone to get a job.
+                </p>
               )}
             </div>
             <dl className="px-5 py-5 space-y-4 m-0">
@@ -570,6 +583,8 @@ const JobDetails = () => {
             </dl>
           </div>
 
+          {/* A job found on the web shows the real employer only, not our host company. */}
+          {!externalUrl && (
           <div className="rounded-[1.75rem] bg-white ring-1 ring-zinc-200/80 p-6">
             <h3 className="text-base font-bold text-[#10213D] m-0 mb-5">About the company</h3>
             <div className="flex items-center gap-4">
@@ -607,6 +622,7 @@ const JobDetails = () => {
               </a>
             )}
           </div>
+          )}
 
           <div className="rounded-[1.75rem] bg-amber-50 ring-1 ring-amber-100 p-6">
             <p className="m-0 flex items-center gap-2 text-sm font-bold text-amber-900"><ShieldCheck size={17} className="text-amber-600" /> Stay safe</p>
@@ -629,7 +645,7 @@ const JobDetails = () => {
             onClick={handleApply}
             className="h-12 px-6 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-sm font-bold border-none cursor-pointer shadow-lg shadow-[#34B678]/30 inline-flex items-center gap-2"
           >
-            Apply now <ArrowRight size={16} />
+            {externalUrl ? 'Apply on company site' : 'Apply now'} <ArrowRight size={16} />
           </button>
         </div>
       )}

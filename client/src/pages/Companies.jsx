@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { jobPath } from '../utils/jobUrl';
+import SEOHead from '../components/seo/SEOHead';
 import HeroShell from '@/components/home/HeroShell';
 import Reveal from '@/components/home/Reveal';
 import MotionIcon from '@/components/home/MotionIcon';
@@ -439,6 +440,7 @@ const Companies = () => {
   return (
     <MotionConfig reducedMotion="user">
       <div className="bg-white overflow-x-clip">
+        <SEOHead title="Companies hiring in Tamil Nadu | Velaivaaipu" description="See companies and recruiters hiring in Puducherry, Tamil Nadu and beyond, and their open jobs on Velaivaaipu." path="/companies" />
         {/* Hero */}
         <HeroShell>
           <div className="grid lg:grid-cols-12 gap-12 items-center">

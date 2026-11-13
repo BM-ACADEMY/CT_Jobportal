@@ -2,11 +2,11 @@ import React from 'react';
 
 // One source for Velaivaaipu's contact details and social links (used by the footer and /contact).
 
-export const ADDRESS = 'First Floor, 78, Lenin St, Kuyavarpalayam, Puducherry – 605013.';
+export const ADDRESS = 'First Floor, 78, Lenin St, Kosapalayam, Puducherry – 605013.';
 export const PHONE = { label: '+91 99449 40051', href: 'tel:+919944940051' };
 export const EMAIL = 'hello@velaivaaipu.in';
-export const MAP_EMBED = `https://www.google.com/maps?q=${encodeURIComponent('78, Lenin St, Kuyavarpalayam, Puducherry 605013')}&output=embed`;
-export const MAP_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('78, Lenin St, Kuyavarpalayam, Puducherry 605013')}`;
+export const MAP_EMBED = `https://www.google.com/maps?q=${encodeURIComponent('78, Lenin St, Kosapalayam, Puducherry 605013')}&output=embed`;
+export const MAP_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('78, Lenin St, Kosapalayam, Puducherry 605013')}`;
 
 // Brand glyphs (lucide dropped its brand icons). Facebook/YouTube paths from Simple Icons.
 export const InstagramIcon = props => (

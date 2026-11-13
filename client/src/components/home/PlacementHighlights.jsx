@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, Building2, IndianRupee, Trophy } from 'lucide-react';
 import axios from 'axios';
+import { SHOW_AT_LEAST } from '@/config/socialProof';
 import AnimatedStat from './AnimatedStat';
 
 const tierLabel = { dream: 'Dream Offer', super_dream: 'Super Dream Offer', regular: 'Placed' };
@@ -19,6 +20,8 @@ const PlacementHighlights = () => {
   // Real number only. (An earlier version added 543 to small counts, which overstated placements.)
   const count = stats?.studentsPlacedCount || 0;
   const highlights = stats?.placementHighlights || [];
+  // Too few placements look thin or made up, so the section waits for real volume (see config/socialProof.js).
+  if (!stats || count < SHOW_AT_LEAST.placed) return null;
 
   return (
     <section className="py-24 bg-white">
