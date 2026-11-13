@@ -503,6 +503,11 @@ const resetPassword = async (req, res) => {
       });
     }
 
+    // The new password must differ from the current one. The OTP is not used up, so they can try again.
+    if (user.password && await bcrypt.compare(newPassword, user.password)) {
+      return res.status(400).json({ msg: 'Your old password cannot be your new password. Please choose a different one.' });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
