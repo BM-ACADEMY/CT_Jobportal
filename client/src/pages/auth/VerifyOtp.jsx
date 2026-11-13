@@ -176,6 +176,9 @@ const VerifyOtpPage = () => {
               {resending ? 'Sending...' : timer > 0 ? `Resend Code in ${timer}s` : 'Resend Code'}
             </button>
           </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            The code can take a minute to arrive. Please also check your Spam or Junk folder.
+          </p>
         </div>
 
       </div>
