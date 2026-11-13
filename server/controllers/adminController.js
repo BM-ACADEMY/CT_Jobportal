@@ -1,4 +1,4 @@
-const { ensureOrgCompany } = require('../utils/ensureOrgCompany');
+const { ensureOrgCompany, verifyLinkedCompany } = require('../utils/ensureOrgCompany');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
@@ -348,6 +348,10 @@ const updateUserVerificationStatus = async (req, res) => {
     if (status === 'Verified') {
       // Verified organizations must appear on the public Companies page.
       await ensureOrgCompany(user).catch(err => console.error('ensureOrgCompany failed:', err.message));
+      if (['recruiter', 'company'].includes(user.role?.name)) {
+        await verifyLinkedCompany(user, req.user && (req.user.id || req.user._id))
+          .catch(err => console.error('verifyLinkedCompany failed:', err.message));
+      }
     }
     if (status !== 'Pending') {
       notifyUser({

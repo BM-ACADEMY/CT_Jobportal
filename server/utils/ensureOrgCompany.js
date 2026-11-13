@@ -18,4 +18,21 @@ const ensureOrgCompany = async (user, roleName) => {
   return company;
 };
 
-module.exports = { ensureOrgCompany };
+// The public Companies and Jobs pages only show verified companies (Company.is_verified), while admins
+// verify the ACCOUNT (User.profileVerificationStatus). When an admin verifies a recruiter or organization
+// account, its company counts as verified too, so its jobs and profile are not left hidden.
+const verifyLinkedCompany = async (user, adminId = null) => {
+  if (!user || !user.company) return false;
+  const res = await Company.updateOne(
+    { _id: user.company, is_verified: { $ne: true } },
+    { $set: {
+      is_verified: true,
+      verifiedAt: new Date(),
+      verifiedBy: adminId,
+      verification_note: 'Verified together with the account by an admin',
+    } }
+  );
+  return res.modifiedCount > 0;
+};
+
+module.exports = { ensureOrgCompany, verifyLinkedCompany };
