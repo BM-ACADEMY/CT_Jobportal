@@ -5,7 +5,7 @@ const adminRequestSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['counselling', 'mock_interview', 'website_request', 'ai_resume_review', 'student_pack', 'college_call', 'college_upgrade']
+    enum: ['counselling', 'mock_interview', 'website_request', 'ai_resume_review', 'student_pack', 'college_call', 'college_upgrade', 'help_request', 'company_proof']
   },
   status: {
     type: String,
@@ -34,8 +34,15 @@ const adminRequestSchema = new mongoose.Schema({
   // Student pack request (college dashboard)
   packs: Number,
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College', default: null },
+  // Company proof (free-email companies): what the company sent so an admin can verify it. See controllers/companyProofController.js
+  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
+  proofType: { type: String, enum: ['', 'gst', 'registration', 'website', 'linkedin'], default: '' },
+  proofValue: { type: String, default: '', maxlength: 300 },
+  proofFile: { type: String, default: '' },
   // Admin notes
   adminNotes: String,
+  // Help button: the page the person was on when they asked for help (the message itself is in `notes`).
+  pageUrl: { type: String, default: '', maxlength: 300 },
   // Scheduled Meeting Details (set by recruiter upon accept)
   meetingDate: String,
   meetingStartTime: String,

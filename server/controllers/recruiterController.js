@@ -111,8 +111,17 @@ const updateRecruiterProfile = async (req, res) => {
 
       // Handle logo upload
       if (req.files && req.files['logo']) {
-        company.logo = `/uploads/${req.files['logo'][0].filename}`;
-        company.logoApproved = false; // a new file must be checked again before it shows on the home page
+        const logoFile = req.files['logo'][0];
+        // Optional moderation (utils/imageCheck.js, off unless configured). Only an explicit refusal skips the new logo;
+        // a failed or unreachable check never blocks the upload.
+        const logoCheck = await require('../utils/imageCheck').checkImage(logoFile.path);
+        if (logoCheck.ok === false) {
+          try { require('fs').unlinkSync(logoFile.path); } catch { /* already gone */ }
+          console.warn('Company logo refused by the image check; the previous logo was kept.');
+        } else {
+          company.logo = `/uploads/${logoFile.filename}`;
+          company.logoApproved = false; // a new file must be checked again before it shows on the home page
+        }
       }
 
       // Handle gallery images from companyData

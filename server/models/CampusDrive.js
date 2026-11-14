@@ -69,6 +69,7 @@ const campusDriveSchema = new mongoose.Schema({
   }],
   eligibility: {
     minCGPA: { type: Number, default: 0 },
+    minPercentage: { type: Number, default: 0, min: 0, max: 100 },
     maxArrears: { type: Number, default: 10 },
     allowedDepartments: [{ type: String, trim: true }],
     batchYears: [{ type: Number }],

@@ -42,6 +42,7 @@ const collegeSchema = new mongoose.Schema({
     lowercase: true,
     default: ''
   },
+  principalReportLastSentAt: { type: Date },
   collegeEmail: {
     type: String,
     trim: true,
@@ -167,6 +168,10 @@ const collegeSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Set when an admin merged this duplicate into another college (utils/collegeMerge.js). The record is kept, never deleted.
+  mergedInto: { type: mongoose.Schema.Types.ObjectId, ref: 'College', default: null, index: true },
+  mergedAt: { type: Date, default: null },
+  mergedBy: { type: String, default: '' },
   display_id: {
     type: String,
     unique: true,

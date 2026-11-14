@@ -186,3 +186,17 @@ test('two desks checking in the same person at once use only one token number', 
   assert.equal(d.nextToken, before + 1, 'only one number is used');
   assert.equal(reg.status, 'checked_in');
 });
+
+test('desk walk-up: someone with no pass is registered and checked in at once, once only', async () => {
+  const d = await driveStub.create({ organiser: 'org1', slug: 'walk-up-drive', title: 'Walk up', status: 'published', plan: 'free', date: new Date(Date.now() + 864e5), slots: [{ label: '10 AM', capacity: 5 }], venue: {}, screeningQuestions: [] });
+  const a = await run(c.walkUp, { params: { id: d._id }, body: { name: 'Ravi K', phone: '9812345670' } });
+  assert.equal(a.code, 201); assert.equal(a.body.tokenNumber, 1); assert.equal(a.body.slot, '10 AM');
+  assert.ok(regs.some((r) => r.drive === d._id && r.phone === '9812345670' && r.status === 'checked_in'));
+  const again = await run(c.walkUp, { params: { id: d._id }, body: { name: 'Ravi K', phone: '9812345670' } });
+  assert.equal(again.body.already, true); assert.equal(again.body.tokenNumber, 1);
+  const b = await run(c.walkUp, { params: { id: d._id }, body: { name: 'Sita M', phone: '9812345671' } });
+  assert.equal(b.body.tokenNumber, 2);
+  assert.equal((await run(c.walkUp, { params: { id: d._id }, body: { name: 'X', phone: '9812345672' } })).code, 400);
+  assert.equal((await run(c.walkUp, { params: { id: d._id }, body: { name: 'Bad Phone', phone: '123' } })).code, 400);
+  assert.equal((await run(c.walkUp, { params: { id: d._id }, user: { id: 'someone-else' }, body: { name: 'Eve', phone: '9812345673' } })).code, 404);
+});

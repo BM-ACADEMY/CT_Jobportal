@@ -37,7 +37,7 @@ const antInputClass = "w-full h-9 px-3 text-xs bg-white border border-[#d9d9d9] 
 const antSelectClass = "w-full h-9 px-3 text-xs bg-white border border-[#d9d9d9] rounded-none outline-none hover:border-[#39c884] focus:border-[#39c884] focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
 
 const emptyCompanyRow = { name: '', packageLPA: '', salaryUnit: 'lpa', tierPolicy: 'regular', contactName: '', contactEmail: '' };
-const emptyForm = { title: '', batchYear: new Date().getFullYear(), departments: '', description: '', companies: [{ ...emptyCompanyRow }], minCGPA: '', maxArrears: '', requiredSkills: '', requireResume: false, requireVerifiedProfile: false, rounds: '' };
+const emptyForm = { title: '', batchYear: new Date().getFullYear(), departments: '', description: '', companies: [{ ...emptyCompanyRow }], minCGPA: '', minPercentage: '', maxArrears: '', requiredSkills: '', requireResume: false, requireVerifiedProfile: false, rounds: '' };
 
 const Drives = () => {
   const auth = useAuth();
@@ -95,6 +95,7 @@ const Drives = () => {
           ? [{ name: drive.companyName, packageLPA: drive.packageLPA || '', tierPolicy: drive.tierPolicy || 'regular', contactName: '', contactEmail: '' }]
           : [{ ...emptyCompanyRow }],
       minCGPA: drive.eligibility?.minCGPA ?? '',
+      minPercentage: drive.eligibility?.minPercentage || '',
       maxArrears: drive.eligibility?.maxArrears ?? '',
       requiredSkills: (drive.eligibility?.requiredSkills || []).join(', '),
       requireResume: Boolean(drive.eligibility?.requireResume),
@@ -134,6 +135,7 @@ const Drives = () => {
           })),
         eligibility: {
           minCGPA: form.minCGPA ? parseFloat(form.minCGPA) : 0,
+          minPercentage: form.minPercentage ? parseFloat(form.minPercentage) : 0,
           maxArrears: form.maxArrears !== '' ? parseInt(form.maxArrears) : 10,
           allowedDepartments: form.departments.split(',').map(d => d.trim()).filter(Boolean),
           batchYears: [parseInt(form.batchYear)],
@@ -549,6 +551,11 @@ const Drives = () => {
                 />
                 <span>% fills the CGPA above (percentage ÷ 9.5, the usual rule; check your university)</span>
               </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Min Percentage (or CGPA)</label>
+              <input type="number" step="1" min="0" max="100" value={form.minPercentage} onChange={e => setForm(p => ({ ...p, minPercentage: e.target.value }))} placeholder="e.g. 60" className={antInputClass} />
+              <p className="text-[10px] text-slate-400 mt-1">Fill either one. If you fill both, a student who meets either passes.</p>
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Max Arrears</label>

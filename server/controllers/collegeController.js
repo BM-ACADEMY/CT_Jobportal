@@ -410,7 +410,7 @@ const createDrive = async (req, res) => {
       companyName: primary?.name || companyName || '',
       packageLPA: primary?.packageLPA ?? packageLPA ?? 0,
       tierPolicy: primary?.tierPolicy || tierPolicy || 'regular',
-      eligibility: eligibility || undefined,
+      eligibility: require('../utils/collegeTools').sanitizeEligibility(eligibility) || undefined,
       rounds: Array.isArray(rounds) ? rounds : [],
       registrationUrl,
       qrCodeUrl,
@@ -3068,7 +3068,8 @@ const getProfileCompletionDashboard = async (req, res) => {
 const evaluateEligibility = (student, drive) => {
   const rule = drive.eligibility || {};
   const reasons = [];
-  if (Number(student.cgpa || 0) < Number(rule.minCGPA || 0)) reasons.push(`CGPA below ${rule.minCGPA}`);
+  const cutoffReason = require('../utils/collegeTools').academicCutoffReason(student, rule);
+  if (cutoffReason) reasons.push(cutoffReason);
   if (Number(student.activeArrears || 0) > Number(rule.maxArrears ?? 10)) reasons.push(`More than ${rule.maxArrears} active arrears`);
   const departments = rule.allowedDepartments?.length ? rule.allowedDepartments : drive.departments;
   if (departments?.length && !departments.includes(student.department)) reasons.push('Department not allowed');
@@ -3238,4 +3239,5 @@ module.exports = {
   ,addCollegeTeamMember
   ,updateCollegeTeamMember
   ,getCollegeAuditLog
+  ,getCollegeForTPO
 };

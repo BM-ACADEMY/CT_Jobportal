@@ -124,6 +124,38 @@ const createDrive = async (req, res) => {
   } catch (err) { return fail(res, err, 'create'); }
 };
 
+// A person who turns up without a pass: the desk registers them with a name and mobile number and checks them in at once.
+// Uses the same overall limit and token counter as a normal check-in.
+const walkUp = async (req, res) => {
+  try {
+    const d = await mine(req); if (!d) return res.status(404).json({ msg: 'Drive not found' });
+    if (d.status !== 'published') return res.status(400).json({ msg: 'Only a published drive can check people in' });
+    const name = R.str(req.body?.name, 100);
+    const phone = R.cleanPhone(req.body?.phone);
+    if (name.length < 2) return res.status(400).json({ msg: 'Please enter the name' });
+    if (!phone) return res.status(400).json({ msg: 'Please enter a valid 10-digit mobile number' });
+    let reg = await DriveRegistration.findOne({ drive: d._id, phone });
+    if (!reg) {
+      const limits = cfg.effectiveLimits(d);
+      const { registered } = await slotCountsFor(d._id);
+      if (registered >= limits.maxRegistrations) return res.status(409).json({ msg: 'This drive has reached its registration limit. Add more registrations from Plan and add-ons.' });
+      const slot = d.slots.some((x) => x.label === R.str(req.body?.slot, 40)) ? R.str(req.body?.slot, 40) : d.slots[0]?.label;
+      for (let tries = 0; tries < 5 && !reg; tries++) {
+        try { reg = await DriveRegistration.create({ drive: d._id, name, phone, slot, answers: [], code: R.makeCode() }); }
+        catch (e) { if (e.code !== 11000) throw e; reg = await DriveRegistration.findOne({ drive: d._id, phone }); }
+      }
+      if (!reg) return res.status(500).json({ msg: 'Server error' });
+    }
+    if (reg.status !== 'registered') return res.json({ already: true, name: reg.name, tokenNumber: reg.tokenNumber, status: reg.status });
+    const claimed = await DriveRegistration.findOneAndUpdate({ _id: reg._id, status: 'registered' }, { $set: { status: 'checked_in', checkedInAt: new Date() } }, { new: true });
+    if (!claimed) { const now = await DriveRegistration.findById(reg._id).lean(); return res.json({ already: true, name: reg.name, tokenNumber: now?.tokenNumber, status: now?.status }); }
+    const upd = await WalkInDrive.findByIdAndUpdate(d._id, { $inc: { nextToken: 1 } }, { new: false });
+    claimed.tokenNumber = upd.nextToken;
+    await claimed.save();
+    res.status(201).json({ name: claimed.name, tokenNumber: claimed.tokenNumber, slot: claimed.slot, status: claimed.status });
+  } catch (err) { return fail(res, err, 'walk up'); }
+};
+
 const myDrives = async (req, res) => {
   try {
     const drives = await WalkInDrive.find({ organiser: req.user.id }).sort({ date: -1 }).limit(100);
@@ -302,4 +334,44 @@ const markPaid = async (req, res) => {
   } catch (err) { return fail(res, err, 'mark paid'); }
 };
 
-module.exports = { listDrives, getDrive, driveQr, registerForDrive, getRegistration, registrationQr, createDrive, myDrives, manageDrive, inviteSeekers, checkIn, updateRegistration, requestAddon, sendThanks, report, adminListDrives, reviewDrive, markPaid };
+// Staff create a drive for a client (or for Velaivaaipu's own recruiter account). It goes live straight away, so a paid plan or
+// add-on needs the payment note (for example the UPI reference), which is stored the same way "Mark paid" stores it.
+const escRe = (t) => String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const adminOrganisers = async (req, res) => {
+  try {
+    const Role = require('../models/Role');
+    const roles = await Role.find({ name: { $in: ['company', 'recruiter'] } }).select('_id').lean();
+    const q = R.str(req.query.q, 60);
+    const filter = { role: { $in: roles.map((r) => r._id) }, isDeleted: { $ne: true } };
+    if (q) filter.$or = [{ name: new RegExp(escRe(q), 'i') }, { email: new RegExp(escRe(q), 'i') }];
+    const users = await User.find(filter).select('name email').sort({ name: 1 }).limit(20).lean();
+    res.json(users.map((u) => ({ id: String(u._id), name: u.name, email: u.email })));
+  } catch (err) { return fail(res, err, 'admin organisers'); }
+};
+
+const adminCreateDrive = async (req, res) => {
+  try {
+    const organiserId = req.body?.organiserId;
+    const user = HEX.test(organiserId || '') ? await User.findById(organiserId).select('name role').populate('role', 'name') : null;
+    if (!user || !['company', 'recruiter'].includes(user.role?.name)) return res.status(400).json({ msg: 'Choose the company or recruiter account this drive is for.' });
+    const { error, data } = R.cleanDriveInput(req.body);
+    if (error) return res.status(400).json({ msg: error });
+    const plan = cfg.PLANS[data.plan];
+    data.screeningQuestions = data.screeningQuestions.slice(0, plan.screeningMax);
+    const addons = (Array.isArray(req.body.addons) ? req.body.addons : []).filter((a) => cfg.ADDONS[a?.key]).slice(0, 7)
+      .map((a) => ({ key: a.key, qty: Math.min(50, Math.max(1, Math.floor(Number(a.qty)) || 1)) }));
+    const payNote = R.str(req.body?.paymentNote, 200);
+    const needsPayment = plan.price > 0 || addons.length > 0;
+    if (needsPayment && !payNote) return res.status(400).json({ msg: 'Write how it was paid (for example the UPI reference) because this plan or add-on has a price.' });
+    const now = new Date();
+    const drive = await WalkInDrive.create({
+      ...data, organiser: user._id, organiserName: R.str(req.body?.organiserName, 120) || user.name || '', slug: R.slugify(data.title),
+      addons: addons.map((a) => ({ ...a, paid: true, paidAt: now, paymentNote: payNote })),
+      paid: plan.price > 0, paidAt: plan.price > 0 ? now : undefined, paymentNote: plan.price > 0 ? payNote : '',
+      status: 'published', adminNote: `Created by admin ${String(req.user.id)}`, reviewedAt: now,
+    });
+    res.status(201).json({ id: drive._id, slug: drive.slug, url: driveUrl(drive), status: drive.status, quote: cfg.quote(drive) });
+  } catch (err) { return fail(res, err, 'admin create'); }
+};
+
+module.exports = { walkUp, listDrives, getDrive, driveQr, registerForDrive, getRegistration, registrationQr, createDrive, myDrives, manageDrive, inviteSeekers, checkIn, updateRegistration, requestAddon, sendThanks, report, adminListDrives, reviewDrive, markPaid, adminCreateDrive, adminOrganisers };

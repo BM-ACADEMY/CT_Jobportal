@@ -18,6 +18,8 @@ const FreeAssessment = lazy(() => import('../pages/public/FreeAssessment'));
 const CampusRegistration = lazy(() => import('../pages/public/CampusRegistration'));
 const Jobs = lazy(() => import('../pages/Jobs'));
 const JobDetails = lazy(() => import('../pages/JobDetails'));
+const CategoryJobs = lazy(() => import('../pages/CategoryJobs'));
+const InternshipCertificate = lazy(() => import('../pages/InternshipCertificate'));
 const ForColleges = lazy(() => import('../pages/ForColleges'));
 const Companies = lazy(() => import('../pages/Companies'));
 const CompanyProfilePage = lazy(() => import('../pages/CompanyProfilePage'));
@@ -53,6 +55,7 @@ const AdminLogin = page('admin/AdminLogin');
 const ManageUsers = page('admin/ManageUsers');
 const UserProfile = page('admin/UserProfile');
 const ManageJobs = page('admin/ManageJobs');
+const ManageCompanies = page('admin/ManageCompanies');
 const ExternalJobs = page('admin/ExternalJobs');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
 const ManageStaff = page('admin/ManageStaff');
@@ -131,17 +134,21 @@ const PublicDriveDetail = page('drives/DriveDetail');
 const PublicJobFairs = page('fairs/JobFairs');
 const PublicJobFairDetail = page('fairs/JobFairDetail');
 const AdminJobFairs = page('admin/JobFairsAdmin');
+const AdminFairCheckIn = page('admin/FairCheckIn');
 const DrivePass = page('drives/DrivePass');
 const WalkInDrives = page('company/WalkInDrives');
 const WalkInManage = page('company/WalkInManage');
 const AdminCollegeVerification = page('admin/CollegeVerification');
 const AdminCollegeFunnel = page('admin/CollegeFunnel');
+const AdminDuplicateColleges = page('admin/DuplicateColleges');
+const AdminBalanceBoard = page('admin/BalanceBoard');
 const CollegeKycDetails = page('admin/CollegeKycDetails');
 const CollegeDashboard = page('college/Dashboard');
 const CollegeStudents = page('college/Students');
 const CollegeDrives = page('college/Drives');
 const CollegeSettings = page('college/Settings');
 const CollegeReports = page('college/Reports');
+const CollegeWhatYouGet = page('college/WhatYouGet');
 const CollegeVerification = page('college/Verification');
 const CollegePlacementTools = page('college/PlacementTools');
 const CollegeOperations = page('college/CollegeOperations');
@@ -194,7 +201,9 @@ const AppRoutes = () => {
         <Route path="/admin/services" element={<PrivateRoute roles={['admin']}><AdminServices /></PrivateRoute>} />
         <Route path="/internships" element={<InternshipsPage />} />
         <Route path="/jobs" element={<Jobs />} />
+        <Route path="/jobs/category/:slug" element={<CategoryJobs />} />
         <Route path="/jobs/:location" element={<Jobs />} />
+        <Route path="/certificate/:code" element={<InternshipCertificate />} />
         <Route path="/job/:id" element={<JobDetails />} />
         <Route path="/companies" element={<Companies />} />
         <Route path="/companies/:id" element={<CompanyProfilePage />} />
@@ -436,6 +445,7 @@ const AppRoutes = () => {
         <Route path="/college/drives" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
         <Route path="/college/drives/new" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
         <Route path="/college/reports" element={<PrivateRoute roles={['college']}><CollegeReports /></PrivateRoute>} />
+        <Route path="/college/what-you-get" element={<PrivateRoute roles={['college']}><CollegeWhatYouGet /></PrivateRoute>} />
         <Route path="/college/verification" element={<PrivateRoute roles={['college']}><CollegeVerification /></PrivateRoute>} />
         <Route path="/college/subscription" element={<PrivateRoute roles={['college']}><CompanySubscription /></PrivateRoute>} />
         <Route path="/college/payment-history" element={<PrivateRoute roles={['college']}><PaymentHistory /></PrivateRoute>} />
@@ -479,6 +489,14 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/admin/companies"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageCompanies />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/admin/web-jobs"
           element={
             <PrivateRoute roles={['admin']}>
@@ -486,6 +504,8 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route path="/admin/duplicate-colleges" element={<PrivateRoute roles={['admin']}><AdminDuplicateColleges /></PrivateRoute>} />
+        <Route path="/admin/balance-board" element={<PrivateRoute roles={['admin']}><AdminBalanceBoard /></PrivateRoute>} />
         <Route
           path="/admin/college-funnel"
           element={
@@ -655,6 +675,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminJobFairs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/job-fairs/:id/checkin"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminFairCheckIn />
             </PrivateRoute>
           }
         />

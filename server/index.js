@@ -235,6 +235,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/help-requests', require('./routes/helpRequests'));
 app.use('/api/settings', settingsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/interviews', interviewRoutes);
@@ -255,6 +256,7 @@ app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use('/api/drives', require('./routes/drives'));
 app.use('/api/job-fairs', require('./routes/jobFairs'));
 app.use('/api/home', require('./routes/home'));
+app.use('/api/certificates', require('./routes/certificates'));
 // Public status check for the admin dashboard and uptime monitors. Answers 503 when the database is down.
 app.get('/api/health', async (req, res) => {
   const result = await require('./utils/health').checkHealthCached(mongoose);

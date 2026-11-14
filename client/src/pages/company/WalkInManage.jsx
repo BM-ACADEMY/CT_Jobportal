@@ -13,6 +13,7 @@ const ManageDrive = () => {
   const [plans, setPlans] = useState(null);
   const [code, setCode] = useState('');
   const [last, setLast] = useState(null);
+  const [walk, setWalk] = useState({ name: '', phone: '' });
   const [report, setReport] = useState(null);
 
   const load = useCallback(() => axios.get(`${API}/drives/mine/${id}`).then((r) => setData(r.data)).catch(() => toast.error('Could not load this drive')), [id]);
@@ -24,6 +25,11 @@ const ManageDrive = () => {
     const v = code.trim(); const body = /^\d[\d\s+-]{8,}$/.test(v) ? { phone: v } : { code: v };
     const r = await act(() => axios.post(`${API}/drives/mine/${id}/check-in`, body));
     if (r) { setLast(r.data); setCode(''); }
+  };
+  const walkUp = async (e) => {
+    e.preventDefault();
+    const r = await act(() => axios.post(`${API}/drives/mine/${id}/walk-up`, walk));
+    if (r) { setLast(r.data); setWalk({ name: '', phone: '' }); }
   };
   const setResult = (regId, status) => {
     const joiningDate = status === 'selected' ? window.prompt('Joining date (YYYY-MM-DD), or leave empty') : undefined;
@@ -59,6 +65,16 @@ const ManageDrive = () => {
           <input className={inputCls} placeholder="Pass code or mobile number" value={code} onChange={(e) => setCode(e.target.value)} />
           <button className="w-full h-11 rounded-xl bg-emerald-600 text-white font-black">Check in</button>
           {last && <p className="text-sm font-bold text-emerald-700">{last.name}: {last.already ? 'already checked in, ' : ''}token {last.tokenNumber}</p>}
+        </form>
+      )}
+
+      {live && (
+        <form onSubmit={walkUp} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-2">
+          <h2 className="font-black text-slate-900">No pass? Add and check in</h2>
+          <p className="text-xs text-slate-500">For someone who turns up without registering. Enter the name and mobile number and they get their token straight away.</p>
+          <input className={inputCls} placeholder="Name" value={walk.name} onChange={(e) => setWalk({ ...walk, name: e.target.value })} required />
+          <input className={inputCls} placeholder="Mobile number" inputMode="numeric" value={walk.phone} onChange={(e) => setWalk({ ...walk, phone: e.target.value })} required />
+          <button className="w-full h-11 rounded-xl border border-emerald-600 text-emerald-700 font-black">Add and check in</button>
         </form>
       )}
 

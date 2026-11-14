@@ -51,6 +51,7 @@ router.get('/student-pack-info', require('../controllers/collegePackController')
 router.post('/colleges/:id/student-pack', require('../controllers/collegePackController').recordPack);
 router.get('/activity', require('../controllers/activityController').getActivity);
 router.get('/email-report', require('../controllers/emailReportController').getEmailReport);
+router.get('/email-report/by-type', require('../controllers/emailReportController').getEmailCountsByType);
 router.get('/free-ai', require('../controllers/freeAiController').adminSummary);
 router.get('/growth/sources', require('../controllers/growthController').getSources);
 router.get('/brand-leads', require('../controllers/brandLeadController').listBrandLeads);
@@ -58,6 +59,11 @@ router.patch('/brand-leads/:userId', require('../controllers/brandLeadController
 router.patch('/jobs/:id/hide', require('../controllers/visibilityController').hideJob);
 router.patch('/companies/:id/hide', require('../controllers/visibilityController').hideCompany);
 router.get('/services-overview', require('../controllers/adminServicesController').getServicesOverview);
+// Duplicate colleges: list and merge (Super Admin only; the controller checks the role again).
+router.get('/college-duplicates', require('../controllers/collegeMergeController').listDuplicates);
+router.post('/colleges/merge', require('../controllers/collegeMergeController').merge);
+// Balance board: live jobs against job seekers by field of work (Super Admin only).
+router.get('/balance-board', require('../controllers/balanceBoardController').getBalanceBoard);
 router.get('/advisor', require('../controllers/advisorController').getAdvisor);
 router.post('/advisor/generate', require('../controllers/advisorController').generate);
 router.post('/advisor/ask', require('../controllers/advisorController').ask);
@@ -66,6 +72,8 @@ router.post('/advisor/ideas/:id', require('../controllers/advisorController').se
 router.get('/drives', require('../controllers/walkInDriveController').adminListDrives);
 router.post('/drives/:id/review', require('../controllers/walkInDriveController').reviewDrive);
 router.post('/drives/:id/mark-paid', require('../controllers/walkInDriveController').markPaid);
+router.get('/drives/organisers', require('../controllers/walkInDriveController').adminOrganisers);
+router.post('/drives/create', require('../controllers/walkInDriveController').adminCreateDrive);
 router.get('/skill-tests', require('../controllers/skillTestAdminController').getSkillTestSummary);
 router.get('/job-limits', listJobLimits);
 router.post('/job-limits/grant', grantJobLimits);
@@ -100,6 +108,10 @@ router.delete('/companies/:id', deleteCompany);
 router.patch('/companies/:id/logo-approval', require('../controllers/logoController').approveCompanyLogo);
 router.patch('/colleges/:id/logo', require('../controllers/logoController').setCollegeLogo);
 router.patch('/companies/:id/verify', require('../controllers/companyVerificationController').setCompanyVerified);
+router.patch('/companies/:id/verified-by-call', require('../controllers/companyVerificationController').setVerifiedByCall);
+router.get('/company-proofs', require('../controllers/companyProofController').listProofs);
+router.post('/company-proofs/:id/approve', require('../controllers/companyProofController').approveProof);
+router.post('/company-proofs/:id/reject', require('../controllers/companyProofController').rejectProof);
 
 router.get('/spend', require('../controllers/spendController').getSpend);
 router.post('/spend', require('../controllers/spendController').addSpend);

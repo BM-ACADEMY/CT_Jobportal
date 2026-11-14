@@ -224,7 +224,7 @@ router.get('/companies', async (req, res) => {
 
       [companies, totalCompanies] = await Promise.all([
         Company.find(companyQuery)
-          .select('name display_name logo location industry description tagline employeeCount company_size_range foundedYear is_verified social_links work_model perks tech_stack about_us website createdAt')
+          .select('name display_name logo location industry description tagline employeeCount company_size_range foundedYear is_verified verifiedByCall social_links work_model perks tech_stack about_us website createdAt')
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),
@@ -321,10 +321,15 @@ router.get('/companies/:id', async (req, res) => {
     // Never publish billing / tax / internal fields on a public profile.
     const publicCompany = company.toObject();
     ['tax_id_ein', 'admin_email', 'legal_name', 'razorpaySubscriptionId', 'renewalFailureCount',
-      'nextRenewalDate', 'autoRenewEnabled', 'subscriptionExpiry', 'pendingJoinRequests'
+      'nextRenewalDate', 'autoRenewEnabled', 'subscriptionExpiry', 'pendingJoinRequests',
+      'verifiedByCallNote', 'verifiedByCallBy', 'verifiedByCallAt'
     ].forEach((field) => delete publicCompany[field]);
 
-    res.json({ ...publicCompany, openJobs, profileType: 'company' });
+    // "Usually responds in X": only when enough real first-response times exist (utils/recruiterResponse.js).
+    let responseTime = null;
+    try { responseTime = await require('../utils/recruiterResponse').getCompanyResponseTime(id); } catch (e) { console.error('Response time error:', e.message); }
+
+    res.json({ ...publicCompany, openJobs, responseTime, profileType: 'company' });
   } catch (err) {
     console.error('Company Detail Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });

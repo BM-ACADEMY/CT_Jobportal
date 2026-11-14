@@ -4,12 +4,46 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Loader2, MapPin, ExternalLink, Download } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const fmt = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', weekday: 'long' });
 
 // One fair: details, official link, I am going, free fair-ready kit, poster card.
+// Companies and recruiters can ask for a stall at our own fairs. The admin approves; any price comes from Settings and is shown only if set.
+const StallRequest = ({ slug }) => {
+  const [s, setS] = useState(null);
+  const [form, setForm] = useState({ name: '', contactName: '', phone: '', email: '', need: '' });
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { axios.get(`${API}/job-fairs/${slug}/stall`).then((r) => setS(r.data)).catch(() => setS(null)); }, [slug]);
+  const set = (k) => (e) => setForm((x) => ({ ...x, [k]: e.target.value }));
+  const submit = async () => {
+    setBusy(true);
+    try { await axios.post(`${API}/job-fairs/${slug}/stall`, form); setS((x) => ({ ...x, mine: { name: form.name, status: 'requested', need: form.need } })); toast.success('Request sent. We will contact you.'); }
+    catch (err) { toast.error(err.response?.data?.msg || 'Could not send the request'); } finally { setBusy(false); }
+  };
+  if (!s || !s.open) return null;
+  const box = 'w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm';
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-2">
+      <p className="font-black text-slate-900 text-sm">Hiring? Ask for a stall</p>
+      {s.price && <p className="text-xs text-slate-600">Stall price: {s.price}</p>}
+      {s.mine ? <p className="text-sm text-slate-700">Your request for {s.mine.name} is {s.mine.status === 'approved' ? 'approved' : s.mine.status === 'declined' ? 'not accepted this time' : 'with us. We will contact you'}.</p> : (
+        <div className="grid gap-2">
+          <input className={box} placeholder="Company name" value={form.name} onChange={set('name')} />
+          <input className={box} placeholder="Contact person" value={form.contactName} onChange={set('contactName')} />
+          <input className={box} placeholder="Mobile number" inputMode="tel" value={form.phone} onChange={set('phone')} />
+          <input className={box} placeholder="Email (optional)" value={form.email} onChange={set('email')} />
+          <textarea className="w-full rounded-xl border border-slate-200 p-3 text-sm" rows={2} placeholder="What do you need? For example one table, 3 roles" value={form.need} onChange={set('need')} />
+          <button type="button" disabled={busy} onClick={submit} className="h-11 px-5 rounded-xl bg-emerald-600 text-white font-bold text-sm">Request a stall</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const JobFairDetail = () => {
+  const { user } = useAuth();
   const { slug } = useParams();
   const navigate = useNavigate();
   const [f, setF] = useState(undefined);
@@ -57,6 +91,7 @@ const JobFairDetail = () => {
         </div>
       )}
       {f.going > 0 && <p className="text-xs text-slate-500">{f.going} job seekers are going.</p>}
+      {f.kind === 'own' && !f.closed && ['company', 'recruiter'].includes(user?.role) && <StallRequest slug={f.slug} />}
       <div className="bg-emerald-50 rounded-2xl p-4 space-y-2">
         <p className="font-black text-slate-900 text-sm">Get ready for the fair (free)</p>
         <ul className="text-sm text-slate-700 space-y-1 list-disc pl-5">

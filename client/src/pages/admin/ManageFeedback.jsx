@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { MessageSquareHeart, Loader2, Star } from 'lucide-react';
+import EmailReportCard from '@/components/admin/EmailReportCard';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const STATUS = { new: 'New', read: 'Read', replied: 'Replied', closed: 'Closed' };
@@ -66,6 +67,8 @@ const ManageFeedback = () => {
           </div>
         </div>
       )}
+
+      <EmailReportCard />
 
       <div className="flex gap-2 flex-wrap">
         {['new', 'read', 'replied', 'closed', 'all'].map((s) => (

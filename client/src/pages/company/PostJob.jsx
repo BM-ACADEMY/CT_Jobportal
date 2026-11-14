@@ -74,6 +74,9 @@ const PostJob = () => {
                             category: jobToEdit.category || undefined,
                             jobType: jobToEdit.jobType || 'Full-time',
                             internship: jobToEdit.internship ? { ...jobToEdit.internship } : undefined,
+                            walkInEnabled: jobToEdit.walkIn?.enabled === true,
+                            walkInDate: jobToEdit.walkIn?.date ? String(jobToEdit.walkIn.date).slice(0, 10) : undefined,
+                            walkInVenue: jobToEdit.walkIn?.venue || undefined,
                             workMode: jobToEdit.workMode || 'On-site',
                             location: jobToEdit.location,
                             minExperience: jobToEdit.experience?.min || 0,
@@ -151,6 +154,7 @@ const PostJob = () => {
                 workMode: values.workMode,
                 location: values.location,
                 education: values.education || '',
+                walkIn: values.walkInEnabled ? { enabled: true, date: values.walkInDate, venue: values.walkInVenue } : { enabled: false },
                 freshersWelcome: !!values.freshersWelcome,
                 ...(values.jobType === 'Contract' ? { contractMonths: values.contractMonths || null } : {}),
                 ...(values.jobType === 'Part-time' ? { partTime: { hoursPerDay: values.partTime?.hoursPerDay || null, schedule: values.partTime?.schedule || '' } } : {}),
@@ -439,6 +443,22 @@ const PostJob = () => {
                             </Form.Item>
                             <Form.Item name="freshersWelcome" valuePropName="checked">
                                 <Checkbox>Freshers are welcome</Checkbox>
+                            </Form.Item>
+
+                            <Form.Item name="walkInEnabled" valuePropName="checked" className="mb-2">
+                                <Checkbox>This is a walk-in (candidates can come in person)</Checkbox>
+                            </Form.Item>
+                            <Form.Item noStyle shouldUpdate={(a, b) => a.walkInEnabled !== b.walkInEnabled}>
+                                {({ getFieldValue }) => getFieldValue('walkInEnabled') && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                        <Form.Item label="Walk-in date" name="walkInDate" rules={[{ required: true, message: 'Choose the walk-in date' }]}>
+                                            <Input size="large" type="date" />
+                                        </Form.Item>
+                                        <Form.Item label="Walk-in venue" name="walkInVenue" rules={[{ required: true, message: 'Enter the venue' }]}>
+                                            <Input size="large" maxLength={200} placeholder="Address where candidates should come" />
+                                        </Form.Item>
+                                    </div>
+                                )}
                             </Form.Item>
 
                             {watchedJobType === 'Internship' && (

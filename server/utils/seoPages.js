@@ -4,6 +4,7 @@
 //   GET /seo/sitemap.xml       static pages + every active job and company
 // nginx sends /job/* and /sitemap.xml here (see docs/SEO_ON_OWN_SERVER.md). Same rules as client/api/job.js.
 const fs = require('fs');
+const { JOB_CATEGORIES } = require('../config/jobCategories');
 
 const SITE_URL = () => (process.env.SITE_URL || 'https://velaivaaipu.in').replace(/\/$/, '');
 const API_DOMAIN = () => (process.env.API_PUBLIC_URL || 'https://api.velaivaaipu.in').replace(/\/api\/?$/, '').replace(/\/$/, '');
@@ -198,16 +199,18 @@ const blogSlugs = () => {
   } catch { return FALLBACK_BLOGS; }
 };
 const STATIC_PAGES = [
-  '/', '/jobs', '/internships', '/drives', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/for-companies', '/for-recruiters', '/free-assessment', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
+  '/', '/jobs', '/internships', '/drives', '/job-fairs', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/for-companies', '/for-recruiters', '/free-assessment', '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
   '/jobs/pondicherry', '/jobs/chennai', '/jobs/villupuram', '/jobs/cuddalore',
+  ...JOB_CATEGORIES.map((c) => `/jobs/category/${c.key}`), // field-of-work pages (client route /jobs/category/:slug)
 ];
 const urlEntry = (loc, lastmod, priority) =>
   `  <url><loc>${escapeHtml(loc)}</loc>${lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : ''}${priority ? `<priority>${priority}</priority>` : ''}</url>`;
-const buildSitemap = ({ jobs = [], companies = [], posts = [], builtAt = null, skipPaths = [] }) => {
+const buildSitemap = ({ jobs = [], companies = [], posts = [], fairs = [], builtAt = null, skipPaths = [] }) => {
   // Static pages carry the newest job/post date so crawlers see a real lastmod; no date when there is nothing to base it on.
   const newest = [...jobs, ...posts].map((x) => new Date(x.updatedAt || 0).getTime()).filter(Boolean).sort((a, b) => b - a)[0] || builtAt;
   const entries = [...STATIC_PAGES.filter((p) => !skipPaths.includes(p)), ...blogSlugs().map((s) => `/blog/${s}`)].map((p) => urlEntry(`${SITE_URL()}${p === '/' ? '' : p}`, ['/jobs', '/', '/internships'].includes(p) || p.startsWith('/jobs/') ? newest : null, p === '/' ? '1.0' : '0.8'));
   posts.forEach((p) => entries.push(urlEntry(`${SITE_URL()}/blog/${p.slug}`, p.updatedAt, '0.8')));
+  fairs.forEach((f) => f?.slug && entries.push(urlEntry(`${SITE_URL()}/job-fairs/${f.slug}`, f.updatedAt, '0.6')));
   jobs.forEach((j) => entries.push(urlEntry(jobUrl(j), j.updatedAt, '0.7')));
   companies.forEach((c) => entries.push(urlEntry(`${SITE_URL()}/companies/${c._id}`, c.updatedAt, '0.5')));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>\n`;
