@@ -2,6 +2,14 @@ const nodemailer = require('nodemailer');
 
 // Certificate checking is ON. SMTP_TLS_INSECURE=true is an emergency switch for a relay whose certificate
 // cannot be verified; do not leave it set in production.
+// A slow or restarting mail server must fail fast. Without these limits a signup or Resend request waits for
+// minutes, people tap Resend again, and the server piles up requests. Override with SMTP_*_TIMEOUT_MS if needed.
+const buildTimeouts = (env = process.env) => ({
+  connectionTimeout: Number(env.SMTP_CONNECT_TIMEOUT_MS) || 8000,
+  greetingTimeout: Number(env.SMTP_GREETING_TIMEOUT_MS) || 8000,
+  socketTimeout: Number(env.SMTP_SOCKET_TIMEOUT_MS) || 15000,
+});
+
 const buildTransportConfig = (env = process.env) => {
   const isGmail = (env.EMAIL_HOST || "").includes('gmail.com');
   if (isGmail) {
@@ -10,6 +18,7 @@ const buildTransportConfig = (env = process.env) => {
       logger: true,
       debug: true,
       auth: { user: env.USER_EMAIL, pass: env.USER_PASS },
+      ...buildTimeouts(env),
     };
   }
   return {
@@ -18,7 +27,16 @@ const buildTransportConfig = (env = process.env) => {
     port: Number(env.EMAIL_PORT) || 465,
     auth: { user: env.USER_EMAIL, pass: env.USER_PASS },
     tls: { rejectUnauthorized: env.SMTP_TLS_INSECURE !== 'true' },
+    ...buildTimeouts(env),
   };
+};
+
+// Retry only when the mail never left (could not connect). After the server has accepted the message a retry could
+// send it twice, so socket timeouts and rejections are not retried.
+const isConnectionFailure = (err) => {
+  if (!err) return false;
+  if (['ECONNECTION', 'ECONNREFUSED', 'ENOTFOUND', 'EDNS'].includes(err.code)) return true;
+  return err.code === 'ETIMEDOUT' && err.command === 'CONN';
 };
 
 const transporter = nodemailer.createTransport(buildTransportConfig());
@@ -40,7 +58,14 @@ const sendEmail = async (options) => {
     if (replyTo) mailOptions.replyTo = replyTo;
     if (options.headers) mailOptions.headers = options.headers;
 
-    const info = await transporter.sendMail(mailOptions);
+    let info;
+    try {
+      info = await transporter.sendMail(mailOptions);
+    } catch (first) {
+      if (!isConnectionFailure(first)) throw first;
+      console.error('Mail connection failed (%s), trying once more', first.code);
+      info = await transporter.sendMail(mailOptions);
+    }
     console.log('Email sent: %s', info.messageId);
     return true;
   } catch (error) {
@@ -56,3 +81,4 @@ const sendEmail = async (options) => {
 
 module.exports = sendEmail;
 module.exports.buildTransportConfig = buildTransportConfig;
+module.exports.isConnectionFailure = isConnectionFailure;
