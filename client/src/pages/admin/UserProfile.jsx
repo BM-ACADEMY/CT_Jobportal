@@ -103,6 +103,26 @@ const UserProfile = () => {
     fetchUser();
   }, [id]);
 
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const handleVerifyEmail = async () => {
+    if (verifyingEmail) return;
+    setVerifyingEmail(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/admin/users/${id}/verify-email`,
+        { note: 'Verification code did not arrive' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(res.data.msg);
+      setUser(prev => ({ ...prev, isVerified: true }));
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not verify this email');
+    } finally {
+      setVerifyingEmail(false);
+    }
+  };
+
   const handleToggleBlock = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -242,6 +262,16 @@ const UserProfile = () => {
               >
                 <MessageSquare size={14} /> Message
               </Button>
+              {!readOnly && !user.isVerified && <Button
+                variant="outline"
+                size="sm"
+                onClick={handleVerifyEmail}
+                disabled={verifyingEmail}
+                data-testid="verify-email-button"
+                className="rounded-xl h-10 px-5 font-bold text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-all gap-2"
+              >
+                <ShieldCheck size={14} /> {verifyingEmail ? 'Verifying...' : 'Mark email verified'}
+              </Button>}
               {!readOnly && <Button
                 variant="outline"
                 size="sm"

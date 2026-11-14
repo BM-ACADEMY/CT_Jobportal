@@ -102,6 +102,8 @@ router.put('/users/:id', updateUser);
 router.put('/users/:id/verification-status', updateUserVerificationStatus);
 router.delete('/users/:id', deleteUser);
 router.patch('/users/:id/block', toggleBlockUser);
+// Below the admin-only gate: staff (support) can read users but cannot verify emails.
+router.patch('/users/:id/verify-email', require('../controllers/adminVerifyEmailController').verifyUserEmail);
 
 router.get('/companies', getCompanies);
 router.delete('/companies/:id', deleteCompany);

@@ -49,6 +49,12 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Set when an admin marked the email verified because the code never arrived (who, when, why).
+  emailVerifiedByAdmin: {
+    by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: undefined },
+    at: { type: Date, default: undefined },
+    note: { type: String, default: undefined },
+  },
   // Wrong OTP guesses since the OTP was issued; the OTP is invalidated after too many.
   otpAttempts: {
     type: Number,
