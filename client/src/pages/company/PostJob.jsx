@@ -464,7 +464,10 @@ const PostJob = () => {
                             {watchedJobType === 'Internship' && (
                                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 mb-4">
                                     <p className="font-bold text-slate-800 mb-1">Internship details</p>
-                                    <p className="text-xs text-slate-500 mb-3">Verified companies can keep up to 3 internships live free of charge. Never ask students for any fee.</p>
+                                    <p className="text-xs text-slate-500 mb-2">Verified companies can keep up to 3 internships live free of charge.</p>
+                                    <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3" data-testid="internship-free-rule">
+                                        Internships on Velaivaaipu must be free for students. Asking for a fee, deposit, kit or training charge is not allowed. Postings that ask for money are removed and the company can be suspended. A paid course or training is not an internship.
+                                    </p>
                                     <Form.Item label="Duration (months)" name={['internship', 'durationMonths']} rules={[{ required: true, message: 'Choose 1 to 12 months' }]}>
                                         <Select size="large">{[1, 2, 3, 4, 5, 6, 9, 12].map((m) => <Option key={m} value={m}>{m} {m === 1 ? 'month' : 'months'}</Option>)}</Select>
                                     </Form.Item>
