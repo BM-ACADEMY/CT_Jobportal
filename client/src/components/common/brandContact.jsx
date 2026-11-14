@@ -4,6 +4,11 @@ import React from 'react';
 
 export const ADDRESS = 'First Floor, 78, Lenin St, Kosapalayam, Puducherry – 605013.';
 export const PHONE = { label: '+91 99449 40051', href: 'tel:+919944940051' };
+// The WhatsApp Business number connected to Admin > WhatsApp (the API-approved number).
+export const WHATSAPP = {
+  label: '+91 63795 64744',
+  href: `https://wa.me/916379564744?text=${encodeURIComponent('Hi, I need help with Velaivaaipu')}`,
+};
 export const EMAIL = 'hello@velaivaaipu.in';
 export const MAP_EMBED = `https://www.google.com/maps?q=${encodeURIComponent('78, Lenin St, Kosapalayam, Puducherry 605013')}&output=embed`;
 export const MAP_LINK = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('78, Lenin St, Kosapalayam, Puducherry 605013')}`;
