@@ -50,6 +50,7 @@ router.get('/college-funnel', require('../controllers/collegeFunnelController').
 router.get('/student-pack-info', require('../controllers/collegePackController').packInfo);
 router.post('/colleges/:id/student-pack', require('../controllers/collegePackController').recordPack);
 router.get('/activity', require('../controllers/activityController').getActivity);
+router.get('/otp-stats', require('../controllers/otpStatsController').getOtpStats);
 router.get('/email-report', require('../controllers/emailReportController').getEmailReport);
 router.get('/email-report/by-type', require('../controllers/emailReportController').getEmailCountsByType);
 router.get('/free-ai', require('../controllers/freeAiController').adminSummary);

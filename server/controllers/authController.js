@@ -52,15 +52,19 @@ const cleanEmail = (value) => (typeof value === 'string' ? value.trim().toLowerC
 // Checks an OTP with a per-OTP attempt limit. On a wrong guess the counter is saved; after
 // MAX_OTP_ATTEMPTS the OTP is burned and the user has to request a new one.
 const checkOtp = async (user, submitted) => {
-  if (!user.otp || !user.otpExpiry || user.otpExpiry < new Date()) return 'invalid';
+  const stats = require('../utils/otpEvents');
+  if (!user.otp || !user.otpExpiry) { stats.record('no_code', '', user); return 'invalid'; }
+  if (user.otpExpiry < new Date()) { stats.record('expired', '', user); return 'invalid'; }
   if ((user.otpAttempts || 0) >= MAX_OTP_ATTEMPTS) {
     user.otp = null; user.otpExpiry = null; user.otpAttempts = 0;
     await user.save();
+    stats.record('locked', '', user);
     return 'locked';
   }
   const a = Buffer.from(String(user.otp));
   const b = Buffer.from(typeof submitted === 'string' ? submitted : '');
-  if (a.length === b.length && crypto.timingSafeEqual(a, b)) return 'ok';
+  if (a.length === b.length && crypto.timingSafeEqual(a, b)) { stats.record('verified', '', user); return 'ok'; }
+  stats.record('wrong', '', user);
   user.otpAttempts = (user.otpAttempts || 0) + 1;
   await user.save();
   return 'invalid';
@@ -225,7 +229,7 @@ const registerUser = async (req, res) => {
     // Send OTP Email
     const htmlContent = otpEmail({ title: 'Welcome to Velaivaaipu', name, otp, intro: 'Thank you for registering. Use this code to verify your email address.' });
 
-    const emailSent = await sendEmail({
+    const emailSent = await require('../utils/otpEvents').sendTracked(sendEmail, 'register', user, {
       email,
       subject: 'Verify Your Email - Velaivaaipu',
       html: htmlContent
@@ -365,7 +369,7 @@ const loginUser = async (req, res) => {
       await user.save();
 
       const htmlContent = otpEmail({ title: 'Verify your account', name: user.name, otp, intro: "You tried to log in, but your email isn't verified yet. Use this code to verify it." });
-      const emailSent = await sendEmail({ email, subject: 'Verify Your Email - Velaivaaipu', html: htmlContent });
+      const emailSent = await require('../utils/otpEvents').sendTracked(sendEmail, 'login', user, { email, subject: 'Verify Your Email - Velaivaaipu', html: htmlContent });
       
       const msg = emailSent 
         ? 'Account not verified. New OTP sent.' 
@@ -474,7 +478,7 @@ const forgotPassword = async (req, res) => {
 
     const htmlContent = otpEmail({ title: 'Reset your password', name: user.name, otp, intro: 'You asked to reset your password. Use this code to confirm it is you.', safety: "If you didn't ask to reset your password, you can safely ignore this email; your password will not change. Never share this code with anyone." });
 
-    const emailSent = await sendEmail({ email, subject: 'Password Reset OTP - Velaivaaipu', html: htmlContent });
+    const emailSent = await require('../utils/otpEvents').sendTracked(sendEmail, 'reset', user, { email, subject: 'Password Reset OTP - Velaivaaipu', html: htmlContent });
 
     if (!emailSent) {
       console.error('Forgot password email failed for user', user._id.toString());
@@ -658,7 +662,7 @@ const resendOtp = async (req, res) => {
 
     const htmlContent = otpEmail({ title: 'Your new verification code', name: user.name, otp, intro: 'You asked for a new verification code. Use it to continue.' });
 
-    const emailSent = await sendEmail({
+    const emailSent = await require('../utils/otpEvents').sendTracked(sendEmail, 'resend', user, {
       email: normalizedEmail,
       subject: 'New Verification Code - Velaivaaipu',
       html: htmlContent
