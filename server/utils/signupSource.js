@@ -32,4 +32,29 @@ const summarize = (users = []) => {
 
 const cleanDays = (v) => ([7, 30, 60, 90].includes(parseInt(v, 10)) ? parseInt(v, 10) : 30);
 
-module.exports = { cleanUtm, channelOf, summarize, cleanDays };
+// Results per ad source (the utm_source word, e.g. "meta"). Spend entries carry the same word.
+// users: [{_id, signupSource}], paidByUser: {userId: rupees paid}, spends: [{source, amount}] -> sorted by spend then signups.
+const sourceOf = (u = {}) => (u.signupSource && u.signupSource.source) || '';
+const resultsBySource = (users = [], paidByUser = {}, spends = []) => {
+  const map = new Map();
+  const row = (k) => { if (!map.has(k)) map.set(k, { source: k, signups: 0, paid: 0, revenue: 0, spend: 0 }); return map.get(k); };
+  for (const u of users) {
+    const k = sourceOf(u);
+    if (!k) continue;
+    const r = row(k);
+    r.signups += 1;
+    const paid = Number(paidByUser[String(u._id)] || 0);
+    if (paid > 0) { r.paid += 1; r.revenue += paid; }
+  }
+  for (const sp of spends) { const k = part(sp.source); if (k) row(k).spend += Number(sp.amount) || 0; }
+  return [...map.values()].map((r) => ({
+    ...r,
+    revenue: Math.round(r.revenue),
+    spend: Math.round(r.spend),
+    costPerSignup: r.spend > 0 && r.signups > 0 ? Math.round(r.spend / r.signups) : null,
+    costPerPaid: r.spend > 0 && r.paid > 0 ? Math.round(r.spend / r.paid) : null,
+    attention: r.spend > 0 && r.signups === 0 ? 'Money spent, no signups yet' : (r.spend > 0 && r.paid === 0 && r.signups >= 20 ? 'Signups but no paying customer yet' : '')
+  })).sort((a, b) => b.spend - a.spend || b.signups - a.signups || a.source.localeCompare(b.source));
+};
+
+module.exports = { cleanUtm, channelOf, summarize, cleanDays, part, resultsBySource };

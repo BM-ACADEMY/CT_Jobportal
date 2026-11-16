@@ -6,6 +6,7 @@ const SponsorPayment = require('../models/SponsorPayment');
 const CollegePackPayment = require('../models/CollegePackPayment');
 const { manualPaymentRows, sponsorRows, packRows, asPayments } = require('../utils/manualIncome');
 
+const { part } = require('../utils/signupSource');
 const HEX = /^[0-9a-fA-F]{24}$/;
 
 // @route GET /api/admin/spend?days=14   Super admin only
@@ -34,17 +35,17 @@ const getSpend = async (req, res) => {
   }
 };
 
-// @route POST /api/admin/spend   Body: { date, line, amount, note }
+// @route POST /api/admin/spend   Body: { date, line, amount, note, source }
 const addSpend = async (req, res) => {
   try {
-    const { date, line, amount, note } = req.body || {};
+    const { date, line, amount, note, source } = req.body || {};
     const today = istDate(new Date());
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date)) || String(date) > today) return res.status(400).json({ msg: 'Pick a date that is today or earlier' });
     if (!Object.keys(LINES).includes(line)) return res.status(400).json({ msg: 'Pick a spend type' });
     const value = Number(amount);
     if (!Number.isFinite(value) || value < 1 || value > 10000000) return res.status(400).json({ msg: 'Enter an amount in rupees' });
-    const entry = await SpendEntry.create({ date, line, amount: Math.round(value * 100) / 100, note: String(note || '').trim().slice(0, 200), enteredBy: String(req.user.id) });
-    res.status(201).json({ msg: 'Saved', entry: { _id: entry._id, date: entry.date, line: entry.line, amount: entry.amount, note: entry.note } });
+    const entry = await SpendEntry.create({ date, line, amount: Math.round(value * 100) / 100, note: String(note || '').trim().slice(0, 200), source: line === 'ads' || line === 'marketing_other' ? part(source) : '', enteredBy: String(req.user.id) });
+    res.status(201).json({ msg: 'Saved', entry: { _id: entry._id, date: entry.date, line: entry.line, amount: entry.amount, note: entry.note, source: entry.source } });
   } catch (err) {
     console.error('Add spend error:', err.message);
     res.status(500).json({ msg: 'Server error' });
