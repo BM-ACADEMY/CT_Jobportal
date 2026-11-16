@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Mail, Phone, MapPin, Clock, Send, CheckCircle2, ArrowUpRight, Plus,
-  GraduationCap, Building2, UserRound,
+  GraduationCap, Building2, UserRound, MessageCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import Footer from '@/components/home/Footer';
 import WaveLines from '@/components/common/WaveLines';
-import { ADDRESS, PHONE, EMAIL, MAP_EMBED, MAP_LINK, SOCIALS } from '@/components/common/brandContact';
+import { ADDRESS, PHONE, WHATSAPP, EMAIL, MAP_EMBED, MAP_LINK, SOCIALS } from '@/components/common/brandContact';
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -129,6 +129,7 @@ const Contact = () => {
                 {[
                   { icon: Mail, label: 'Email', value: EMAIL, href: `mailto:${EMAIL}` },
                   { icon: Phone, label: 'Phone', value: PHONE.label, href: PHONE.href },
+                  { icon: MessageCircle, label: 'WhatsApp', value: WHATSAPP.label, href: WHATSAPP.href, external: true },
                   { icon: MapPin, label: 'Office', value: ADDRESS, href: MAP_LINK, external: true },
                 ].map(item => (
                   <li key={item.label}>
