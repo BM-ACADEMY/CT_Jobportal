@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, KeyRound, ArrowLeft, ArrowRight, ShieldCheck, Eye, EyeOff } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Mail, Lock, KeyRound, ShieldCheck, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
+import {
+  AuthShell, AuthPanel, PanelSteps, AuthHeading, AuthAlert, SubmitButton, EyeToggle, TextLink,
+  inputCls, labelCls, otpSlotCls,
+} from '@/components/auth/AuthShell';
+
+const STEPS = [
+  { Icon: Mail, title: 'Enter your email', text: 'The one you use to sign in.' },
+  { Icon: KeyRound, title: 'Enter the code', text: 'We email you a 6-digit code.' },
+  { Icon: ShieldCheck, title: 'Set a new password', text: 'Then sign in with it.' },
+];
+
+const STEP_INDEX = { email: 0, otp: 1, success: 3 };
 
 const ForgotPasswordPage = () => {
   const { forgotPassword, resetPassword } = useAuth();
@@ -18,24 +27,25 @@ const ForgotPasswordPage = () => {
 
   // state: 'email' | 'otp' | 'success'
   const [step, setStep] = useState('email');
-  
+
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSendEmail = async () => {
+  const handleSendEmail = async (e) => {
+    e?.preventDefault();
     if (!email) {
       setError('Please enter your email address');
       return;
     }
-    
+
     setLoading(true);
     setError('');
-    
+
     const result = await forgotPassword(email);
     setLoading(false);
 
@@ -46,7 +56,8 @@ const ForgotPasswordPage = () => {
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleResetPassword = async (e) => {
+    e?.preventDefault();
     if (otp.length !== 6 || !newPassword) {
       setError('Please provide a valid 6-digit OTP and a new password');
       return;
@@ -66,154 +77,124 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <div className="bg-background w-full max-w-[440px] rounded-[32px] shadow-xl border border-border p-8 md:p-10 relative overflow-hidden">
-        
-        {/* Top Decorative gradient abstract strip */}
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500" />
+    <AuthShell
+      id="forgot"
+      panel={
+        <AuthPanel
+          eyebrow="Account help"
+          title="Locked out? Get back in under a minute."
+          text="Reset your password in three short steps."
+        >
+          <PanelSteps steps={STEPS} active={STEP_INDEX[step]} />
+        </AuthPanel>
+      }
+    >
+      {/* ── STEP 1: REQUEST EMAIL ── */}
+      {step === 'email' && (
+        <>
+          <AuthHeading title="Forgot password?">
+            Enter the email linked to your account and we&apos;ll send you a 6-digit code.
+          </AuthHeading>
+          <AuthAlert>{error}</AuthAlert>
 
-        {/* Back Button */}
-        {step === 'email' && (
-          <Link to="/login" className="inline-flex items-center gap-1.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors mb-8 uppercase tracking-widest">
-            <ArrowLeft size={16} /> Back to Login
+          <form onSubmit={handleSendEmail} className="mt-6 space-y-5" noValidate>
+            <div className="space-y-2">
+              <label htmlFor="fp-email" className={labelCls}>Email address</label>
+              <div className="relative">
+                <Mail size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                <input
+                  id="fp-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                  className={`${inputCls} pr-4`}
+                />
+              </div>
+            </div>
+            <SubmitButton loading={loading} loadingText="Sending code…">Send code</SubmitButton>
+          </form>
+
+          <Link to="/login" className="mt-6 flex items-center justify-center gap-1.5 text-sm font-semibold text-zinc-500 hover:text-[#10213D] transition">
+            <ArrowLeft size={15} /> Back to sign in
           </Link>
-        )}
+        </>
+      )}
 
-        {error && (
-          <Alert variant="destructive" className="mb-6 rounded-2xl border-destructive/20 bg-destructive/5 py-3">
-            <AlertDescription className="text-xs font-bold">{error}</AlertDescription>
-          </Alert>
-        )}
+      {/* ── STEP 2: VERIFY AND SET NEW PASSWORD ── */}
+      {step === 'otp' && (
+        <>
+          <AuthHeading title="Set a new password">
+            We sent a 6-digit code to <span className="font-semibold text-[#10213D] break-all">{email}</span>.
+          </AuthHeading>
+          <AuthAlert>{error}</AuthAlert>
 
-        {/* ── STEP 1: REQUEST EMAIL ── */}
-        {step === 'email' && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 shadow-sm">
-              <KeyRound size={24} className="text-emerald-600" />
+          <form onSubmit={handleResetPassword} className="mt-6 space-y-5" noValidate>
+            <div className="space-y-2">
+              <span className={labelCls}>6-digit code</span>
+              <InputOTP maxLength={6} value={otp} onChange={setOtp} pattern={REGEXP_ONLY_DIGITS}>
+                <InputOTPGroup className="gap-2">
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <InputOTPSlot key={index} index={index} className={otpSlotCls} />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
             </div>
-            <h1 className="text-2xl font-black text-foreground mb-2 tracking-tight">Forgot Password?</h1>
-            <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8">
-              No worries, we'll send you reset instructions. Enter the email associated with your account.
-            </p>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">Email Address</label>
-                <div className="relative">
-                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                  <Input 
-                    placeholder="Enter your email" 
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="h-14 pl-12 rounded-2xl border-border bg-muted/20 focus:bg-background transition-all font-bold text-sm"
-                  />
-                </div>
-              </div>
-              <Button 
-                disabled={loading}
-                onClick={handleSendEmail}
-                className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-              >
-                {loading ? 'Sending...' : 'Reset Password'}
-              </Button>
-            </div>
-          </div>
-        )}
 
-        {/* ── STEP 2: VERIFY AND SET NEW PASSWORD ── */}
-        {step === 'otp' && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 shadow-sm">
-              <ShieldCheck size={24} className="text-emerald-600" />
-            </div>
-            <h1 className="text-2xl font-black text-foreground mb-2 tracking-tight">Set New Password</h1>
-            <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8">
-              We sent a 6-digit code to <span className="font-black text-foreground">{email}</span>.
-            </p>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">6-Digit Code</label>
-                <InputOTP 
-                  maxLength={6} 
-                  value={otp} 
-                  onChange={setOtp}
-                  pattern={REGEXP_ONLY_DIGITS}
-                  className="gap-3"
-                >
-                  <InputOTPGroup className="gap-2">
-                    {[0, 1, 2, 3, 4, 5].map((index) => (
-                      <InputOTPSlot 
-                        key={index} 
-                        index={index} 
-                        className="h-14 w-12 rounded-xl border-border bg-muted/20 font-black text-xl"
-                      />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">New Password</label>
-                <div className="relative">
-                  <Input 
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter new password" 
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    className="h-14 pr-12 rounded-2xl border-border bg-muted/20 focus:bg-background transition-all font-bold text-sm"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/60"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <Button 
-                disabled={loading}
-                onClick={handleResetPassword}
-                className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-              >
-                {loading ? 'Updating...' : 'Update Password'}
-              </Button>
-              
-              <div className="text-center">
-                <button 
-                  onClick={() => setStep('email')} 
-                  className="text-xs font-black text-emerald-600 hover:underline transition uppercase tracking-widest"
-                >
-                  Change Email Address
-                </button>
+            <div className="space-y-2">
+              <label htmlFor="fp-password" className={labelCls}>New password</label>
+              <div className="relative">
+                <Lock size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                <input
+                  id="fp-password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Enter a new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={`${inputCls} pr-12`}
+                />
+                <EyeToggle shown={showPassword} onToggle={() => setShowPassword(!showPassword)} />
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ── STEP 3: SUCCESS ── */}
-        {step === 'success' && (
-          <div className="animate-in zoom-in duration-500 text-center py-6">
-            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-100 shadow-sm">
-              <ShieldCheck size={36} className="text-emerald-500" />
-            </div>
-            <h1 className="text-2xl font-black text-foreground mb-3 tracking-tight">All done!</h1>
-            <p className="text-muted-foreground text-sm font-bold leading-relaxed mb-8 max-w-[260px] mx-auto">
-              Your password has been successfully reset. You can now use your new password to log in to your account.
-            </p>
-            <Button 
-              onClick={() => navigate('/login')}
-              className="h-14 w-full rounded-2xl text-base font-black bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            <SubmitButton loading={loading} loadingText="Updating…">Update password</SubmitButton>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-zinc-500 m-0">
+            Wrong email?{' '}
+            <button
+              type="button"
+              onClick={() => { setStep('email'); setOtp(''); setError(''); }}
+              className="font-bold text-[#1f8a57] hover:underline bg-transparent border-none p-0 cursor-pointer"
             >
-              Continue to Login <ArrowRight size={18} />
-            </Button>
-          </div>
-        )}
+              Change it
+            </button>
+          </p>
+        </>
+      )}
 
-      </div>
-    </div>
+      {/* ── STEP 3: SUCCESS ── */}
+      {step === 'success' && (
+        <div className="text-center">
+          <div className="mt-8 w-16 h-16 mx-auto rounded-2xl bg-[#eaf7f0] text-[#1f8a57] flex items-center justify-center">
+            <CheckCircle2 size={32} />
+          </div>
+          <h1 className="mt-5 text-[1.75rem] font-bold tracking-tight text-[#10213D] m-0">Password updated</h1>
+          <p className="mt-1.5 text-zinc-500 text-sm leading-relaxed m-0">
+            You can now sign in with your new password.
+          </p>
+          <SubmitButton type="button" onClick={() => navigate('/login')} className="mt-7">Continue to sign in</SubmitButton>
+        </div>
+      )}
+
+      {step === 'email' && (
+        <p className="mt-3 text-center text-sm text-zinc-500 m-0">
+          New here? <TextLink to="/register">Create an account</TextLink>
+        </p>
+      )}
+    </AuthShell>
   );
 };
 

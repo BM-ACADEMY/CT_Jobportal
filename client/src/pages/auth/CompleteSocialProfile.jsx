@@ -2,10 +2,21 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
-import { User, Briefcase, GraduationCap, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Briefcase, UserSearch, Building2, GraduationCap, Lock } from 'lucide-react';
+import {
+  AuthShell, AuthPanel, PanelPoints, PanelImage, AuthHeading, AuthAlert, SubmitButton, EyeToggle,
+  inputCls, labelCls,
+} from '@/components/auth/AuthShell';
+
+const ROLES = [
+  { key: 'jobseeker', label: 'Job seeker', Icon: Briefcase },
+  { key: 'recruiter', label: 'Recruiter', Icon: UserSearch },
+  { key: 'company', label: 'Company', Icon: Building2 },
+  { key: 'college', label: 'College', Icon: GraduationCap },
+];
 
 const CompleteSocialProfile = () => {
-  const { completeSocialLogin, user } = useAuth();
+  const { completeSocialLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const token = location.state?.token || localStorage.getItem('token');
@@ -50,140 +61,79 @@ const CompleteSocialProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome!</h1>
-            <p className="text-slate-600">Just a few more steps to complete your profile.</p>
+    <AuthShell
+      id="complete-profile"
+      panel={
+        <AuthPanel eyebrow="Almost there" title="Two quick details and you're in.">
+          <PanelPoints points={['Tell us who you are', 'Set a password for email sign-in']} />
+          <PanelImage src="/images/gir-large.png" />
+        </AuthPanel>
+      }
+    >
+      <AuthHeading title="Finish your account">Choose your account type and set a password.</AuthHeading>
+      <AuthAlert>{error}</AuthAlert>
+
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <div className="space-y-2">
+          <span className={labelCls}>I am a</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl bg-zinc-100 p-1" role="radiogroup" aria-label="Account type">
+            {ROLES.map(({ key, label, Icon }) => {
+              const active = role === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setRole(key)}
+                  className={`h-10 rounded-lg text-[13px] flex items-center justify-center gap-1.5 border-none cursor-pointer transition ${active ? 'bg-white text-[#10213D] font-bold shadow-sm' : 'bg-transparent text-zinc-500 hover:text-[#10213D] font-semibold'}`}
+                >
+                  <Icon size={14} className={active ? 'text-[#1f8a57]' : ''} /> {label}
+                </button>
+              );
+            })}
           </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3 text-red-600">
-              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-              <p className="text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700">Select Your Role</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setRole('jobseeker')}
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                    role === 'jobseeker'
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
-                  }`}
-                >
-                  <User className="w-6 h-6" />
-                  <span className="text-xs font-bold">Job Seeker</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('recruiter')}
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                    role === 'recruiter'
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
-                  }`}
-                >
-                  <Briefcase className="w-6 h-6" />
-                  <span className="text-xs font-bold">Recruiter</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('company')}
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                    role === 'company'
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
-                  }`}
-                >
-                  <Briefcase className="w-6 h-6" />
-                  <span className="text-xs font-bold">Company</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('college')}
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                    role === 'college'
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200'
-                  }`}
-                >
-                  <GraduationCap className="w-6 h-6" />
-                  <span className="text-xs font-bold">College</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Create Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 6 characters"
-                    className="w-full pl-10 pr-11 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat password"
-                    className="w-full pl-10 pr-11 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-blue-200"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  Complete Registration
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
-          </form>
         </div>
-      </div>
-    </div>
+
+        <div className="space-y-2">
+          <label htmlFor="csp-password" className={labelCls}>Create password</label>
+          <div className="relative">
+            <Lock size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+            <input
+              id="csp-password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              className={`${inputCls} pr-12`}
+            />
+            <EyeToggle shown={showPassword} onToggle={() => setShowPassword(v => !v)} />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="csp-confirm" className={labelCls}>Confirm password</label>
+          <div className="relative">
+            <Lock size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+            <input
+              id="csp-confirm"
+              type={showConfirmPassword ? 'text' : 'password'}
+              required
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Repeat password"
+              className={`${inputCls} pr-12`}
+            />
+            <EyeToggle shown={showConfirmPassword} onToggle={() => setShowConfirmPassword(v => !v)} />
+          </div>
+        </div>
+
+        <SubmitButton loading={loading} loadingText="Saving…" className="!mt-6">Complete registration</SubmitButton>
+      </form>
+    </AuthShell>
   );
 };
 

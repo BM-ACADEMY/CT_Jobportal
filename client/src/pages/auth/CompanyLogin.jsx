@@ -1,43 +1,25 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, Building2, CircleCheck, ArrowLeft } from 'lucide-react';
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Briefcase, Users, CalendarCheck } from 'lucide-react';
+import { AuthShell, AuthPanel, PanelAccent, PanelSteps, AuthHeading, AuthAlert, TextLink } from '@/components/auth/AuthShell';
+import { AccountTabs, SignInForm } from './Login';
 
-const formSchema = z.object({
-  email: z.string().email({ message: "Enter a valid corporate email" }),
-  password: z.string().min(1, { message: "Password is required" }),
-});
+const STEPS = [
+  { Icon: Briefcase, title: 'Post a job', text: 'Add the role, salary and location.' },
+  { Icon: Users, title: 'Review applicants', text: 'Filter by skills, experience and location.' },
+  { Icon: CalendarCheck, title: 'Interview and hire', text: 'Shortlist, schedule and decide with your team.' },
+];
 
 const CompanyLogin = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: { email: "", password: "" },
-  });
 
   const onSubmit = async (values) => {
     setLoading(true);
     setError('');
-    // We force role 'company' for this page if your login logic supports it, 
-    // otherwise the backend should return the role based on the email.
     const result = await login(values.email, values.password);
     setLoading(false);
     if (result.success) {
@@ -52,157 +34,34 @@ const CompanyLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background font-sans">
-      {/* Left Panel: Corporate Branding */}
-      <div className="hidden lg:flex w-[40%] flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800 flex-col justify-between p-12 text-white">
-        <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
-            <div className="absolute top-1/4 -right-20 w-96 h-96 rounded-full border-[40px] border-white" />
-            <div className="absolute bottom-1/4 -left-20 w-64 h-64 rounded-full border-[20px] border-white" />
-        </div>
-
-        <div className="relative z-10 flex flex-col h-full">
-          <Link to="/" className="inline-flex flex-col items-start no-underline mb-16 group" aria-label="Velaivaaipu Business home">
-            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-24 w-[180px] object-contain transition-transform group-hover:scale-[1.03]" />
-            <span className="-mt-3 ml-1 text-emerald-300 text-xs font-black uppercase tracking-[0.2em]">Business</span>
-          </Link>
-
-          <div>
-          <h2 className="text-5xl font-black leading-[1.1] mb-6 tracking-tight">
-            Hire <span className="text-emerald-400">local</span> talent faster.
-          </h2>
-          <p className="text-emerald-100/70 text-lg font-medium leading-relaxed mb-10 max-w-sm">
-            Post jobs, receive applications and manage your hiring from one dashboard.
-          </p>
-
-          <div className="space-y-4">
-            {[
-              "Candidates from Tamil Nadu and Puducherry",
-              "Filter candidates by skills and location",
-              "Collaborative Hiring Workflows",
-              "Hiring dashboard with your numbers"
-            ].map((text, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                    <CircleCheck size={14} className="text-emerald-400" />
-                </div>
-                <span className="text-emerald-50/90 text-sm font-bold">{text}</span>
-              </div>
-            ))}
-          </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Right Panel: Login Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-md">
-          <Link to="/login" className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 mb-10 transition-colors font-bold text-sm">
-            <ArrowLeft size={16} /> Back to standard login
-          </Link>
-
-          <div className="mb-10">
-            <h1 className="text-4xl font-black text-slate-900 mb-3 tracking-tight">
-              Company Login
-            </h1>
-            <p className="text-slate-500 text-sm font-bold">
-              Access your corporate recruitment dashboard
-            </p>
-          </div>
-
-          {error && (
-            <Alert variant="destructive" className="mb-6 rounded-2xl border-red-100 bg-red-50 text-red-600 py-4">
-              <AlertDescription className="text-xs font-bold">
-                {error}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="relative group">
-                        <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
-                        <Input 
-                          placeholder="Corporate Email" 
-                          {...field} 
-                          className="h-14 pl-12 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-emerald-600 transition-all font-bold text-sm shadow-sm"
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-[11px] font-bold text-red-500" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="relative group">
-                        <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
-                        <Input 
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Password" 
-                          {...field} 
-                          className="h-14 pl-12 pr-12 rounded-2xl border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-emerald-600 transition-all font-bold text-sm shadow-sm"
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors"
-                        >
-                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-[11px] font-bold text-red-500" />
-                  </FormItem>
-                )}
-              />
-
-              <div className="flex justify-end">
-                <Link to="/forgot-password" size="sm" className="text-xs font-black text-emerald-700 hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button 
-                type="submit" 
-                disabled={loading}
-                className="w-full h-14 rounded-2xl text-base font-black bg-emerald-600 text-white hover:bg-emerald-700 shadow-xl shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all"
-              >
-                {loading ? 'Authenticating...' : 'Enter Business Portal'}
-              </Button>
-            </form>
-          </Form>
-
-          <div className="mt-10 pt-10 border-t border-slate-100 text-center">
-            <p className="text-sm text-slate-500 font-bold mb-4">
-                Not a business user? <Link to="/login" className="text-primary hover:underline">Login as Job Seeker</Link>
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest">
-                <Building2 size={12} />
-                For Registered Companies Only
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AuthShell
+      id="company-login"
+      panel={
+        <AuthPanel
+          tone="navy"
+          eyebrow="For employers"
+          title={<>Hire <PanelAccent tone="navy">local</PanelAccent> talent faster.</>}
+          text="Candidates from Tamil Nadu and Puducherry, in one hiring dashboard."
+        >
+          <PanelSteps steps={STEPS} />
+        </AuthPanel>
+      }
+    >
+      <AuthHeading title="Company sign in">Open your hiring dashboard.</AuthHeading>
+      <AccountTabs active="company" />
+      <AuthAlert>{error}</AuthAlert>
+      <SignInForm
+        emailLabel="Company email"
+        emailPlaceholder="hr@yourcompany.com"
+        buttonText="Sign in to dashboard"
+        onSubmit={onSubmit}
+        loading={loading}
+      />
+      <p className="mt-6 text-center text-sm text-zinc-500 m-0">
+        New company? <TextLink to="/register?role=company">Register to post jobs</TextLink>
+      </p>
+    </AuthShell>
   );
 };
-
-const StarIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="none">
-    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-  </svg>
-);
 
 export default CompanyLogin;
