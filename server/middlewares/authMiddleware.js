@@ -40,10 +40,11 @@ const verifyToken = async (req, res, next) => {
 };
 
 const authorizeRoles = (...roles) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ msg: 'Access denied: insufficient permissions' });
     }
+    if (!(await require('./adminLevel').checkLimited(req, res))) return;
     next();
   };
 };
@@ -68,8 +69,9 @@ const optionalVerifyToken = (req, res, next) => {
   }
 };
 
-const isAdmin = (req, res, next) => {
+const isAdmin = async (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
+    if (!(await require('./adminLevel').checkLimited(req, res))) return;
     next();
   } else {
     res.status(403).json({ msg: 'Access denied: Admin only' });

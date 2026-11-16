@@ -18,6 +18,7 @@ const baseUrl = () => String(process.env.FRONTEND_URL || 'https://velaivaaipu.in
 const shape = (a) => ({
   _id: a._id, admin_id: a.admin_id, name: a.name, email: a.email, createdAt: a.createdAt, createdBy: a.createdBy || '',
   lastLogin: a.lastLogin || null,
+  level: a.level === 'limited' ? 'limited' : 'owner',
   status: a.invite && a.invite.tokenHash ? 'Invite pending' : 'Active',
   inviteExpiresAt: a.invite && a.invite.tokenHash ? a.invite.expiresAt : null,
 });
@@ -40,7 +41,7 @@ const newInvite = () => {
 // GET /api/admin/admins
 const listAdmins = async (req, res) => {
   try {
-    const admins = await Admin.find({}).select('admin_id name email createdAt createdBy lastLogin invite').sort({ createdAt: 1 }).lean();
+    const admins = await Admin.find({}).select('admin_id name email createdAt createdBy lastLogin invite level').sort({ createdAt: 1 }).lean();
     res.json({ admins: admins.map(shape), me: String(req.user.id) });
   } catch (e) { console.error('List admins:', e.message); res.status(500).json({ msg: 'Could not load admins.' }); }
 };
@@ -59,7 +60,7 @@ const inviteAdmin = async (req, res) => {
     // The password is random and never shown: the person replaces it through the link.
     const password = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
     const admin = await Admin.create({
-      name, email, password, role: 'admin', invite, createdBy: me ? me.admin_id : '',
+      name, email, password, role: 'admin', level: req.body.level === 'owner' ? 'owner' : 'limited', invite, createdBy: me ? me.admin_id : '',
       twoFactorAuth: { enabled: true },
     });
     const sent = await mailInvite(admin, token, me && me.name);

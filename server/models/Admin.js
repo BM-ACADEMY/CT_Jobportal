@@ -60,6 +60,8 @@ const adminSchema = new mongoose.Schema({
     tokenHash: { type: String },
     expiresAt: { type: Date },
   },
+  // owner = full power (every admin before this existed); limited = day-to-day work only (see middlewares/adminLevel.js).
+  level: { type: String, enum: ['owner', 'limited'], default: 'owner' },
   createdBy: { type: String }, // admin_id of who added this admin (empty for the first admin)
 
   // 3. Audit & Tracking Context

@@ -81,7 +81,7 @@ const ManageAdmins = () => {
     <div className="max-w-5xl mx-auto space-y-8" data-testid="manage-admins">
       <div>
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight m-0">Admins</h1>
-        <p className="text-slate-500 mt-1 m-0">People with full access to Admin: all users, payments and settings. Add only people you fully trust. For limited access use Staff instead.</p>
+        <p className="text-slate-500 mt-1 m-0">New admins get Limited access: they can review companies and jobs, answer WhatsApp and read users, but cannot delete anything, change money, plans or users, export data, change security or add other admins. Only Owners can do those.</p>
         <p className="text-sm text-slate-600 mt-2 m-0">Admin sign-in page: <span className="font-mono select-all" data-testid="admin-login-url">{LOGIN_URL}</span> <button type="button" onClick={copyLogin} className="inline-flex items-center gap-1 ml-2 text-emerald-700 font-bold"><Copy size={14} /> Copy</button></p>
       </div>
 
@@ -99,11 +99,12 @@ const ManageAdmins = () => {
       {loading ? <Loader2 className="animate-spin text-emerald-600" /> : (
         <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-slate-500 text-xs uppercase tracking-wider"><th className="p-3">Admin</th><th className="p-3">Status</th><th className="p-3">Added</th><th className="p-3">Last sign-in</th><th className="p-3" /></tr></thead>
+            <thead><tr className="text-left text-slate-500 text-xs uppercase tracking-wider"><th className="p-3">Admin</th><th className="p-3">Access</th><th className="p-3">Status</th><th className="p-3">Added</th><th className="p-3">Last sign-in</th><th className="p-3" /></tr></thead>
             <tbody className="divide-y divide-slate-50">
               {admins.map((a) => (
                 <tr key={a._id} data-testid="admin-row">
                   <td className="p-3"><p className="font-bold text-slate-900 m-0">{a.name}{String(a._id) === me ? ' (you)' : ''}</p><p className="text-slate-500 m-0 break-all">{a.email}</p></td>
+                  <td className="p-3"><span data-testid="admin-level" className={a.level === 'limited' ? 'text-sky-700 font-bold' : 'text-slate-900 font-bold'}>{a.level === 'limited' ? 'Limited' : 'Owner'}</span></td>
                   <td className="p-3">{a.status === 'Active' ? <span className="text-emerald-700 font-bold">Active</span> : <span className="text-amber-700 font-bold">Invite pending</span>}</td>
                   <td className="p-3 text-slate-600">{when(a.createdAt)}{a.createdBy ? <span className="block text-xs text-slate-400">by {a.createdBy}</span> : null}</td>
                   <td className="p-3 text-slate-600">{when(a.lastLogin)}</td>
