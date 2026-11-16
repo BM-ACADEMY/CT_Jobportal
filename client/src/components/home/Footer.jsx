@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Mail } from 'lucide-react';
+import { MapPin, Phone, Mail, MessageCircle } from 'lucide-react';
 import BrandLogo from '@/components/common/BrandLogo';
-import { ADDRESS, PHONE, EMAIL, SOCIALS } from '@/components/common/brandContact';
+import { ADDRESS, PHONE, WHATSAPP, EMAIL, SOCIALS } from '@/components/common/brandContact';
 
-const PLATFORM = [{ to: '/jobs', label: 'Find Jobs' }, { to: '/companies', label: 'Companies' }, { to: '/register', label: 'Post a Job' }, { to: '/plans', label: 'Plans & Pricing' }, { to: '/how-it-works', label: 'How It Works' }, { to: '/contact', label: 'Contact Us' }];
+const PLATFORM = [{ to: '/jobs', label: 'Find Jobs' }, { to: '/companies', label: 'Companies' }, { to: '/job-fairs', label: 'Job Fairs' }, { to: '/register', label: 'Post a Job' }, { to: '/plans', label: 'Plans & Pricing' }, { to: '/how-it-works', label: 'How It Works' }, { to: '/contact', label: 'Contact Us' }];
 const ACCOUNT = [{ to: '/login', label: 'Job Seeker Login' }, { to: '/company-login', label: 'Company Login' }, { to: '/register', label: 'Create Account' }];
 
 const LinkColumn = ({ title, links }) => (
@@ -83,6 +83,10 @@ const Footer = () => (
               <a href={PHONE.href} className="hover:text-[#34B678] transition-colors">{PHONE.label}</a>
             </li>
             <li className="flex items-center gap-3">
+              <span className="w-8 h-8 shrink-0 rounded-lg bg-white border border-emerald-100 text-[#34B678] flex items-center justify-center"><MessageCircle size={16} /></span>
+              <a href={WHATSAPP.href} target="_blank" rel="noopener noreferrer" data-testid="footer-whatsapp" className="hover:text-[#34B678] transition-colors">Chat on WhatsApp</a>
+            </li>
+            <li className="flex items-center gap-3">
               <span className="w-8 h-8 shrink-0 rounded-lg bg-white border border-emerald-100 text-[#34B678] flex items-center justify-center"><Mail size={16} /></span>
               <a href={`mailto:${EMAIL}`} className="hover:text-[#34B678] transition-colors break-all">{EMAIL}</a>
             </li>
@@ -91,6 +95,7 @@ const Footer = () => (
       </div>
       <div className="border-t border-emerald-100 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
         <p className="text-zinc-500 text-xs font-semibold">© {new Date().getFullYear()} Velaivaaipu. All Rights Reserved.</p>
+        <p className="text-zinc-500 text-xs mt-1">Velaivaaipu is a private job platform. It is not a government website or the Tamil Nadu employment exchange.</p>
         <div className="flex gap-6">
           <Link to="/privacy-policy" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Privacy Policy</Link>
           <Link to="/delete-account" className="text-slate-600 text-xs font-semibold hover:text-slate-400 transition-colors">Delete Account</Link>

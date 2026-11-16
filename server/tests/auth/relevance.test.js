@@ -134,3 +134,25 @@ test('minScore and limit are honoured', () => {
   assert.deepEqual(rankJobsForSeeker(student(), jobs, { now: NOW, minScore: 40 }).map((r) => r.job._id), ['good']);
   assert.equal(rankJobsForSeeker(student(), jobs, { now: NOW, limit: 1 }).length, 1);
 });
+
+test('a picked field of interest gives a small boost and a reason; no picks changes nothing', () => {
+  const plain = scoreJobForSeeker(student(), job(), { now: NOW });
+  const picked = scoreJobForSeeker(student({ interestedCategories: ['finance-accounts'] }), job(), { now: NOW });
+  assert.ok(picked.reasons.includes('In a field you picked'));
+  assert.equal(picked.parts.category, 10);
+  assert.equal(plain.parts.category, 0);
+  assert.ok(!plain.reasons.includes('In a field you picked'));
+  assert.ok(picked.score >= plain.score);
+});
+
+test('a job outside the picked fields is not boosted and a stored job category beats the guess', () => {
+  const other = scoreJobForSeeker(student({ interestedCategories: ['healthcare'] }), job(), { now: NOW });
+  assert.equal(other.parts.category, 0);
+  const stored = scoreJobForSeeker(student({ interestedCategories: ['healthcare'] }), job({ category: 'healthcare' }), { now: NOW });
+  assert.equal(stored.parts.category, 10);
+});
+
+test('invalid interests are ignored', () => {
+  const r = scoreJobForSeeker(student({ interestedCategories: ['<script>', 'nope'] }), job(), { now: NOW });
+  assert.equal(r.parts.category, 0);
+});

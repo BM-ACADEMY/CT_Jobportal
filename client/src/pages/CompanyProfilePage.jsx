@@ -8,6 +8,7 @@ import {
   ShieldCheck, Info, ArrowLeft, Loader2, Link2, ExternalLink
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import VerifiedEmployerBadge from "@/components/shared/VerifiedEmployerBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -113,6 +114,7 @@ const CompanyProfilePage = () => {
                     <CheckCircle2 size={12} className="mr-1.5" /> Verified
                   </Badge>
                 )}
+                <VerifiedEmployerBadge company={company} />
               </div>
               <p className="text-lg text-slate-500 font-medium max-w-2xl">{company.tagline || company.industry}</p>
               
@@ -123,6 +125,11 @@ const CompanyProfilePage = () => {
                 <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest">
                   <Users size={14} className="text-emerald-600/70" /> {company.company_size_range || company.employeeCount || '10-50'} Employees
                 </div>
+                {company.responseTime?.label && (
+                  <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest" title={`Median time to first reply, from ${company.responseTime.sample} applications in the last 90 days`}>
+                    <CheckCircle2 size={14} className="text-emerald-600/70" /> Usually responds in {company.responseTime.label}
+                  </div>
+                )}
                 {company.website && (
                   <a href={company.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-bold text-xs uppercase tracking-widest">
                     <Globe size={14} /> Website

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Mail, Lock, Building2 } from 'lucide-react';
@@ -46,8 +47,20 @@ export const AccountTabs = ({ active }) => {
   );
 };
 
+// "I am human" check shared by both sign-in pages. A used token cannot be reused, so reset after a failed try.
+export const useBotCheck = () => {
+  const [botToken, setBotToken] = useState('');
+  const [botReset, setBotReset] = useState(0);
+  return {
+    botToken,
+    missing: turnstileEnabled() && !botToken,
+    reset: () => setBotReset((n) => n + 1),
+    widget: <TurnstileWidget onToken={setBotToken} resetKey={botReset} />,
+  };
+};
+
 // Email + password form used by both sign-in pages.
-export const SignInForm = ({ emailLabel, emailPlaceholder, buttonText, onSubmit, loading }) => {
+export const SignInForm = ({ emailLabel, emailPlaceholder, buttonText, onSubmit, loading, children }) => {
   const [showPassword, setShowPassword] = useState(false);
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -108,6 +121,8 @@ export const SignInForm = ({ emailLabel, emailPlaceholder, buttonText, onSubmit,
           )}
         />
 
+        {children}
+
         <SubmitButton loading={loading} loadingText="Signing in…" className="!mt-6">{buttonText}</SubmitButton>
       </form>
     </Form>
@@ -121,11 +136,15 @@ const LoginPage = () => {
   const [searchParams] = useSearchParams();
   const [error, setError] = useState(searchParams.get('error') || '');
 
+  const bot = useBotCheck();
+
   const onSubmit = async (values) => {
+    if (bot.missing) { setError('Please complete the "I am human" check.'); return; }
     setLoading(true);
     setError('');
-    const result = await login(values.email, values.password);
+    const result = await login(values.email, values.password, bot.botToken);
     setLoading(false);
+    if (!result.success) bot.reset();
     if (result.success) {
       if (result.requireOtp) {
         navigate('/verify-otp', { state: { email: result.email, msg: result.msg } });
@@ -156,7 +175,9 @@ const LoginPage = () => {
         buttonText="Sign in"
         onSubmit={onSubmit}
         loading={loading}
-      />
+      >
+        {bot.widget}
+      </SignInForm>
       <p className="mt-6 text-center text-sm text-zinc-500 m-0">
         Don&apos;t have an account? <TextLink to="/register">Create one free</TextLink>
       </p>

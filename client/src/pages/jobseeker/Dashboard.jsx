@@ -156,7 +156,7 @@ const JobSeekerDashboard = () => {
                    </div>
                    <h2 className="text-2xl font-black text-white tracking-tight m-0">Welcome back, {user?.name}</h2>
                    <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
-                     Explore personalized job recommendations, manage applications, and track your career progression dynamically.
+                     Explore personalized job recommendations, manage applications, and track your career progression.
                    </p>
                 </div>
               </div>

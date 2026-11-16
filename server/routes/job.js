@@ -7,6 +7,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 const { createJob, getCompanyJobs, getCompanyJobsWithStats, updateJob, deleteJob, getAllJobs, getJobById, getMatchingJobs, calculatePreMatch, getRecruiterAnalytics, searchCandidates, viewCandidateProfile, getTopCandidates, getAICandidateMatches, getJobQuota, cloneJob, importPipeline, bulkAiMatch, markJobApplicantsViewed } = require('../controllers/jobController');
 const { scoreJobPost } = require('../utils/jobQuality');
 const { verifyToken, authorizeRoles, optionalVerifyToken } = require('../middlewares/authMiddleware');
+const { rateLimit } = require('../middlewares/rateLimit');
 const { requireTeamPermission } = require('../middlewares/teamPermission');
 const { JOB_LIST_KEYS } = require('../config/teamPermissions');
 const { aiDailyCap } = require('../middlewares/aiDailyCap');
@@ -17,6 +18,7 @@ router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), aiDail
 
 // --- Recruiter / Company Routes ---
 router.post('/', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), createJob);
+router.post('/:id/sponsor-addon', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), require('../controllers/jobPromotionController').sponsorMyJob);
 // Quality score and tips for a draft job, so the poster can fix it before publishing. Stateless; nothing is saved.
 router.post('/quality-check', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job', 'my_jobs'), (req, res) => res.json(scoreJobPost(req.body && typeof req.body === 'object' ? req.body : {})));
 router.post('/import-pipeline', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ats_pipeline'), upload.single('file'), importPipeline);
@@ -32,12 +34,15 @@ router.get('/candidates/:candidateId/profile', verifyToken, authorizeRoles('recr
 router.get('/:jobId/matched-candidates', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ai_candidate_matching'), getAICandidateMatches);
 router.post('/:jobId/bulk-ai-match', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ai_candidate_matching', 'ats_pipeline'), bulkAiMatch);
 router.post('/:id/clone', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), cloneJob);
+router.post('/:id/apply-click', require('../controllers/externalJobController').countExternalClick);
+router.post('/:id/renew', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), require('../controllers/visibilityController').renewJob);
 router.put('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), updateJob);
 router.patch('/:id/mark-viewed', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs', 'ats_pipeline'), markJobApplicantsViewed);
 router.delete('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), deleteJob);
 
 // --- Public / General Routes ---
 router.get('/', optionalVerifyToken, getAllJobs);
+router.post('/:id/report', verifyToken, rateLimit({ windowMs: 60 * 60 * 1000, max: 10, message: 'You have sent several reports. Please try again later.' }), require('../controllers/jobReportController').reportJob);
 router.get('/:id', optionalVerifyToken, getJobById);
 
 module.exports = router;

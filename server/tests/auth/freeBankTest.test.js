@@ -16,6 +16,7 @@ const jwtStub = {
 const sets = [{ _id: 's1', category: 'ms-excel', active: true, questions: Array.from({ length: 10 }, (_, i) => ({ id: i + 1, question: `Q${i + 1}`, options: { a: 'A', b: 'B', c: 'C', d: 'D' }, correct_option: 'b', explanation: 'x' })) }];
 const modelStub = { distinct: async () => ['ms-excel'], findById: async (id) => sets.find((s) => s._id === id) || null };
 const logged = [];
+const pickedLevels = [];
 let logFails = false;
 const logStub = { create: (d) => { if (logFails) throw new Error('db down'); logged.push(d); return Promise.resolve(d); } };
 const realLoad = Module._load;
@@ -24,7 +25,7 @@ Module._load = function (request, ...rest) {
   if (request === '../models/Assessment') return {};
   if (request === '../models/CampusQuestionSet') return modelStub;
   if (request === '../utils/aiHelper') return { GoogleGenerativeAI: class {} };
-  if (request === '../utils/questionBank') return { pickSet: async (key) => { if (key !== 'ms-excel') throw new Error('empty'); return sets[0]; } };
+  if (request === '../utils/questionBank') return { pickSet: async (key, level) => { pickedLevels.push(level); if (key !== 'ms-excel') throw new Error('empty'); return { ...sets[0], level: level === 'hard' ? 'hard' : undefined }; } };
   if (request === '../models/FreeTestAttempt') return logStub;
   if (request === '../models/SkillTestResult' || request === '../models/User') return {};
   return realLoad.call(this, request, ...rest);
@@ -34,7 +35,11 @@ const res = () => { const r = { code: 200 }; r.status = (n) => { r.code = n; ret
 
 test('skill list shows only skills that have questions', async () => {
   const r = res(); await c.getFreeSkills({}, r);
-  assert.deepEqual(r.body, [{ key: 'ms-excel', label: 'MS Excel' }]);
+  assert.ok(r.body.some((x) => x.key === 'ms-excel'));
+  assert.ok(!r.body.some((x) => x.key === 'sql-basics')); // no questions yet, so not listed
+  const excel = r.body.find((x) => x.key === 'ms-excel');
+  assert.equal(excel.industry, 'Office, IT and finance');
+  assert.ok(excel.levels.includes('medium'));
 });
 test('test never contains the right answers', async () => {
   const r = res(); await c.getFreeBankTest({ query: { category: 'ms-excel' } }, r);
@@ -70,7 +75,7 @@ test('each scored test is counted, with no personal data, and a failing log neve
   let s = res(); await c.submitFreeBankTest({ body: { category: 'ms-excel', attemptToken: r.body.attemptToken, answers } }, s);
   assert.equal(s.code, 200);
   assert.equal(logged.length, before + 1);
-  assert.deepEqual(Object.keys(logged[logged.length - 1]).sort(), ['passed', 'percentage', 'score', 'skill', 'source', 'total']);
+  assert.deepEqual(Object.keys(logged[logged.length - 1]).sort(), ['level', 'passed', 'percentage', 'score', 'skill', 'source', 'total']);
   assert.equal(logged[logged.length - 1].source, 'bank');
   assert.equal(logged[logged.length - 1].passed, true);
   logFails = true;
@@ -78,4 +83,20 @@ test('each scored test is counted, with no personal data, and a failing log neve
   s = res(); await c.submitFreeBankTest({ body: { category: 'ms-excel', attemptToken: r.body.attemptToken, answers } }, s);
   assert.equal(s.code, 200); assert.equal(s.body.score, 7);
   logFails = false;
+});
+
+test('level is passed to the bank, defaults to medium, and comes back scored as that level', async () => {
+  backdate = 60;
+  let r = res(); await c.getFreeBankTest({ query: { category: 'ms-excel', level: 'hard' } }, r);
+  assert.equal(r.body.level, 'hard');
+  assert.equal(pickedLevels.at(-1), 'hard');
+  const answers = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, 'b']));
+  sets[0].level = 'hard'; // the stored set carries its level
+  const s = res(); await c.submitFreeBankTest({ body: { category: 'ms-excel', attemptToken: r.body.attemptToken, answers } }, s);
+  delete sets[0].level;
+  assert.equal(s.body.level, 'hard');
+  assert.equal(logged.at(-1).level, 'hard');
+  r = res(); await c.getFreeBankTest({ query: { category: 'ms-excel', level: 'impossible' } }, r);
+  assert.equal(r.body.level, 'medium');
+  assert.equal(pickedLevels.at(-1), 'medium');
 });

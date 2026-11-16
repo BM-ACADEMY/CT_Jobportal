@@ -23,6 +23,7 @@ import CompanyRecruiterList from '@/components/home/CompanyRecruiterList';
 import SkillScoreBento from '@/components/home/SkillScoreBento';
 import PlacementHighlights from '@/components/home/PlacementHighlights';
 import ProfileCompletionDialog from '@/components/home/ProfileCompletionDialog';
+import MatchesBoard from '@/components/home/MatchesBoard';
 
 const formatCount = (n) => {
   if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr+`;
@@ -219,6 +220,8 @@ const HomeJobseeker = () => {
       <SkillScoreBento />
 
       {/* Resume section */}
+      <MatchesBoard />
+
       <section className="py-24 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">

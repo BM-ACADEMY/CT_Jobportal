@@ -54,9 +54,9 @@ describe('admin skill test summary', () => {
     assert.equal(clampDays('7'), 7);
   });
 
-  it('never exposes more than name, email, phone, skill, score for a person', async () => {
+  it('never exposes more than name, email, phone, skill, score, plan label and a hint for a person', async () => {
     const r = await call();
-    assert.deepEqual(Object.keys(r.body.recent[0]).sort(), ['_id', 'createdAt', 'email', 'name', 'passed', 'percentage', 'phone', 'skill']);
+    assert.deepEqual(Object.keys(r.body.recent[0]).sort(), ['_id', 'createdAt', 'email', 'name', 'passed', 'percentage', 'phone', 'plan', 'skill', 'suggestion']);
   });
 });
 

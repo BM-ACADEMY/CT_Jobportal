@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import HomeSummaryCard from '@/components/home/HomeSummaryCard';
 import OnboardingStrip from '@/components/onboarding/OnboardingStrip';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -70,6 +71,7 @@ const HomeRecruiter = () => {
     <div className="w-full overflow-x-clip bg-white">
       <ScrollProgressBar />
       <OnboardingStrip />
+      <HomeSummaryCard />
 
       <HeroShell>
         <div className="grid lg:grid-cols-12 gap-10 items-center">

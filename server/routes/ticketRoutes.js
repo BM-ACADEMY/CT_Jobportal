@@ -37,6 +37,7 @@ router.post('/', verifyToken, upload.single('errorLogFile'), createTicket);
 router.get('/my', verifyToken, getMyTickets);
 // Admin, or a staff member with the matching permission (support role).
 router.get('/admin/all', verifyToken, requireAdminOr('tickets_view'), getAllTickets);
+router.post('/admin/:id/draft-reply', verifyToken, requireAdminOr('tickets_update'), require('../controllers/ticketController').draftReply);
 router.patch('/admin/:id', verifyToken, requireAdminOr('tickets_update'), updateTicket);
 router.get('/:id/support-contact', verifyToken, getSupportContact);
 router.get('/:id', verifyToken, getTicketById);

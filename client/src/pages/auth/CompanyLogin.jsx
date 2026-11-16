@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Briefcase, Users, CalendarCheck } from 'lucide-react';
 import { AuthShell, AuthPanel, PanelAccent, PanelSteps, AuthHeading, AuthAlert, TextLink } from '@/components/auth/AuthShell';
-import { AccountTabs, SignInForm } from './Login';
+import { AccountTabs, SignInForm, useBotCheck } from './Login';
 
 const STEPS = [
   { Icon: Briefcase, title: 'Post a job', text: 'Add the role, salary and location.' },
@@ -17,11 +17,15 @@ const CompanyLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const bot = useBotCheck();
+
   const onSubmit = async (values) => {
+    if (bot.missing) { setError('Please complete the "I am human" check.'); return; }
     setLoading(true);
     setError('');
-    const result = await login(values.email, values.password);
+    const result = await login(values.email, values.password, bot.botToken);
     setLoading(false);
+    if (!result.success) bot.reset();
     if (result.success) {
       if (result.requireOtp) {
         navigate('/verify-otp', { state: { email: result.email, msg: result.msg } });
@@ -56,7 +60,9 @@ const CompanyLogin = () => {
         buttonText="Sign in to dashboard"
         onSubmit={onSubmit}
         loading={loading}
-      />
+      >
+        {bot.widget}
+      </SignInForm>
       <p className="mt-6 text-center text-sm text-zinc-500 m-0">
         New company? <TextLink to="/register?role=company">Register to post jobs</TextLink>
       </p>

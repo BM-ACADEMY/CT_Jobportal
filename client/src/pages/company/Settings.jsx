@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import ImageCropperModal from "@/components/shared/ImageCropperModal";
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import BrandConsent from '@/components/profile/BrandConsent';
 
 const getApiUrl = (role) => {
     if (role === 'company') return `${import.meta.env.VITE_API_BASE_URL}/company`;
@@ -425,6 +426,24 @@ const RecruiterSettings = () => {
         <div className="max-w-7xl mx-auto flex flex-col xl:flex-row gap-10 py-6 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex-1 min-w-0 space-y-10">
                 <PageSOPBanner pageKey="recruiterSettings" />
+
+                <BrandConsent />
+
+                <div className="border border-slate-200 bg-white p-4 flex items-start gap-3">
+                    <input id="show-logo" type="checkbox" className="w-5 h-5 mt-0.5 rounded-md border-slate-300 text-emerald-600" checked={!!formData.companyData.showLogo}
+                        onChange={async (e) => {
+                            const show = e.target.checked;
+                            try {
+                                await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/company/logo-consent`, { show });
+                                setFormData((p) => ({ ...p, companyData: { ...p.companyData, showLogo: show } }));
+                                toast.success(show ? 'Thank you. Our team will check your logo before it shows.' : 'Your logo will no longer be shown.');
+                            } catch { toast.error('Could not save. Please try again.'); }
+                        }} />
+                    <label htmlFor="show-logo" className="text-sm text-slate-700 cursor-pointer">
+                        <b>Show my logo on Velaivaaipu</b><br />
+                        <span className="text-xs text-slate-500">In the "Hiring now" strip on our home page, after our team checks it. You can turn this off any time.</span>
+                    </label>
+                </div>
 
                 <div style={{ background: 'linear-gradient(135deg, #1b496d 0%, #153e5e 50%, #0d2e49 100%)' }} className="relative shadow-sm overflow-hidden group">
                     <div className="p-8 sm:p-10 relative z-10">

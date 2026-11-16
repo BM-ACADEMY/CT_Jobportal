@@ -9,6 +9,8 @@ const settingsSchema = new mongoose.Schema({
   email: { type: String, default: '' },
   phone: { type: String, default: '' },
   billingName: { type: String, default: '' },
+  // Price of a stall at our own job fairs, in rupees. Blank (null) until the owner decides; nothing in code sets or assumes a value.
+  fairStallPrice: { type: Number, default: null, min: 0 },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Settings', settingsSchema);

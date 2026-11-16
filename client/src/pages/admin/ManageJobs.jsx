@@ -22,6 +22,53 @@ const ManageJobs = () => {
   const searchParams = new URLSearchParams(location.search);
   const recruiterId = searchParams.get('recruiter');
 
+  // Sponsored and urgent are switched on by hand after the company has paid. Nothing here sets a price.
+  const promote = async (jobId, kind) => {
+    const days = window.prompt(kind === 'sponsor' ? 'Sponsor for how many days? (1 to 30)' : 'Urgent hiring tag for how many days? (1 to 14, or 0 to remove)');
+    if (days === null || days === '') return;
+    const body = { days: Number(days) };
+    if (kind === 'sponsor') {
+      body.note = window.prompt('How was it paid? (for example the UPI reference)') || '';
+      body.amount = window.prompt('Amount received in rupees, GST included. Leave empty only if you will note it elsewhere.') || '';
+    }
+    try {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${jobId}/${kind}`, body);
+      const until = new Date(Date.now() + body.days * 86400000).toISOString();
+      setJobs((prev) => (Array.isArray(prev) ? prev.map((j) => (j._id === jobId ? { ...j, [kind === 'sponsor' ? 'sponsoredUntil' : 'urgentUntil']: body.days ? until : null } : j)) : prev));
+      toast.success('Saved');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to update');
+    }
+  };
+  const toggleHide = async (job) => {
+    try {
+      const res = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${job._id}/hide`, { hidden: !job.hiddenFromPublic });
+      setJobs((prev) => (Array.isArray(prev) ? prev.map((x) => (x._id === job._id ? { ...x, hiddenFromPublic: res.data.hiddenFromPublic } : x)) : prev));
+      toast.success(res.data.hiddenFromPublic ? 'Hidden from public pages' : 'Shown on public pages');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update');
+    }
+  };
+  const stopSponsor = async (jobId) => {
+    try {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${jobId}/unsponsor`);
+      setJobs((prev) => (Array.isArray(prev) ? prev.map((j) => (j._id === jobId ? { ...j, sponsoredUntil: null } : j)) : prev));
+      toast.success('Sponsorship stopped');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to update');
+    }
+  };
+
+  const markChecked = async (jobId) => {
+    try {
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${jobId}/scam-review`, { reviewed: true });
+      setJobs((prev) => (Array.isArray(prev) ? prev.map((j) => (j._id === jobId ? { ...j, scamReviewed: true } : j)) : prev));
+      toast.success('Marked as checked');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Failed to update');
+    }
+  };
+
   const fetchJobs = async () => {
     setLoading(true);
     try {
@@ -153,6 +200,21 @@ const ManageJobs = () => {
                               <MapPin size={12} className="text-emerald-600" />
                               {job.location}
                             </div>
+                            <div className="flex items-center gap-2 pt-1 flex-wrap">
+                              {job.sponsoredUntil && new Date(job.sponsoredUntil) > new Date()
+                                ? <button type="button" onClick={() => stopSponsor(job._id)} className="text-[10px] font-bold text-amber-700 hover:underline">Sponsored until {new Date(job.sponsoredUntil).toLocaleDateString('en-IN')} (stop)</button>
+                                : <button type="button" onClick={() => promote(job._id, 'sponsor')} className="text-[10px] font-bold text-emerald-600 hover:underline">Sponsor</button>}
+                              <button type="button" onClick={() => promote(job._id, 'urgent')} className="text-[10px] font-bold text-rose-600 hover:underline">{job.urgentUntil && new Date(job.urgentUntil) > new Date() ? 'Urgent (change)' : 'Mark urgent'}</button>
+                              <button type="button" onClick={() => toggleHide(job)} className="text-[10px] font-bold text-slate-600 hover:underline">{job.hiddenFromPublic ? 'Hidden (show)' : 'Hide from public'}</button>
+                            </div>
+                            {job.scamFlags?.length > 0 && !job.scamReviewed && (
+                              <div className="flex items-center gap-2 pt-1">
+                                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                                  Needs review: {job.scamFlags.map((f) => ({ asks_for_money: 'asks for money', private_chat_or_otp: 'asks for OTP or private chat', pay_too_good: 'pay looks too good', inappropriate_content: 'vulgar or adult wording', reported_by_users: `reported by ${job.reportCount || 1} user${(job.reportCount || 1) > 1 ? 's' : ''}` }[f] || f)).join(', ')}
+                                </span>
+                                <button type="button" onClick={() => markChecked(job._id)} className="text-[10px] font-bold text-emerald-600 hover:underline">Looks fine</button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>

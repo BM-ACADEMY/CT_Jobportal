@@ -23,11 +23,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { JOB_CATEGORIES } from '@/data/jobCategories';
+
+const EXPERIENCE = [['fresher', 'Fresher'], ['under_2_years', 'Under 2 years'], ['2_to_5_years', '2 to 5 years'], ['over_5_years', 'Over 5 years']];
+const fieldCls = 'w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm font-medium';
 
 const JobApplicationModal = ({ isOpen, onClose, job, user }) => {
   const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Quick apply: ask only for the basics the profile is missing, so no resume is needed.
+  const p = user?.profile || {};
+  const needsQuick = user?.role === 'jobseeker' && (!p.phone || !p.location || !p.experienceLevel);
+  const [quick, setQuick] = useState({ phone: '', location: '', experienceLevel: '', category: '' });
   
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -51,6 +59,11 @@ const JobApplicationModal = ({ isOpen, onClose, job, user }) => {
       return;
     }
 
+    if (needsQuick && !p.phone && !/^(\+?91|0)?[6-9]\d{9}$/.test(quick.phone.replace(/[\s-]/g, ''))) {
+      toast.error('Please enter a valid 10-digit mobile number');
+      return;
+    }
+
     setSubmitting(true);
     try {
       // Map answers to the format expected by the backend
@@ -62,7 +75,8 @@ const JobApplicationModal = ({ isOpen, onClose, job, user }) => {
 
       const res = await axios.post(`${API_BASE_URL}/applications/apply`, { 
         jobId: job._id, 
-        answers: formattedAnswers 
+        answers: formattedAnswers,
+        ...(needsQuick ? { quick } : {})
       });
       
       setSubmitted(true);
@@ -179,6 +193,27 @@ const JobApplicationModal = ({ isOpen, onClose, job, user }) => {
                 )}
               </div>
             ))}
+
+            {needsQuick && (
+              <div className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+                <p className="text-sm font-bold text-slate-800">Quick details (no resume needed)</p>
+                {!p.phone && <input className={fieldCls} placeholder="Mobile number" inputMode="numeric" value={quick.phone} onChange={(e) => setQuick({ ...quick, phone: e.target.value })} required />}
+                {!p.location && <input className={fieldCls} placeholder="Your area or city" value={quick.location} onChange={(e) => setQuick({ ...quick, location: e.target.value })} />}
+                {!p.experienceLevel && (
+                  <select className={fieldCls} value={quick.experienceLevel} onChange={(e) => setQuick({ ...quick, experienceLevel: e.target.value })}>
+                    <option value="">Experience</option>
+                    {EXPERIENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                )}
+                {!(p.interestedCategories || []).length && (
+                  <select className={fieldCls} value={quick.category} onChange={(e) => setQuick({ ...quick, category: e.target.value })}>
+                    <option value="">Field of work</option>
+                    {JOB_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                  </select>
+                )}
+                <p className="text-xs text-slate-500">We save these to your profile so you do not type them again.</p>
+              </div>
+            )}
 
             {(!job.applicationQuestions || job.applicationQuestions.length === 0) && (
               <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3 text-amber-800">

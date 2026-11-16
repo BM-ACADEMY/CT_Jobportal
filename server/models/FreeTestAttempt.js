@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const freeTestAttemptSchema = new mongoose.Schema({
   skill: { type: String, required: true, trim: true, lowercase: true, index: true },
   source: { type: String, enum: ['bank', 'ai'], required: true },
+  level: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
   score: { type: Number, required: true },
   total: { type: Number, required: true },
   percentage: { type: Number, required: true },

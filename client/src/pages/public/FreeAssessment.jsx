@@ -18,7 +18,8 @@ const FreeAssessment = () => {
   const [skillsLoaded, setSkillsLoaded] = useState(false);
   const [skillKey, setSkillKey] = useState('');
   const [skill, setSkill] = useState(''); // label shown to the student
-  const difficulty = 'medium'; // the question bank has one level
+  const [level, setLevel] = useState('medium');
+  const difficulty = level; // easy, medium or hard, chosen by the student
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [attemptToken, setAttemptToken] = useState(''); // signed by the server; the answers never reach the browser
@@ -33,6 +34,8 @@ const FreeAssessment = () => {
   // Lead Capture state
   const [leadName, setLeadName] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
+  const [answersForSave, setAnswersForSave] = useState(null);
+  const [savingPhone, setSavingPhone] = useState(false);
 
   // Only skills that have reviewed questions are listed, so there are no typos and no dead ends.
   useEffect(() => {
@@ -48,9 +51,10 @@ const FreeAssessment = () => {
 
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/assessments/bank`, { params: { category: skillKey } });
+      const res = await axios.get(`${API}/assessments/bank`, { params: { category: skillKey, level } });
       setQuestions(res.data.questions);
       setSkill(res.data.skill);
+      if (res.data.level) setLevel(res.data.level);
       setAttemptToken(res.data.attemptToken);
       setStep('test');
     } catch (err) {
@@ -93,6 +97,12 @@ const FreeAssessment = () => {
           await axios.post(`${API}/skill-tests/save`, { resultToken: result.resultToken, answers });
           navigate('/candidate/skill-tests');
         } catch (err) {
+          if (err.response?.data?.code === 'PHONE_REQUIRED') {
+            // Keep the answers on screen and ask for the number first.
+            setAnswersForSave(answers);
+            setStep('phone');
+            return;
+          }
           toast.error("Failed to save score, but redirecting.");
           navigate('/candidate/skill-tests');
         }
@@ -130,7 +140,7 @@ const FreeAssessment = () => {
           </div>
           <div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Free Skill Assessment</h1>
-            <p className="text-sm text-slate-500 mt-2">Test your knowledge with our AI-powered assessment engine and stand out to top recruiters.</p>
+            <p className="text-sm text-slate-500 mt-2">Pick your skill and level, answer 10 questions and show recruiters what you can do. It is free.</p>
           </div>
           
           <form onSubmit={startAssessment} className="space-y-4 text-left">
@@ -138,17 +148,49 @@ const FreeAssessment = () => {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Skill to Test</label>
               <select
                 value={skillKey}
-                onChange={e => setSkillKey(e.target.value)}
+                onChange={e => {
+                  setSkillKey(e.target.value);
+                  const offered = skills.find((c) => c.key === e.target.value)?.levels || ['medium'];
+                  if (!offered.includes(level)) setLevel(offered.includes('medium') ? 'medium' : offered[0]);
+                }}
                 disabled={!skillsLoaded || skills.length === 0}
                 className="mt-1.5 h-12 w-full rounded-xl border border-input bg-white px-3 text-sm font-medium text-slate-800"
               >
                 <option value="">{!skillsLoaded ? 'Loading skills...' : skills.length ? 'Choose a skill' : 'Tests are being prepared'}</option>
-                {skills.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                {[...new Set(skills.map((c) => c.industry || 'Other'))].map((ind) => (
+                  <optgroup key={ind} label={ind}>
+                    {skills.filter((c) => (c.industry || 'Other') === ind).map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                  </optgroup>
+                ))}
               </select>
               {skillsLoaded && skills.length === 0 && (
                 <p className="text-xs text-amber-600 font-semibold mt-2">Tests are being prepared. Please check back soon.</p>
               )}
             </div>
+            {skillKey && (
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Level</label>
+                <div className="mt-1.5 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Level">
+                  {[['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard']].map(([key, label]) => {
+                    const offered = (skills.find((c) => c.key === skillKey)?.levels || ['medium']).includes(key);
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        role="radio"
+                        aria-checked={level === key}
+                        disabled={!offered}
+                        onClick={() => setLevel(key)}
+                        className={`h-11 rounded-xl border-2 text-sm font-bold transition-all ${level === key ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'} ${offered ? '' : 'opacity-40 cursor-not-allowed'}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1.5">Easy: basics. Medium: what a fresher needs on the job. Hard: real situations.</p>
+              </div>
+            )}
             <Button 
               type="submit" 
               disabled={loading || !skillKey} 
@@ -226,6 +268,31 @@ const FreeAssessment = () => {
             </Button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  const savePhone = async (e) => {
+    e.preventDefault();
+    if (!/^(\+?91|0)?[6-9]\d{9}$/.test(leadPhone.replace(/[\s-]/g, ''))) return toast.error('Please enter a valid 10-digit mobile number.');
+    setSavingPhone(true);
+    try {
+      await axios.post(`${API}/skill-tests/save`, { resultToken, answers: answersForSave || answers, phone: leadPhone });
+      navigate('/candidate/skill-tests');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not save. Please try again.');
+    } finally { setSavingPhone(false); }
+  };
+
+  if (step === 'phone') {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <form onSubmit={savePhone} className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center space-y-5">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">One last step</h1>
+          <p className="text-sm text-slate-500">Add your mobile number to save your score. We use it only to reach you about your jobs and sessions.</p>
+          <input type="tel" inputMode="numeric" value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} placeholder="10-digit mobile number" className="w-full h-12 rounded-xl border border-slate-200 px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500" />
+          <Button type="submit" disabled={savingPhone} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold">{savingPhone ? 'Saving...' : 'Save my score'}</Button>
+        </form>
       </div>
     );
   }

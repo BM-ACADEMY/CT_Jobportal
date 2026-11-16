@@ -33,7 +33,7 @@ const DeleteAccountCard = () => {
       <div className="flex items-center gap-2 text-rose-700 font-bold text-sm"><Trash2 className="w-4 h-4" /> Delete my account</div>
       <p className="text-xs text-slate-600 leading-relaxed">
         This removes your profile, resume, documents, notifications and skill test history, and signs you out everywhere. It cannot be undone.
-        Payment records are kept without your name, as the law requires. Company and college owners: write to support@velaivaaipu.in.
+        Payment records are kept without your name, as the law requires. Company and college owners: write to hello@velaivaaipu.in.
       </p>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)} className="h-9 px-4 rounded-lg border border-rose-300 text-rose-700 font-bold text-xs bg-white hover:bg-rose-50">

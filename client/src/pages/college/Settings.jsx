@@ -1,3 +1,4 @@
+import { COLLEGE_TYPES } from '../../data/collegeTypes';
 import React, { useState, useEffect } from 'react';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import axios from 'axios';
@@ -192,7 +193,7 @@ const CollegeSettings = () => {
           <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Verification Document Proof</h3>
         </div>
         <p className="text-xs text-slate-500 leading-relaxed">
-          To prove authenticity, please upload an official document such as AICTE approval, college registration certificate, or Principal authorization letter.
+          To prove authenticity, upload one official document: your university affiliation letter, UGC (2f or 12B) or AICTE approval, college registration certificate, or a letter from the Principal on the college letterhead. We usually verify within 2 working days. Prefer to talk first? Raise a ticket in Help & Support and our team will call you.
         </p>
 
         {profile?.proofDocumentUrl && (
@@ -237,6 +238,25 @@ const CollegeSettings = () => {
         <p className="text-xs text-slate-500 leading-relaxed">
           These departments appear as course options when students register, campus drives are created, and when filtering the student list.
         </p>
+
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-slate-700">Quick start: what kind of college are you?</p>
+          <div className="flex flex-wrap gap-2">
+            {COLLEGE_TYPES.map(t => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => {
+                  if (departments.length && !window.confirm(`Replace your current list with the ${t.label} list? You can still add or remove courses, and nothing is saved until you press Save Departments.`)) return;
+                  setDepartments(t.departments);
+                }}
+                className="px-3 py-1.5 text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:border-[#39c884] hover:text-[#39c884] cursor-pointer"
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {departments.length === 0 ? (
           <p className="text-xs text-slate-400 italic">No departments added yet.</p>
@@ -346,7 +366,7 @@ const CollegeSettings = () => {
               type="email"
               value={form.principalEmail}
               onChange={e => setForm(p => ({ ...p, principalEmail: e.target.value }))}
-              placeholder="principal@skct.campus"
+              placeholder="principal@yourcollege.edu"
               className={antInputClass}
             />
           </div>
@@ -356,7 +376,7 @@ const CollegeSettings = () => {
               type="email"
               value={form.collegeEmail}
               onChange={e => setForm(p => ({ ...p, collegeEmail: e.target.value }))}
-              placeholder="office@skct.campus"
+              placeholder="office@yourcollege.edu"
               className={antInputClass}
             />
           </div>
@@ -374,7 +394,7 @@ const CollegeSettings = () => {
             <input
               value={form.additionalReportRecipients}
               onChange={e => setForm(p => ({ ...p, additionalReportRecipients: e.target.value }))}
-              placeholder="placement.head@skct.campus, management@skct.campus"
+              placeholder="placement.head@yourcollege.edu, management@yourcollege.edu"
               className={antInputClass}
             />
             <p className="text-[10px] text-slate-400 mt-1">Placement reports are emailed to the Principal Email and everyone listed here.</p>

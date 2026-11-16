@@ -123,7 +123,7 @@ export default function PlacementTools() {
             {(!readiness?.students || readiness.students.length === 0) ? (
               <div className="p-10 text-center bg-white border border-[#e8e8e8] text-slate-400 rounded-none">
                 <Users className="mx-auto mb-2 text-slate-300" />
-                No students enrolled in this course batch.
+                No students to show yet. Add students from the Students page (Bulk CSV) or share a campus drive QR code, and their readiness will appear here.
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

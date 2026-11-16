@@ -31,6 +31,7 @@ export const ResendLine = ({ timer, resending, onResend }) => (
     >
       {resending ? 'Sending…' : timer > 0 ? `Resend in ${timer}s` : 'Resend code'}
     </button>
+    <span className="block mt-2 text-xs text-zinc-400">The code can take a minute to arrive. Please also check your Spam or Junk folder.</span>
   </p>
 );
 

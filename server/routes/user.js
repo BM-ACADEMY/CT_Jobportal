@@ -23,17 +23,24 @@ const {
   deleteDocument,
   deleteMyAccount
 } = require('../controllers/userController');
+const { setWhatsAppOptIn, getReferrals } = require('../controllers/whatsappReferralController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const { aiDailyCap } = require('../middlewares/aiDailyCap');
+const { freeAiLimit } = require('../middlewares/freeAiLimit');
 const upload = require('../middleware/upload');
 
 // All user routes require authentication
 router.use(verifyToken);
 router.delete('/me', deleteMyAccount);
 
-router.post('/generate-resume', aiDailyCap('other'), generateAIResume);
-router.post('/analyze-resume', aiDailyCap('other'), upload.single('resume'), analyzeResume);
+router.post('/generate-resume', freeAiLimit('resume_build'), aiDailyCap('other'), generateAIResume);
+router.post('/analyze-resume', freeAiLimit('resume_check'), aiDailyCap('other'), upload.single('resume'), analyzeResume);
 router.put('/profile', updateProfile);
+router.put('/whatsapp-optin', setWhatsAppOptIn);
+router.get('/free-ai-status', require('../controllers/freeAiController').myStatus);
+router.put('/brand-consent', require('../controllers/brandLeadController').setBrandConsent);
+router.get('/brand-consent', require('../controllers/brandLeadController').getBrandConsent);
+router.get('/referrals', getReferrals);
 router.post('/resume', upload.single('resume'), uploadResume);
 router.post('/documents', upload.array('documents', 20), upload.convertImagesToWebp, uploadDocuments);
 router.put('/documents/:docId', updateDocument);

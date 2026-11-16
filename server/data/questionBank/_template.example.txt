@@ -1,0 +1,7 @@
+module.exports = {
+  "skill-key": {
+    easy:   [ { q: "Question text?", opts: { a: "...", b: "...", c: "...", d: "..." }, ans: "b", exp: "One short sentence why." } /* x10 */ ],
+    medium: [ /* x10 */ ],
+    hard:   [ /* x10 */ ],
+  },
+};

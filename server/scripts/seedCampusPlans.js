@@ -34,6 +34,33 @@ const CAMPUS_PLANS = [
     ]
   },
   {
+    // Same price as one student pack (4,999 + GST) bought online. Capacity is Free's 100 plus the pack's 250.
+    // It carries none of the paid-only perks, and it is left out of COLLEGE_TIER_MAP on purpose, so the college's
+    // tier stays 'campus_free' and every tier-based limit (reports, drive invites, co-branding) keeps treating it as Free.
+    name: 'Campus Starter',
+    price: 4999,
+    currency: 'INR',
+    duration: 'Yearly',
+    role: 'college',
+    isActive: true,
+    activeJobPostings: 0,
+    candidateSearchPerDay: 0,
+    userSeats: 1,
+    pricingOptions: [{ quantity: 1, price: 4999 }],
+    features: [
+      { name: 'Student Capacity', isActive: true, value: 350 },
+      { name: 'CSV Bulk Student Upload', isActive: true, value: true },
+      { name: 'Auto Candidate Account Creation', isActive: true, value: true },
+      { name: 'Co-Branded Certificates', isActive: false, value: 'Platform Only' },
+      { name: 'Automated MoU Generation', isActive: false, value: false },
+      { name: 'WhatsApp Interview Invites', isActive: false, value: false },
+      { name: 'Scheduled Placement Reports', isActive: false, value: 'None' },
+      { name: 'ID Verification Badges', isActive: true, value: 'Manual Queue' },
+      { name: 'Razorpay Auto-Renewal', isActive: true, value: 'Mandate' },
+      { name: 'Company Drive Invites', isActive: false, value: 'Not Available' },
+    ]
+  },
+  {
     name: 'Campus Lite',
     price: 14999,
     currency: 'INR',
@@ -123,7 +150,9 @@ const run = async () => {
     const existing = await Subscription.findOne(filter);
     if (existing) {
       const previousName = existing.name;
-      Object.assign(existing, plan);
+      // Keep the on/off switch the admin chose. Re-running this must not bring back a plan that was switched off.
+      const { isActive: _ignored, ...rest } = plan;
+      Object.assign(existing, rest);
       await existing.save();
       console.log(previousName === plan.name ? `Updated ${plan.name}` : `Updated ${plan.name} (was named "${previousName}")`);
     } else {

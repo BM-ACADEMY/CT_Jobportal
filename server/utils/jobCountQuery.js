@@ -3,7 +3,8 @@
 // profile): their own jobs. Before this helper the last case had no filter at all and counted every job
 // on the platform, so a new company owner was told the limit was reached before posting anything.
 const activeJobCountQuery = (user, userId) => {
-  const query = { status: { $in: ['active', 'closed'] } };
+  // Free internships (verified companies, utils/internship.js) do not use a paid job slot.
+  const query = { status: { $in: ['active', 'closed'] }, 'internship.free': { $ne: true } };
   const roleName = user?.role?.name || user?.role;
   if (roleName === 'recruiter' || !user?.company) {
     query.recruiter = userId;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Star, Calendar, Clock, Video, CheckCircle2, Send, Loader2, AlertCircle, RefreshCw, X } from 'lucide-react';
-import { Card, Typography, Button, Tag, Table, Modal, Form, Input } from 'antd';
+import { Card, Typography, Button, Tag, Table, Modal, Form, Input, Checkbox } from 'antd';
 import { Link } from 'react-router-dom';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import { useAuth } from '@/context/AuthContext';
@@ -150,6 +150,11 @@ const RequestModal = ({ visible, onClose, onSuccess, sessionsLeft, unlimited, in
             <Form.Item name="notes" label="Specific questions / Goals" className="sm:col-span-2">
               <TextArea placeholder="What would you like to discuss during the session?" rows={3} size="large" />
             </Form.Item>
+            {!initialData && (
+              <Form.Item name="brandContact" valuePropName="checked" className="sm:col-span-2">
+                <Checkbox>Optional: BM Academy (our training partner) may contact me about courses that can help my career. I can withdraw any time in Settings.</Checkbox>
+              </Form.Item>
+            )}
           </div>
 
           {isReadOnly && initialData?.status === 'approved' && !initialData?.selectedSlot && (
@@ -354,6 +359,8 @@ const CareerCounselling = () => {
   const [sessions, setSessions] = useState([]);
   const [counts, setCounts] = useState({ booked: 0, accepted: 0, upcoming: 0, completed: 0, rejected: 0 });
   const [sessionsLoading, setSessionsLoading] = useState(true);
+  // The first session is free for everyone (server decides; this is the number it reports).
+  const [freeLeft, setFreeLeft] = useState(0);
 
   const planLimit = user?.subscription?.careerCounsellingCount || 0;
   const hasPlanFeature = !!user?.subscription?.hasCareerCounselling || (Array.isArray(user?.subscription?.features) && user.subscription.features.some(f => f.isActive && (f.name?.toLowerCase() === 'career counselling' || f.name?.toLowerCase() === 'career counseling')));
@@ -366,7 +373,7 @@ const CareerCounselling = () => {
   const payPerFeature = Array.isArray(user?.purchasedFeatures) ? user.purchasedFeatures.find(f => f.featureKey === 'hasCareerCounselling' && f.usageLeft > 0 && (!f.expiresAt || new Date(f.expiresAt) > new Date())) : null;
   const payPerLeft = payPerFeature ? payPerFeature.usageLeft : 0;
 
-  const sessionsLeft = unlimited ? Infinity : planLeft + payPerLeft;
+  const sessionsLeft = unlimited ? Infinity : planLeft + payPerLeft + freeLeft;
   const atLimit = !unlimited && sessionsLeft <= 0;
 
   const fetchSessions = useCallback(async () => {
@@ -376,6 +383,7 @@ const CareerCounselling = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setSessions(res.data.sessions || []);
+      setFreeLeft(res.data.freeSessionsLeft || 0);
       setCounts(res.data.counts || { booked: 0, accepted: 0, upcoming: 0, completed: 0, rejected: 0 });
     } catch {
       // silently fail
@@ -425,7 +433,7 @@ const CareerCounselling = () => {
           
           <div className="flex items-center gap-3 shrink-0">
             <Tag color="error" className="px-3 py-1.5 rounded-md font-bold m-0 border-rose-200 bg-rose-50 text-rose-600 text-xs">
-              {unlimited ? 'Unlimited' : `${sessionsLeft} Left`}
+              {unlimited ? 'Unlimited' : (freeLeft > 0 && planLeft + payPerLeft === 0 ? 'First session free' : `${sessionsLeft} Left`)}
             </Tag>
             <Button
               type="primary"

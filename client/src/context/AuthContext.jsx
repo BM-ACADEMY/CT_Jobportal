@@ -1,4 +1,4 @@
-import { trackEvent } from '../utils/analytics';
+import { trackEvent, getUtm } from '../utils/analytics';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -82,13 +82,14 @@ export const AuthProvider = ({ children }) => {
       return { redirect: '/candidate/skill-tests' };
     } catch (err) {
       console.error('Error saving pending assessment:', err);
+      if (err.response?.data?.code === 'PHONE_REQUIRED') return { msg: 'Please add your mobile number in your profile, then take the test again to save your score.' };
       return { msg: 'Please open Skill Tests from your dashboard to see your marks.' };
     }
   };
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email, password, turnstileToken) => {
     try {
-      const res = await axios.post(`${API_URL}/login`, { email, password });
+      const res = await axios.post(`${API_URL}/login`, { email, password, ...(turnstileToken ? { turnstileToken } : {}) });
       
       if (res.data.requireOtp) {
         return { success: true, requireOtp: true, email: res.data.email, msg: res.data.msg };
@@ -142,7 +143,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = useCallback(async (userData) => {
     try {
-      const res = await axios.post(`${API_URL}/register`, userData);
+      const res = await axios.post(`${API_URL}/register`, { ...userData, utm: getUtm() });
       
       if (res.data.requireOtp) {
         return { success: true, requireOtp: true, email: res.data.email, msg: res.data.msg };

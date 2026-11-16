@@ -61,6 +61,10 @@ const companySchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Logo strips on the home page. showLogo = the company agreed; logoApproved = an admin checked the file (admin only).
+  showLogo: { type: Boolean, default: false },
+  logoApproved: { type: Boolean, default: false },
+  hiddenFromPublic: { type: Boolean, default: false }, // Super Admin switch: keeps a test or doubtful company off public pages
   logo_url: {
     type: String,
     default: ''
@@ -128,6 +132,12 @@ const companySchema = new mongoose.Schema({
   verifiedAt: { type: Date, default: null },
   verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   verification_note: { type: String, trim: true, maxlength: 300, default: '' },
+  // "Verified employer": a telecaller phoned the company and confirmed it is real. Set only by an admin
+  // (PATCH /api/admin/companies/:id/verified-by-call). Separate from is_verified; it never verifies the company by itself.
+  verifiedByCall: { type: Boolean, default: false },
+  verifiedByCallAt: { type: Date, default: null },
+  verifiedByCallNote: { type: String, trim: true, maxlength: 300, default: '' },
+  verifiedByCallBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   tax_id_ein: {
     type: String,
     trim: true

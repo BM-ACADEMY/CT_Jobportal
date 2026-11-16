@@ -1,3 +1,4 @@
+const { cleanInterestedCategories } = require('../config/jobCategories');
 const User = require('../models/User');
 const fs = require('fs');
 const path = require('path');
@@ -77,6 +78,11 @@ const updateProfile = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    // Fields of interest: valid keys only, at most 3
+    if (updates.profile && updates.profile.interestedCategories !== undefined) {
+      updates.profile.interestedCategories = cleanInterestedCategories(updates.profile.interestedCategories);
+    }
 
     // Merge profile updates
     if (updates.profile) {
@@ -938,7 +944,7 @@ const deleteMyAccount = async (req, res) => {
     res.json({ msg: 'Your account has been deleted.' });
   } catch (err) {
     console.error('Delete account error:', err.message);
-    res.status(500).json({ msg: 'Something went wrong. Please try again or write to support@velaivaaipu.in.' });
+    res.status(500).json({ msg: 'Something went wrong. Please try again or write to hello@velaivaaipu.in.' });
   }
 };
 

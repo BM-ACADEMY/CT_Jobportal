@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { JOB_CATEGORIES } from '@/data/jobCategories';
+import { COLLEGE_DATA_SAFETY_LINE } from '@/data/collegePrivacy';
+import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -165,7 +168,13 @@ const RegisterPage = () => {
   const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company';
   const isCollege = selectedRole === 'college';
 
+  const [brandConsent, setBrandConsent] = useState(false);
+  const [interests, setInterests] = useState([]); // job seekers: up to 3 fields of work (optional)
+  const [botToken, setBotToken] = useState('');
+  const [botReset, setBotReset] = useState(0);
+
   const onSubmit = async (values) => {
+    if (turnstileEnabled() && !botToken) { setError('Please complete the "I am human" check.'); return; }
     if (isCollege) {
       if (!values.collegeName?.trim() || !values.collegeEmail?.trim() || !values.collegePhone?.trim()) {
         setError('Please fill in College Name, College Email, and College Phone.');
@@ -180,6 +189,10 @@ const RegisterPage = () => {
       phone: `${values.countryCode}${values.mobileNumber}`,
       password: values.password,
       role: selectedRole,
+      ...(botToken ? { turnstileToken: botToken } : {}),
+      ...(searchParams.get('ref') ? { ref: searchParams.get('ref') } : {}),
+      ...(brandConsent ? { brandConsent: true } : {}),
+      ...(selectedRole === 'jobseeker' && interests.length ? { interestedCategories: interests } : {}),
       ...(isCollege ? {
         collegeName: values.collegeName,
         collegeEmail: values.collegeEmail,
@@ -188,6 +201,7 @@ const RegisterPage = () => {
       } : {}),
     });
     setLoading(false);
+    if (!result.success) setBotReset((n) => n + 1); // a used token cannot be used twice
 
     if (result.success) {
       if (result.requireOtp) {
@@ -289,20 +303,25 @@ const RegisterPage = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem className="space-y-2">
-                    <FormLabel className={labelCls}>{isCollege ? 'TPO email' : 'Email address'}</FormLabel>
+                    <FormLabel className={labelCls}>{isCollege ? 'TPO email' : isRecruiter ? 'Company email (best)' : 'Email address'}</FormLabel>
                     <div className="relative">
                       <Mail size={17} className={iconCls} />
                       <FormControl>
                         <input
                           type="email"
                           autoComplete="email"
-                          placeholder={isCollege ? 'TPO email address' : 'you@example.com'}
+                          placeholder={isCollege ? 'TPO email address' : isRecruiter ? 'name@yourcompany.com' : 'you@example.com'}
                           {...field}
                           onChange={(e) => field.onChange(e.target.value.toLowerCase())}
                           className={`${inputCls} pr-4`}
                         />
                       </FormControl>
                     </div>
+                    {isRecruiter && (
+                      <p className="m-0 rounded-xl bg-[#f4faf7] ring-1 ring-[#34B678]/15 px-3 py-2 text-xs font-medium leading-relaxed text-[#1f8a57]">
+                        Sign up with your company email and list your company free, verified at once. Gmail and other free emails also work: one live job at a time for 14 days, after a quick proof check.
+                      </p>
+                    )}
                     <FormMessage className={msgCls} />
                   </FormItem>
                 )}
@@ -404,6 +423,10 @@ const RegisterPage = () => {
                       </FormItem>
                     )}
                   />
+                  <p className="m-0 text-xs text-zinc-500 leading-relaxed">
+                    Our team will call you within 24 hours to help you start. We do not sell student data.{' '}
+                    <a href="/privacy-policy" target="_blank" rel="noreferrer" className="font-semibold text-[#1f8a57] hover:underline">Privacy Policy</a>
+                  </p>
                 </div>
               )}
 
@@ -457,6 +480,41 @@ const RegisterPage = () => {
                 />
               </div>
               <p className="m-0 -mt-1 text-xs text-zinc-400">At least 6 characters with 1 capital letter, 1 number and 1 symbol.</p>
+
+              {selectedRole === 'jobseeker' && (
+                <div className="space-y-2">
+                  <span className={labelCls}>Fields you want to work in <span className="font-medium text-zinc-400">(optional, up to 3)</span></span>
+                  <div className="flex flex-wrap gap-2" role="group" aria-label="Fields of work">
+                    {JOB_CATEGORIES.map((c) => {
+                      const picked = interests.includes(c.key);
+                      return (
+                        <button
+                          key={c.key}
+                          type="button"
+                          aria-pressed={picked}
+                          onClick={() => setInterests((cur) => (picked ? cur.filter((k) => k !== c.key) : cur.length >= 3 ? cur : [...cur, c.key]))}
+                          className={`h-9 px-3 rounded-lg text-xs font-bold border-none cursor-pointer ring-1 transition ${picked ? 'bg-[#34B678] text-white ring-[#34B678]' : 'bg-white text-zinc-600 ring-zinc-200 hover:ring-[#34B678]/50'}`}
+                        >
+                          {c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {isCollege && (
+                <p className="m-0 rounded-xl bg-[#f4faf7] ring-1 ring-[#34B678]/15 px-3 py-2 text-xs font-medium leading-relaxed text-zinc-600">
+                  {COLLEGE_DATA_SAFETY_LINE}
+                </p>
+              )}
+
+              <label className="flex items-start gap-2.5 text-xs text-zinc-500 leading-relaxed cursor-pointer">
+                <input type="checkbox" className="mt-0.5 w-4 h-4 shrink-0 accent-[#34B678]" checked={brandConsent} onChange={(e) => setBrandConsent(e.target.checked)} />
+                <span>Optional: allow Velaivaaipu and its sister brands (BM Academy, CoreTalents) to contact me about training and hiring services. You can change this any time in Settings.</span>
+              </label>
+
+              <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
 
               <SubmitButton loading={loading} loadingText="Creating account…" className="!mt-6">
                 Create {accountWord} account

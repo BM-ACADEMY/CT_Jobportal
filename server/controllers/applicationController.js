@@ -1,4 +1,5 @@
 const Application = require('../models/Application');
+const { cleanQuickDetails, fillMissing } = require('../utils/quickApply');
 const Job = require('../models/Job');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
@@ -21,6 +22,7 @@ const trackOutcome = (event, applicantId, jobId) => {
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
 const STATUS_LABELS = {
+  completed: 'Internship completed',
   pending: 'Pending Review',
   reviewed: 'Reviewed',
   shortlisted: 'Shortlisted',
@@ -142,9 +144,22 @@ exports.getMyApplications = async (req, res) => {
 
 exports.applyJob = async (req, res) => {
   try {
-    const { jobId, answers } = req.body;
+    const { jobId, answers, quick } = req.body;
     const applicantId = req.user.id;
     const User = require('../models/User');
+
+    // Jobs found on the web are applied for on the employer's own site, never here.
+    const extJob = await Job.findById(jobId).select('externalApply').lean();
+    if (extJob?.externalApply?.url) return res.status(400).json({ code: 'EXTERNAL_APPLY', msg: 'Apply for this job on the employer\'s site.', url: extJob.externalApply.url });
+
+    // A job seeker needs a usable mobile number before applying: recruiters call. One given in the apply step fills a missing number.
+    const phoneRule = require('../utils/phoneRule');
+    const me = await User.findById(applicantId).select('profile.phone');
+    if (!phoneRule.valid(me?.profile?.phone)) {
+      const typed = phoneRule.clean(quick?.phone);
+      if (!typed) return res.status(400).json({ code: 'PHONE_REQUIRED', msg: 'Please add your mobile number so the company can reach you.' });
+      await User.updateOne({ _id: applicantId }, { $set: { 'profile.phone': typed } });
+    }
 
     // Check if already applied
     let existingApplication = await Application.findOne({ job: jobId, applicant: applicantId });
@@ -220,6 +235,10 @@ exports.applyJob = async (req, res) => {
     await application.save();
     trackOutcome('applied', applicantId, jobId);
 
+    // Quick apply: save the basics the person gave, only into empty profile fields.
+    const quickSet = fillMissing(user, cleanQuickDetails(quick));
+    if (quickSet) User.updateOne({ _id: applicantId }, { $set: quickSet }).catch((e) => console.error('Quick apply save failed:', e.message));
+
     if (isPriority) {
       if (source === 'plan' && limit > 0) {
         user.priorityApplicationsUsed = (user.priorityApplicationsUsed || 0) + 1;
@@ -291,18 +310,21 @@ exports.getJobApplicants = async (req, res) => {
   }
 };
 
+const { statusUpdateExtras } = require('../utils/internshipCertificate');
+
 exports.updateApplicationStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, isPriority } = req.body;
 
-    const existing = await Application.findById(id).select('status job');
+    const existing = await Application.findById(id).select('status job createdAt firstResponseAt certificateCode');
     if (!existing) return res.status(404).json({ msg: 'Application not found' });
     const statusChanged = status !== undefined && status !== existing.status;
 
+    const statusJob = await Job.findById(existing.job).select('recruiter company jobType internship');
     if (req.user.role !== 'admin') {
       const [job, user] = await Promise.all([
-        Job.findById(existing.job).select('recruiter company'),
+        Promise.resolve(statusJob),
         User.findById(req.user.id)
       ]);
       const isOwner = job && job.recruiter.toString() === req.user.id;
@@ -314,6 +336,11 @@ exports.updateApplicationStatus = async (req, res) => {
 
     const updateFields = {};
     if (status !== undefined) updateFields.status = status;
+    if (statusChanged) {
+      const extras = statusUpdateExtras({ existing, job: statusJob, status });
+      if (extras.error) return res.status(400).json({ msg: extras.error });
+      Object.assign(updateFields, extras.set);
+    }
     if (isPriority !== undefined) updateFields.isPriority = isPriority;
 
     const application = await Application.findByIdAndUpdate(

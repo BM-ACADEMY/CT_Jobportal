@@ -5,16 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Card, Typography, Tag, Button, Space, Divider } from 'antd';
 import { jobPath } from '../../utils/jobUrl';
+import { formatPay } from '../../data/jobFacets';
 
 const { Text, Title, Paragraph } = Typography;
 
-const formatSalary = (salary) => {
-  if (typeof salary === 'string') return salary;
-  if (!salary || salary.isRangeHidden) return 'Not Disclosed';
-  if (salary.min && salary.max) return `₹${(salary.min / 100000).toFixed(1)}–${(salary.max / 100000).toFixed(1)} LPA`;
-  if (salary.min) return `₹${(salary.min / 100000).toFixed(1)}+ LPA`;
-  return 'Competitive';
-};
+const formatSalary = (salary) => formatPay(salary);
 
 const formatExperience = (experience) => {
   if (typeof experience === 'string') return experience;

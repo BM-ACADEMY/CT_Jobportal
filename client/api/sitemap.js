@@ -1,6 +1,7 @@
 // GET /sitemap.xml  — static pages, city job pages, every blog post, and every active job and company, refreshed every few minutes.
 import * as lib from './_lib.js';
 import { IMPORTED_BLOGS } from '../src/data/importedBlogs.js';
+import { JOB_CATEGORIES } from '../src/data/jobCategories.js';
 
 // Every blog post comes from the same data the site renders, so new posts are listed automatically.
 const BLOG_PAGES = IMPORTED_BLOGS.map((blog) => `/blog/${blog.slug}`);
@@ -9,6 +10,7 @@ const STATIC_PAGES = [
   '/', '/jobs', '/companies', '/how-it-works', '/plans', '/contact', '/blog', '/for-colleges', '/free-assessment',
   '/privacy-policy', '/refund-policy', '/terms', '/job-post-templates',
   '/jobs/pondicherry', '/jobs/chennai', '/jobs/villupuram', '/jobs/cuddalore',
+  ...JOB_CATEGORIES.map((c) => `/jobs/category/${c.key}`),
   ...BLOG_PAGES,
 ];
 

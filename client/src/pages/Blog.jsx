@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowUpRight, Search, Clock, X } from 'lucide-react';
 import { BLOGS } from '../data/blogs';
+import SEOHead from '../components/seo/SEOHead';
+import { useAdminBlogCards } from '../data/useBlogPosts';
 import WaveLines from '@/components/common/WaveLines';
 import Footer from '@/components/home/Footer';
 
 const EASE = [0.22, 1, 0.36, 1];
 const ALL = 'All';
-const CATEGORIES = [ALL, ...new Set(BLOGS.map((b) => b.category).filter(Boolean))];
 
 const Meta = ({ blog, light = false }) => (
   <p className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold m-0 ${light ? 'text-white/80' : 'text-zinc-500'}`}>
@@ -77,14 +78,18 @@ const PostCard = ({ blog }) => (
 const Blog = () => {
   const [category, setCategory] = useState(ALL);
   const [query, setQuery] = useState('');
+  // Posts written in Admin come first; the older code-based posts follow. Both use the same cards.
+  const newPosts = useAdminBlogCards();
+  const allPosts = useMemo(() => [...newPosts, ...BLOGS.filter((b) => !newPosts.some((n) => n.slug === b.slug))], [newPosts]);
+  const CATEGORIES = useMemo(() => [ALL, ...new Set(allPosts.map((b) => b.category).filter(Boolean))], [allPosts]);
 
   const q = query.trim().toLowerCase();
   const filtered = useMemo(
-    () => BLOGS.filter((b) =>
+    () => allPosts.filter((b) =>
       (category === ALL || b.category === category) &&
       (!q || `${b.title} ${b.excerpt || ''} ${b.category}`.toLowerCase().includes(q))
     ),
-    [category, q]
+    [allPosts, category, q]
   );
 
   const browsing = category === ALL && !q;
@@ -93,6 +98,7 @@ const Blog = () => {
 
   return (
     <div className="bg-white min-h-screen overflow-x-clip">
+      <SEOHead title="Job search and hiring advice, Tamil Nadu | Velaivaaipu Blog" description="Clear advice on finding work, spotting fake job offers, growing your skills and hiring in Puducherry and Tamil Nadu." path="/blog" />
       {/* Intro */}
       <header className="relative overflow-hidden bg-[#f4faf7] border-b border-emerald-100 px-6 pt-20 md:pt-24 pb-14 md:pb-16">
         <WaveLines id="blog-hero-waves" />

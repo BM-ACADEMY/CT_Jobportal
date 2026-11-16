@@ -1,9 +1,12 @@
 const Assessment = require('../models/Assessment');
+const User = require('../models/User');
 const { GoogleGenerativeAI } = require('../utils/aiHelper');
 const { normalizeSet, publicQuestions, scoreAttempt, QUESTIONS_PER_SET } = require('../utils/campusTest');
 const CampusQuestionSet = require('../models/CampusQuestionSet');
 const { SKILL_CATEGORIES, getCategory, PASS_RATIO: BANK_PASS_RATIO } = require('../config/courseMap');
 const { pickSet } = require('../utils/questionBank');
+const { levelsFor } = require('../data/curatedQuestionBank');
+const { ALL_SKILLS, getFreeSkill, cleanLevel } = require('../config/freeSkills');
 const { signAttempt, verifyAttempt } = require('../utils/campusTest');
 const FreeTestAttempt = require('../models/FreeTestAttempt');
 const { cleanSkill, cleanDifficulty, signStart, verifyStart, signResult, verifyResult, PASS_RATIO } = require('../utils/freeAssessment');
@@ -171,6 +174,14 @@ const saveResult = async (req, res) => {
   try {
     const claims = verifyResult(req.body?.resultToken);
     if (!claims) return res.status(400).json({ msg: 'This result could not be verified. Please take the test again.' });
+    // A mobile number must be on the account before a result is kept. One typed now fills a missing number; it never replaces one.
+    const phoneRule = require('../utils/phoneRule');
+    const me = await User.findById(req.user.id).select('profile.phone');
+    if (!phoneRule.valid(me?.profile?.phone)) {
+      const typed = phoneRule.clean(req.body?.phone);
+      if (!typed) return res.status(400).json({ code: 'PHONE_REQUIRED', msg: 'Please add your mobile number to save your result.' });
+      await User.updateOne({ _id: req.user.id }, { $set: { 'profile.phone': typed } });
+    }
     const set = (await Assessment.findById(claims.set)) || (await CampusQuestionSet.findById(claims.set));
     const { skill, difficulty, score, total } = claims;
     const percentage = total ? Math.round((score / total) * 100) : 0;
@@ -200,11 +211,16 @@ const saveResult = async (req, res) => {
 };
 
 // Free skill test from the pre-checked question bank (no live AI call, answers scored on the server).
-// @route GET /api/assessments/skills  -> skills that have questions ready
+// @route GET /api/assessments/skills  -> skills that have questions ready, with industry and the levels on offer
 const getFreeSkills = async (req, res) => {
   try {
     const ready = await CampusQuestionSet.distinct('category', { active: true });
-    const skills = SKILL_CATEGORIES.filter((c) => ready.includes(c.key)).map(({ key, label }) => ({ key, label }));
+    const skills = [];
+    for (const { key, label, industry } of ALL_SKILLS) {
+      let levels = levelsFor(key);
+      if (!levels.length && ready.includes(key)) levels = ['medium']; // only AI-made sets exist
+      if (levels.length) skills.push({ key, label, industry, levels });
+    }
     res.json(skills);
   } catch (err) {
     console.error('Free skills list error:', err.message);
@@ -212,18 +228,20 @@ const getFreeSkills = async (req, res) => {
   }
 };
 
-// @route GET /api/assessments/bank?category=<key>
+// @route GET /api/assessments/bank?category=<key>&level=easy|medium|hard
 const getFreeBankTest = async (req, res) => {
   try {
-    const cat = getCategory(req.query.category);
+    const cat = getFreeSkill(req.query.category);
     if (!cat) return res.status(400).json({ msg: 'Please choose a skill from the list.' });
+    const level = cleanLevel(req.query.level);
     let set;
-    try { set = await pickSet(cat.key); } catch (err) {
+    try { set = await pickSet(cat.key, level); } catch (err) {
       console.error('Question bank unavailable:', err.message);
       return res.status(503).json({ msg: 'This test is being prepared. Please try another skill or come back later.' });
     }
     res.json({
       skill: cat.label,
+      level,
       questions: publicQuestions(set),
       attemptToken: signAttempt({ studentId: 'guest', category: cat.key, setId: set._id }),
     });
@@ -236,7 +254,7 @@ const getFreeBankTest = async (req, res) => {
 // @route POST /api/assessments/bank/submit   Body: { category, attemptToken, answers: { "<questionId>": "a" } }
 const submitFreeBankTest = async (req, res) => {
   try {
-    const cat = getCategory(req.body.category);
+    const cat = getFreeSkill(req.body.category);
     if (!cat) return res.status(400).json({ msg: 'Please choose a skill from the list.' });
     const check = verifyAttempt(req.body.attemptToken, { studentId: 'guest', category: cat.key });
     if (check.error === 'too_fast') return res.status(400).json({ msg: 'That was too fast. Please read each question and try again.' });
@@ -245,11 +263,12 @@ const submitFreeBankTest = async (req, res) => {
     if (!set) return res.status(400).json({ msg: 'This test has expired. Please start again.' });
     const { score, total } = scoreAttempt(set, req.body.answers);
     const percentage = Math.round((score / total) * 100);
-    recordAttempt({ skill: cat.label, source: 'bank', score, total, percentage, passed: score / total >= BANK_PASS_RATIO });
+    const level = set.level || 'medium';
+    recordAttempt({ skill: cat.label, source: 'bank', level, score, total, percentage, passed: score / total >= BANK_PASS_RATIO });
     res.json({
-      score, total, percentage, passed: score / total >= BANK_PASS_RATIO,
+      score, total, percentage, level, passed: score / total >= BANK_PASS_RATIO,
       // Same signed proof the older free test gives, so a logged-in job seeker's result can be saved.
-      resultToken: signResult({ setId: set._id, skill: cat.label, difficulty: 'medium', score, total }),
+      resultToken: signResult({ setId: set._id, skill: cat.label, difficulty: level, score, total }),
       review: set.questions.map((q) => ({ id: q.id, correct_option: q.correct_option, explanation: q.explanation })),
     });
   } catch (err) {

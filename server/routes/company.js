@@ -17,6 +17,9 @@ router.use(authorizeRoles('company'));
 // @route   GET /api/company/profile
 // Reusing the same logic as recruiter as they share the same structure
 router.get('/profile', getRecruiterProfile);
+router.patch('/logo-consent', require('../controllers/logoController').setLogoConsent);
+// Proof of business for companies on a free email (creates an Admin Needs-action item; an admin approves it).
+router.post('/verification-proof', upload.single('proofFile'), require('../controllers/companyProofController').submitProof);
 
 // @route   PUT /api/company/profile
 router.put('/profile', upload.fields([
