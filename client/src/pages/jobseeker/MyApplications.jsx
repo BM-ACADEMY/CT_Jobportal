@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Button, Tag, Input, Select, Card, Typography, Pagination, Modal, Space, Skeleton, Row, Col } from 'antd';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
+import BrandConsent from '@/components/profile/BrandConsent';
 import { jobPath } from '../../utils/jobUrl';
 
 const { Title, Text, Paragraph } = Typography;
@@ -92,6 +93,7 @@ const MyApplications = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-8 py-8 px-4">
       <PageSOPBanner pageKey="myApplications" />
+      {applications.length > 0 && <BrandConsent nudge />}
       
       {/* Revoke Confirmation Modal */}
       <Modal

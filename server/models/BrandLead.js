@@ -5,6 +5,8 @@ const brandLeadSchema = new mongoose.Schema({
   brand: { type: String, enum: ['academy', 'coretalents'], required: true },
   status: { type: String, enum: ['new', 'called', 'interested', 'not_interested'], default: 'new' },
   note: { type: String, default: '', maxlength: 300 },
+  followUpAt: { type: Date, default: null },
+  lastContactedAt: { type: Date, default: null },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 brandLeadSchema.index({ user: 1, brand: 1 }, { unique: true });
