@@ -114,6 +114,7 @@ const coreMenus = {
     { icon: BadgeCheck,      label: 'Skill tests',    path: '/admin/skill-tests', group: 'Growth' },
     { icon: ListChecks,      label: 'All Services',     path: '/admin/services', group: 'Setup' },
     { icon: UserCog,         label: 'Staff',          path: '/admin/staff', group: 'Setup' },
+    { icon: ShieldCheck,     label: 'Admins',         path: '/admin/admins', group: 'Setup' },
     { icon: Settings,        label: 'Settings',       path: '/admin/settings', group: 'Setup' },
   ],
   // A team member added via the "employee" invite flow (role becomes org_employee rather than

@@ -33,6 +33,9 @@ const { rateLimit: adminRateLimit } = require('../middlewares/rateLimit');
 router.post('/login', adminRateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many login attempts. Please wait a few minutes.' }), loginAdmin);
 router.post('/login-verify-otp', adminRateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many attempts. Please wait a few minutes.' }), verifyAdminLoginOTP);
 
+// An invited admin sets their own password with the one-time link from the invite mail (see controllers/adminInviteController.js).
+router.post('/set-password', adminRateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many attempts. Please wait a few minutes.' }), require('../controllers/adminInviteController').setPassword);
+
 // Protected routes (Admin only)
 router.use(verifyToken);
 
@@ -50,6 +53,11 @@ router.get('/college-funnel', require('../controllers/collegeFunnelController').
 router.get('/student-pack-info', require('../controllers/collegePackController').packInfo);
 router.post('/colleges/:id/student-pack', require('../controllers/collegePackController').recordPack);
 router.get('/activity', require('../controllers/activityController').getActivity);
+// Other full admins: list, invite by email, resend the invite, remove (Super Admin only).
+router.get('/admins', require('../controllers/adminInviteController').listAdmins);
+router.post('/admins', require('../controllers/adminInviteController').inviteAdmin);
+router.post('/admins/:id/resend-invite', require('../controllers/adminInviteController').resendInvite);
+router.delete('/admins/:id', require('../controllers/adminInviteController').removeAdmin);
 router.get('/otp-stats', require('../controllers/otpStatsController').getOtpStats);
 router.get('/email-report', require('../controllers/emailReportController').getEmailReport);
 router.get('/email-report/by-type', require('../controllers/emailReportController').getEmailCountsByType);
