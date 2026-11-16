@@ -27,6 +27,36 @@ const Funnel = ({ title, steps }) => (
   </div>
 );
 
+
+const OtpCard = () => {
+  const [o, setO] = useState(null);
+  useEffect(() => { axios.get(`${API}/admin/otp-stats`).then((r) => setO(r.data)).catch(() => setO(false)); }, []);
+  if (o === false) return null;
+  const row = (label, k, hint) => (
+    <tr key={k}><td className="py-1.5 pr-3 font-bold text-slate-800">{label}<span className="block font-normal text-slate-400">{hint}</span></td><td className="py-1.5 px-2">{o ? o.today[k] : '...'}</td><td className="py-1.5 px-2">{o ? o.week[k] : '...'}</td></tr>
+  );
+  const sp = o && o.mailSpeed;
+  return (
+    <div className="rounded-xl border border-slate-100 bg-white p-4" data-testid="otp-card">
+      <h3 className="font-bold text-slate-800">Verification codes</h3>
+      <p className="text-xs text-slate-500 mt-0.5 mb-3">Counted from {o && o.recordingSince ? new Date(o.recordingSince).toLocaleDateString('en-IN') : 'the first code after this was added'}. Kept 45 days. No email addresses or codes are stored.</p>
+      <div className="overflow-x-auto"><table className="w-full text-xs">
+        <thead><tr className="text-left text-slate-500"><th className="py-1 pr-3 font-bold">What happened</th><th className="py-1 px-2 font-bold">Today</th><th className="py-1 px-2 font-bold">7 days</th></tr></thead>
+        <tbody className="divide-y divide-slate-50">
+          {row('Code mails sent', 'sent', 'The mail server accepted it')}
+          {row('Mail failed to send', 'send_failed', 'The mail server refused or timed out')}
+          {row('Codes verified', 'verified', 'Typed correctly')}
+          {row('Wrong code typed', 'wrong', 'A failed attempt')}
+          {row('Code expired', 'expired', 'Typed after 10 minutes')}
+          {row('Locked after 5 wrong tries', 'locked', 'Needs a new code')}
+          {row('No code on file', 'no_code', 'Typed with no code pending')}
+        </tbody>
+      </table></div>
+      {sp && sp.samples > 0 && <p className="text-xs text-slate-500 mt-3">Mail server answered in a median of {(sp.medianMs / 1000).toFixed(1)}s (slowest 1 in 10: {(sp.slowestTenPercentMs / 1000).toFixed(1)}s). {sp.slowCount} of {sp.samples} took over {sp.slowMs / 1000}s in the last 7 days. This is time to hand the mail over, not time to reach the inbox.</p>}
+    </div>
+  );
+};
+
 // Super Admin: what happened on the site each day, from our own records.
 const Activity = () => {
   const [days, setDays] = useState(14);
@@ -54,6 +84,7 @@ const Activity = () => {
           <Tile label="Applications today" {...d.compare.applications} />
           <Tile label="Jobs posted today" {...d.compare.jobs} />
         </div>
+        <OtpCard />
         <p className="text-xs text-slate-400">For reference, the plan expects about 5 to 10 people a day in the first month and 100 or more a day after about two months.</p>
 
         <div className="rounded-xl border border-slate-100 bg-white p-4">
