@@ -22,6 +22,7 @@ const blockForContent = async (req, user, title, description) => {
 };
 const { withPromotion } = require('../utils/jobPromotion');
 const { cleanInternship, freeInternshipSlot } = require('../utils/internship');
+const { tidyJobText } = require('../utils/tidyJobText');
 const { cleanFacets, cleanSalary } = require('../utils/jobFacets');
 const { cleanWalkIn } = require('../utils/walkIn');
 const Company = require('../models/Company');
@@ -149,13 +150,13 @@ const createJob = async (req, res) => {
     }
 
     const newJob = new Job({
-      title,
+      title: tidyJobText(title),
       description,
       vacancies,
       experience,
       jobType,
       workMode,
-      location,
+      location: tidyJobText(location),
       salary: cleanSalary(salary),
       ...cleanFacets(req.body),
       timings,
@@ -401,6 +402,8 @@ const updateJob = async (req, res) => {
     }
     if (req.body.category !== undefined) req.body.category = cleanCategory(req.body.category); // an unknown value clears it
     if (req.body.salary !== undefined) req.body.salary = cleanSalary(req.body.salary);
+    if (req.body.title !== undefined) req.body.title = tidyJobText(req.body.title);
+    if (req.body.location !== undefined) req.body.location = tidyJobText(req.body.location);
     if (['education', 'freshersWelcome', 'contractMonths', 'partTime', 'jobType'].some((k) => req.body[k] !== undefined)) {
       // Fields not sent keep their saved value; the rest are cleaned for the job type that will be saved.
       const merged = { jobType: job.jobType, education: job.education, freshersWelcome: job.freshersWelcome, contractMonths: job.contractMonths, partTime: job.partTime, ...req.body };
