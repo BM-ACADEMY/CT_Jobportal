@@ -59,6 +59,8 @@ const ManageCompanies = page('admin/ManageCompanies');
 const ExternalJobs = page('admin/ExternalJobs');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
 const ManageStaff = page('admin/ManageStaff');
+const ManageAdmins = page('admin/ManageAdmins');
+const SetAdminPassword = page('admin/SetAdminPassword');
 const ManageRenewals = page('admin/ManageRenewals');
 const ManageRefunds = page('admin/ManageRefunds');
 const ManageBuyers = page('admin/ManageBuyers');
@@ -269,6 +271,7 @@ const AppRoutes = () => {
         />
         <Route path="/social-auth-success" element={<SocialAuthSuccess />} />
         <Route path="/complete-social-profile" element={<CompleteSocialProfile />} />
+        <Route path="/admin/set-password" element={<SetAdminPassword />} />
         <Route
           path="/admin/login"
           element={
@@ -635,6 +638,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminSettings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/admins"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageAdmins />
             </PrivateRoute>
           }
         />
