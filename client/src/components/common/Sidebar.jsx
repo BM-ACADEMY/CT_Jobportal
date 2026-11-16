@@ -366,7 +366,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       <div className={`h-20 px-6 border-b border-white/10 flex items-center shrink-0 bg-white/5 ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
         {!isCollapsed && (
           <Link to="/" className="flex items-center">
-            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" className="h-16 w-auto object-contain brightness-110 filter" />
+            <img src="/velaivaaipu-logo.webp" alt="Velaivaaipu" className="h-16 w-auto object-contain brightness-110 filter" />
           </Link>
         )}
         <button 
@@ -405,7 +405,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
             <div className="relative shrink-0">
               <Avatar className="w-8 h-8 rounded-full border border-white/10 shadow-sm bg-white/10">
                 <AvatarImage
-                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`) : '/usericon.png'}
+                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`) : '/usericon.webp'}
                     className="object-cover"
                 />
                 <AvatarFallback className="bg-white/10 text-white font-bold text-xs rounded-full">

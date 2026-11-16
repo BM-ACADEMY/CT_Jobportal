@@ -143,7 +143,7 @@ const LoginPage = () => {
       panel={
         <AuthPanel title="Your next job is one login away.">
           <PanelPoints points={POINTS} />
-          <PanelImage src="/images/gir-large.png" />
+          <PanelImage src="/images/gir-large.webp" />
         </AuthPanel>
       }
     >

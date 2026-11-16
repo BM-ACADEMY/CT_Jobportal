@@ -66,7 +66,7 @@ const CompleteSocialProfile = () => {
       panel={
         <AuthPanel eyebrow="Almost there" title="Two quick details and you're in.">
           <PanelPoints points={['Tell us who you are', 'Set a password for email sign-in']} />
-          <PanelImage src="/images/gir-large.png" />
+          <PanelImage src="/images/gir-large.webp" />
         </AuthPanel>
       }
     >

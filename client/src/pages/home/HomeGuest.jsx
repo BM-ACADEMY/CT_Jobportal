@@ -278,19 +278,16 @@ const HomeGuest = () => {
               <div className="relative w-full max-w-[420px] mx-auto">
                 {/* Glow halo behind the photo */}
                 <div className="absolute inset-6 rounded-[2rem] bg-gradient-to-tr from-[#00D492]/40 to-teal-200/40 blur-2xl" aria-hidden="true" />
-                <picture>
-                  <source srcSet="images/homepage.webp" type="image/webp" />
-                  <img
+                <img
                     loading="eager"
                     fetchPriority="high"
                     decoding="async"
-                    src="images/homepage.png"
+                    src="/images/homepage.webp"
                     alt="Professional ready for a new role"
                     width="900"
                     height="1055"
                     className="home-float relative z-10 w-full h-auto object-cover rounded-2xl"
                   />
-                </picture>
 
                 {/* Floating glass cards */}
                 {heroFloatCards.map((card, i) => (

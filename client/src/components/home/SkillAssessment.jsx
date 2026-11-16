@@ -93,7 +93,7 @@ const SkillAssessment = () => (
       <motion.div variants={stageIn} className="hidden lg:block relative mx-auto w-full max-w-[520px] h-[500px]">
         <motion.div variants={photoIn} className="absolute inset-x-0 -bottom-6 flex justify-center pointer-events-none">
           <img
-            src="images/gir-large.png"
+            src="images/gir-large.webp"
             alt="Candidate taking a free skill assessment"
             loading="lazy"
             decoding="async"

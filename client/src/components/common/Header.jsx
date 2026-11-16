@@ -225,7 +225,7 @@ const Header = ({ toggleMobileSidebar }) => {
               <Menu size={24} />
             </button>
             <Link to="/" className="flex items-center active:scale-95 transition-transform" aria-label="Velaivaaipu home">
-                <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-12 w-auto object-contain" />
+                <img src="/velaivaaipu-logo.webp" alt="Velaivaaipu" loading="eager" decoding="async" className="h-12 w-auto object-contain" />
             </Link>
         </div>
 

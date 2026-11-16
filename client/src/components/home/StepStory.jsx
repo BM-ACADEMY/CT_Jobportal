@@ -327,7 +327,7 @@ const Phone = ({ audience, step, t, children, className = '' }) => {
 
             {/* App header with the real logo */}
             <div className="absolute inset-x-0 top-11 z-20 flex items-center justify-between px-4 py-2 bg-white/95 border-b border-zinc-100">
-              <img src="/velaivaaipu-mark.png" alt="" className="h-5 w-auto" />
+              <img src="/velaivaaipu-mark.webp" alt="" className="h-5 w-auto" />
               <span className="flex items-center gap-2.5">
                 <span className="relative text-zinc-600"><Bell size={16} /><span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" /></span>
                 <span className={`w-7 h-7 rounded-full ${t.soft} ${t.text} flex items-center justify-center text-[10px] font-bold ring-1 ring-zinc-200`} aria-hidden="true">{a.user}</span>

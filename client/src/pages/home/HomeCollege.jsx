@@ -96,7 +96,7 @@ const HomeCollege = () => {
               <img
                 loading="eager"
                 decoding="async"
-                src="images/homepage.png"
+                src="/images/homepage.webp"
                 alt="Empower Campus Placements"
                 className="w-full h-auto object-cover"
               />

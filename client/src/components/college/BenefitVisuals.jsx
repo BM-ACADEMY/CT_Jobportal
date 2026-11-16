@@ -90,7 +90,7 @@ export const SignupVisual = () => {
 
       <IPhone className="z-10 transition-transform duration-500 group-hover:-translate-y-1">
         <div className="flex items-center justify-between px-3.5 py-2 border-b border-zinc-100">
-          <img src="/velaivaaipu-mark.png" alt="" className="h-4 w-auto" />
+          <img src="/velaivaaipu-mark.webp" alt="" className="h-4 w-auto" />
           <span className="text-[9px] font-semibold text-zinc-400">Step 1 of 2</span>
         </div>
         <div className="px-3.5 pt-3">
@@ -264,7 +264,7 @@ export const WhatsAppVisual = () => (
   <div className="mx-auto w-full max-w-[300px] overflow-hidden rounded-2xl shadow-lg shadow-zinc-900/10 ring-1 ring-zinc-200" aria-hidden="true">
     <div className="flex items-center gap-2 bg-[#008069] px-2.5 py-2 text-white">
       <ArrowLeft size={14} />
-      <span className="w-7 h-7 rounded-full bg-white flex items-center justify-center overflow-hidden ring-1 ring-white/60"><img src="/velaivaaipu-mark.png" alt="" className="w-5 h-auto" /></span>
+      <span className="w-7 h-7 rounded-full bg-white flex items-center justify-center overflow-hidden ring-1 ring-white/60"><img src="/velaivaaipu-mark.webp" alt="" className="w-5 h-auto" /></span>
       <div className="flex-1 min-w-0 leading-tight">
         <p className="text-[11px] font-semibold truncate">Velaivaaipu</p>
         <p className="text-[9px] text-white/75">Business account</p>

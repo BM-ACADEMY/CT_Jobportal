@@ -16,6 +16,7 @@ import HireCta from '@/components/home/HireCta';
 import Footer from '@/components/home/Footer';
 import BackToTop from '@/components/home/BackToTop';
 import RecentBlogs from '@/components/blog/RecentBlogs';
+import HeroPhone from '@/components/companies/HeroPhone';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 const DOMAIN = import.meta.env.VITE_API_DOMAIN;
@@ -521,19 +522,8 @@ const Companies = () => {
               transition={{ duration: 0.8, ease: EASE, delay: 0.2 }}
               className="lg:col-span-5 relative mt-10 lg:mt-0"
             >
-              {/* Same frame as the home hero: soft glow behind a cut-out on brand blobs with hand-drawn doodles */}
-              <div className="relative w-full max-w-[420px] mx-auto">
-                <div className="absolute inset-6 rounded-[2rem] bg-gradient-to-tr from-[#00D492]/40 to-teal-200/40 blur-2xl" aria-hidden="true" />
-                <img
-                  src="/images/companies-hero-employer.webp"
-                  alt="Recruiter smiling at candidates on her laptop"
-                  width="1160"
-                  height="1360"
-                  loading="eager"
-                  fetchPriority="high"
-                  className="home-float relative z-10 w-full h-auto"
-                />
-              </div>
+              {/* App on a phone, animated, showing real companies from the directory */}
+              <HeroPhone />
             </motion.div>
           </div>
         </HeroShell>

@@ -54,7 +54,7 @@ const HireCta = ({
               bottom and sized off that height, so only the head rises above the top edge;
               capped so a longer text never grows the hand into the copy */}
           <motion.img
-            src="/images/ads.png"
+            src="/images/ads.webp"
             alt="Happy candidate pointing to the call to action"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
