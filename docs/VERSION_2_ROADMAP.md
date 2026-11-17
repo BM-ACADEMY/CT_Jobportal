@@ -7,13 +7,13 @@ Last updated: Mon 16 Nov 2026. Kamar sets the order. Sneha takes the items in th
 1. **Reliable codes.** Backup sender (branch `mail-fallback`), code counter (branch `otp-stats`), Brevo credits watch.
    Status: built, waiting for merge and for the BACKUP_* server settings.
 2. **Admin autopilot check.** Test the needs-action inbox, auto-assign, notifications and feedback with real activity and fix the gaps.
-   Status: features exist; not yet tested with real traffic.
+   Status: features and unit tests exist. A tick-list for testing with real data is in `docs/AUTOPILOT_CHECK.md` (branch `v2-complete`); Sneha runs it.
 3. **Installable website** (Add to Home Screen). Branch `installable-site`.
-   Status: not in main; needs merge and test.
+   Status: the installable base (manifest, icons, service worker) is already in main. The branch `installable-site` only adds the camera QR scan for drive check-in and two shortcuts; it waits for merge.
 4. **Jobs page filters** by place, plus non-graduate, contract and part-time jobs.
-   Status: not started.
+   Status: done. Place chips and no-degree, part-time and contract filters are live on the Jobs page.
 5. **Government jobs section on autopilot.** The site watches official announcements, Kamar approves, admin posts.
-   Status: nothing built yet.
+   Status: built (branch `v2-complete`). Admin > Government jobs: add official recruitment pages; the site checks them every morning at 8:00 India time; new notices wait for Kamar; "Post as job" opens the web-jobs form prefilled. Needs the pages chosen by Kamar.
 
 ## Also open from the launch
 
