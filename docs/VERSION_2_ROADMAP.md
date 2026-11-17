@@ -24,13 +24,13 @@ Last updated: Mon 16 Nov 2026. Kamar sets the order. Sneha takes the items in th
 - Lawyer review of Terms and Privacy (Kamar).
 - Prices from Kamar: the three Sponsored add-ons, Campus Lite, fair stall. Invoice details for Admin > Settings.
 
-## Later
+## Later (status 17 Nov)
 
-- Companies and other sectors creating their own job fairs.
-- Permanent email fix through a transactional mail service with the domain verified (SPF, DKIM, DMARC).
-- Stricter checking of flagged internship postings.
-- Mobile app in Version 3 (installable website first, then a Play Store wrapper of the same site).
-- Sales staff role with a WhatsApp inbox permission (shelved).
+- Companies and other sectors creating their own job fairs. Built (branch `job-fairs-orgs`): companies and recruiters send a fair in, it waits for admin review, nothing is public until published.
+- Permanent email fix through a transactional mail service with the domain verified (SPF, DKIM, DMARC). Steps written in `docs/EMAIL_AND_APP_PLAN.md` (branch `later-items`); needs DNS access, so Sneha and Kamar do it.
+- Stricter checking of flagged internship postings. Built (branch `later-items`): a flagged internship stays off the public pages until an admin reviews it.
+- Mobile app in Version 3 (installable website first, then a Play Store wrapper of the same site). Steps in `docs/EMAIL_AND_APP_PLAN.md`.
+- Sales staff role with a WhatsApp inbox permission. Built (branch `later-items`): Admin > Staff now has a Sales role that can use the WhatsApp inbox only.
 
 ## WhatsApp job alerts (built, switched off)
 
