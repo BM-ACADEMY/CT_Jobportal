@@ -31,3 +31,10 @@ Last updated: Mon 16 Nov 2026. Kamar sets the order. Sneha takes the items in th
 - Stricter checking of flagged internship postings.
 - Mobile app in Version 3 (installable website first, then a Play Store wrapper of the same site).
 - Sales staff role with a WhatsApp inbox permission (shelved).
+
+## WhatsApp job alerts (built, switched off)
+
+Branch `v2-complete`. Opted-in job seekers get at most one message a week (Tuesday or Friday 11:00 India time) with up to 3 matching jobs. To switch on:
+1. Meta approves a template with 4 variables: `Hi {{1}}, {{2}} new jobs match you: {{3}}. See them: {{4}}`.
+2. Sneha sets `WA_TEMPLATE_JOB_ALERT` (the template name) and `WHATSAPP_JOB_ALERTS_ENABLED=true`. `WA_PHONE_NUMBER_ID`, `META_PAGE_ACCESS_TOKEN` and `FRONTEND_URL` must already be set.
+3. Test with one opted-in account before leaving it on.
