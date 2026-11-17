@@ -153,7 +153,7 @@ const HomeGuest = () => {
             >
               {/* Headline */}
               <motion.h1 variants={heroItem} className="text-4xl md:text-5xl lg:text-[4.2rem] font-bold text-zinc-900 tracking-tight leading-[1.1]">
-                Your{' '}
+                Find Your{' '}
                 <span className="relative inline-block">
                   <span className="home-gradient-text">Dream</span>
                   <svg className="absolute -bottom-2 left-0 w-full h-3" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true">
@@ -169,12 +169,12 @@ const HomeGuest = () => {
                     />
                   </svg>
                 </span>{' '}
-                Job Is<br />
-                Waiting For You
+                Job<br />
+                Across India
               </motion.h1>
 
               <motion.p variants={heroItem} className="text-zinc-600 text-base max-w-lg leading-relaxed">
-                Find jobs from employers in Puducherry, Tamil Nadu and beyond. Discover openings that match your skills, location, and career aspirations.
+                Free for job seekers. Start with employers in Puducherry and Tamil Nadu, and find openings, walk-in drives and internships across India.
               </motion.p>
 
               {/* Search card */}
@@ -203,7 +203,7 @@ const HomeGuest = () => {
                   <input
                     value={locationQuery}
                     onChange={e => setLocationQuery(e.target.value)}
-                    placeholder="City, e.g. Puducherry, or Remote"
+                    placeholder="City, e.g. Puducherry"
                     className="flex-1 min-w-0 bg-transparent outline-none text-zinc-800 font-medium placeholder:text-zinc-400 text-sm"
                   />
                 </label>
