@@ -44,6 +44,10 @@ router.get('/users', requireAdminOr('users_view'), getUsers);
 router.get('/users/:id', requireAdminOr('users_view'), getUserDetails);
 router.get('/users/:id/applications', requireAdminOr('users_view'), getUserApplications);
 router.get('/roles', requireAdminOr('users_view'), getRoles);
+// Staff with the whatsapp_inbox permission (Sales role) use the WhatsApp inbox; admins always can.
+router.get('/whatsapp', requireAdminOr('whatsapp_inbox'), require('../controllers/whatsappInboxController').getInbox);
+router.post('/whatsapp/reply', requireAdminOr('whatsapp_inbox'), require('../controllers/whatsappInboxController').replyToThread);
+router.put('/whatsapp/:phone/done', requireAdminOr('whatsapp_inbox'), require('../controllers/whatsappInboxController').markDone);
 
 router.use(authorizeRoles('admin'));
 
@@ -135,9 +139,6 @@ router.get('/blog-posts/:id', blogCtl.getAdmin);
 router.put('/blog-posts/:id', blogCtl.updatePost);
 router.delete('/blog-posts/:id', blogCtl.deletePost);
 router.post('/blog-images', blogImageUpload.single('image'), blogCtl.uploadImage);
-router.get('/whatsapp', require('../controllers/whatsappInboxController').getInbox);
-router.post('/whatsapp/reply', require('../controllers/whatsappInboxController').replyToThread);
-router.put('/whatsapp/:phone/done', require('../controllers/whatsappInboxController').markDone);
 router.get('/needs-action', require('../controllers/needsActionController').getNeedsAction);
 router.put('/needs-action/assign', require('../controllers/needsActionController').assignItem);
 router.put('/needs-action/rules', require('../controllers/needsActionController').setRule);

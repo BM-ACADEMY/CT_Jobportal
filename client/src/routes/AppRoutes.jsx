@@ -732,7 +732,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/whatsapp"
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="whatsapp_inbox">
               <AdminWhatsAppInbox />
             </PrivateRoute>
           }

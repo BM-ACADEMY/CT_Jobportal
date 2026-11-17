@@ -223,3 +223,18 @@ describe('staff management (Super Admin only)', () => {
     assert.equal((await call(staffController.removeStaff, { params: { id: 'u1' } })).statusCode, 404, 'a non-staff account cannot be "removed"');
   });
 });
+
+describe('sales role', () => {
+  it('has only the WhatsApp inbox permission, and the three inbox routes sit above the admin-only gate behind it', () => {
+    const cfg = require('../../config/staffPermissions');
+    assert.deepEqual(cfg.STAFF_ROLES.sales.permissions, ['whatsapp_inbox']);
+    assert.ok(cfg.STAFF_PERMISSION_KEYS.includes('whatsapp_inbox'));
+    const src = fs.readFileSync(path.join(SRV, 'routes', 'adminRoutes.js'), 'utf8');
+    const gate = src.indexOf("router.use(authorizeRoles('admin'))");
+    for (const r of ["router.get('/whatsapp'", "router.post('/whatsapp/reply'", "router.put('/whatsapp/:phone/done'"]) {
+      const i = src.indexOf(r);
+      assert.ok(i > -1 && i < gate, `${r} is above the gate`);
+      assert.match(src.slice(i, i + 120), /requireAdminOr\('whatsapp_inbox'\)/);
+    }
+  });
+});

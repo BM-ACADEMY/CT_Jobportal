@@ -23,7 +23,7 @@ test('job conditions hide admin-hidden, old and (when asked) unverified-company 
 test('with the switch off, only hidden companies are removed', () => {
   const c = V.publicJobConditions({ hiddenCompanyIds: ['h'] });
   assert.deepStrictEqual(c[2], { company: { $nin: ['h'] } });
-  assert.strictEqual(V.publicJobConditions({ hiddenCompanyIds: [] }).length, 2);
+  assert.strictEqual(V.publicJobConditions({ hiddenCompanyIds: [] }).length, 3); // incl. the flagged-internship rule
 });
 test('company conditions follow HIDE_UNVERIFIED_JOBS', () => {
   delete process.env.HIDE_UNVERIFIED_JOBS;
@@ -39,4 +39,13 @@ test('verify mail is honest and has one button', () => {
   assert.match(m.html, /Hi Asha/);
   assert.match(m.html, /not on the public page/);
   assert.strictEqual((m.html.match(/<a /g) || []).length, 1);
+});
+
+test('flagged internship is hidden until reviewed; a flagged normal job is not affected by this rule', () => {
+  const base = { createdAt: new Date(), company: { is_verified: true } };
+  assert.equal(V.jobIsPublic({ ...base, jobType: 'Internship', scamFlags: ['asks_for_money'] }), false);
+  assert.equal(V.jobIsPublic({ ...base, jobType: 'Internship', scamFlags: ['asks_for_money'], scamReviewed: true }), true);
+  assert.equal(V.jobIsPublic({ ...base, jobType: 'Internship', scamFlags: [] }), true);
+  assert.equal(V.jobIsPublic({ ...base, jobType: 'Full-time', scamFlags: ['asks_for_money'] }), true);
+  assert.ok(JSON.stringify(V.publicJobConditions()).includes('"scamFlags.0"'));
 });
