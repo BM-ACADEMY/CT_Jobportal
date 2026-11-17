@@ -58,6 +58,11 @@ router.get('/admins', require('../controllers/adminInviteController').listAdmins
 router.post('/admins', require('../controllers/adminInviteController').inviteAdmin);
 router.post('/admins/:id/resend-invite', require('../controllers/adminInviteController').resendInvite);
 router.delete('/admins/:id', require('../controllers/adminInviteController').removeAdmin);
+// Government jobs watcher: official pages checked daily, new notices wait here for approval.
+router.get('/govt-notices', require('../controllers/govtNoticeController').overview);
+router.post('/govt-notices/sources', require('../controllers/govtNoticeController').addSource);
+router.patch('/govt-notices/sources/:id', require('../controllers/govtNoticeController').setSource);
+router.patch('/govt-notices/:id', require('../controllers/govtNoticeController').setNotice);
 router.get('/otp-stats', require('../controllers/otpStatsController').getOtpStats);
 router.get('/email-report', require('../controllers/emailReportController').getEmailReport);
 router.get('/email-report/by-type', require('../controllers/emailReportController').getEmailCountsByType);

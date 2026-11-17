@@ -6,6 +6,7 @@ const runCourseFollowUps = require('./courseFollowUps');
 const runLifecycleMails = require('./lifecycleMails');
 const runRecruiterNudge = require('./recruiterNudge');
 const runDriveReminders = require('./driveReminders');
+const { runGovtWatch } = require('./govtWatch');
 const runWeeklyAdvisor = require('./advisorWeekly');
 const runSpikeAlerts = require('./spikeAlerts');
 const { runFreeCollegeSummaries } = require('./freeCollegeSummary');
@@ -44,6 +45,9 @@ const startCronJobs = () => {
   // Walk-in drive reminders: day before (18:00) and morning of (07:00) India time. Off unless DRIVE_REMINDERS_ENABLED=true.
   cron.schedule('0 18 * * *', () => runDriveReminders('day_before'), { timezone: 'Asia/Kolkata' });
   cron.schedule('0 7 * * *', () => runDriveReminders('morning'), { timezone: 'Asia/Kolkata' });
+
+  // Government jobs watcher: once a day at 08:00 India time (off with GOVT_WATCH_ENABLED=false; does nothing until a source page is added).
+  cron.schedule('0 8 * * *', () => runGovtWatch().catch((e) => console.error('Govt watch failed:', e.message)), { timezone: 'Asia/Kolkata' });
 
   // Spike alerts to the Super Admin (sign-ups, OTP requests, job reports per hour). On unless SPIKE_ALERTS_ENABLED=false.
   cron.schedule('*/10 * * * *', () => runSpikeAlerts());
