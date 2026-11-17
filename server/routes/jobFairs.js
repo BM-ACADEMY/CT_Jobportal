@@ -19,6 +19,10 @@ router.post('/admin/:id/checkin', verifyToken, authorizeRoles('admin'), ops.chec
 router.post('/admin/:id/send-mail', verifyToken, authorizeRoles('admin'), rateLimit({ windowMs: 3600000, max: 30 }), ops.sendMail);
 router.patch('/admin/:id', verifyToken, authorizeRoles('admin'), c.adminUpdate);
 
+// Organisers (company or recruiter). Fixed paths above ':slug'.
+router.post('/submit', verifyToken, authorizeRoles('company', 'recruiter'), rateLimit({ windowMs: 24 * 3600000, max: 5 }), c.submitFair);
+router.get('/mine', verifyToken, authorizeRoles('company', 'recruiter'), c.myFairs);
+
 // Public
 router.get('/', c.listFairs);
 router.get('/:slug', optionalVerifyToken, c.getFair);

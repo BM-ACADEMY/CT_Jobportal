@@ -110,6 +110,7 @@ const BulkApplicantManagement = page('company/features/BulkApplicantManagement')
 const MyJobs = page('company/MyJobs');
 const CandidateSearch = page('company/CandidateSearch');
 const DriveRequests = page('company/DriveRequests');
+const SendJobFair = page('company/SendJobFair');
 const RaiseTicket = page('tickets/RaiseTicket');
 const MyTickets = page('tickets/MyTickets');
 const AdminTickets = page('admin/AdminTickets');
@@ -416,6 +417,7 @@ const AppRoutes = () => {
         <Route path="/company/interview-scheduling" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="interview_scheduling"><FeatureGate featureKey="hasInterviewScheduling" subscriptionPath="/company/subscription"><InterviewScheduling /></FeatureGate></PrivateRoute>} />
         <Route path="/company/ai-matching" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="ai_candidate_matching"><FeatureGate featureKey="hasAICandidateMatching" subscriptionPath="/company/subscription"><AICandidateMatching /></FeatureGate></PrivateRoute>} />
         <Route path="/company/messages" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="messages"><Messages /></PrivateRoute>} />
+        <Route path="/company/job-fairs" element={<PrivateRoute roles={['company', 'recruiter']}><SendJobFair /></PrivateRoute>} />
         <Route path="/company/drive-requests" element={<PrivateRoute roles={['company']}><DriveRequests /></PrivateRoute>} />
         <Route path="/company/payment-history" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><PaymentHistory /></PrivateRoute>} />
         <Route path="/company/unlocks" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><PayPerFeatures /></PrivateRoute>} />

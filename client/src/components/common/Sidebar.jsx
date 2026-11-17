@@ -36,6 +36,7 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
     { icon: Users,           label: 'Search Candidates',   path: '/company/candidates' },
     { icon: CalendarDays,    label: 'Walk-in Drives',    path: '/company/drives' },
+    { icon: CalendarDays,    label: 'Send a Job Fair',   path: '/company/job-fairs' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
     { icon: CreditCard,      label: 'My Plan',      path: '/company/subscription' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
@@ -159,6 +160,7 @@ const premiumMenus = {
     { icon: Video,     label: 'Interviews', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
     { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
     { icon: ClipboardList, label: 'Campus Drives', path: '/company/drive-requests' },
+    { icon: CalendarDays, label: 'Send a Job Fair', path: '/company/job-fairs' },
   ],
   college: [
     { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
