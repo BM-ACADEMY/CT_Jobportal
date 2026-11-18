@@ -90,13 +90,16 @@ const AdminDashboard = () => {
         {[
           { label: 'New users today', value: stats.today?.newUsers },
           { label: 'New jobs today', value: stats.today?.newJobs },
-          { label: 'Applications today', value: stats.today?.applications },
-        ].map((t) => (
-          <div key={t.label} className="rounded-2xl border border-slate-200 bg-white px-5 py-4">
-            <p className="text-2xl font-black tabular-nums text-slate-900">{loading ? '...' : (t.value ?? 0)}</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t.label}</p>
-          </div>
-        ))}
+          { label: 'Applications today', value: stats.today?.applications, to: '/admin/applications' },
+        ].map((t) => {
+          const card = (
+            <div className={`rounded-2xl border border-slate-200 bg-white px-5 py-4 ${t.to ? 'hover:border-emerald-400' : ''}`}>
+              <p className="text-2xl font-black tabular-nums text-slate-900">{loading ? '...' : (t.value ?? 0)}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t.label}{t.to ? ' \u203a' : ''}</p>
+            </div>
+          );
+          return t.to ? <Link key={t.label} to={t.to}>{card}</Link> : <div key={t.label}>{card}</div>;
+        })}
       </div>
 
       {/* Main Section */}

@@ -58,6 +58,7 @@ const ManageJobs = page('admin/ManageJobs');
 const ManageCompanies = page('admin/ManageCompanies');
 const ExternalJobs = page('admin/ExternalJobs');
 const GovtNotices = page('admin/GovtNotices');
+const AdminApplications = page('admin/Applications');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
 const ManageStaff = page('admin/ManageStaff');
 const ManageAdmins = page('admin/ManageAdmins');
@@ -511,6 +512,7 @@ const AppRoutes = () => {
           }
         />
         <Route path="/admin/govt-jobs" element={<PrivateRoute roles={['admin']}><GovtNotices /></PrivateRoute>} />
+        <Route path="/admin/applications" element={<PrivateRoute roles={['admin']}><AdminApplications /></PrivateRoute>} />
         <Route path="/admin/duplicate-colleges" element={<PrivateRoute roles={['admin']}><AdminDuplicateColleges /></PrivateRoute>} />
         <Route path="/admin/balance-board" element={<PrivateRoute roles={['admin']}><AdminBalanceBoard /></PrivateRoute>} />
         <Route
