@@ -52,3 +52,19 @@ test('admin routes for the watcher exist and the cron is registered', () => {
   for (const p of ["'/govt-notices'", "'/govt-notices/sources'", "'/govt-notices/sources/:id'", "'/govt-notices/:id'"]) assert.ok(r.includes(p), p);
   assert.match(fs.readFileSync(require('node:path').join(__dirname, '../cron/index.js'), 'utf8'), /runGovtWatch/);
 });
+
+test('starting list: all pages pass the safety check, no duplicates, seeded only when empty', async () => {
+  const defaults = require('../config/govtSources');
+  const { checkUrl } = require('../utils/fairNotice');
+  assert.equal(defaults.length, 21);
+  assert.equal(new Set(defaults.map((d) => d.url)).size, defaults.length);
+  for (const d of defaults) assert.equal(checkUrl(d.url).error, undefined, d.url);
+  const created = [];
+  let count = 0;
+  const Model = { estimatedDocumentCount: async () => count, create: async (d) => { created.push(d.url); } };
+  const { seedDefaultSources } = require('../cron/govtWatch');
+  assert.equal(await seedDefaultSources(defaults, Model), 21);
+  count = 3;
+  assert.equal(await seedDefaultSources(defaults, Model), 0);
+  assert.equal(created.length, 21);
+});

@@ -47,6 +47,9 @@ const startCronJobs = () => {
   cron.schedule('0 18 * * *', () => runDriveReminders('day_before'), { timezone: 'Asia/Kolkata' });
   cron.schedule('0 7 * * *', () => runDriveReminders('morning'), { timezone: 'Asia/Kolkata' });
 
+  // First scan shortly after the server starts (skips pages scanned in the last 20 hours), so a new deploy does not wait for 8:00.
+  setTimeout(() => runGovtWatch({ staleHours: 20 }).catch((e) => console.error('Govt watch (start) failed:', e.message)), 2 * 60 * 1000);
+
   // WhatsApp job alerts (opted-in people only), Tuesday and Friday 11:00 India time. Off unless WHATSAPP_JOB_ALERTS_ENABLED=true and the Meta template is approved.
   cron.schedule('0 11 * * 2,5', () => runWhatsAppJobAlerts().catch((e) => console.error('WhatsApp alerts failed:', e.message)), { timezone: 'Asia/Kolkata' });
 
