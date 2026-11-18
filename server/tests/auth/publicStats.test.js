@@ -56,7 +56,7 @@ test('hero stats: expired jobs are not counted as open', async () => {
   const m = makeModels();
   const now = new Date('2026-11-05T00:00:00Z');
   await computeHeroStats({ ...m, now });
-  const clauses = m.calls.jobFilter.$or;
+  const clauses = m.calls.jobFilter.$and[0].$or;
   assert.ok(clauses.some((c) => c.validThrough && c.validThrough.$gte === now));
   assert.ok(clauses.some((c) => c.validThrough === null));
 });
@@ -89,4 +89,13 @@ test('cache: a failed load is not cached', async () => {
 
 test('cache window is about ten minutes', () => {
   assert.equal(TTL_MS, 10 * 60 * 1000);
+});
+
+test('hero stats: with Company given, only publicly visible jobs are counted', async () => {
+  const m = makeModels();
+  m.Company = { find: () => ({ select: () => ({ lean: async () => [{ _id: 'c1' }] }) }) };
+  await computeHeroStats(m);
+  const flat = JSON.stringify(m.calls.jobFilter.$and);
+  assert.ok(flat.includes('hiddenFromPublic'));
+  assert.ok(flat.includes('"company":{"$in":["c1"]}'));
 });

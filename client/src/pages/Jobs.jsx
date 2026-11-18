@@ -29,6 +29,9 @@ const SEARCH_FIELD_LABELS = {
   skillsRequired: 'Skills',
 };
 
+const LOCAL_PLACES = /puducherry|pondicherry|pondy|tamil nadu|chennai|coimbatore|madurai|trichy|tiruchirappalli|salem|cuddalore|villupuram|vellore|tirunelveli|erode|karaikal|kottakuppam|auroville/i;
+const isLocalJob = (job) => LOCAL_PLACES.test(job?.location || '');
+
 const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote', 'Freelance'];
 const SALARY_RANGES = MONTHLY_PAY_RANGES; // pay is compared per month, whatever unit the job quotes
 const EXPERIENCE_RANGES = [
@@ -225,7 +228,12 @@ const Jobs = () => {
     if (!searchTerm.trim()) {
       result = [...result].sort((a, b) => {
         if (sortBy === 'relevance') return 0; // keep the server's order (stable sort)
-        if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+        if (sortBy === 'newest') {
+          // Jobs posted on the same day: Pondicherry / Tamil Nadu first, so a local visitor sees local work at the top.
+          const sameDay = new Date(a.createdAt).toDateString() === new Date(b.createdAt).toDateString();
+          if (sameDay && isLocalJob(a) !== isLocalJob(b)) return isLocalJob(a) ? -1 : 1;
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        }
         if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
         if (sortBy === 'salary_desc') return monthlyPay(b) - monthlyPay(a);
         if (sortBy === 'salary_asc') return monthlyPay(a) - monthlyPay(b);

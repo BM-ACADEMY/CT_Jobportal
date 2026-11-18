@@ -22,7 +22,7 @@ const testEmailRegex = () => {
 const isTestEmail = (email) => typeof email === 'string' && testEmailRegex().test(email.trim());
 
 // Counts are computed with the models passed in, so the logic can be tested without a database.
-async function computeHeroStats({ User, Job, Role, now = new Date() }) {
+async function computeHeroStats({ User, Job, Role, Company = null, now = new Date() }) {
   const emailRe = testEmailRegex();
 
   const [testUserIds, jobseekerRole] = await Promise.all([
@@ -30,10 +30,23 @@ async function computeHeroStats({ User, Job, Role, now = new Date() }) {
     Role.findOne({ name: 'jobseeker' }).lean(),
   ]);
 
+  // Count only what the public Jobs page can show (fresh, not hidden, verified company),
+  // so the home number and the list always agree.
+  let visibility = [];
+  if (Company) {
+    const { publicJobConditions, publicCompanyConditions, hideUnverified } = require('./publicVisibility');
+    const strict = hideUnverified();
+    const ids = (await Company.find(strict ? publicCompanyConditions() : { hiddenFromPublic: true }).select('_id').lean()).map((x) => x._id);
+    visibility = publicJobConditions({ now: now.getTime(), ...(strict ? { verifiedCompanyIds: ids } : { hiddenCompanyIds: ids }) });
+  }
+
   const openJobFilter = {
     status: 'active',
     recruiter: { $nin: testUserIds },
-    $or: [{ validThrough: { $gte: now } }, { validThrough: null }, { validThrough: { $exists: false } }],
+    $and: [
+      { $or: [{ validThrough: { $gte: now } }, { validThrough: null }, { validThrough: { $exists: false } }] },
+      ...visibility,
+    ],
   };
 
   const [openJobs, companyIds, students] = await Promise.all([
