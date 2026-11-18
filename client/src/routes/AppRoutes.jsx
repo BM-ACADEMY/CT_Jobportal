@@ -57,6 +57,7 @@ const UserProfile = page('admin/UserProfile');
 const ManageJobs = page('admin/ManageJobs');
 const ManageCompanies = page('admin/ManageCompanies');
 const ExternalJobs = page('admin/ExternalJobs');
+const GovtNotices = page('admin/GovtNotices');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
 const ManageStaff = page('admin/ManageStaff');
 const ManageAdmins = page('admin/ManageAdmins');
@@ -509,6 +510,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route path="/admin/govt-jobs" element={<PrivateRoute roles={['admin']}><GovtNotices /></PrivateRoute>} />
         <Route path="/admin/duplicate-colleges" element={<PrivateRoute roles={['admin']}><AdminDuplicateColleges /></PrivateRoute>} />
         <Route path="/admin/balance-board" element={<PrivateRoute roles={['admin']}><AdminBalanceBoard /></PrivateRoute>} />
         <Route
@@ -734,7 +736,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/whatsapp"
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="whatsapp_inbox">
               <AdminWhatsAppInbox />
             </PrivateRoute>
           }

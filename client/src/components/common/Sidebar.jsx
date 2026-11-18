@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeftOpen,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, CalendarDays, ListChecks, Wallet, MessageSquareHeart
+  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, Landmark, CalendarDays, ListChecks, Wallet, MessageSquareHeart
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findPermissionKeyForPath } from '../../config/teamPermissions';
@@ -106,6 +106,7 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Web jobs',  path: '/admin/web-jobs', group: 'Growth' },
     { icon: CalendarDays,    label: 'Walk-in Drives',   path: '/admin/drives', group: 'Growth' },
     { icon: CalendarDays,    label: 'Job Fairs',        path: '/admin/job-fairs', group: 'Growth' },
+    { icon: Landmark,        label: 'Government jobs',  path: '/admin/govt-jobs', group: 'Growth' },
     { icon: Activity,        label: 'Daily activity',   path: '/admin/activity', group: 'Growth' },
     { icon: Users,           label: 'Signup sources',   path: '/admin/growth', group: 'Growth' },
     { icon: Users,           label: 'Brand Leads',      path: '/admin/brand-leads', group: 'Growth' },
