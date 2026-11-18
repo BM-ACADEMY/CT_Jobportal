@@ -30,7 +30,7 @@ describe('company profile: foundedYear and slug', () => {
 });
 
 describe('job posting limit: which jobs are counted', () => {
-  const base = { status: { $in: ['active', 'closed'] } };
+  const base = { status: { $in: ['active', 'closed'] }, 'internship.free': { $ne: true } };
   it('a solo recruiter counts their own jobs', () => {
     assert.deepEqual(activeJobCountQuery({ role: { name: 'recruiter' }, company: 'co1' }, 'u1'), { ...base, recruiter: 'u1' });
   });
