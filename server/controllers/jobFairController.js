@@ -4,7 +4,8 @@ const FairInterest = require('../models/FairInterest');
 const u = require('../utils/jobFairs');
 const { istDayStart } = require('../utils/driveRules');
 
-const STATUSES = ['draft', 'published', 'closed'];
+const STATUSES = ['draft', 'pending', 'published', 'closed'];
+const MAX_OPEN_SUBMISSIONS = 3;
 const fail = (res, err, msg = 'Server error') => { console.error('Job fair error:', err.message); res.status(500).json({ msg }); };
 
 // ---- public
@@ -87,4 +88,33 @@ const adminUpdate = async (req, res) => {
   } catch (err) { fail(res, err); }
 };
 
-module.exports = { listFairs, getFair, toggleGoing, fairCard, adminList, adminCreate, adminUpdate };
+// ---- organisers (a signed-in company or recruiter sends a fair in; an admin publishes it)
+// POST /api/job-fairs/submit
+const submitFair = async (req, res) => {
+  try {
+    const { error, data } = u.cleanFairInput({ ...req.body, kind: 'own' });
+    if (error) return res.status(400).json({ msg: error });
+    if (new Date(data.date).getTime() < istDayStart().getTime()) return res.status(400).json({ msg: 'The fair date has already passed.' });
+    const { jobScamFlags } = require('../utils/jobScamFlags');
+    if (jobScamFlags({ title: data.title, description: `${data.description} ${data.eligibility}` }).length) {
+      return res.status(400).json({ msg: 'A job fair must be free for job seekers. Remove any request for money, OTP or private chat and send it again.' });
+    }
+    const open = await JobFair.countDocuments({ submittedBy: req.user.id, status: 'pending' });
+    if (open >= MAX_OPEN_SUBMISSIONS) return res.status(429).json({ msg: `You already have ${MAX_OPEN_SUBMISSIONS} fairs waiting for review. We will review them first.` });
+    const fair = await JobFair.create({
+      ...data, kind: 'own', supportedByUs: false, status: 'pending',   // never public, never "Supported by us" until an admin decides
+      slug: u.makeFairSlug(data.title), submittedBy: req.user.id, createdBy: req.user.id,
+    });
+    res.status(201).json({ id: fair._id, status: fair.status, msg: 'Thank you. We will review your fair and publish it soon.' });
+  } catch (err) { fail(res, err); }
+};
+
+// GET /api/job-fairs/mine   The fairs this person sent in, with their review status.
+const myFairs = async (req, res) => {
+  try {
+    const fairs = await JobFair.find({ submittedBy: req.user.id }).sort({ createdAt: -1 }).limit(50).select('title slug date status').lean();
+    res.json(fairs);
+  } catch (err) { fail(res, err); }
+};
+
+module.exports = { submitFair, myFairs, listFairs, getFair, toggleGoing, fairCard, adminList, adminCreate, adminUpdate };

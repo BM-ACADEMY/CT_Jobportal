@@ -90,10 +90,11 @@ const JobFairsAdmin = () => {
       </div>
       {!list ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-emerald-600" /></div> : list.map((x) => (
         <div key={x._id} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-1">
-          <div className="flex justify-between gap-2"><b>{x.title}</b><span className="text-xs font-bold text-slate-500">{x.status}</span></div>
+          <div className="flex justify-between gap-2"><b>{x.title}</b><span className={`text-xs font-bold ${x.status === 'pending' ? 'text-amber-700' : 'text-slate-500'}`}>{x.status === 'pending' ? 'Sent by an organiser: review' : x.status}</span></div>
           <p className="text-xs text-slate-500">{new Date(x.date).toLocaleDateString('en-IN')} · {[x.venue?.city, x.venue?.district].filter(Boolean).join(', ')} · {x.going} going</p>
           <div className="flex flex-wrap gap-2 pt-1">
             {x.status !== 'published' && <button type="button" onClick={() => setStatus(x._id, 'published')} className="h-8 px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold">Publish</button>}
+            {x.status === 'pending' && <button type="button" onClick={() => setStatus(x._id, 'draft')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Not accepted</button>}
             {x.status === 'published' && <button type="button" onClick={() => setStatus(x._id, 'closed')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Close</button>}
             {x.status === 'published' && [['seeker', 'job seekers', 'Mail seekers'], ['company', 'companies', 'Mail companies'], ['college', 'colleges', 'Mail colleges']].map(([k, l, b]) => (
               <button key={k} type="button" onClick={() => sendMail(x, k, l)} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">{b}</button>

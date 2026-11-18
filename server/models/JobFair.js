@@ -22,8 +22,10 @@ const jobFairSchema = new mongoose.Schema({
   companies: { type: [String], default: [] }, // names, only if the official notice lists them
   officialUrl: { type: String, default: '', maxlength: 500 }, // official notice or registration page (https only)
   supportedByUs: { type: Boolean, default: true }, // shows the "Supported by Velaivaaipu" tag
-  status: { type: String, enum: ['draft', 'published', 'closed'], default: 'draft', index: true },
+  status: { type: String, enum: ['draft', 'pending', 'published', 'closed'], default: 'draft', index: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  // A fair sent in by an employer or other organiser. It stays 'pending' (not public) until an admin publishes it.
+  submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model('JobFair', jobFairSchema);
