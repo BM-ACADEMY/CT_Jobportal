@@ -144,10 +144,10 @@ const PublicHeader = () => {
   return (
     <>
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${headerBase}`}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+        <div className="relative max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
 
-          {/* Logo */}
-          <Link to="/" className="group shrink-0 flex flex-col items-start gap-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" aria-label="Velaivaaipu home">
+          {/* Logo: centred on phones (with its name under it), left on larger screens */}
+          <Link to="/" className="group shrink-0 flex flex-col items-start gap-1 max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2 max-md:items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" aria-label="Velaivaaipu home">
             <span data-brand-logo className="block h-14">
               <BrandLogo className="h-full" />
             </span>
