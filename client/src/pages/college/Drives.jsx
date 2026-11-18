@@ -36,8 +36,8 @@ const STAGE_BADGE_COLORS = {
 const antInputClass = "w-full h-9 px-3 text-xs bg-white border border-[#d9d9d9] rounded-none outline-none hover:border-[#39c884] focus:border-[#39c884] focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed mt-1";
 const antSelectClass = "w-full h-9 px-3 text-xs bg-white border border-[#d9d9d9] rounded-none outline-none hover:border-[#39c884] focus:border-[#39c884] focus:shadow-[0_0_0_2px_rgba(57,200,132,0.2)] transition-all cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
 
-const emptyCompanyRow = { name: '', packageLPA: '', tierPolicy: 'regular', contactName: '', contactEmail: '' };
-const emptyForm = { title: '', batchYear: new Date().getFullYear(), departments: '', description: '', companies: [{ ...emptyCompanyRow }], minCGPA: '', maxArrears: '', requiredSkills: '', requireResume: false, requireVerifiedProfile: false, rounds: '' };
+const emptyCompanyRow = { name: '', packageLPA: '', salaryUnit: 'lpa', tierPolicy: 'regular', contactName: '', contactEmail: '' };
+const emptyForm = { title: '', batchYear: new Date().getFullYear(), departments: '', description: '', companies: [{ ...emptyCompanyRow }], minCGPA: '', minPercentage: '', maxArrears: '', requiredSkills: '', requireResume: false, requireVerifiedProfile: false, rounds: '' };
 
 const Drives = () => {
   const auth = useAuth();
@@ -95,6 +95,7 @@ const Drives = () => {
           ? [{ name: drive.companyName, packageLPA: drive.packageLPA || '', tierPolicy: drive.tierPolicy || 'regular', contactName: '', contactEmail: '' }]
           : [{ ...emptyCompanyRow }],
       minCGPA: drive.eligibility?.minCGPA ?? '',
+      minPercentage: drive.eligibility?.minPercentage || '',
       maxArrears: drive.eligibility?.maxArrears ?? '',
       requiredSkills: (drive.eligibility?.requiredSkills || []).join(', '),
       requireResume: Boolean(drive.eligibility?.requireResume),
@@ -127,13 +128,14 @@ const Drives = () => {
           .map(c => ({
             _id: c._id,
             name: c.name.trim(),
-            packageLPA: c.packageLPA ? parseFloat(c.packageLPA) : 0,
+            packageLPA: c.packageLPA ? (c.salaryUnit === 'monthly' ? Math.round((parseFloat(c.packageLPA) * 12 / 100000) * 100) / 100 : parseFloat(c.packageLPA)) : 0,
             tierPolicy: c.tierPolicy,
             contactName: c.contactName || '',
             contactEmail: c.contactEmail || ''
           })),
         eligibility: {
           minCGPA: form.minCGPA ? parseFloat(form.minCGPA) : 0,
+          minPercentage: form.minPercentage ? parseFloat(form.minPercentage) : 0,
           maxArrears: form.maxArrears !== '' ? parseInt(form.maxArrears) : 10,
           allowedDepartments: form.departments.split(',').map(d => d.trim()).filter(Boolean),
           batchYears: [parseInt(form.batchYear)],
@@ -497,11 +499,17 @@ const Drives = () => {
                   <div key={idx} className="space-y-1.5 bg-slate-50 border border-[#e8e8e8] rounded-none p-2.5">
                     <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
                       <input value={c.name} onChange={e => updateCompanyRow(idx, 'name', e.target.value)} placeholder="e.g. TCS" className={antInputClass.replace('mt-1', '')} />
-                      <input type="number" step="0.1" value={c.packageLPA} onChange={e => updateCompanyRow(idx, 'packageLPA', e.target.value)} placeholder="Package (LPA)" className={antInputClass.replace('mt-1', '')} />
+                      <div className="flex gap-1">
+                        <input type="number" step="any" value={c.packageLPA} onChange={e => updateCompanyRow(idx, 'packageLPA', e.target.value)} placeholder={c.salaryUnit === 'monthly' ? 'Salary per month (Rs)' : 'Package (LPA)'} className={antInputClass.replace('mt-1', '')} />
+                        <select value={c.salaryUnit || 'lpa'} onChange={e => updateCompanyRow(idx, 'salaryUnit', e.target.value)} className={antSelectClass} title="Pay unit">
+                          <option value="lpa">LPA</option>
+                          <option value="monthly">/ month</option>
+                        </select>
+                      </div>
                       <select value={c.tierPolicy} onChange={e => updateCompanyRow(idx, 'tierPolicy', e.target.value)} className={antSelectClass}>
-                        <option value="regular">Regular</option>
-                        <option value="dream">Dream</option>
-                        <option value="super_dream">Super Dream</option>
+                        <option value="regular">Regular offer</option>
+                        <option value="dream">Dream offer</option>
+                        <option value="super_dream">Super Dream offer</option>
                       </select>
                       <button
                         type="button"
@@ -529,11 +537,25 @@ const Drives = () => {
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Departments (comma-separated)</label>
-              <input value={form.departments} onChange={e => setForm(p => ({ ...p, departments: e.target.value }))} placeholder="CS, IT, ECE, Mech" className={antInputClass} />
+              <input value={form.departments} onChange={e => setForm(p => ({ ...p, departments: e.target.value }))} placeholder="e.g. BCA, B.Com, MBA, ECE (blank = all)" className={antInputClass} />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Min CGPA</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Min CGPA (out of 10)</label>
               <input type="number" step="0.1" value={form.minCGPA} onChange={e => setForm(p => ({ ...p, minCGPA: e.target.value }))} placeholder="e.g. 6.5" className={antInputClass} />
+              <div className="mt-1.5 flex items-center gap-2 text-[11px] text-slate-500">
+                <span>Company says a percentage?</span>
+                <input
+                  type="number" min="0" max="100" placeholder="e.g. 60" aria-label="Minimum percentage"
+                  onChange={e => { const v = parseFloat(e.target.value); if (v > 0 && v <= 100) setForm(p => ({ ...p, minCGPA: (Math.round((v / 9.5) * 10) / 10).toString() })); }}
+                  className="w-16 h-7 px-2 text-xs border border-[#d9d9d9] rounded-none outline-none"
+                />
+                <span>% fills the CGPA above (percentage ÷ 9.5, the usual rule; check your university)</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Min Percentage (or CGPA)</label>
+              <input type="number" step="1" min="0" max="100" value={form.minPercentage} onChange={e => setForm(p => ({ ...p, minPercentage: e.target.value }))} placeholder="e.g. 60" className={antInputClass} />
+              <p className="text-[10px] text-slate-400 mt-1">Fill either one. If you fill both, a student who meets either passes.</p>
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Max Arrears</label>

@@ -49,6 +49,12 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Set when an admin marked the email verified because the code never arrived (who, when, why).
+  emailVerifiedByAdmin: {
+    by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: undefined },
+    at: { type: Date, default: undefined },
+    note: { type: String, default: undefined },
+  },
   // Wrong OTP guesses since the OTP was issued; the OTP is invalidated after too many.
   otpAttempts: {
     type: Number,
@@ -342,6 +348,12 @@ const userSchema = new mongoose.Schema({
     at: { type: Date, default: null },
     withdrawnAt: { type: Date, default: null },
     source: { type: String, default: '' }
+  },
+  // Ad or post link tags kept at sign-up (utm source, medium, campaign), so we can see which channel brings people.
+  signupSource: {
+    source: { type: String, default: '' },
+    medium: { type: String, default: '' },
+    campaign: { type: String, default: '' }
   },
   // Who invited this person (set at sign-up from an invite link).
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },

@@ -32,9 +32,22 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import { VerifiedByCallCard, ProofQueue } from "@/components/admin/CompanyTrustCards";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+
+// A hint for verifying: official company address, or a free personal inbox. Never blocks anyone.
+const PERSONAL_MAIL = ['gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.in', 'yahoo.co.in', 'ymail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'rediffmail.com', 'icloud.com', 'me.com', 'proton.me', 'protonmail.com', 'aol.com', 'zoho.com', 'mail.com', 'gmx.com'];
+const mailHint = (email, website) => {
+  const domain = String(email || '').trim().toLowerCase().split('@')[1] || '';
+  if (!domain.includes('.')) return null;
+  if (PERSONAL_MAIL.includes(domain)) return { text: 'Personal inbox: check the company another way', tone: 'text-amber-600' };
+  let host = '';
+  try { host = new URL(/^https?:\/\//i.test(website || '') ? website : `https://${website}`).hostname.replace(/^www\./, '').toLowerCase(); } catch { host = ''; }
+  const match = host && (host === domain || host.endsWith(`.${domain}`) || domain.endsWith(`.${host}`));
+  return match ? { text: 'Official email matches the website', tone: 'text-emerald-600' } : { text: 'Company-domain email', tone: 'text-slate-500' };
+};
 
 const ManageCompanies = () => {
   const [companies, setCompanies] = useState([]);
@@ -199,6 +212,8 @@ const ManageCompanies = () => {
         <div className="h-px bg-slate-200 w-full" />
       </div>
 
+      <ProofQueue onDone={fetchCompanies} />
+
       {/* Metrics Row - Elegant Style */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {[
@@ -261,6 +276,7 @@ const ManageCompanies = () => {
                             <Mail size={14} className="text-slate-400" />
                             {company.admin_email || 'No Administrator'}
                         </div>
+                        {mailHint(company.admin_email, company.website) && <div className={`text-[10px] font-bold mt-1 ${mailHint(company.admin_email, company.website).tone}`}>{mailHint(company.admin_email, company.website).text}</div>}
                         {company.website && (
                           <div className="text-[9px] text-slate-400 flex items-center gap-1.5 mt-1 font-bold uppercase tracking-tight">
                             <Globe size={10} className="text-emerald-600" /> Node Established
@@ -371,6 +387,14 @@ const ManageCompanies = () => {
                     )}
                   </div>
                 </Card>
+
+                <VerifiedByCallCard
+                  company={selectedCompany}
+                  onChange={(updated) => {
+                    setSelectedCompany((prev) => ({ ...prev, ...updated }));
+                    setCompanies((prev) => prev.map((c) => (c._id === updated._id ? { ...c, ...updated } : c)));
+                  }}
+                />
 
                 <Card className="p-8 rounded-[20px] border-slate-100 shadow-sm bg-white space-y-3">
                   <h3 className="text-base font-bold text-slate-900">Logo on the home page</h3>

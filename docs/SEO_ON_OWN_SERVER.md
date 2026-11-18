@@ -48,5 +48,24 @@ Test the config (`nginx -t`) and reload (`systemctl reload nginx`). Keep the old
 4. Google Rich Results Test on one job link finds a JobPosting. Paste a job link in WhatsApp: the preview shows the job's title.
 5. Search Console: submit `https://velaivaaipu.in/sitemap.xml`.
 
+## Main public pages (added in branch seo-page-tags)
+Without this, `/jobs/chennai`, `/for-colleges` and the other public pages send the homepage title and canonical in the raw HTML until JavaScript runs.
+Add this block next to the two above (the regex lists exactly the pages the server knows; anything else keeps the plain app):
+
+```nginx
+location ~ ^/(jobs|internships|drives|companies|how-it-works|plans|contact|blog|for-colleges|for-companies|for-recruiters|free-assessment|job-post-templates|terms|privacy-policy|refund-policy|jobs/(pondicherry|chennai|villupuram|cuddalore))/?$ {
+    proxy_pass http://127.0.0.1:5000/seo/page/$1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+location = / {
+    proxy_pass http://127.0.0.1:5000/seo/page;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+Check: `curl -sI https://velaivaaipu.in/for-colleges | grep -i x-velaivaaipu-seo` says `page`; `curl -s https://velaivaaipu.in/for-colleges | grep -i canonical` shows `/for-colleges`, not the homepage.
+City pages with fewer than 10 public jobs answer `page-thin` (noindex) and are left out of the sitemap. Change the number with `CITY_PAGE_MIN_JOBS` (0 turns the rule off). Roll back by removing the two blocks.
+
 ## Roll back
 Remove the two nginx blocks and reload. The site goes back to serving the plain app for every address. Nothing else depends on this.

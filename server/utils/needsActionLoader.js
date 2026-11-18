@@ -6,6 +6,7 @@ const AdminRequest = require('../models/AdminRequest');
 const Job = require('../models/Job');
 const Feedback = require('../models/Feedback');
 const WalkInDrive = require('../models/WalkInDrive');
+const WhatsAppMessage = require('../models/WhatsAppMessage');
 const AdvisorIdea = require('../models/AdvisorIdea');
 const AdminAssignment = require('../models/AdminAssignment');
 const { buildNeedsAction } = require('./needsAction');
@@ -24,6 +25,13 @@ const loadNeedsAction = async (now = new Date()) => {
     feedback: await load(Feedback.find({ status: 'new' }).select('rating text role createdAt')),
     drives: await load(WalkInDrive.find({ status: 'pending_approval' }).select('title organiserName plan createdAt')),
     ideas: (await load(AdvisorIdea.find({ status: 'accepted' }).select('title numbers createdAt decidedAt'))).map((i) => ({ ...i, createdAt: i.decidedAt || i.createdAt })),
+    // One row per person with unanswered messages (the oldest waiting message sets the age).
+    whatsapp: await WhatsAppMessage.aggregate([
+      { $match: { direction: 'in', status: 'new' } },
+      { $sort: { receivedAt: 1 } },
+      { $group: { _id: '$phone', body: { $last: '$body' }, name: { $first: '$name' }, phone: { $first: '$phone' }, createdAt: { $first: '$receivedAt' } } },
+      { $limit: PER_SOURCE }
+    ]).catch(() => []),
     jobs: await load(Job.find({ 'scamFlags.0': { $exists: true }, scamReviewed: { $ne: true }, status: { $ne: 'closed' } }).select('title scamFlags createdAt'))
   };
   const assignments = await AdminAssignment.find({}).lean();

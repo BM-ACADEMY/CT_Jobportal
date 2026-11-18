@@ -52,17 +52,17 @@ const AdminDashboard = () => {
         <div className="relative z-10 space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-indigo-500/20 border border-indigo-500/30 backdrop-blur-md mb-2">
              <Activity size={12} className="text-indigo-400" />
-             <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Platform Telemetry</span>
+             <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Today at a glance</span>
           </div>
-          <h1 className="text-4xl font-black text-white tracking-tight">System Overview</h1>
-          <p className="text-base text-slate-400 font-medium max-w-xl">Real-time intelligence and administrative audit telemetry for infrastructure health monitoring.</p>
+          <h1 className="text-4xl font-black text-white tracking-tight">Dashboard</h1>
+          <p className="text-base text-slate-400 font-medium max-w-xl">Users, jobs, money received and what is waiting for you. All numbers are real.</p>
         </div>
       </div>
       
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Revenue', value: loading ? '...' : `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
+          { label: 'Total Revenue', value: loading ? '...' : `₹${Math.round(stats.totalRevenue || 0).toLocaleString('en-IN')}`, sub: loading ? '' : `₹${Math.round(stats.onlineRevenue || 0).toLocaleString('en-IN')} online · ₹${Math.round(stats.manualRevenue?.total || 0).toLocaleString('en-IN')} paid by hand (${stats.manualRevenue?.count || 0}), with GST`, icon: DollarSign, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'hover:border-indigo-200' },
           { label: 'Total Users', value: loading ? '...' : stats.users, icon: Users, sub: loading ? '' : Object.entries(stats.usersByRole || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${k.replace(/_/g, ' ')}`).join(' · '), color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'hover:border-emerald-200' },
           { label: 'Jobs', value: loading ? '...' : stats.jobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'hover:border-blue-200' },
           { label: 'Organizations', value: loading ? '...' : stats.companies, color: 'text-violet-600', bg: 'bg-violet-50', icon: Building2, border: 'hover:border-violet-200' }
@@ -85,6 +85,20 @@ const AdminDashboard = () => {
         ))}
       </div>
 
+      {/* Today (India time) */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'New users today', value: stats.today?.newUsers },
+          { label: 'New jobs today', value: stats.today?.newJobs },
+          { label: 'Applications today', value: stats.today?.applications },
+        ].map((t) => (
+          <div key={t.label} className="rounded-2xl border border-slate-200 bg-white px-5 py-4">
+            <p className="text-2xl font-black tabular-nums text-slate-900">{loading ? '...' : (t.value ?? 0)}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t.label}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Main Section */}
       <div className="flex flex-col xl:flex-row gap-8">
         {/* Revenue Line Chart */}
@@ -93,10 +107,10 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between mb-8">
                <div className="flex items-center gap-3">
                   <TrendingUp size={18} className="text-emerald-600" />
-                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">Revenue Growth</h2>
+                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">Money received</h2>
                </div>
                <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-bold uppercase tracking-tight">
-                  Monthly Trajectory
+                  By month
                </div>
             </div>
 
@@ -104,6 +118,11 @@ const AdminDashboard = () => {
               {loading ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Graph...</p>
+                </div>
+              ) : !(stats.revenueData || []).some((m) => m.revenue > 0) ? (
+                <div className="w-full h-full min-h-[350px] flex flex-col items-center justify-center text-center">
+                  <p className="text-sm font-bold text-slate-500">No payments yet</p>
+                  <p className="text-xs text-slate-400 mt-1">Money received online or marked paid by hand will show here, month by month.</p>
                 </div>
               ) : stats.revenueData?.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">

@@ -14,7 +14,7 @@ const PAGES = {
     cta: { label: 'Post your first job', to: '/register?role=company' },
     second: { label: 'See plans', to: '/plans' },
     steps: [['Post a job', 'Use a ready template or write your own. Posting is free to start.'], ['Get matched candidates', 'See who fits your job, with the reasons, and shortlist in one place.'], ['Hire', 'Call, interview and hire. Run a walk-in drive when you need many people fast.']],
-    points: ['Verified badge: our team calls and checks every company, so candidates trust your jobs.', 'Walk-in drives: collect registrations, check people in with a pass, and see a report.', 'Internships: verified companies can post up to 3 live internships free.', 'Plans shown openly, with no hidden charges.'],
+    points: ['Verified badge: our team checks each company before the badge is given, so candidates can trust your jobs.', 'Walk-in drives: collect registrations, check people in with a pass, and see a report.', 'Internships: verified companies can post up to 3 live internships free.', 'Plans shown openly, with no hidden charges.'],
   },
   recruiters: {
     path: '/for-recruiters',

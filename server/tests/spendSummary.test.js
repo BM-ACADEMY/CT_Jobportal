@@ -57,3 +57,14 @@ test('no entries means no burn and no run-out date', () => {
   assert.equal(s.budget.runsOutOn, null);
   assert.equal(s.budget.spent, 0);
 });
+
+test('GST is shown on its own and is not part of money in or net', () => {
+  const now = new Date('2026-11-10T12:00:00Z');
+  const out = buildSpendSummary({
+    entries: [{ date: '2026-11-10', amount: 100, line: 'ads', voided: false }],
+    payments: [{ status: 'completed', amount: 1180, baseAmount: 1000, createdAt: now }, { status: 'completed', amount: 590, createdAt: now, manual: true }],
+    now, days: 1,
+  });
+  assert.equal(out.totals.moneyIn, 1500); assert.equal(out.totals.gst, 270); assert.equal(out.totals.received, 1770);
+  assert.equal(out.totals.net, Math.round((1500 - 1180 * 0.0236 - 100) * 100) / 100);
+});

@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const jobReportSchema = new mongoose.Schema({
   job: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: true, index: true },
   reporter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  reason: { type: String, enum: ['asks_for_money', 'fake_company', 'wrong_details', 'other'], required: true },
+  reason: { type: String, enum: ['asks_for_money', 'fake_company', 'wrong_details', 'inappropriate', 'other'], required: true },
   note: { type: String, default: '', maxlength: 300 },
 }, { timestamps: { createdAt: true, updatedAt: false } });
 

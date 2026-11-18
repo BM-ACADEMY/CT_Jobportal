@@ -1,3 +1,4 @@
+import VerificationBanner from '@/components/company/VerificationBanner';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -5,6 +6,7 @@ import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { Link } from 'react-router-dom';
 import { JOB_CATEGORIES } from '@/data/jobCategories';
+import { EDUCATION_LEVELS, PAY_UNITS, PART_TIME_SCHEDULES } from '@/data/jobFacets';
 import { 
   Form, Input, Button, Card, Select, InputNumber, 
   Switch, Space, Typography, Tag, Tooltip, Row, Col, Alert, Spin, Checkbox
@@ -28,6 +30,7 @@ const PostJob = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [form] = Form.useForm();
     const watchedJobType = Form.useWatch('jobType', form);
+    const watchedPayUnit = Form.useWatch('payUnit', form) || 'year';
     
     const [loading, setLoading] = useState(false);
     const [draftLoading, setDraftLoading] = useState(false);
@@ -71,12 +74,20 @@ const PostJob = () => {
                             category: jobToEdit.category || undefined,
                             jobType: jobToEdit.jobType || 'Full-time',
                             internship: jobToEdit.internship ? { ...jobToEdit.internship } : undefined,
+                            walkInEnabled: jobToEdit.walkIn?.enabled === true,
+                            walkInDate: jobToEdit.walkIn?.date ? String(jobToEdit.walkIn.date).slice(0, 10) : undefined,
+                            walkInVenue: jobToEdit.walkIn?.venue || undefined,
                             workMode: jobToEdit.workMode || 'On-site',
                             location: jobToEdit.location,
                             minExperience: jobToEdit.experience?.min || 0,
                             maxExperience: jobToEdit.experience?.max || 0,
-                            minSalary: jobToEdit.salary?.min ? jobToEdit.salary.min / 100000 : null,
-                            maxSalary: jobToEdit.salary?.max ? jobToEdit.salary.max / 100000 : null,
+                            payUnit: jobToEdit.salary?.unit || 'year',
+                            minSalary: jobToEdit.salary?.min ? (jobToEdit.salary?.unit && jobToEdit.salary.unit !== 'year' ? jobToEdit.salary.min : jobToEdit.salary.min / 100000) : null,
+                            maxSalary: jobToEdit.salary?.max ? (jobToEdit.salary?.unit && jobToEdit.salary.unit !== 'year' ? jobToEdit.salary.max : jobToEdit.salary.max / 100000) : null,
+                            education: jobToEdit.education || undefined,
+                            freshersWelcome: !!jobToEdit.freshersWelcome,
+                            contractMonths: jobToEdit.contractMonths || undefined,
+                            partTime: jobToEdit.partTime ? { ...jobToEdit.partTime, schedule: jobToEdit.partTime.schedule || undefined, hoursPerDay: jobToEdit.partTime.hoursPerDay || undefined } : undefined,
                             isRangeHidden: jobToEdit.salary?.isRangeHidden,
                             additionalDetails: jobToEdit.additionalDetails || [],
                             applicationQuestions: jobToEdit.applicationQuestions || []
@@ -88,6 +99,7 @@ const PostJob = () => {
                         postedAs: user?.company ? 'company' : 'recruiter',
                         jobType: 'Full-time',
                         workMode: 'On-site',
+                        payUnit: 'year',
                         vacancies: 1,
                         isRangeHidden: false,
                         applicationQuestions: [
@@ -141,9 +153,16 @@ const PostJob = () => {
                 } } : {}),
                 workMode: values.workMode,
                 location: values.location,
+                education: values.education || '',
+                walkIn: values.walkInEnabled ? { enabled: true, date: values.walkInDate, venue: values.walkInVenue } : { enabled: false },
+                freshersWelcome: !!values.freshersWelcome,
+                ...(values.jobType === 'Contract' ? { contractMonths: values.contractMonths || null } : {}),
+                ...(values.jobType === 'Part-time' ? { partTime: { hoursPerDay: values.partTime?.hoursPerDay || null, schedule: values.partTime?.schedule || '' } } : {}),
                 salary: {
-                    min: values.minSalary ? Number(values.minSalary) * 100000 : 0,
-                    max: values.maxSalary ? Number(values.maxSalary) * 100000 : 0,
+                    // LPA is typed for yearly pay; monthly, daily and hourly pay are typed in rupees.
+                    min: values.minSalary ? Number(values.minSalary) * (values.payUnit && values.payUnit !== 'year' ? 1 : 100000) : 0,
+                    max: values.maxSalary ? Number(values.maxSalary) * (values.payUnit && values.payUnit !== 'year' ? 1 : 100000) : 0,
+                    unit: values.payUnit || 'year',
                     currency: 'INR',
                     isRangeHidden: isRangeHidden
                 },
@@ -183,6 +202,7 @@ const PostJob = () => {
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
             <PageSOPBanner pageKey="postJob" />
+            <VerificationBanner />
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
                 <div className="flex items-center gap-4">
@@ -398,10 +418,56 @@ const PostJob = () => {
                                 </Select>
                             </Form.Item>
 
+                            {watchedJobType === 'Contract' && (
+                                <Form.Item label="Contract length (months)" name="contractMonths" extra="Job seekers see this on the job card.">
+                                    <InputNumber min={1} max={36} className="w-full" size="large" placeholder="e.g. 6" />
+                                </Form.Item>
+                            )}
+                            {watchedJobType === 'Part-time' && (
+                                <Row gutter={16}>
+                                    <Col xs={12}>
+                                        <Form.Item label="Hours per day" name={['partTime', 'hoursPerDay']}>
+                                            <InputNumber min={1} max={8} className="w-full" size="large" placeholder="e.g. 4" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={12}>
+                                        <Form.Item label="When" name={['partTime', 'schedule']}>
+                                            <Select size="large" allowClear placeholder="Choose">{PART_TIME_SCHEDULES.map((x) => <Option key={x.key} value={x.key}>{x.label}</Option>)}</Select>
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                            )}
+
+                            <Form.Item label="Minimum education" name="education" extra="Pick the lowest level that can apply. Many good jobs need no degree.">
+                                <Select size="large" allowClear placeholder="Choose">{EDUCATION_LEVELS.map((x) => <Option key={x.key} value={x.key}>{x.label}</Option>)}</Select>
+                            </Form.Item>
+                            <Form.Item name="freshersWelcome" valuePropName="checked">
+                                <Checkbox>Freshers are welcome</Checkbox>
+                            </Form.Item>
+
+                            <Form.Item name="walkInEnabled" valuePropName="checked" className="mb-2">
+                                <Checkbox>This is a walk-in (candidates can come in person)</Checkbox>
+                            </Form.Item>
+                            <Form.Item noStyle shouldUpdate={(a, b) => a.walkInEnabled !== b.walkInEnabled}>
+                                {({ getFieldValue }) => getFieldValue('walkInEnabled') && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                        <Form.Item label="Walk-in date" name="walkInDate" rules={[{ required: true, message: 'Choose the walk-in date' }]}>
+                                            <Input size="large" type="date" />
+                                        </Form.Item>
+                                        <Form.Item label="Walk-in venue" name="walkInVenue" rules={[{ required: true, message: 'Enter the venue' }]}>
+                                            <Input size="large" maxLength={200} placeholder="Address where candidates should come" />
+                                        </Form.Item>
+                                    </div>
+                                )}
+                            </Form.Item>
+
                             {watchedJobType === 'Internship' && (
                                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 mb-4">
                                     <p className="font-bold text-slate-800 mb-1">Internship details</p>
-                                    <p className="text-xs text-slate-500 mb-3">Verified companies can keep up to 3 internships live free of charge. Never ask students for any fee.</p>
+                                    <p className="text-xs text-slate-500 mb-2">Verified companies can keep up to 3 internships live free of charge.</p>
+                                    <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3" data-testid="internship-free-rule">
+                                        Internships on Velaivaaipu must be free for students. Asking for a fee, deposit, kit or training charge is not allowed. Postings that ask for money are removed and the company can be suspended. A paid course or training is not an internship.
+                                    </p>
                                     <Form.Item label="Duration (months)" name={['internship', 'durationMonths']} rules={[{ required: true, message: 'Choose 1 to 12 months' }]}>
                                         <Select size="large">{[1, 2, 3, 4, 5, 6, 9, 12].map((m) => <Option key={m} value={m}>{m} {m === 1 ? 'month' : 'months'}</Option>)}</Select>
                                     </Form.Item>
@@ -431,8 +497,8 @@ const PostJob = () => {
                                 </Select>
                             </Form.Item>
 
-                            <Form.Item label="Location" name="location">
-                                <Input size="large" placeholder="e.g. Chennai, India" />
+                            <Form.Item label="Location" name="location" extra="The town or city where the person will work. Not just Tamil Nadu or India.">
+                                <Input size="large" placeholder="e.g. Puducherry" />
                             </Form.Item>
 
                             <Form.Item label="Number of Vacancies" name="vacancies">
@@ -441,21 +507,24 @@ const PostJob = () => {
                         </Card>
 
                         <Card 
-                            title={<span className="font-semibold flex items-center gap-2"><IndianRupee className="text-emerald-500" size={20} /> Compensation (LPA)</span>} 
+                            title={<span className="font-semibold flex items-center gap-2"><IndianRupee className="text-emerald-500" size={20} /> Compensation</span>} 
                             bordered={false}
                             className="shadow-sm rounded-xl overflow-hidden"
                             style={{ marginTop: '24px' }}
                             headStyle={{ borderBottom: '1px solid #f0f0f0', backgroundColor: '#fafafa' }}
                         >
+                            <Form.Item label="Pay is quoted" name="payUnit">
+                                <Select size="large">{PAY_UNITS.map((x) => <Option key={x.key} value={x.key}>{x.label}</Option>)}</Select>
+                            </Form.Item>
                             <Row gutter={16}>
                                 <Col xs={12}>
-                                    <Form.Item label="Min Salary" name="minSalary">
-                                        <InputNumber min={0} step={0.1} className="w-full" size="large" disabled={isRangeHidden} placeholder="e.g. 3.5" />
+                                    <Form.Item label={watchedPayUnit === 'year' ? 'Min Salary (LPA)' : 'Min pay (₹)'} name="minSalary">
+                                        <InputNumber min={0} step={watchedPayUnit === 'year' ? 0.1 : 50} className="w-full" size="large" disabled={isRangeHidden} placeholder={watchedPayUnit === 'year' ? 'e.g. 3.5' : watchedPayUnit === 'month' ? 'e.g. 15000' : watchedPayUnit === 'day' ? 'e.g. 600' : 'e.g. 150'} />
                                     </Form.Item>
                                 </Col>
                                 <Col xs={12}>
-                                    <Form.Item label="Max Salary" name="maxSalary">
-                                        <InputNumber min={0} step={0.1} className="w-full" size="large" disabled={isRangeHidden} placeholder="e.g. 6.0" />
+                                    <Form.Item label={watchedPayUnit === 'year' ? 'Max Salary (LPA)' : 'Max pay (₹)'} name="maxSalary">
+                                        <InputNumber min={0} step={watchedPayUnit === 'year' ? 0.1 : 50} className="w-full" size="large" disabled={isRangeHidden} placeholder={watchedPayUnit === 'year' ? 'e.g. 6.0' : watchedPayUnit === 'month' ? 'e.g. 25000' : watchedPayUnit === 'day' ? 'e.g. 900' : 'e.g. 250'} />
                                     </Form.Item>
                                 </Col>
                             </Row>

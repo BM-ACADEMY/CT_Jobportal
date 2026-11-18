@@ -72,7 +72,7 @@ const shareText = (d, url) => {
   return `Walk-in drive: ${d.title}\nHiring: ${roles}\nDate: ${when}\nVenue: ${[d.venue?.name, d.venue?.city].filter(Boolean).join(', ')}\nRegister free in one minute: ${url}`;
 };
 
-const csvCell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const csvCell = (v) => { let s = String(v ?? ''); if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const toCsv = (rows) => rows.map((r) => r.map(csvCell).join(',')).join('\n');
 
 const STATUS_WORDS = { registered: 'Registered', checked_in: 'Attended', shortlisted: 'Shortlisted', selected: 'Selected', on_hold: 'On hold', not_selected: 'Not selected' };

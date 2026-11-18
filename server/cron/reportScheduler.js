@@ -4,7 +4,7 @@ const { generatePlacementReportForCollege } = require('../controllers/collegeCon
 
 const isProPlus = (tier) => tier === 'campus_pro' || tier === 'campus_elite';
 
-// Weekly for Campus Pro/Elite, monthly for Lite, none for Free — mirrors the cadence promised
+// Weekly for Campus Pro/Elite, monthly for Lite, a short summary email for Free (cron/freeCollegeSummary.js) — mirrors the cadence promised
 // on the Campus plan matrix. A college is "due" if its last auto/manual report is older than
 // its cadence window, so this is safe to run more often than the cadence itself.
 const runScheduledPlacementReports = async () => {

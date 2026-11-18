@@ -1,5 +1,6 @@
 const Feedback = require('../models/Feedback');
 const User = require('../models/User');
+const { summarise } = require('../utils/paymentFeedback');
 
 const HEX = /^[0-9a-fA-F]{24}$/;
 const STATUSES = ['new', 'read', 'replied', 'closed'];
@@ -23,13 +24,16 @@ const submitFeedback = async (req, res) => {
 const listFeedback = async (req, res) => {
   try {
     const filter = STATUSES.includes(req.query.status) ? { status: req.query.status } : {};
+    if (req.query.source === 'payment') filter.source = 'payment';
     const rows = await Feedback.find(filter).sort({ createdAt: -1 }).limit(200).populate('user', 'name email').lean();
     const [counts, avg] = await Promise.all([
       Feedback.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
       Feedback.aggregate([{ $group: { _id: null, avg: { $avg: '$rating' }, total: { $sum: 1 } } }])
     ]);
+    const payRows = await Feedback.find({ source: 'payment' }).select('rating met item').lean();
     res.json({
-      feedback: rows.map((f) => ({ _id: f._id, rating: f.rating, text: f.text, page: f.page, role: f.role, status: f.status, createdAt: f.createdAt, name: f.user?.name || '', email: f.user?.email || '' })),
+      paymentSummary: summarise(payRows),
+      feedback: rows.map((f) => ({ source: f.source, met: f.met, item: f.item, _id: f._id, rating: f.rating, text: f.text, page: f.page, role: f.role, status: f.status, createdAt: f.createdAt, name: f.user?.name || '', email: f.user?.email || '' })),
       counts: Object.fromEntries(counts.map((c) => [c._id, c.n])),
       average: avg[0] ? Math.round(avg[0].avg * 10) / 10 : null,
       total: avg[0]?.total || 0

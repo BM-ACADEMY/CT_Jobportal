@@ -5,22 +5,22 @@ import { motion } from 'framer-motion';
 // part can move on its own. Positions are percentages of the original 1000×746 artwork.
 const PARTS = [
   {
-    key: 'block-left', src: '/images/brand/block-left.png',
+    key: 'block-left', src: '/images/brand/block-left.webp',
     box: { left: '10.9%', top: '0%', width: '25.3%' },
     from: { y: '-70%', rotate: -10, opacity: 0 }, delay: 0, hover: 'brand-hop',
   },
   {
-    key: 'block-right', src: '/images/brand/block-right.png',
+    key: 'block-right', src: '/images/brand/block-right.webp',
     box: { left: '38.1%', top: '10.858%', width: '39.8%' },
     from: { y: '-70%', rotate: 8, opacity: 0 }, delay: 0.12, hover: 'brand-hop brand-hop-late',
   },
   {
-    key: 'dot', src: '/images/brand/dot.png',
+    key: 'dot', src: '/images/brand/dot.webp',
     box: { left: '79.5%', top: '42.225%', width: '8.3%' },
     from: { scale: 0, opacity: 0 }, delay: 0.38, hover: 'brand-pop brand-dot-idle',
   },
   {
-    key: 'wordmark', src: '/images/brand/wordmark.png',
+    key: 'wordmark', src: '/images/brand/wordmark.webp',
     box: { left: '0%', top: '82.038%', width: '100%' },
     from: { y: '40%', opacity: 0 }, delay: 0.55, hover: '',
   },

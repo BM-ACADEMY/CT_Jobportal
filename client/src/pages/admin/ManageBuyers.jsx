@@ -17,6 +17,7 @@ const ManageBuyers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [includeTest, setIncludeTest] = useState(false);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [stats, setStats] = useState({ totalUniquePayers: 0, totalSpentAll: 0, avgOrderVal: 0 });
@@ -25,7 +26,7 @@ const ManageBuyers = () => {
 
   useEffect(() => {
     fetchBuyers();
-  }, [roleFilter, page]);
+  }, [roleFilter, page, includeTest]);
 
   const setRoleFilterAndResetPage = (r) => { setRoleFilter(r); setPage(1); };
 
@@ -42,6 +43,7 @@ const ManageBuyers = () => {
       const params = { page, limit: 20 };
       if (roleFilter !== 'all') params.role = roleFilter;
       if (searchTerm) params.search = searchTerm;
+      if (includeTest) params.includeTest = 'true';
       const res = await axios.get(`${API_BASE_URL}/payments/admin/buyers`, {
         headers: { Authorization: `Bearer ${token}` },
         params
@@ -76,6 +78,10 @@ const ManageBuyers = () => {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Subscription Buyers Directory</h1>
           <p className="text-sm text-slate-500 mt-1">Audit customer purchase profiles, total lifetime spend, and purchase history.</p>
         </div>
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+          <input type="checkbox" checked={includeTest} onChange={(e) => { setIncludeTest(e.target.checked); setPage(1); }} />
+          Include test and demo accounts
+        </label>
       </div>
 
       {/* Filters Bar */}

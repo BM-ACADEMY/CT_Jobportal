@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowRight, Code2, Stethoscope, BarChart2, Palette, Megaphone, Cpu, GraduationCap, HeartHandshake,
-  ShoppingBag, Star, Layers, Factory, Building2, Headphones, Briefcase, Users,
+  ShoppingBag, Star, Layers, Factory, Building2, Headphones, Briefcase, Users, ChefHat, Sparkles,
 } from 'lucide-react';
 import MotionIcon from './MotionIcon';
 import { JOB_CATEGORIES } from '../../data/jobCategories';
@@ -37,6 +37,8 @@ const LOOK = {
   'education-training': { icon: GraduationCap, tint: 'indigo', anim: 'tilt' },
   'retail-shops': { icon: ShoppingBag, tint: 'pink', anim: 'bounce' },
   'hospitality-tourism': { icon: Star, tint: 'amber', anim: 'pulse' },
+  'kitchen-culinary': { icon: ChefHat, tint: 'orange', anim: 'wiggle' },
+  'housekeeping-facilities': { icon: Sparkles, tint: 'teal', anim: 'pulse' },
   'logistics-delivery': { icon: Layers, tint: 'cyan', anim: 'tilt' },
   manufacturing: { icon: Factory, tint: 'stone', anim: 'spin' },
   'construction-realestate': { icon: Building2, tint: 'lime', anim: 'pulse' },

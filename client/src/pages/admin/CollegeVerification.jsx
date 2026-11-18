@@ -137,7 +137,7 @@ const CollegeVerification = () => {
                   <Eye size={13} /> View
                 </Button>
                 {canVerify && <>
-                <Button size="sm" disabled={acting === c._id || c.verificationStatus === 'verified'} onClick={() => act(c._id, 'verified')} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1 h-9">
+                <Button size="sm" disabled={acting === c._id || c.verificationStatus === 'verified'} onClick={() => (c.proofDocumentUrl ? act(c._id, 'verified') : (toast.info('No proof uploaded. Add a note on the next page, or ask the college for proof.'), navigate(`/admin/colleges/${c._id}`)))} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1 h-9">
                   <CheckCircle2 size={13} /> Verify
                 </Button>
                 <Button size="sm" variant="outline" disabled={acting === c._id || c.verificationStatus === 'rejected'} onClick={() => act(c._id, 'rejected')} className="rounded-lg text-xs font-bold gap-1 h-9 border-red-200 text-red-600 hover:bg-red-50">

@@ -2,6 +2,14 @@ const nodemailer = require('nodemailer');
 
 // Certificate checking is ON. SMTP_TLS_INSECURE=true is an emergency switch for a relay whose certificate
 // cannot be verified; do not leave it set in production.
+// A slow or restarting mail server must fail fast. Without these limits a signup or Resend request waits for
+// minutes, people tap Resend again, and the server piles up requests. Override with SMTP_*_TIMEOUT_MS if needed.
+const buildTimeouts = (env = process.env) => ({
+  connectionTimeout: Number(env.SMTP_CONNECT_TIMEOUT_MS) || 8000,
+  greetingTimeout: Number(env.SMTP_GREETING_TIMEOUT_MS) || 8000,
+  socketTimeout: Number(env.SMTP_SOCKET_TIMEOUT_MS) || 15000,
+});
+
 const buildTransportConfig = (env = process.env) => {
   const isGmail = (env.EMAIL_HOST || "").includes('gmail.com');
   if (isGmail) {
@@ -10,6 +18,7 @@ const buildTransportConfig = (env = process.env) => {
       logger: true,
       debug: true,
       auth: { user: env.USER_EMAIL, pass: env.USER_PASS },
+      ...buildTimeouts(env),
     };
   }
   return {
@@ -18,17 +27,49 @@ const buildTransportConfig = (env = process.env) => {
     port: Number(env.EMAIL_PORT) || 465,
     auth: { user: env.USER_EMAIL, pass: env.USER_PASS },
     tls: { rejectUnauthorized: env.SMTP_TLS_INSECURE !== 'true' },
+    ...buildTimeouts(env),
   };
 };
 
+// Retry only when the mail never left (could not connect). After the server has accepted the message a retry could
+// send it twice, so socket timeouts and rejections are not retried.
+const isConnectionFailure = (err) => {
+  if (!err) return false;
+  if (['ECONNECTION', 'ECONNREFUSED', 'ENOTFOUND', 'EDNS'].includes(err.code)) return true;
+  return err.code === 'ETIMEDOUT' && err.command === 'CONN';
+};
+
 const transporter = nodemailer.createTransport(buildTransportConfig());
+
+// Backup sender. If the main mail service refuses or cannot be reached, the same mail goes out once through the backup
+// (for example Hostinger). It is off unless BACKUP_EMAIL_HOST and BACKUP_USER_EMAIL are set. BACKUP_EMAIL_PORT, BACKUP_USER_PASS
+// and BACKUP_MAIL_FROM work like their main counterparts. It cannot help when the main service accepts a mail and then holds it
+// (for example Brevo with no credits left), because from our side that looks like a success.
+const buildBackupConfig = (env = process.env) => {
+  if (!env.BACKUP_EMAIL_HOST || !env.BACKUP_USER_EMAIL) return null;
+  return buildTransportConfig({
+    ...env,
+    EMAIL_HOST: env.BACKUP_EMAIL_HOST,
+    EMAIL_PORT: env.BACKUP_EMAIL_PORT,
+    USER_EMAIL: env.BACKUP_USER_EMAIL,
+    USER_PASS: env.BACKUP_USER_PASS,
+  });
+};
+let backupTransporter = null;
+const getBackup = () => {
+  const cfg = buildBackupConfig();
+  if (!cfg) return null;
+  if (!backupTransporter) backupTransporter = nodemailer.createTransport(cfg);
+  return backupTransporter;
+};
 
 const sendEmail = async (options) => {
   // Students who joined with only a WhatsApp number get a placeholder <phone>@<college>.portal address; never mail it
   // (bounces hurt sender reputation).
   if (/\.portal\s*$/i.test(String(options.email || ''))) return false;
+  let mailOptions;
   try {
-    const mailOptions = {
+    mailOptions = {
       // MAIL_FROM lets the visible sender (e.g. hello@velaivaaipu.in) differ from the SMTP login, which is
       // required by relay services such as Amazon SES or Brevo whose login is not an email address.
       from: options.from || process.env.MAIL_FROM || `"Velaivaaipu" <${process.env.USER_EMAIL}>`,
@@ -40,10 +81,28 @@ const sendEmail = async (options) => {
     if (replyTo) mailOptions.replyTo = replyTo;
     if (options.headers) mailOptions.headers = options.headers;
 
-    const info = await transporter.sendMail(mailOptions);
+    let info;
+    try {
+      info = await transporter.sendMail(mailOptions);
+    } catch (first) {
+      if (!isConnectionFailure(first) || getBackup()) throw first; // with a backup set, go to it at once instead of retrying
+      console.error('Mail connection failed (%s), trying once more', first.code);
+      info = await transporter.sendMail(mailOptions);
+    }
     console.log('Email sent: %s', info.messageId);
     return true;
   } catch (error) {
+    const backup = getBackup();
+    if (backup) {
+      try {
+        console.error('Main mail service failed (%s), sending through the backup', error.code || error.message);
+        const info = await backup.sendMail({ ...mailOptions, from: options.from || process.env.BACKUP_MAIL_FROM || `"Velaivaaipu" <${process.env.BACKUP_USER_EMAIL}>` });
+        console.log('Email sent through backup: %s', info.messageId);
+        return true;
+      } catch (backupError) {
+        console.error('Backup mail service failed too:', backupError.code || backupError.message);
+      }
+    }
     console.error('\n\n=== [SMTP ERROR] FAILED TO SEND EMAIL ===');
     console.error(`Attempted to send to: ${options.email}`);
     console.error('Error Code:', error.code);
@@ -56,3 +115,5 @@ const sendEmail = async (options) => {
 
 module.exports = sendEmail;
 module.exports.buildTransportConfig = buildTransportConfig;
+module.exports.buildBackupConfig = buildBackupConfig;
+module.exports.isConnectionFailure = isConnectionFailure;

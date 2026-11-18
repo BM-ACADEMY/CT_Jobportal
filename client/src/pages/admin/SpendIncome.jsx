@@ -13,7 +13,7 @@ const SpendIncome = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [days, setDays] = useState(14);
-  const [form, setForm] = useState({ date: todayIst(), line: 'ads', amount: '', note: '' });
+  const [form, setForm] = useState({ date: todayIst(), line: 'ads', amount: '', note: '', source: '' });
 
   const load = useCallback(async () => {
     try {
@@ -34,7 +34,7 @@ const SpendIncome = () => {
     try {
       await axios.post(`${API}/admin/spend`, form);
       toast.success('Saved');
-      setForm((f) => ({ ...f, amount: '', note: '' }));
+      setForm((f) => ({ ...f, amount: '', note: '', source: '' }));
       await load();
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Failed to save');
@@ -65,15 +65,17 @@ const SpendIncome = () => {
         <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
           <Wallet size={20} className="text-emerald-600" /> Spend and income
         </h1>
-        <p className="text-xs text-slate-500 mt-1 font-medium">Money in comes from completed payments, before GST. Razorpay fees are estimated at 2.36%. Spend is what you enter.</p>
+        <p className="text-xs text-slate-500 mt-1 font-medium">Customers pay the price plus 18% GST. The GST part is collected for the government, so it is shown on its own and is not counted as profit. Net is money in before GST, less Razorpay fees, less what you spent. It is before income tax.</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {[
-          { label: `Money in, ${totals.days} days`, value: rupees(totals.moneyIn) },
+          { label: `Received from customers, ${totals.days} days`, value: rupees(totals.received) },
+          { label: 'GST in it (to pay)', value: rupees(totals.gst) },
+          { label: 'Money in, before GST', value: rupees(totals.moneyIn) },
           { label: 'Spent', value: rupees(totals.spent) },
           { label: 'Razorpay fees (est.)', value: rupees(totals.razorpayFee) },
-          { label: 'Net', value: rupees(totals.net), tone: totals.net < 0 ? 'text-red-600' : 'text-emerald-600' },
+          { label: 'Net profit after all spend', value: rupees(totals.net), tone: totals.net < 0 ? 'text-red-600' : 'text-emerald-600' },
         ].map((c) => (
           <div key={c.label} className="p-4 rounded-2xl border border-slate-100 shadow-sm bg-white">
             <p className={`text-2xl font-black tabular-nums ${c.tone || 'text-slate-900'}`}>{c.value}</p>
@@ -113,6 +115,11 @@ const SpendIncome = () => {
         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest col-span-2 md:col-span-1">Note
           <input type="text" maxLength={200} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="e.g. Meta, reel boost" className="mt-1 w-full h-10 rounded-lg border border-slate-200 px-2 text-sm font-medium text-slate-800" />
         </label>
+        {(form.line === 'ads' || form.line === 'marketing_other') && (
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest col-span-2 md:col-span-1">Source (optional)
+            <input type="text" maxLength={40} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="meta, google, whatsapp" className="mt-1 w-full h-10 rounded-lg border border-slate-200 px-2 text-sm font-medium text-slate-800" />
+          </label>
+        )}
         <button type="submit" disabled={saving} className="h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold col-span-2 md:col-span-1 disabled:opacity-60">{saving ? 'Saving...' : 'Add spend'}</button>
       </form>
 
@@ -148,7 +155,7 @@ const SpendIncome = () => {
             {entries.map((e) => (
               <div key={e._id} className={`flex items-center justify-between gap-3 px-4 py-2 text-xs ${e.voided ? 'opacity-40 line-through' : ''}`}>
                 <span className="font-bold text-slate-700 w-16 shrink-0">{prettyDate(e.date)}</span>
-                <span className="flex-1 min-w-0 truncate text-slate-600">{lines[e.line] || e.line}{e.note ? `: ${e.note}` : ''}</span>
+                <span className="flex-1 min-w-0 truncate text-slate-600">{lines[e.line] || e.line}{e.note ? `: ${e.note}` : ''}{e.source ? ` [${e.source}]` : ''}</span>
                 <span className="tabular-nums font-bold text-slate-800">{rupees(e.amount)}</span>
                 {!e.voided && <button type="button" onClick={() => voidEntry(e._id)} className="text-[10px] font-bold text-red-500 hover:underline">Void</button>}
               </div>

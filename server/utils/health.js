@@ -12,4 +12,14 @@ const checkHealth = async (mongoose, { timeoutMs = 3000, now = () => new Date() 
   return { ok: db === 'up', db, time: now().toISOString() };
 };
 
-module.exports = { checkHealth };
+// Same answer for a few seconds, so repeated calls cannot keep the database busy.
+let cached = null;
+const checkHealthCached = async (mongoose, { ttlMs = 5000, now = () => Date.now(), ...opts } = {}) => {
+  if (cached && now() - cached.at < ttlMs) return cached.result;
+  const result = await checkHealth(mongoose, opts);
+  cached = { at: now(), result };
+  return result;
+};
+const resetHealthCache = () => { cached = null; };
+
+module.exports = { checkHealth, checkHealthCached, resetHealthCache };

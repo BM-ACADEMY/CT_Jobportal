@@ -18,6 +18,7 @@ router.get('/:jobId/pre-match', verifyToken, authorizeRoles('jobseeker'), aiDail
 
 // --- Recruiter / Company Routes ---
 router.post('/', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), createJob);
+router.post('/:id/sponsor-addon', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), require('../controllers/jobPromotionController').sponsorMyJob);
 // Quality score and tips for a draft job, so the poster can fix it before publishing. Stateless; nothing is saved.
 router.post('/quality-check', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job', 'my_jobs'), (req, res) => res.json(scoreJobPost(req.body && typeof req.body === 'object' ? req.body : {})));
 router.post('/import-pipeline', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ats_pipeline'), upload.single('file'), importPipeline);
@@ -33,6 +34,7 @@ router.get('/candidates/:candidateId/profile', verifyToken, authorizeRoles('recr
 router.get('/:jobId/matched-candidates', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ai_candidate_matching'), getAICandidateMatches);
 router.post('/:jobId/bulk-ai-match', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('ai_candidate_matching', 'ats_pipeline'), bulkAiMatch);
 router.post('/:id/clone', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('post_job'), cloneJob);
+router.post('/:id/apply-click', require('../controllers/externalJobController').countExternalClick);
 router.post('/:id/renew', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), require('../controllers/visibilityController').renewJob);
 router.put('/:id', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs'), updateJob);
 router.patch('/:id/mark-viewed', verifyToken, authorizeRoles('recruiter', 'company', 'org_employee'), requireTeamPermission('my_jobs', 'ats_pipeline'), markJobApplicantsViewed);

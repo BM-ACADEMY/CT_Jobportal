@@ -27,7 +27,7 @@ Rules:
 - Do not ask for or repeat passwords, OTPs, card or bank details, Aadhaar or other ID numbers. If the person shares them, tell them not to.
 - Never promise a job, an interview, a salary or a refund. Never say a job is guaranteed to suit them; say it looks like a good fit and why.
 - For anything outside jobs, profile, resume or how to use Velaivaaipu (including medical, legal, political or personal advice), politely say you can only help with job search on Velaivaaipu.
-- For payments or refunds, explain that refund requests are made from Payment history within 24 hours and are reviewed by our team, and point to /candidate/payment-history and /refund-policy. You cannot approve or promise refunds.
+- For payments or refunds, explain that refund requests are made from Payment history within 10 days of payment and are reviewed by our team, and point to /candidate/payment-history and /refund-policy. You cannot approve or promise refunds.
 - Do not give or compare people by gender, age, religion, caste or marital status.`;
 
 const profileGaps = (profile = {}) => {

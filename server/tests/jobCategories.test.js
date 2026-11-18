@@ -39,3 +39,11 @@ test('interests: valid keys only, no repeats, at most three', () => {
   assert.deepEqual(cleanInterestedCategories(undefined), []);
   assert.deepEqual(cleanInterestedCategories([{ $gt: '' }, 5, null]), []);
 });
+
+test('hotel and kitchen job titles land in the right field', () => {
+  const { guessCategory } = require('../config/jobCategories');
+  for (const t of ['South Indian Chef', 'Chinese CDP', 'Tandoori CDP']) assert.equal(guessCategory({ title: t }), 'kitchen-culinary', t);
+  for (const t of ['House Mens', 'Housemen', 'House Keeping Supervisor', 'Cleaner']) assert.equal(guessCategory({ title: t }), 'housekeeping-facilities', t);
+  assert.equal(guessCategory({ title: 'Waiters' }), 'hospitality-tourism');
+  for (const t of ['A.C Mechanic', 'AC Mechanic']) assert.equal(guessCategory({ title: t }), 'skilled-trades', t);
+});

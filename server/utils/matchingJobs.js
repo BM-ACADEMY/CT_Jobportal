@@ -27,7 +27,7 @@ const getRankedMatches = async (user, { Job, User, Application }, { limit = 20, 
   if ((user.hiddenJobs || []).length) query._id = { $nin: user.hiddenJobs };
 
   const pool = await Job.find(query)
-    .populate('company', 'name logo location website')
+    .populate('company', 'name logo location website verifiedByCall')
     .populate({ path: 'recruiter', select: 'subscription', populate: { path: 'subscription', select: 'hasPriorityListing' } })
     .sort({ createdAt: -1 })
     .limit(POOL_SIZE);

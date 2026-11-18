@@ -1,9 +1,13 @@
-import { JOB_CATEGORIES } from '@/data/jobCategories';
-import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
 import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { JOB_CATEGORIES } from '@/data/jobCategories';
+import { COLLEGE_DATA_SAFETY_LINE } from '@/data/collegePrivacy';
+import TurnstileWidget, { turnstileEnabled } from '@/components/common/TurnstileWidget';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, User, CircleCheck, Briefcase, Building2, ShieldCheck, ArrowLeft, Phone } from 'lucide-react';
+import {
+  Mail, Lock, User, Briefcase, Building2, GraduationCap, UserSearch, FileText, Send,
+  Users, CalendarCheck, QrCode, BarChart3,
+} from 'lucide-react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -11,7 +15,6 @@ import PhoneInputPkg from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 const PhoneInput = PhoneInputPkg.default || PhoneInputPkg;
 import PhoneNumberInput from '@/components/shared/PhoneNumberInput';
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -20,14 +23,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
-import { REGEXP_ONLY_DIGITS } from "input-otp";
+  AuthShell, AuthPanel, PanelAccent, PanelSteps, AuthHeading, AuthAlert, SubmitButton, EyeToggle, TextLink,
+  inputCls, labelCls,
+} from '@/components/auth/AuthShell';
+import { OtpBoxes, ResendLine, VerifyPanel } from './VerifyOtp';
 
 const registerSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }).regex(/^[a-zA-Z\s]+$/, { message: "Name must contain only alphabets" }),
@@ -57,13 +57,61 @@ const registerSchema = z.object({
   path: ["mobileNumber"],
 });
 
+const ROLES = [
+  { key: 'jobseeker', label: 'Job seeker', Icon: Briefcase },
+  { key: 'recruiter', label: 'Recruiter', Icon: UserSearch },
+  { key: 'company', label: 'Company', Icon: Building2 },
+  { key: 'college', label: 'College', Icon: GraduationCap },
+];
+
+const EMPLOYER_PANEL = {
+  tone: 'navy',
+  eyebrow: 'For employers',
+  title: <>Find your next <PanelAccent tone="navy">great hire.</PanelAccent></>,
+  text: 'Post jobs and reach job seekers in Tamil Nadu and Puducherry.',
+  steps: [
+    { Icon: Briefcase, title: 'Post a job', text: 'Add the role, salary and location.' },
+    { Icon: Users, title: 'Review applicants', text: 'Filter by skills, experience and location.' },
+    { Icon: CalendarCheck, title: 'Interview and hire', text: 'Shortlist, schedule and decide with your team.' },
+  ],
+};
+
+const PANELS = {
+  jobseeker: {
+    tone: 'green',
+    eyebrow: 'For job seekers',
+    title: <>Start your career with <PanelAccent>Velaivaaipu.</PanelAccent></>,
+    text: 'A free account, always.',
+    steps: [
+      { Icon: User, title: 'Create your account', text: 'Takes less than a minute.' },
+      { Icon: FileText, title: 'Build your resume', text: 'Use the free resume builder.' },
+      { Icon: Send, title: 'Apply to jobs', text: 'And track every application.' },
+    ],
+  },
+  recruiter: EMPLOYER_PANEL,
+  company: EMPLOYER_PANEL,
+  college: {
+    tone: 'green',
+    eyebrow: 'For colleges',
+    title: <>Campus placements, <PanelAccent>made simple.</PanelAccent></>,
+    text: 'Run drives and follow your students from one place.',
+    steps: [
+      { Icon: CalendarCheck, title: 'Create a campus drive', text: 'Set it up for your students.' },
+      { Icon: QrCode, title: 'Share the QR link', text: 'Students join with name and number.' },
+      { Icon: BarChart3, title: 'Track your students', text: 'Skill tests, certificates and results.' },
+    ],
+  },
+};
+
+const iconCls = 'absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none';
+const msgCls = 'text-xs font-medium text-rose-600';
+
 const RegisterPage = () => {
   const { register, verifyOtp, resendOtp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedRole = searchParams.get('role');
   const [selectedRole, setSelectedRole] = useState(['jobseeker', 'recruiter', 'company', 'college'].includes(requestedRole) ? requestedRole : 'jobseeker');
-  const [brandConsent, setBrandConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
@@ -118,14 +166,16 @@ const RegisterPage = () => {
   };
 
   const isRecruiter = selectedRole === 'recruiter' || selectedRole === 'company';
+  const isCollege = selectedRole === 'college';
 
+  const [brandConsent, setBrandConsent] = useState(false);
   const [interests, setInterests] = useState([]); // job seekers: up to 3 fields of work (optional)
   const [botToken, setBotToken] = useState('');
   const [botReset, setBotReset] = useState(0);
 
   const onSubmit = async (values) => {
     if (turnstileEnabled() && !botToken) { setError('Please complete the "I am human" check.'); return; }
-    if (selectedRole === 'college') {
+    if (isCollege) {
       if (!values.collegeName?.trim() || !values.collegeEmail?.trim() || !values.collegePhone?.trim()) {
         setError('Please fill in College Name, College Email, and College Phone.');
         return;
@@ -143,7 +193,7 @@ const RegisterPage = () => {
       ...(searchParams.get('ref') ? { ref: searchParams.get('ref') } : {}),
       ...(brandConsent ? { brandConsent: true } : {}),
       ...(selectedRole === 'jobseeker' && interests.length ? { interestedCategories: interests } : {}),
-      ...(selectedRole === 'college' ? {
+      ...(isCollege ? {
         collegeName: values.collegeName,
         collegeEmail: values.collegeEmail,
         collegePhone: values.collegePhone,
@@ -152,8 +202,7 @@ const RegisterPage = () => {
     });
     setLoading(false);
     if (!result.success) setBotReset((n) => n + 1); // a used token cannot be used twice
-    
-    
+
     if (result.success) {
       if (result.requireOtp) {
         setRegisteredEmail(result.email);
@@ -167,14 +216,15 @@ const RegisterPage = () => {
     }
   };
 
-  const handleVerifyOtp = async () => {
+  const handleVerifyOtp = async (e) => {
+    e?.preventDefault?.();
     if (otp.length !== 6) {
       setError('Please enter a valid 6-digit OTP.');
       return;
     }
     setLoading(true);
     setError('');
-    
+
     const result = await verifyOtp(registeredEmail, otp);
     setLoading(false);
 
@@ -185,493 +235,335 @@ const RegisterPage = () => {
     }
   };
 
+  const p = PANELS[selectedRole];
+  const panel = step === 'otp'
+    ? <VerifyPanel />
+    : (
+      <AuthPanel key={selectedRole} tone={p.tone} eyebrow={p.eyebrow} title={p.title} text={p.text}>
+        <PanelSteps steps={p.steps} />
+      </AuthPanel>
+    );
+
+  const accountWord = selectedRole === 'company' ? 'company' : isCollege ? 'college' : isRecruiter ? 'recruiter' : 'job seeker';
+
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <AuthShell id="register" panel={panel}>
+      {step === 'form' ? (
+        <>
+          <AuthHeading title="Create your account">Free to join. Pick who you are to get started.</AuthHeading>
 
-      {/* ─── Left Panel ─── */}
-      <div
-        className="hidden lg:flex w-[44%] flex-shrink-0 relative overflow-hidden flex-col justify-between py-14 pl-20 pr-14 xl:py-16 xl:pl-28 xl:pr-16 bg-cover bg-center" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80")' }}
-      >
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-slate-900/75" />
-
-        <div className="flex flex-col relative z-10">
-          <Link to="/" className="inline-block no-underline mb-16" aria-label="Velaivaaipu home">
-            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" loading="eager" decoding="async" className="h-11 w-auto object-contain" />
-          </Link>
-
-          <div>
-          <p className={`font-black text-[10px] uppercase tracking-[0.2em] mb-4 
-            ${isRecruiter ? 'text-emerald-200' : 'text-teal-200'}`}>
-            {isRecruiter ? 'FOR EMPLOYERS' : 'FOR JOB SEEKERS'}
-          </p>
-          <h2 className="text-white font-black text-4xl leading-tight mb-6">
-            {isRecruiter ? (
-              <>Find your<br />next great<br /><span className="text-emerald-200">hire today.</span></>
-            ) : (
-              <>Start your<br />journey<br /><span className="text-teal-200">with us.</span></>
-            )}
-          </h2>
-          <p className="text-white/80 text-sm font-medium leading-relaxed mb-10 max-w-xs">
-            {isRecruiter
-              ? 'Post jobs for free and connect with job seekers in Tamil Nadu and Puducherry.'
-              : 'Whether you\'re looking for your next role or next hire — we\'ve got you.'}
-          </p>
-
-          <div className="flex flex-col gap-3">
-            {(isRecruiter ? [
-              'Post jobs free on the Free plan',
-              'Search candidate profiles',
-              'Find candidates by skills and location',
-              'Real-time application tracking',
-            ] : [
-              'Free account, always',
-              'Free resume builder',
-              'Apply to jobs in a few taps',
-              'Real-time application tracking',
-            ]).map((text, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <CircleCheck size={16} className={isRecruiter ? 'text-emerald-300' : 'text-teal-300'} />
-                <span className="text-white/90 text-[13px] font-bold">{text}</span>
-              </div>
-            ))}
-          </div>
-          </div>
-        </div>
-
-        <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl p-7 border border-white/10 space-y-4 relative z-10">
-          <div className="flex gap-0.5 mb-2">
-            {[1,2,3,4,5].map(i => <StarIcon key={i} />)}
-          </div>
-          <p className="text-white font-bold text-sm leading-relaxed mb-1">
-            {isRecruiter
-              ? '"Hired 3 engineers in under 2 weeks!"'
-              : '"Found my dream job in 3 days!"'}
-          </p>
-          <p className="text-white/60 text-[10px] font-black uppercase tracking-wider">
-            {isRecruiter
-              ? '— Tech Lead, Razorpay'
-              : '— Priya S., UX Designer at Swiggy'}
-          </p>
-        </div>
-      </div>
-
-      {/* ─── Right: Form Panel ─── */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 overflow-y-auto">
-        <div className="w-full max-w-[520px] bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_40px_-8px_rgba(15,23,42,0.08)] p-8 sm:p-10 my-8 space-y-8">
-          <Link to="/" className="lg:hidden inline-block no-underline mb-2" aria-label="Velaivaaipu home">
-            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" className="h-9 w-auto object-contain" />
-          </Link>
-
-          {step === 'form' ? (
-            <div className="animate-in fade-in duration-500 space-y-6">
-              {/* Heading */}
-              <div className="space-y-1.5"><h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  Create your account
-                </h1>
-                <p className="text-slate-500 text-sm">
-                  Join job seekers and employers on Velaivaaipu
-                </p>
-              </div>
-
-              {/* Role Toggle */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {[
-                  { key: 'jobseeker', label: 'Job Seeker', Icon: Briefcase },
-                  { key: 'recruiter', label: 'Recruiter', Icon: Building2 },
-                  { key: 'company', label: 'Company', Icon: Building2 },
-                  { key: 'college', label: 'College', Icon: ShieldCheck },
-                ].map(role => {
-                  const active = selectedRole === role.key;
-                  return (
-                    <button
-                      key={role.key}
-                      type="button"
-                      onClick={() => setSelectedRole(role.key)}
-                      className={`flex items-center justify-center gap-2 h-11 rounded-lg border transition-all text-sm font-medium
-                        ${active 
-                          ? 'border-emerald-400 bg-emerald-50 text-emerald-700' 
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
-                    >
-                      <role.Icon size={16} className={active ? 'text-emerald-600' : 'text-slate-400'} />
-                      {role.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {error && (
-                <Alert variant="destructive" className="rounded-xl border-rose-100 bg-rose-50 py-3 mb-6">
-                  <AlertDescription className="text-sm font-medium text-rose-600">{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'TPO Name' : 'Full Name'}</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <User size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <Input 
-                              placeholder={selectedRole === 'college' ? 'TPO name' : 'Full name'} 
-                              {...field} 
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-                                field.onChange(val);
-                              }}
-                              className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage className="text-xs font-medium text-rose-500" />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'College Email' : 'Email Address'}</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <Input 
-                              placeholder={selectedRole === 'college' ? 'TPO email address' : 'Email address'} 
-                              {...field} 
-                              onChange={(e) => field.onChange(e.target.value.toLowerCase())}
-                              className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage className="text-xs font-medium text-rose-500" />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="mobileNumber"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'TPO Number' : 'Mobile Number'}</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <PhoneInput
-                              country={'in'}
-                              disableCountryGuess
-                              value={form.watch('countryCode').replace('+', '') + field.value}
-                              onChange={(phone, country) => {
-                                if (country && country.dialCode) {
-                                  form.setValue('countryCode', '+' + country.dialCode, { shouldValidate: true });
-                                  const rawNumber = phone.slice(country.dialCode.length);
-                                  // Cap at the selected country's actual digit length (e.g. 10 for
-                                  // India) as the user types, instead of only flagging it on submit.
-                                  // country.format is prefixed with the dial code's own dots + a
-                                  // space (e.g. India's is "+.. .....-....."), so only the segment
-                                  // after the first space is the national-number format to count.
-                                  let maxDigits = 15;
-                                  if (country.format) {
-                                    const spaceIdx = country.format.indexOf(' ');
-                                    const nationalFormat = spaceIdx === -1 ? country.format : country.format.slice(spaceIdx + 1);
-                                    maxDigits = (nationalFormat.match(/\./g) || []).length;
-                                  }
-                                  field.onChange(rawNumber.slice(0, maxDigits));
-                                }
-                              }}
-                              inputProps={{
-                                name: 'mobileNumber',
-                                required: true,
-                                placeholder: selectedRole === 'college' ? 'TPO number' : 'Mobile number'
-                              }}
-                              inputClass="!w-full !h-11 !pl-[52px] !rounded-lg !border-slate-200 !bg-white !text-sm focus:!border-emerald-400 focus:!ring-1 focus:!ring-emerald-400 focus:!outline-none transition-all"
-                              buttonClass="!border-slate-200 !bg-slate-50 !rounded-l-lg !w-[45px] hover:!bg-slate-100"
-                              dropdownClass="!bg-white !text-slate-700"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage className="text-xs font-medium text-rose-500" />
-                      </FormItem>
-                    )}
-                  />
-
-                  {selectedRole === 'college' && (
-                    <>
-                      <FormField
-                        control={form.control}
-                        name="collegeName"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1.5">
-                            <FormLabel className="text-sm font-medium text-slate-700">College Name</FormLabel>
-                        <FormControl>
-                                <div className="relative">
-                                  <Building2 size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <Input placeholder="College name" {...field} className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" />
-                              </div>
-                            </FormControl>
-                            <FormMessage className="text-xs font-medium text-rose-500" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="collegeEmail"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1.5">
-                            <FormLabel className="text-sm font-medium text-slate-700">{selectedRole === 'college' ? 'College Email' : 'Email Address'}</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <Input placeholder="College email address" {...field} className="h-11 pl-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" />
-                              </div>
-                            </FormControl>
-                            <FormMessage className="text-xs font-medium text-rose-500" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="collegePhone"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1.5">
-                            <FormLabel className="text-sm font-medium text-slate-700">College Number</FormLabel>
-                            <FormControl>
-                              <PhoneNumberInput value={field.value} onChange={field.onChange} inputProps={{ placeholder: 'College number' }} />
-                            </FormControl>
-                            <FormMessage className="text-xs font-medium text-rose-500" />
-                          </FormItem>
-                        )}
-                      />
-                    </>
-                  )}
-
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm font-medium text-slate-700">Password</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <Input 
-                              type={showPassword ? "text" : "password"} 
-                              placeholder="Create a password" 
-                              {...field} 
-                              className="h-11 pl-10 pr-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
-                            />
-                            <button 
-                              type="button" 
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                            >
-                              {showPassword ? <EyeOff size={18} /> : <Eye size={17} />}
-                            </button>
-                          </div>
-                        </FormControl>
-                        <FormMessage className="text-xs font-medium text-rose-500" />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm font-medium text-slate-700">Confirm Password</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <Input 
-                              type={showConfirmPassword ? "text" : "password"} 
-                              placeholder="Confirm password" 
-                              {...field} 
-                              className="h-11 pl-10 pr-10 rounded-lg border-slate-200 bg-white focus-visible:border-emerald-400 focus-visible:ring-emerald-100 transition-all text-sm" 
-                            />
-                            <button 
-                              type="button" 
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                            >
-                              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={17} />}
-                            </button>
-                          </div>
-                        </FormControl>
-                        <FormMessage className="text-xs font-medium text-rose-500" />
-                      </FormItem>
-                    )}
-                  />
-
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
-                    By creating an account, you agree to our{' '}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Terms of Service</a> and{' '}
-                    <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Privacy Policy</a>.
-                  </p>
-
-                  <label className="flex items-start gap-2 text-xs text-slate-600 font-medium leading-relaxed mb-4 cursor-pointer">
-                    <input type="checkbox" className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600" checked={brandConsent} onChange={(e) => setBrandConsent(e.target.checked)} />
-                    <span>Optional: allow Velaivaaipu and its sister brands (BM Academy, CoreTalents) to contact me about training and hiring services. You can change this any time in Settings.</span>
-                  </label>
-
-                  {selectedRole === 'jobseeker' && (
-
-                    <div>
-
-                      <p className="text-xs font-bold text-slate-500 mb-2">Which fields do you want to work in? (optional, up to 3)</p>
-
-                      <div className="flex flex-wrap gap-2" role="group" aria-label="Fields of work">
-
-                        {JOB_CATEGORIES.map((c) => {
-
-                          const picked = interests.includes(c.key);
-
-                          return (
-
-                            <button
-
-                              key={c.key}
-
-                              type="button"
-
-                              aria-pressed={picked}
-
-                              onClick={() => setInterests((cur) => (picked ? cur.filter((k) => k !== c.key) : cur.length >= 3 ? cur : [...cur, c.key]))}
-
-                              className={`h-9 px-3 rounded-full border text-xs font-bold transition-colors ${picked ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}
-
-                            >
-
-                              {c.label}
-
-                            </button>
-
-                          );
-
-                        })}
-
-                      </div>
-
-                    </div>
-
-                  )}
-
-
-                  <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
-
-
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-11 rounded-lg text-sm font-semibold transition-all shadow-sm bg-emerald-700 text-white hover:bg-emerald-800 mt-2"
-                  >
-                    {loading ? 'Processing...' : `Create ${selectedRole === 'company' ? 'Company' : selectedRole === 'college' ? 'College' : isRecruiter ? 'Recruiter' : 'Job Seeker'} Account`}
-                  </Button>
-                </form>
-              </Form>
-
-              <p className="text-center text-sm text-slate-500 mt-6">
-                Already have an account?{' '}
-                <Link to="/login" className="text-emerald-700 font-semibold hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          ) : (
-            <div className="animate-in slide-in-from-right-4 duration-500 flex flex-col py-5">
-              <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-8">
-                <ShieldCheck size={32} className="text-emerald-600" />
-              </div>
-
-              <div className="mb-10">
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight tracking-tight">
-                  Verify email
-                </h1>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  We've sent a 6-digit code to <br className="hidden md:block"/>
-                  <span className="font-black text-foreground">{registeredEmail}</span>
-                </p>
-              </div>
-              
-              {error && (
-                <Alert variant="destructive" className="mb-8 rounded-2xl border-destructive/20 bg-destructive/5">
-                  <AlertDescription className="text-sm font-medium text-rose-600">{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="mb-10">
-                <label className="block text-sm font-black text-foreground/80 mb-4">
-                  Enter 6-digit Security Code
-                </label>
-                <InputOTP 
-                  maxLength={6} 
-                  value={otp} 
-                  onChange={setOtp} 
-                  onComplete={handleVerifyOtp}
-                  pattern={REGEXP_ONLY_DIGITS}
-                  className="gap-3"
+          {/* Role picker */}
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl bg-zinc-100 p-1" role="radiogroup" aria-label="Account type">
+            {ROLES.map(({ key, label, Icon }) => {
+              const active = selectedRole === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => { setSelectedRole(key); setError(''); }}
+                  className={`h-10 rounded-lg text-[13px] flex items-center justify-center gap-1.5 border-none cursor-pointer transition ${active ? 'bg-white text-[#10213D] font-bold shadow-sm' : 'bg-transparent text-zinc-500 hover:text-[#10213D] font-semibold'}`}
                 >
-                  <InputOTPGroup className="gap-2">
-                    {[0, 1, 2, 3, 4, 5].map((index) => (
-                      <InputOTPSlot 
-                        key={index} 
-                        index={index} 
-                        className="h-12 w-10 rounded-lg border-slate-200 bg-white font-bold text-lg focus-visible:border-emerald-400"
-                      />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
+                  <Icon size={14} className={active ? 'text-[#1f8a57]' : ''} /> {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <AuthAlert>{error}</AuthAlert>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-4" noValidate>
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className={labelCls}>{isCollege ? 'TPO name' : 'Full name'}</FormLabel>
+                    <div className="relative">
+                      <User size={17} className={iconCls} />
+                      <FormControl>
+                        <input
+                          autoComplete="name"
+                          placeholder={isCollege ? 'TPO name' : 'Your full name'}
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
+                          className={`${inputCls} pr-4`}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className={msgCls} />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className={labelCls}>{isCollege ? 'TPO email' : isRecruiter ? 'Company email (best)' : 'Email address'}</FormLabel>
+                    <div className="relative">
+                      <Mail size={17} className={iconCls} />
+                      <FormControl>
+                        <input
+                          type="email"
+                          autoComplete="email"
+                          placeholder={isCollege ? 'TPO email address' : isRecruiter ? 'name@yourcompany.com' : 'you@example.com'}
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value.toLowerCase())}
+                          className={`${inputCls} pr-4`}
+                        />
+                      </FormControl>
+                    </div>
+                    {isRecruiter && (
+                      <p className="m-0 rounded-xl bg-[#f4faf7] ring-1 ring-[#34B678]/15 px-3 py-2 text-xs font-medium leading-relaxed text-[#1f8a57]">
+                        Sign up with your company email and list your company free, verified at once. Gmail and other free emails also work: one live job at a time for 14 days, after a quick proof check.
+                      </p>
+                    )}
+                    <FormMessage className={msgCls} />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="mobileNumber"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className={labelCls}>{isCollege ? 'TPO number' : 'Mobile number'}</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <PhoneInput
+                          country={'in'}
+                          disableCountryGuess
+                          value={form.watch('countryCode').replace('+', '') + field.value}
+                          onChange={(phone, country) => {
+                            if (country && country.dialCode) {
+                              form.setValue('countryCode', '+' + country.dialCode, { shouldValidate: true });
+                              const rawNumber = phone.slice(country.dialCode.length);
+                              // Cap at the selected country's actual digit length (e.g. 10 for
+                              // India) as the user types, instead of only flagging it on submit.
+                              // country.format is prefixed with the dial code's own dots + a
+                              // space (e.g. India's is "+.. .....-....."), so only the segment
+                              // after the first space is the national-number format to count.
+                              let maxDigits = 15;
+                              if (country.format) {
+                                const spaceIdx = country.format.indexOf(' ');
+                                const nationalFormat = spaceIdx === -1 ? country.format : country.format.slice(spaceIdx + 1);
+                                maxDigits = (nationalFormat.match(/\./g) || []).length;
+                              }
+                              field.onChange(rawNumber.slice(0, maxDigits));
+                            }
+                          }}
+                          inputProps={{
+                            name: 'mobileNumber',
+                            required: true,
+                            autoComplete: 'tel-national',
+                            placeholder: isCollege ? 'TPO number' : 'Mobile number'
+                          }}
+                          containerClass="!w-full"
+                          inputClass="!w-full !h-12 !pl-[58px] !rounded-xl !border-none !ring-1 !ring-zinc-200 !bg-white !text-sm !font-medium !text-zinc-900 focus:!ring-2 focus:!ring-[#34B678] focus:!outline-none transition"
+                          buttonClass="!border-none !bg-transparent !rounded-l-xl !w-[48px] !pl-2 hover:!bg-zinc-50"
+                          dropdownClass="!bg-white !text-zinc-700 !rounded-xl"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage className={msgCls} />
+                  </FormItem>
+                )}
+              />
+
+              {isCollege && (
+                <div className="rounded-2xl bg-[#f4faf7] ring-1 ring-[#34B678]/15 p-4 space-y-4">
+                  <p className="m-0 text-xs font-bold uppercase tracking-[0.14em] text-[#1f8a57]">College details</p>
+                  <FormField
+                    control={form.control}
+                    name="collegeName"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel className={labelCls}>College name</FormLabel>
+                        <div className="relative">
+                          <GraduationCap size={17} className={iconCls} />
+                          <FormControl>
+                            <input placeholder="College name" {...field} className={`${inputCls} pr-4`} />
+                          </FormControl>
+                        </div>
+                        <FormMessage className={msgCls} />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="collegeEmail"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel className={labelCls}>College email</FormLabel>
+                        <div className="relative">
+                          <Mail size={17} className={iconCls} />
+                          <FormControl>
+                            <input type="email" placeholder="College email address" {...field} className={`${inputCls} pr-4`} />
+                          </FormControl>
+                        </div>
+                        <FormMessage className={msgCls} />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="collegePhone"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel className={labelCls}>College number</FormLabel>
+                        <FormControl>
+                          <PhoneNumberInput value={field.value} onChange={field.onChange} inputProps={{ placeholder: 'College number' }} />
+                        </FormControl>
+                        <FormMessage className={msgCls} />
+                      </FormItem>
+                    )}
+                  />
+                  <p className="m-0 text-xs text-zinc-500 leading-relaxed">
+                    Our team will call you within 24 hours to help you start. We do not sell student data.{' '}
+                    <a href="/privacy-policy" target="_blank" rel="noreferrer" className="font-semibold text-[#1f8a57] hover:underline">Privacy Policy</a>
+                  </p>
+                </div>
+              )}
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className={labelCls}>Password</FormLabel>
+                      <div className="relative">
+                        <Lock size={17} className={iconCls} />
+                        <FormControl>
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            placeholder="Create password"
+                            {...field}
+                            className={`${inputCls} pr-12`}
+                          />
+                        </FormControl>
+                        <EyeToggle shown={showPassword} onToggle={() => setShowPassword(!showPassword)} />
+                      </div>
+                      <FormMessage className={msgCls} />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem className="space-y-2">
+                      <FormLabel className={labelCls}>Confirm password</FormLabel>
+                      <div className="relative">
+                        <Lock size={17} className={iconCls} />
+                        <FormControl>
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            placeholder="Repeat password"
+                            {...field}
+                            className={`${inputCls} pr-12`}
+                          />
+                        </FormControl>
+                        <EyeToggle shown={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} />
+                      </div>
+                      <FormMessage className={msgCls} />
+                    </FormItem>
+                  )}
+                />
               </div>
+              <p className="m-0 -mt-1 text-xs text-zinc-400">At least 6 characters with 1 capital letter, 1 number and 1 symbol.</p>
 
-              <Button 
-                onClick={handleVerifyOtp} 
-                disabled={loading}
-                className="h-11 w-full rounded-lg text-sm font-semibold bg-emerald-700 text-white hover:bg-emerald-800 shadow-sm transition-all mb-6"
-              >
-                {loading ? 'Verifying...' : 'Verify & Continue'}
-              </Button>
+              {selectedRole === 'jobseeker' && (
+                <div className="space-y-2">
+                  <span className={labelCls}>Fields you want to work in <span className="font-medium text-zinc-400">(optional, up to 3)</span></span>
+                  <div className="flex flex-wrap gap-2" role="group" aria-label="Fields of work">
+                    {JOB_CATEGORIES.map((c) => {
+                      const picked = interests.includes(c.key);
+                      return (
+                        <button
+                          key={c.key}
+                          type="button"
+                          aria-pressed={picked}
+                          onClick={() => setInterests((cur) => (picked ? cur.filter((k) => k !== c.key) : cur.length >= 3 ? cur : [...cur, c.key]))}
+                          className={`h-9 px-3 rounded-lg text-xs font-bold border-none cursor-pointer ring-1 transition ${picked ? 'bg-[#34B678] text-white ring-[#34B678]' : 'bg-white text-zinc-600 ring-zinc-200 hover:ring-[#34B678]/50'}`}
+                        >
+                          {c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground font-bold">
-                  Didn't receive the code?{' '}
-                  <button 
-                    onClick={handleResend}
-                    disabled={timer > 0 || resending}
-                    className={`font-black hover:underline ${timer > 0 || resending ? 'text-muted-foreground/50 cursor-not-allowed' : 'text-emerald-600'}`}
-                  >
-                    {resending ? 'Sending...' : timer > 0 ? `Resend Code in ${timer}s` : 'Resend Code'}
-                  </button>
+              {isCollege && (
+                <p className="m-0 rounded-xl bg-[#f4faf7] ring-1 ring-[#34B678]/15 px-3 py-2 text-xs font-medium leading-relaxed text-zinc-600">
+                  {COLLEGE_DATA_SAFETY_LINE}
                 </p>
+              )}
 
-                <p className="text-sm text-muted-foreground font-bold mt-4">
-                  Wrong email?{' '}
-                  <button 
-                    onClick={() => setStep('form')} 
-                    className="text-emerald-700 font-semibold hover:underline"
-                  >
-                    Go back
-                  </button>
-                </p>
-              </div>
+              <label className="flex items-start gap-2.5 text-xs text-zinc-500 leading-relaxed cursor-pointer">
+                <input type="checkbox" className="mt-0.5 w-4 h-4 shrink-0 accent-[#34B678]" checked={brandConsent} onChange={(e) => setBrandConsent(e.target.checked)} />
+                <span>Optional: allow Velaivaaipu and its sister brands (BM Academy, CoreTalents) to contact me about training and hiring services. You can change this any time in Settings.</span>
+              </label>
+
+              <TurnstileWidget onToken={setBotToken} resetKey={botReset} />
+
+              <SubmitButton loading={loading} loadingText="Creating account…" className="!mt-6">
+                Create {accountWord} account
+              </SubmitButton>
+
+              <p className="m-0 text-xs text-zinc-500 leading-relaxed text-center">
+                By creating an account, you agree to our{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1f8a57] hover:underline">Terms</a> and{' '}
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#1f8a57] hover:underline">Privacy Policy</a>.
+              </p>
+            </form>
+          </Form>
+
+          <p className="mt-5 text-center text-sm text-zinc-500 m-0">
+            Already have an account? <TextLink to="/login">Sign in</TextLink>
+          </p>
+        </>
+      ) : (
+        <>
+          <AuthHeading title="Verify your email">
+            Enter the 6-digit code we sent to <span className="font-semibold text-[#10213D] break-all">{registeredEmail}</span>.
+          </AuthHeading>
+
+          {!error && <AuthAlert type="success">{successMsg}</AuthAlert>}
+          <AuthAlert>{error}</AuthAlert>
+
+          <form onSubmit={handleVerifyOtp} className="mt-6 space-y-5" noValidate>
+            <div className="space-y-2">
+              <span className={labelCls}>6-digit code</span>
+              <OtpBoxes value={otp} onChange={setOtp} onComplete={handleVerifyOtp} />
             </div>
-          )}
-          
-        </div>
-      </div>
-    </div>
+            <SubmitButton loading={loading} loadingText="Verifying…">Verify and continue</SubmitButton>
+          </form>
+
+          <ResendLine timer={timer} resending={resending} onResend={handleResend} />
+          <p className="mt-2 text-center text-sm text-zinc-500 m-0">
+            Wrong email?{' '}
+            <button
+              type="button"
+              onClick={() => { setStep('form'); setOtp(''); setError(''); }}
+              className="font-bold text-[#1f8a57] hover:underline bg-transparent border-none p-0 cursor-pointer"
+            >
+              Go back
+            </button>
+          </p>
+        </>
+      )}
+    </AuthShell>
   );
 };
-
-const StarIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="none">
-    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-  </svg>
-);
 
 export default RegisterPage;

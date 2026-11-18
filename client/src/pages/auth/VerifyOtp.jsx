@@ -1,16 +1,66 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MailOpen, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
+import {
+  AuthShell, AuthPanel, PanelPoints, AuthHeading, AuthAlert, SubmitButton, TextLink,
+  inputCls, labelCls, otpSlotCls,
+} from '@/components/auth/AuthShell';
+
+const TIPS = [
+  'Look in your inbox for an email from Velaivaaipu',
+  'Not there? Check the Spam or Promotions folder',
+  'Asked for a new code? Use the latest one',
+];
+
+// Resend countdown, shared with the register page's OTP step.
+export const ResendLine = ({ timer, resending, onResend }) => (
+  <p className="mt-6 text-center text-sm text-zinc-500 m-0">
+    Didn&apos;t get the code?{' '}
+    <button
+      type="button"
+      onClick={onResend}
+      disabled={timer > 0 || resending}
+      className={`font-bold bg-transparent border-none p-0 transition ${timer > 0 || resending ? 'text-zinc-400 cursor-not-allowed' : 'text-[#1f8a57] hover:underline cursor-pointer'}`}
+    >
+      {resending ? 'Sending…' : timer > 0 ? `Resend in ${timer}s` : 'Resend code'}
+    </button>
+    <span className="block mt-2 text-xs text-zinc-400">The code can take a minute to arrive. Please also check your Spam or Junk folder.</span>
+  </p>
+);
+
+export const OtpBoxes = ({ value, onChange, onComplete }) => (
+  <InputOTP maxLength={6} value={value} onChange={onChange} onComplete={onComplete} pattern={REGEXP_ONLY_DIGITS}>
+    <InputOTPGroup className="gap-2">
+      {[0, 1, 2, 3, 4, 5].map((index) => (
+        <InputOTPSlot key={index} index={index} className={otpSlotCls} />
+      ))}
+    </InputOTPGroup>
+  </InputOTP>
+);
+
+export const VerifyPanel = () => (
+  <AuthPanel eyebrow="One last step" title="Check your email for the code." text="We sent a 6-digit code to confirm the email is yours.">
+    <PanelPoints points={TIPS} />
+    <div className="relative flex-1 min-h-0 flex items-end justify-center pb-10">
+      <svg viewBox="0 0 220 160" className="w-[min(260px,70%)] h-auto max-h-full" fill="none" aria-hidden="true">
+        <rect x="10" y="30" width="200" height="120" rx="16" fill="#fff" fillOpacity="0.95" />
+        <path d="M14 40 L110 100 L206 40" stroke="#34B678" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <rect key={i} x={38 + i * 25} y="118" width="18" height="18" rx="5" fill="#34B678" fillOpacity={0.25 + i * 0.12} />
+        ))}
+        <circle cx="186" cy="34" r="20" fill="#10213D" />
+        <path d="M177 34 L184 41 L196 27" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  </AuthPanel>
+);
 
 const VerifyOtpPage = () => {
   const { state } = useLocation();
@@ -38,14 +88,14 @@ const VerifyOtpPage = () => {
 
   const handleResend = async () => {
     if (timer > 0) return;
-    
+
     setResending(true);
     setError('');
     setSuccess('');
-    
+
     const result = await resendOtp(email);
     setResending(false);
-    
+
     if (result.success) {
       setSuccess('A new OTP has been sent to your email.');
       setTimer(60);
@@ -57,7 +107,8 @@ const VerifyOtpPage = () => {
   // No msg if standard generic route accessed
   const msg = state?.msg;
 
-  const handleVerify = async () => {
+  const handleVerify = async (e) => {
+    e?.preventDefault?.();
     if (otp.length !== 6) {
       setError('Please enter a valid 6-digit OTP.');
       return;
@@ -65,7 +116,7 @@ const VerifyOtpPage = () => {
 
     setLoading(true);
     setError('');
-    
+
     const result = await verifyOtp(email, otp);
     setLoading(false);
 
@@ -77,109 +128,49 @@ const VerifyOtpPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <div className="bg-background w-full max-w-md rounded-[32px] shadow-2xl p-8 md:p-10 border border-border overflow-hidden relative">
-        
-        {/* Top Decorative gradient abstract strip */}
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+    <AuthShell id="verify" panel={<VerifyPanel />}>
+      <AuthHeading title="Verify your email">
+        {state?.email
+          ? <>Enter the 6-digit code we sent to <span className="font-semibold text-[#10213D] break-all">{email}</span>.</>
+          : 'Enter your email and the 6-digit code we sent you.'}
+      </AuthHeading>
 
-        {/* Header Icon */}
-        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-sm">
-          <MailOpen size={28} className="text-primary" />
-        </div>
+      {msg && !success && !error && <AuthAlert type="success">{msg}</AuthAlert>}
+      <AuthAlert type="success">{success}</AuthAlert>
+      <AuthAlert>{error}</AuthAlert>
 
-        {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-black text-foreground mb-3 tracking-tight">Verify your email</h1>
-          <p className="text-sm text-muted-foreground font-bold leading-relaxed">
-            Please enter your registered email address and the 6-digit code we sent you.
-          </p>
-        </div>
-
-        {/* System Messages */}
-        <div className="space-y-4 mb-8">
-          {msg && (
-            <Alert variant="default" className="rounded-2xl border-primary/20 bg-primary/5 py-4">
-              <AlertDescription className="text-xs font-bold text-primary">{msg}</AlertDescription>
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert variant="default" className="rounded-2xl border-emerald-500/20 bg-emerald-500/5 py-4">
-              <AlertDescription className="text-xs font-bold text-emerald-600">{success}</AlertDescription>
-            </Alert>
-          )}
-
-          {error && (
-            <Alert variant="destructive" className="rounded-2xl border-destructive/20 bg-destructive/5 py-4">
-              <AlertDescription className="text-xs font-bold">{error}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-
-        {/* Form Inputs */}
-        <div className="space-y-8 mb-10">
-          <div>
-            <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">Email Address</label>
-            <Input 
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              className="h-14 rounded-2xl border-border bg-muted/20 focus:bg-background transition-all font-bold text-sm"
-              disabled={!!state?.email}
-            />
+      <form onSubmit={handleVerify} className="mt-6 space-y-5" noValidate>
+        {!state?.email && (
+          <div className="space-y-2">
+            <label htmlFor="otp-email" className={labelCls}>Email address</label>
+            <div className="relative">
+              <Mail size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+              <input
+                id="otp-email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                className={`${inputCls} pr-4`}
+              />
+            </div>
           </div>
+        )}
 
-          <div>
-            <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">6-digit Security Code</label>
-            <InputOTP 
-              maxLength={6} 
-              value={otp} 
-              onChange={setOtp} 
-              onComplete={handleVerify}
-              pattern={REGEXP_ONLY_DIGITS}
-              className="gap-3"
-            >
-              <InputOTPGroup className="gap-2">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <InputOTPSlot 
-                    key={index} 
-                    index={index} 
-                    className="h-14 w-12 rounded-xl border-border bg-muted/20 font-black text-xl"
-                  />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
+        <div className="space-y-2">
+          <span className={labelCls}>6-digit code</span>
+          <OtpBoxes value={otp} onChange={setOtp} onComplete={handleVerify} />
         </div>
 
-        {/* Validate Button */}
-        <Button 
-          disabled={loading}
-          onClick={handleVerify} 
-          className="h-14 w-full rounded-2xl text-base font-black bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-        >
-          {loading ? 'Verifying...' : 'Verify Email Address'}
-        </Button>
+        <SubmitButton loading={loading} loadingText="Verifying…">Verify email</SubmitButton>
+      </form>
 
-        {/* Footer */}
-        <div className="mt-10 text-center">
-          <p className="text-sm text-muted-foreground font-bold">
-            Didn't receive the code?{' '}
-            <button 
-              onClick={handleResend}
-              disabled={timer > 0 || resending}
-              className={`font-black hover:underline transition ${
-                timer > 0 || resending ? 'text-muted-foreground/40 cursor-not-allowed' : 'text-primary'
-              }`}
-            >
-              {resending ? 'Sending...' : timer > 0 ? `Resend Code in ${timer}s` : 'Resend Code'}
-            </button>
-          </p>
-        </div>
-
-      </div>
-    </div>
+      <ResendLine timer={timer} resending={resending} onResend={handleResend} />
+      <p className="mt-2 text-center text-sm text-zinc-500 m-0">
+        Wrong account? <TextLink to="/login">Back to sign in</TextLink>
+      </p>
+    </AuthShell>
   );
 };
 

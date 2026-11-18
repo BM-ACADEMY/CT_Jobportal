@@ -148,6 +148,20 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
     }
   };
 
+  const [drafting, setDrafting] = useState(null);
+  const askDraft = async (ticket) => {
+    setDrafting(ticket._id);
+    try {
+      const res = await axios.post(`${API}/tickets/admin/${ticket._id}/draft-reply`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      setEdit(ticket._id, 'conclusion', res.data.draft);
+      toast.success('Draft added below. Please read and edit it before saving.');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not get a draft');
+    } finally {
+      setDrafting(null);
+    }
+  };
+
   const handleUpdate = async (ticket) => {
     const edit = editState[ticket._id] || {};
     const newStatus = edit.status || ticket.status;
@@ -355,6 +369,11 @@ Hi ${ticket.user?.name?.split(' ')[0] || 'there'}, our support team has reviewed
                       <label className={`text-[10px] font-bold uppercase tracking-widest ${needsConclusion ? 'text-rose-500' : 'text-slate-400'}`}>
                         Conclusion Message{needsConclusion && <span className="ml-1 text-rose-500">* (required to resolve/close)</span>}
                       </label>
+                      {canUpdate && (
+                        <button type="button" disabled={drafting === t._id} onClick={() => askDraft(t)} className="ml-3 text-[11px] font-bold text-emerald-700 underline disabled:opacity-50">
+                          {drafting === t._id ? 'Writing…' : 'Draft with AI'}
+                        </button>
+                      )}
                       <textarea
                         value={currentConclusion}
                         onChange={e => setEdit(t._id, 'conclusion', e.target.value)}

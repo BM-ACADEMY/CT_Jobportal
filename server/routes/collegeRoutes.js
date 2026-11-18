@@ -54,6 +54,7 @@ const {
   getAllCollegesForAdmin,
   getCollegeByIdForAdmin,
   adminVerifyCollege,
+  adminAskCollegeInfo,
   generatePrincipalPasskey,
   getPrincipalExecutiveReport,
   updateDriveRoundStatus,
@@ -70,6 +71,8 @@ const {
   generateMou,
   getPlacementReports,
   generatePlacementReport,
+  sendPlacementReport,
+  downloadPlanQuote,
   downloadSummaryReport,
   getMyCollegeStudent,
   joinCollege,
@@ -138,11 +141,12 @@ const requireDriveAccess = async (req, res, next) => {
 };
 
 // ── Public routes (no auth) ─────────────────────────────────────────────────
+router.get('/public/student-pack-info', require('../controllers/collegePackController').packInfo);
 router.get('/public/drive/:driveCode', getPublicDrive);
 router.post('/public/drive/:driveCode/register', publicRegisterLimiter, publicRegister);
 router.get('/public/assessment', publicSubmitLimiter, getPublicAssessment);
 router.post('/public/submit-assessment', publicSubmitLimiter, submitAssessment);
-router.post('/public/principal-report/:passkey', getPrincipalExecutiveReport);
+router.post('/public/principal-report/:passkey', rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: 'Too many attempts. Please wait a few minutes.' }), getPrincipalExecutiveReport);
 router.get('/drives/incharge/verify/:driveId/:token', verifyInchargeInvite);
 router.post('/drives/incharge/accept-existing/:driveId/:token', acceptInchargeInviteExisting);
 router.post('/drives/incharge/accept-new/:driveId/:token', acceptInchargeInviteNew);
@@ -156,9 +160,13 @@ router.get('/admin/all-colleges', verifyToken, requireAdminOr('colleges_view'), 
 router.get('/admin/colleges/:collegeId', verifyToken, requireAdminOr('colleges_view'), getCollegeByIdForAdmin);
 router.put('/admin/colleges/:collegeId/test', verifyToken, requireAdminOr('colleges_verify'), require('../controllers/collegeTestFlagController').setCollegeTestFlag);
 router.put('/admin/verify/:collegeId', verifyToken, requireAdminOr('colleges_verify'), adminVerifyCollege);
+router.post('/admin/ask-info/:collegeId', verifyToken, requireAdminOr('colleges_verify'), adminAskCollegeInfo);
 
 // ── TPO authenticated routes ────────────────────────────────────────────────
 router.get('/dashboard', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), getDashboard);
+router.get('/me/student-pack', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), require('../controllers/collegePackController').myPackStatus);
+router.post('/me/upgrade-call', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), require('../controllers/collegePackController').requestUpgradeCall);
+router.post('/me/student-pack-request', verifyToken, authorizeRoles('college'), requireCollegePermission('dashboard'), require('../controllers/collegePackController').requestPack);
 router.get('/me/dashboard-stats', verifyToken, authorizeRoles('college'), getDashboardStats);
 router.get('/profile', verifyToken, authorizeRoles('college'), getProfile);
 router.put('/profile', verifyToken, authorizeRoles('college'), updateProfile);
@@ -179,7 +187,17 @@ router.delete('/operations/employers/:employerId/scorecards/:scorecardId', verif
 router.get('/mou', verifyToken, authorizeRoles('college'), generateMou);
 router.get('/reports', verifyToken, authorizeRoles('college'), getPlacementReports);
 router.post('/reports/generate', verifyToken, authorizeRoles('college'), generatePlacementReport);
+router.post('/reports/:id/send', verifyToken, authorizeRoles('college'), sendPlacementReport);
+router.get('/me/quote-pack/:packs', verifyToken, authorizeRoles('college'), require('../controllers/collegePackController').downloadPackQuote);
+router.get('/me/quote/:planId', verifyToken, authorizeRoles('college'), downloadPlanQuote);
 router.get('/reports/summary-pdf', verifyToken, authorizeRoles('college'), downloadSummaryReport);
+
+// College tools: one-page PDF, send summary to principal, milestones card, "what you get".
+const collegeTools = require('../controllers/collegeToolsController');
+router.get('/reports/one-page-pdf', verifyToken, authorizeRoles('college'), requireCollegePermission('reports'), collegeTools.downloadOnePagePdf);
+router.post('/reports/send-to-principal', verifyToken, authorizeRoles('college'), requireCollegePermission('reports'), collegeTools.sendReportToPrincipal);
+router.get('/milestones', verifyToken, authorizeRoles('college'), collegeTools.getMilestones);
+router.get('/what-you-get', verifyToken, authorizeRoles('college'), collegeTools.getWhatYouGet);
 router.get('/accreditation/overview', verifyToken, authorizeRoles('college'), getOverview);
 router.get('/accreditation/employers', verifyToken, authorizeRoles('college'), searchEmployers);
 router.get('/accreditation/template/:type', verifyToken, authorizeRoles('college'), getImportTemplate);

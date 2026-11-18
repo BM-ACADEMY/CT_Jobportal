@@ -1,6 +1,7 @@
 // Flags job text that looks like a scam, so an admin can review it. It never blocks or hides a job:
 // a flag only puts the job in the admin's "Needs review" count.
 // Words that make a mention harmless: "no registration fee", "zero deposit", "free training".
+const { inappropriateText } = require('./contentFlags');
 const SAFE_BEFORE = /(?:\bno|\bzero|\bwithout|\bnot|\bnil|\bfree of|\bnever)\W+(?:\w+\W+){0,2}$/i;
 
 const PAY_TO_APPLY = /\b(registration|joining|training|security|processing|application|verification|kit|uniform|laptop|id\s*card)\s+(fees?|charges?|deposit|amount)\b|\bpay\s+(?:rs\.?|inr|₹)\s*\d+|\brefundable\s+deposit\b|\bsend\s+money\b/gi;
@@ -24,6 +25,7 @@ const jobScamFlags = ({ title, description } = {}) => {
   if (hasUnsafeMatch(text, PAY_TO_APPLY)) flags.push('asks_for_money');
   if (hasUnsafeMatch(text, PRIVATE_CHAT)) flags.push('private_chat_or_otp');
   if (hasUnsafeMatch(text, TOO_GOOD)) flags.push('pay_too_good');
+  if (inappropriateText(text)) flags.push('inappropriate_content');
   return flags;
 };
 

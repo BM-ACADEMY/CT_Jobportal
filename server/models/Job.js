@@ -22,12 +22,26 @@ const jobSchema = new mongoose.Schema({
     ppo: { type: Boolean, default: false },
     free: { type: Boolean, default: false }
   },
+  // Optional walk-in tag on an ordinary job (utils/walkIn.js). Absent on older jobs.
+  walkIn: {
+    enabled: { type: Boolean },
+    date: { type: Date },
+    venue: { type: String, trim: true, maxlength: 200 }
+  },
   // Set by an admin after payment is received by hand (controllers/jobPromotionController.js). Shown with a clear label.
   sponsoredUntil: { type: Date, default: null },
   sponsoredNote: { type: String, default: '', maxlength: 200, select: false }, // payment note: never sent to the public
   urgentUntil: { type: Date, default: null },
+  shortLife: { type: Boolean, default: false }, // set by the server for the limited free tier: public for 14 days only, renewing does not extend it
   renewedAt: { type: Date, default: null }, // the company pressed Renew: keeps an old job on the public list for 45 more days
   hiddenFromPublic: { type: Boolean, default: false }, // Super Admin switch
+  // Job found on the web: candidates apply on the employer's own site. Set only by an admin (utils/externalApply.js).
+  externalApply: {
+    url: { type: String, default: undefined },
+    employerName: { type: String, default: undefined },
+    sourceName: { type: String, default: undefined },
+    clicks: { type: Number, default: 0 }
+  },
   company: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
@@ -78,7 +92,16 @@ const jobSchema = new mongoose.Schema({
     min: { type: Number },
     max: { type: Number },
     currency: { type: String, default: 'INR' },
-    isRangeHidden: { type: Boolean, default: false }
+    isRangeHidden: { type: Boolean, default: false },
+    unit: { type: String, enum: ['year', 'month', 'day', 'hour'], default: 'year' } // min/max are in rupees per this unit (year = the old LPA jobs)
+  },
+  // Who can apply and how the job is worked (utils/jobFacets.js). Empty on jobs posted before these existed.
+  education: { type: String, enum: ['', 'any', '10th', '12th', 'iti-diploma', 'graduate', 'postgraduate'], default: '', index: true },
+  freshersWelcome: { type: Boolean, default: false },
+  contractMonths: { type: Number, default: null },
+  partTime: {
+    hoursPerDay: { type: Number, default: null },
+    schedule: { type: String, enum: ['', 'flexible', 'mornings', 'evenings', 'weekdays', 'weekends'], default: '' }
   },
   timings: {
     type: String,

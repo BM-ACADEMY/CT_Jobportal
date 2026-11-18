@@ -1,7 +1,31 @@
 const { jobScamFlags } = require('../utils/jobScamFlags');
+const { inappropriateText } = require('../utils/contentFlags');
+const { pinPriority } = require('../utils/sponsorAddon');
+const { isLimitedTier, shortLifeCutoff, LIMITED_MSG, LIMITED_MAX_ACTIVE } = require('../utils/companyTier');
+
+// A job with vulgar, abusive or adult wording is not posted. The poster is told why and can edit and try again,
+// and the admins get a notification so a repeat poster can be spotted (and the company hidden in one tap).
+const CONTENT_BLOCK_MSG = 'This job was not posted because the title or description has vulgar, abusive or adult wording. Please remove it and post again. If you think this is a mistake, contact hello@velaivaaipu.in.';
+const { withMatchReasons } = require('../utils/matchReasons');
+// Free-email accounts: one live job at a time (a job older than 14 days no longer counts, it is off the public site).
+const limitedTierFull = async (user, excludeJobId) => {
+  if (!isLimitedTier(user)) return false;
+  const q = { recruiter: user._id, status: 'active', createdAt: { $gte: shortLifeCutoff() } };
+  if (excludeJobId) q._id = { $ne: excludeJobId };
+  return (await Job.countDocuments(q)) >= LIMITED_MAX_ACTIVE;
+};
+const blockForContent = async (req, user, title, description) => {
+  if (!inappropriateText(`${title || ''}\n${description || ''}`)) return false;
+  notifyRoles({ io: req.io, roles: ['admin', 'subadmin'], title: 'Job post blocked', message: `${user.name || 'A recruiter'} tried to post a job with vulgar or adult wording. It was not posted.`, type: 'job_posted', link: '/admin/users', metadata: { userId: user._id } })
+    .catch((err) => console.error('Blocked job notification failed:', err.message));
+  return true;
+};
 const { withPromotion } = require('../utils/jobPromotion');
 const { cleanInternship, freeInternshipSlot } = require('../utils/internship');
+const { cleanFacets, cleanSalary } = require('../utils/jobFacets');
+const { cleanWalkIn } = require('../utils/walkIn');
 const Company = require('../models/Company');
+const { vagueLocation, VAGUE_LOCATION_MESSAGE } = require('../utils/jobLocation');
 const { publicJobConditions, publicCompanyConditions, hideUnverified } = require('../utils/publicVisibility');
 const { cleanCategory, cleanInterestedCategories, guessCategory } = require('../config/jobCategories');
 const Job = require('../models/Job');
@@ -33,6 +57,10 @@ const createJob = async (req, res) => {
     if (['company', 'both'].includes(finalPostedAs) && (!user || !user.company)) {
       return res.status(400).json({ msg: 'You must be associated with a company to post jobs as a company' });
     }
+
+    const limitedTier = isLimitedTier(user);
+    if (limitedTier && req.body.status !== 'draft' && await limitedTierFull(user)) return res.status(403).json({ msg: LIMITED_MSG, code: 'free_email_one_job' });
+    if (req.body.status !== 'draft' && await blockForContent(req, user, req.body.title, req.body.description)) return res.status(400).json({ msg: CONTENT_BLOCK_MSG, code: 'content_blocked' });
 
     // Internships: details are required, and a verified company's first 3 live internships are free (no paid slot used).
     let internshipData = null; let freeInternship = false;
@@ -110,6 +138,14 @@ const createJob = async (req, res) => {
     if (status !== 'draft') {
       if (!title) return res.status(400).json({ msg: 'Job title is required for publishing' });
       if (!description) return res.status(400).json({ msg: 'Job description is required for publishing' });
+      if (vagueLocation(location, workMode)) return res.status(400).json({ msg: VAGUE_LOCATION_MESSAGE });
+    }
+
+    let walkInData;
+    if (req.body.walkIn !== undefined) {
+      const w = cleanWalkIn(req.body.walkIn);
+      if (w.error) return res.status(400).json({ msg: w.error });
+      if (w.data.enabled) walkInData = w.data;
     }
 
     const newJob = new Job({
@@ -120,13 +156,15 @@ const createJob = async (req, res) => {
       jobType,
       workMode,
       location,
-      salary,
+      salary: cleanSalary(salary),
+      ...cleanFacets(req.body),
       timings,
       shifts,
       skillsRequired,
       additionalDetails,
       category: cleanCategory(category) || guessCategory({ title, skillsRequired }),
       ...(internshipData ? { internship: { ...internshipData, free: freeInternship } } : {}),
+      ...(walkInData ? { walkIn: walkInData } : {}),
       status: status || 'active',
       postedAs: finalPostedAs,
       company: user.company || undefined,
@@ -134,6 +172,7 @@ const createJob = async (req, res) => {
     });
 
     newJob.scamFlags = jobScamFlags({ title, description });
+    if (limitedTier) newJob.shortLife = true;
     const job = await newJob.save();
 
     if (job.status === 'active') {
@@ -226,6 +265,9 @@ const cloneJob = async (req, res) => {
     newJobData.applicantsCount = 0;
     newJobData.status = 'draft';
     newJobData.isCloned = true;
+    // A copy never inherits paid, flagged or reported state.
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'shortLife', 'hiddenFromPublic', 'scamReviewed', 'scamFlags', 'reportCount', 'renewedAt', 'externalApply'].forEach((k) => { delete newJobData[k]; });
+    if (newJobData.internship) newJobData.internship = { ...newJobData.internship, free: false };
 
     const newJob = new Job(newJobData);
     const savedJob = await newJob.save();
@@ -284,6 +326,9 @@ const updateJob = async (req, res) => {
 
     // Conditional validation for updates
     const updatedStatus = req.body.status || job.status;
+    if (updatedStatus !== 'draft' && req.body.location !== undefined && String(req.body.location).trim() !== String(job.location || '').trim() && vagueLocation(req.body.location, req.body.workMode || job.workMode)) {
+      return res.status(400).json({ msg: VAGUE_LOCATION_MESSAGE });
+    }
     
     // Check limit if moving from draft/inactive to active/closed
     const currentIsCounting = ['active', 'closed'].includes(job.status);
@@ -327,10 +372,19 @@ const updateJob = async (req, res) => {
       if (!updatedDesc) return res.status(400).json({ msg: 'Job description is required for publishing' });
     }
 
+    if (job.shortLife && updatedStatus === 'active') {
+      const poster = await User.findById(job.recruiter).select('email subscriptionDetails subscriptionExpiry');
+      if (await limitedTierFull(poster, job._id)) return res.status(403).json({ msg: LIMITED_MSG, code: 'free_email_one_job' });
+    }
+    if (updatedStatus !== 'draft') {
+      const owner = await User.findById(req.user.id).select('name');
+      if (await blockForContent(req, owner || {}, req.body.title ?? job.title, req.body.description ?? job.description)) return res.status(400).json({ msg: CONTENT_BLOCK_MSG, code: 'content_blocked' });
+    }
+
     const previousStatus = job.status;
     delete req.body.scamFlags; delete req.body.scamReviewed; // only the server and admin set these
     // Paid and counted fields are never set from the posting form: only an admin (sponsored, urgent) or the server (reports, free internship) can.
-    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'hiddenFromPublic'].forEach((k) => { delete req.body[k]; });
+    ['sponsoredUntil', 'sponsoredNote', 'urgentUntil', 'reportCount', 'renewedAt', 'shortLife', 'hiddenFromPublic', 'company', 'recruiter', 'externalApply', 'applicantsCount', 'display_id', 'isCloned', '_id'].forEach((k) => { delete req.body[k]; });
     Object.keys(req.body).forEach((k) => { if (k.includes('.') || k.startsWith('$')) delete req.body[k]; });   // no dotted paths such as 'internship.free'
     if (req.body.internship !== undefined) {
       if (job.jobType !== 'Internship' && req.body.jobType !== 'Internship') { delete req.body.internship; }
@@ -340,7 +394,18 @@ const updateJob = async (req, res) => {
         req.body.internship = { ...r.data, free: !!job.internship?.free };   // free is never taken from the form
       }
     }
+    if (req.body.walkIn !== undefined) {
+      const w = cleanWalkIn(req.body.walkIn);
+      if (w.error) return res.status(400).json({ msg: w.error });
+      req.body.walkIn = w.data;
+    }
     if (req.body.category !== undefined) req.body.category = cleanCategory(req.body.category); // an unknown value clears it
+    if (req.body.salary !== undefined) req.body.salary = cleanSalary(req.body.salary);
+    if (['education', 'freshersWelcome', 'contractMonths', 'partTime', 'jobType'].some((k) => req.body[k] !== undefined)) {
+      // Fields not sent keep their saved value; the rest are cleaned for the job type that will be saved.
+      const merged = { jobType: job.jobType, education: job.education, freshersWelcome: job.freshersWelcome, contractMonths: job.contractMonths, partTime: job.partTime, ...req.body };
+      Object.assign(req.body, cleanFacets(merged));
+    }
     const flagUpdate = (req.body.title !== undefined || req.body.description !== undefined)
       ? { scamFlags: jobScamFlags({ title: req.body.title ?? job.title, description: req.body.description ?? job.description }), scamReviewed: false }
       : {};
@@ -432,7 +497,7 @@ const getAllJobs = async (req, res) => {
         ...publicJobConditions(strict ? { verifiedCompanyIds: companyIds } : { hiddenCompanyIds: companyIds })
       ]
     })
-      .populate('company', 'name logo location website')
+      .populate('company', 'name logo location website verifiedByCall')
       .populate({
         path: 'recruiter',
         select: 'subscription',
@@ -441,9 +506,7 @@ const getAllJobs = async (req, res) => {
       .sort({ createdAt: -1 });
 
     // Sort: priority listing recruiters first, then by date
-    const prioritized = jobs.filter(j => j.recruiter?.subscription?.hasPriorityListing);
-    const regular = jobs.filter(j => !j.recruiter?.subscription?.hasPriorityListing);
-    const sorted = [...prioritized, ...regular];
+    const sorted = pinPriority(jobs, (j) => !!j.recruiter?.subscription?.hasPriorityListing);
 
     // Add isPriority flag
     const result = sorted.map(j => ({
@@ -469,7 +532,7 @@ const getJobById = async (req, res) => {
       return res.status(404).json({ msg: 'Job not found' });
     }
     const job = await Job.findById(req.params.id)
-      .populate('company', 'name logo location website')
+      .populate('company', 'name logo location website industry tagline about_us description is_verified verifiedByCall company_size_range employeeCount')
       .populate('recruiter', 'name email');
 
     if (!job) {
@@ -526,7 +589,7 @@ const getMatchingJobs = async (req, res) => {
     // to the original matching below so the page never breaks.
     if (engineEnabled()) {
       try {
-        return res.json(await getRankedMatches(user, { Job, User, Application }));
+        return res.json(withMatchReasons(user, await getRankedMatches(user, { Job, User, Application })));
       } catch (engineErr) {
         console.error('Relevance engine failed, using classic matching:', engineErr.message);
       }
@@ -600,11 +663,11 @@ const getMatchingJobs = async (req, res) => {
     }
 
     const matchingJobs = await Job.find(query)
-      .populate('company', 'name logo location website')
+      .populate('company', 'name logo location website verifiedByCall')
       .sort({ createdAt: -1 })
       .limit(20);
 
-    res.json(matchingJobs);
+    res.json(withMatchReasons(user, matchingJobs));
 
   } catch (err) {
     console.error('Get Matching Jobs Error:', err);

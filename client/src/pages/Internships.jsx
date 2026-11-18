@@ -32,6 +32,9 @@ const Internships = () => {
       <SEOHead title="Internships in Tamil Nadu, free to apply | Velaivaaipu" description="Paid and unpaid internships from verified companies, with certificates. Apply free on Velaivaaipu." path="/internships" />      <div>
         <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2"><GraduationCap className="text-emerald-600" /> Internships</h1>
         <p className="text-sm text-slate-500 mt-1">Real internships from verified companies. You never pay to apply.</p>
+        <p className="mt-3 text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2" data-testid="internship-student-warning">
+          Never pay to get an internship. If a company asks you for a fee, deposit or kit, do not pay. Use the Report button on the posting and we will act on it.
+        </p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         <select className={sel} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}><option value="">All fields</option>{JOB_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</select>

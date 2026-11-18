@@ -21,6 +21,7 @@ const NAV_LINKS = [
   { to: '/jobs', label: 'Find Jobs', icon: Briefcase },
   { to: '/drives', label: 'Walk-in Drives', icon: Briefcase },
   { to: '/internships', label: 'Internships', icon: Briefcase },
+  { to: '/job-fairs', label: 'Job Fairs', icon: Briefcase },
   { to: '/companies', label: 'Companies', icon: Building2 },
   { to: '/for-colleges', label: 'For Colleges', icon: GraduationCap },
   { to: '/plans', label: 'Plans', icon: Tag },
@@ -29,8 +30,8 @@ const NAV_LINKS = [
 ];
 
 // On a wide screen Walk-in Drives and Internships sit inside the Find Jobs menu so the bar does not overflow. The phone menu lists everything.
-const JOBS_MENU = [{ to: '/jobs', label: 'All jobs' }, { to: '/internships', label: 'Internships' }, { to: '/drives', label: 'Walk-in Drives' }];
-const IN_JOBS_MENU = ['/internships', '/drives'];
+const JOBS_MENU = [{ to: '/jobs', label: 'All jobs' }, { to: '/internships', label: 'Internships' }, { to: '/drives', label: 'Walk-in Drives' }, { to: '/job-fairs', label: 'Job Fairs' }];
+const IN_JOBS_MENU = ['/internships', '/drives', '/job-fairs'];
 
 const PublicHeader = () => {
   const { user, logout } = useAuth();

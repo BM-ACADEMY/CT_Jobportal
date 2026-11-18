@@ -1,3 +1,4 @@
+const { ensureOrgCompany, verifyLinkedCompany } = require('../utils/ensureOrgCompany');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret, TOKEN_TTL } = require('../config/jwt');
@@ -10,6 +11,11 @@ const Application = require('../models/Application');
 const Payment = require('../models/Payment');
 const Subscription = require('../models/Subscription');
 const Review = require('../models/Review');
+const WalkInDrive = require('../models/WalkInDrive');
+const SponsorPayment = require('../models/SponsorPayment');
+const CollegePackPayment = require('../models/CollegePackPayment');
+const { manualPaymentRows, sponsorRows, packRows, sumRows } = require('../utils/manualIncome');
+const { istDayStart } = require('../utils/istDay');
 const sendEmail = require('../utils/sendEmail');
 const { notifyUser } = require('../utils/inAppNotifications');
 const { notifyJobClosedOrRemoved } = require('../utils/jobNotifications');
@@ -153,7 +159,23 @@ const getDashboardStats = async (req, res) => {
       { $match: { status: 'completed', createdAt: { $gte: REVENUE_START } } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
-    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+    const onlineRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+
+    // Money received by hand (walk-in drive plans and add-ons marked paid) is not a Razorpay payment, so it is added here
+    const drives = await WalkInDrive.find({ $or: [{ paid: true }, { 'addons.paid': true }] }).select('plan paid paidAt addons').lean().catch(() => []);
+    const sponsorPays = await SponsorPayment.find({ receivedAt: { $gte: REVENUE_START } }).select('amount receivedAt').lean().catch(() => []);
+    const packPays = await CollegePackPayment.find({ receivedAt: { $gte: REVENUE_START } }).select('amount receivedAt').lean().catch(() => []);
+    const manualRows = [...manualPaymentRows(drives, { from: REVENUE_START }), ...sponsorRows(sponsorPays, { from: REVENUE_START }), ...packRows(packPays, { from: REVENUE_START })];
+    const manual = sumRows(manualRows);
+    const totalRevenue = onlineRevenue + manual.total;
+
+    // Today (India time): what changed since midnight
+    const dayStart = istDayStart();
+    const [newUsersToday, newJobsToday, applicationsToday] = await Promise.all([
+      User.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0),
+      Job.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0),
+      Application.countDocuments({ createdAt: { $gte: dayStart } }).catch(() => 0)
+    ]);
 
     // 2. Revenue Data (Last 4 months)
     const fourMonthsAgo = chartStart();
@@ -198,6 +220,11 @@ const getDashboardStats = async (req, res) => {
         match.revenue = r.revenue;
       }
     });
+    manualRows.forEach(r => {
+      if (!r.at) return;
+      const match = last4MonthsData.find(m => m.year === r.at.getFullYear() && m.month === r.at.getMonth() + 1);
+      if (match) match.revenue += r.total;
+    });
 
     const revenueData = last4MonthsData.map(m => ({ name: m.name, revenue: m.revenue }));
 
@@ -238,6 +265,9 @@ const getDashboardStats = async (req, res) => {
       needsAction: { collegesPending, ticketsOpen, messagesNew, reviewsPending, requestsPending, jobsFlagged },
       usersByRole,
       totalRevenue,
+      onlineRevenue,
+      manualRevenue: { total: manual.total, count: manual.count },
+      today: { newUsers: newUsersToday, newJobs: newJobsToday, applications: applicationsToday },
       revenueData,
       subscriptionData: subscriptionMerged
     });
@@ -315,6 +345,14 @@ const updateUserVerificationStatus = async (req, res) => {
     }
     const user = await User.findByIdAndUpdate(req.params.id, { profileVerificationStatus: status }, { new: true }).select('-password').populate('role', 'name');
     if (!user) return res.status(404).json({ msg: 'User not found' });
+    if (status === 'Verified') {
+      // Verified organizations must appear on the public Companies page.
+      await ensureOrgCompany(user).catch(err => console.error('ensureOrgCompany failed:', err.message));
+      if (['recruiter', 'company'].includes(user.role?.name)) {
+        await verifyLinkedCompany(user, req.user && (req.user.id || req.user._id))
+          .catch(err => console.error('verifyLinkedCompany failed:', err.message));
+      }
+    }
     if (status !== 'Pending') {
       notifyUser({
         io: req.io,
@@ -339,7 +377,7 @@ const updateUserVerificationStatus = async (req, res) => {
 // @route   GET /api/admin/companies
 const getCompanies = async (req, res) => {
   try {
-    const companies = await Company.find().populate('userId', 'name email').sort({ createdAt: -1 });
+    const companies = await Company.find().sort({ createdAt: -1 });
     res.json(companies);
   } catch (err) {
     console.error('Get Companies Error:', err.message);

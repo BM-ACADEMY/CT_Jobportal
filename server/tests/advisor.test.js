@@ -86,5 +86,12 @@ test('a question is saved as an answer', async () => {
 test('the weekly job is off by default', async () => {
   assert.deepEqual(await runWeekly({ env: {}, deps: {}, callAI: async () => '' }), { skipped: true });
   const { deps } = makeDeps();
-  assert.ok((await runWeekly({ env: { ADVISOR_ENABLED: 'true' }, deps, callAI: good })).id);
+  assert.ok((await runWeekly({ env: { ADVISOR_ENABLED: 'true' }, deps, callAI: good, mailer: async () => ({ sent: 0 }) })).id);
+});
+
+test('AI ticket drafts use the same monthly limit as the advisor', async () => {
+  const { usedThisMonth } = require('../utils/advisorService');
+  const deps = { AdvisorReport: { countDocuments: async () => 3 }, TicketDraftUse: { countDocuments: async () => 4 } };
+  assert.equal(await usedThisMonth(deps), 7);
+  assert.equal(await usedThisMonth({ AdvisorReport: deps.AdvisorReport }), 3);
 });

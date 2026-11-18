@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { BLOGS } from '../data/blogs';
+import DynamicBlogPost from './DynamicBlogPost';
 import SEOHead from '../components/seo/SEOHead';
 
 const BLOG_UI_OVERRIDES = `
@@ -589,7 +590,7 @@ const buildBlogSchema = (blog, url) => {
   return schema;
 };
 
-const BlogDetails = ({ staticSlug }) => {
+const StaticBlogDetails = ({ staticSlug }) => {
   const { slug: paramSlug } = useParams();
   const slug = staticSlug || paramSlug;
   const blog = BLOGS.find((item) => item.slug === slug);
@@ -611,6 +612,14 @@ const BlogDetails = ({ staticSlug }) => {
       <HtmlBlog blog={blog} />
     </>
   );
+};
+
+// Older posts are code; newer ones are written in the admin panel and loaded by slug.
+const BlogDetails = ({ staticSlug }) => {
+  const { slug: paramSlug } = useParams();
+  const slug = staticSlug || paramSlug;
+  if (BLOGS.some((item) => item.slug === slug)) return <StaticBlogDetails staticSlug={staticSlug} />;
+  return <DynamicBlogPost slug={slug} />;
 };
 
 export default BlogDetails;

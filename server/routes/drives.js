@@ -11,6 +11,7 @@ router.post('/', ...org, rateLimit({ windowMs: 3600000, max: 20 }), c.createDriv
 router.get('/mine', ...org, c.myDrives);
 router.get('/mine/:id', ...org, c.manageDrive);
 router.post('/mine/:id/check-in', ...org, c.checkIn);
+router.post('/mine/:id/walk-up', ...org, rateLimit({ windowMs: 3600000, max: 300 }), c.walkUp);
 router.patch('/mine/:id/registrations/:regId', ...org, c.updateRegistration);
 router.post('/mine/:id/addons', ...org, c.requestAddon);
 router.post('/mine/:id/invite', ...org, rateLimit({ windowMs: 3600000, max: 10 }), c.inviteSeekers);

@@ -171,6 +171,88 @@ const collegeFirstStudents = (user, college) => ({
     ${button(link('/college/drives', 'college_first_students'), 'Open my drives')}`,
 });
 
+// Weekly jobs mail for every active job seeker (free). Up to 5 real matches, with the reason each one fits.
+const weeklyJobs = (user, jobs) => ({
+  subject: `${jobs.length} new job${jobs.length > 1 ? 's' : ''} for you this week`,
+  title: 'New jobs that fit you',
+  html: `<p>Hi ${first(user)},</p>
+    <p>These jobs were posted this week and match your profile:</p>
+    <ul style="padding-left:18px;">${jobs.map((j) => `<li style="margin:6px 0;"><a href="${esc(utm(jobUrl(j), 'weekly_jobs'))}" style="color:#059669;font-weight:bold;">${esc(j.title)}</a>${j.company?.name ? ` at ${esc(j.company.name)}` : ''}${j.location ? `, ${esc(j.location)}` : ''}${j.why?.length ? `<br><span style="font-size:12px;color:#475569;">${esc(j.why.slice(0, 2).join(' · '))}</span>` : ''}</li>`).join('')}</ul>
+    <p style="font-size:13px;color:#475569;">Applying is free. A complete profile and a resume help your application get seen.</p>
+    ${button(utm(`${frontend()}/jobs`, 'weekly_jobs'), 'See all jobs')}`,
+});
+
+// Sent once after a payment: what they bought and the one place to start, so the money turns into a benefit.
+const PAID_START = {
+  seeker: { path: '/candidate/job-alerts', label: 'Set up my job alerts', tip: 'Set your alert once and matching jobs reach your inbox. Also try the AI resume review and mock interviews included in your plan.' },
+  company: { path: '/company/candidates', label: 'Find candidates', tip: 'Post your job, then open Candidates to see people who fit. Your plan lets you contact them directly.' },
+  college: { path: '/college/drives', label: 'Open my drives', tip: 'Create a drive and share the QR code with students. Their skill results show up in your reports.' },
+};
+const paidWelcome = (user, { audience, itemName }) => {
+  const s = PAID_START[audience] || PAID_START.seeker;
+  return {
+    subject: `Your ${itemName || 'plan'} is active. Start here`,
+    title: 'Thank you. Here is how to use it',
+    html: `<p>Hi ${first(user)},</p>
+      <p>Your payment for <strong>${esc(itemName || 'your plan')}</strong> went through. ${esc(s.tip)}</p>
+      <p>Stuck on anything? Reply to this mail or write to hello@velaivaaipu.in and we will help.</p>
+      ${button(link(s.path, 'paid_welcome'), s.label)}`,
+  };
+};
+
+// Recruiter mails: new applicants (weekly), a job about to close, and the day before / after a walk-in drive.
+const applicantsWeekly = (user, { total, pending, topJob }) => ({
+  subject: `${total} new applicant${total > 1 ? 's' : ''} on your jobs this week`,
+  title: 'Applicants are waiting',
+  html: `<p>Hi ${first(user)},</p>
+    <p>${total} new ${total > 1 ? 'people applied' : 'person applied'} to your jobs this week${topJob ? `, most for <strong>${esc(topJob)}</strong>` : ''}. ${pending} ${pending === 1 ? 'is' : 'are'} still waiting for your review.</p>
+    <p>Quick replies keep good candidates interested.</p>
+    ${button(link('/company/candidates', 'applicants_weekly'), 'Review applicants')}`,
+});
+
+const jobClosing = (user, job, { shortLife }) => ({
+  subject: `Your job "${String(job.title).slice(0, 60)}" closes soon`,
+  title: 'Your job is about to close',
+  html: `<p>Hi ${first(user)},</p>
+    <p><strong>${esc(job.title)}</strong> closes in about ${Math.max(1, Math.ceil((new Date(job.validThrough) - Date.now()) / 86400000))} day(s).</p>
+    ${shortLife
+    ? '<p>Jobs from free email addresses run for 14 days and cannot be renewed. To keep hiring, register with your company email or ask us to verify your company, and post again.</p>'
+    : '<p>Still hiring? Extend it from your jobs page. Already hired? Close it so candidates are not kept waiting.</p>'}
+    ${button(link('/company/jobs', 'job_closing'), 'Open my jobs')}`,
+});
+
+const drivePre = (user, drive, { registered }) => ({
+  subject: `Tomorrow: ${String(drive.title).slice(0, 60)}. ${registered} registered`,
+  title: 'Your drive is tomorrow',
+  html: `<p>Hi ${first(user)},</p>
+    <p><strong>${esc(drive.title)}</strong> is tomorrow. ${registered} ${registered === 1 ? 'person has' : 'people have'} registered. Candidates were reminded to bring their documents.</p>
+    <p>Keep the check-in QR ready on your phone.</p>
+    ${button(link('/company/drives', 'drive_pre'), 'Open drive')}`,
+});
+
+const drivePost = (user, drive, { registered, checkedIn }) => ({
+  subject: `${String(drive.title).slice(0, 60)}: update your candidates`,
+  title: 'Thanks for hosting your drive',
+  html: `<p>Hi ${first(user)},</p>
+    <p>${checkedIn} of ${registered} registered candidates checked in at <strong>${esc(drive.title)}</strong>.</p>
+    <p>Mark who is shortlisted or selected so people hear back quickly. It also keeps your hiring record in one place.</p>
+    ${button(link('/company/drives', 'drive_post'), 'Update candidates')}`,
+});
+
+// One week after paying: did it deliver what they expected? Three one-tap answers, no login. Every answer helps us improve.
+const apiBase = () => (process.env.API_PUBLIC_URL || '').replace(/\/$/, '');
+const paymentFeedbackAsk = (user, { itemName, token }) => {
+  const a = (met, label, color) => `<a href="${esc(`${apiBase()}/api/public/payment-feedback?token=${token}&met=${met}`)}" style="display:inline-block;margin:4px 6px 4px 0;background:${color};color:#fff;text-decoration:none;font-weight:bold;padding:11px 16px;border-radius:8px;">${label}</a>`;
+  return {
+    subject: `Did ${itemName || 'your plan'} give you what you expected?`,
+    title: 'One quick question',
+    html: `<p>Hi ${first(user)},</p>
+      <p>You paid for <strong>${esc(itemName || 'your plan')}</strong> a week ago. Did it give you what you expected? Tap one. It takes 5 seconds and we read every answer.</p>
+      <p>${a('yes', 'Yes, it did', '#059669')}${a('partly', 'Partly', '#d97706')}${a('no', 'No, not really', '#dc2626')}</p>
+      <p style="font-size:13px;color:#475569;">If something went wrong, tell us and we will try to fix it.</p>`,
+  };
+};
+
 const wrap = (m, userId) => ({ subject: m.subject, html: lifecycleWrapper(m.title, m.html, userId), headers: unsubscribeHeaders(userId) });
 
-module.exports = { planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };
+module.exports = { paymentFeedbackAsk, applicantsWeekly, jobClosing, drivePre, drivePost, weeklyJobs, paidWelcome, planEnding, paymentRetry, companyVerify, companyProfileIncomplete, collegeVerify, collegeFirstDrive, collegeFirstStudents, profileIncomplete, skillTestInvite, skillGap, jobsForYou, firstJobTips, postJobTemplates, topCandidates, batchReadiness, wrap, jobUrl };

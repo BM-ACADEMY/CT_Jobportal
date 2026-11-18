@@ -71,14 +71,21 @@ const coreMenus = {
     { icon: MessageSquareQuote, label: 'Review Velaivaaipu', path: '/write-review' },
   ],
   admin: [
-    { icon: LayoutDashboard, label: 'Command Center', path: '/admin/dashboard' },
-    { icon: Users,           label: 'Users',  path: '/admin/users' },
-    { icon: Briefcase,       label: 'Jobs',  path: '/admin/jobs' },
-    { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges' },
+    { icon: LayoutDashboard, label: 'Command Center', path: '/admin/dashboard', group: 'Daily' },
+    { icon: ListChecks,      label: 'Needs action',   path: '/admin/needs-action', group: 'Daily' },
+    { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests', group: 'Daily' },
+    { icon: MessageCircle,   label: 'WhatsApp', path: '/admin/whatsapp', group: 'Daily' },
+    { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets', group: 'Daily' },
+    { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages', group: 'Daily' },
+    { icon: GraduationCap,   label: 'College Verification',    path: '/admin/colleges', group: 'Daily' },
+    { icon: GraduationCap,   label: 'College Funnel',    path: '/admin/college-funnel', group: 'Daily' },
+    { icon: GraduationCap,   label: 'Duplicate Colleges', path: '/admin/duplicate-colleges', group: 'Daily' },
+    { icon: LayoutDashboard, label: 'Balance Board',     path: '/admin/balance-board', group: 'Daily' },
     {
       icon: CreditCard,
       label: 'Subscriptions',
       path: '/admin/subscriptions',
+      group: 'Money',
       children: [
         { label: 'Plans', path: '/admin/subscriptions/plans' },
         { label: 'Renewals', path: '/admin/subscriptions/renewals' },
@@ -89,21 +96,26 @@ const coreMenus = {
         { label: 'Job limits', path: '/admin/job-limits' }
       ]
     },
-    { icon: ClipboardList,   label: 'Requests',       path: '/admin/requests' },
-    { icon: History,         label: 'Payment History', path: '/admin/payment-history' },
-    { icon: MessageCircle,   label: 'Messages',       path: '/admin/messages' },
-    { icon: Headphones,      label: 'Support Tickets', path: '/admin/tickets' },
-    { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews' },
-    { icon: ListChecks,    label: 'Needs action',   path: '/admin/needs-action' },
-    { icon: Wallet,        label: 'Spend and income', path: '/admin/spend' },
-    { icon: MessageSquareHeart, label: 'Feedback',   path: '/admin/feedback' },
-    { icon: CalendarDays, label: 'Walk-in Drives',   path: '/admin/drives' },
-    { icon: Sparkles, label: 'Business Advisor',   path: '/admin/advisor' },
-    { icon: ListChecks, label: 'All Services',     path: '/admin/services' },
-    { icon: Users, label: 'Brand Leads',      path: '/admin/brand-leads' },
-    { icon: BadgeCheck,    label: 'Skill tests',    path: '/admin/skill-tests' },
-    { icon: UserCog,        label: 'Staff',          path: '/admin/staff' },
-    { icon: Settings,       label: 'Settings',       path: '/admin/settings' },
+    { icon: History,         label: 'Payment History', path: '/admin/payment-history', group: 'Money' },
+    { icon: Wallet,          label: 'Spend and income', path: '/admin/spend', group: 'Money' },
+    { icon: Sparkles,        label: 'Business Advisor',   path: '/admin/advisor', group: 'Money' },
+    { icon: Users,           label: 'Users',  path: '/admin/users', group: 'Growth' },
+    { icon: Briefcase,       label: 'Jobs',  path: '/admin/jobs', group: 'Growth' },
+    { icon: Building2,       label: 'Companies', path: '/admin/companies', group: 'Growth' },
+    { icon: Briefcase,       label: 'Web jobs',  path: '/admin/web-jobs', group: 'Growth' },
+    { icon: CalendarDays,    label: 'Walk-in Drives',   path: '/admin/drives', group: 'Growth' },
+    { icon: CalendarDays,    label: 'Job Fairs',        path: '/admin/job-fairs', group: 'Growth' },
+    { icon: Activity,        label: 'Daily activity',   path: '/admin/activity', group: 'Growth' },
+    { icon: Users,           label: 'Signup sources',   path: '/admin/growth', group: 'Growth' },
+    { icon: Users,           label: 'Brand Leads',      path: '/admin/brand-leads', group: 'Growth' },
+    { icon: MessageSquareQuote, label: 'Reviews', path: '/admin/reviews', group: 'Growth' },
+    { icon: MessageSquareHeart, label: 'Feedback',   path: '/admin/feedback', group: 'Growth' },
+    { icon: BookOpen,        label: 'Blog posts',     path: '/admin/blog', group: 'Growth' },
+    { icon: BadgeCheck,      label: 'Skill tests',    path: '/admin/skill-tests', group: 'Growth' },
+    { icon: ListChecks,      label: 'All Services',     path: '/admin/services', group: 'Setup' },
+    { icon: UserCog,         label: 'Staff',          path: '/admin/staff', group: 'Setup' },
+    { icon: ShieldCheck,     label: 'Admins',         path: '/admin/admins', group: 'Setup' },
+    { icon: Settings,        label: 'Settings',       path: '/admin/settings', group: 'Setup' },
   ],
   // A team member added via the "employee" invite flow (role becomes org_employee rather than
   // staying 'recruiter') — same recruiter-shaped workspace as coreMenus.recruiter, just with its
@@ -128,7 +140,7 @@ const premiumMenus = {
     { icon: Bell,          label: 'Job Alerts',          path: '/candidate/job-alerts',          featureKey: 'jobAlerts' },
     { icon: Sparkles,      label: 'Skill Tests',     path: '/candidate/skill-tests' },
     { icon: Users,         label: 'Who Viewed Me',    path: '/candidate/profile-insights',    featureKey: 'hasProfileViewInsights' },
-    { icon: Star,          label: 'Career Counselling',  path: '/candidate/career-counselling',  featureKey: 'hasCareerCounselling' },
+    { icon: Star,          label: 'Career Counselling',  path: '/candidate/career-counselling' },
     { icon: Mic,           label: 'Mock Interviews',     path: '/candidate/mock-interviews',     featureKey: 'hasMockInterviews' },
     { icon: BookOpen,      label: 'AI Resume Review',    path: '/candidate/ai-resume-review',    featureKey: 'hasAiResumeReview' },
     { icon: MessageCircle, label: 'Messages',     path: '/candidate/messages',            featureKey: 'hasMessageRecruiters' },
@@ -264,7 +276,7 @@ const PremiumNavItem = ({ item, active, unlocked, isCollapsed }) => {
   return (
     <Link
       to={item.path}
-      title={item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined)}
+      title={!unlocked ? `${item.label}: not in your current plan. Open it to see what you get and how to upgrade.` : (item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined))}
       className={`group flex items-center transition-all relative rounded-none outline-none focus:outline-none
         ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
         ${active
@@ -376,7 +388,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       <div className={`h-20 px-6 border-b border-white/10 flex items-center shrink-0 bg-white/5 ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
         {!isCollapsed && (
           <Link to="/" className="flex items-center">
-            <img src="/velaivaaipu-logo.png" alt="Velaivaaipu" className="h-16 w-auto object-contain brightness-110 filter" />
+            <img src="/velaivaaipu-logo.webp" alt="Velaivaaipu" className="h-16 w-auto object-contain brightness-110 filter" />
           </Link>
         )}
         <button 
@@ -415,7 +427,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
             <div className="relative shrink-0">
               <Avatar className="w-8 h-8 rounded-full border border-white/10 shadow-sm bg-white/10">
                 <AvatarImage
-                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`) : '/usericon.png'}
+                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`) : '/usericon.webp'}
                     className="object-cover"
                 />
                 <AvatarFallback className="bg-white/10 text-white font-bold text-xs rounded-full">
@@ -488,14 +500,25 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
             ) : (
               <div className="h-[1px] bg-white/10 my-4 mx-2" />
             )}
-            {coreItems.map(item => {
+            {coreItems.map((item, idx) => {
+              // Admin menu is grouped (Daily, Money, Growth, Setup); other roles have no groups.
+              const startsGroup = item.group && item.group !== coreItems[idx - 1]?.group && !isCollapsed;
+              const header = startsGroup ? (
+                <div key={`g-${item.group}`} className="px-5 pt-4 pb-1 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">{item.group}</div>
+              ) : null;
               if (item.children) {
                 return (
-                  <CollapsibleNavItem key={item.path} item={item} location={location} isCollapsed={isCollapsed} />
+                  <React.Fragment key={item.path}>
+                    {header}
+                    <CollapsibleNavItem item={item} location={location} isCollapsed={isCollapsed} />
+                  </React.Fragment>
                 );
               }
               return (
-                <NavItem key={item.path} item={item} active={isActive(item.path)} isCollapsed={isCollapsed} />
+                <React.Fragment key={item.path}>
+                  {header}
+                  <NavItem item={item} active={isActive(item.path)} isCollapsed={isCollapsed} />
+                </React.Fragment>
               );
             })}
           </div>
@@ -507,7 +530,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                 <div className="px-5 mb-3 flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">
                   <span>Premium Features</span>
                   <div className="h-[1px] flex-1 bg-white/10" />
-                  {(!user?.subscription || user?.subscription?.price === 0) && (
+                  {(!user?.subscription || user?.subscription?.price === 0) && premiumItems.some(i => i.featureKey && !hasFeature(user, i.featureKey)) && (
                     <Badge className="text-[8px] font-bold bg-amber-50 text-amber-600 border-amber-100 px-1.5 py-0 shrink-0 rounded-none">
                       Upgrade
                     </Badge>

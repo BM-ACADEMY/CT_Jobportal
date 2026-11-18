@@ -17,6 +17,7 @@ const STATUS_CONFIG = {
   shortlisted: { label: 'Shortlisted', color: 'success',    bg: '#ecfdf5', text: '#047857', border: '#d1fae5' },
   rejected:    { label: 'Rejected',    color: 'error',      bg: '#fff1f2', text: '#be123c', border: '#ffe4e6' },
   accepted:    { label: 'Accepted',    color: 'purple',     bg: '#f5f3ff', text: '#6d28d9', border: '#ede9fe' },
+  completed:   { label: 'Completed',   color: 'purple',     bg: '#f5f3ff', text: '#6d28d9', border: '#ede9fe' },
   withdrawn:   { label: 'Withdrawn',   color: 'default',    bg: '#f8fafc', text: '#64748b', border: '#f1f5f9' },
 };
 
@@ -310,6 +311,14 @@ const MyApplications = () => {
                         className="h-9 px-4 rounded-md border-slate-200 font-bold text-xs uppercase tracking-wider text-slate-600 hover:text-emerald-600 hover:border-emerald-600 shadow-none"
                       >
                         View Job
+                      </Button>
+                    )}
+                    {app.status === 'completed' && app.certificateCode && (
+                      <Button
+                        onClick={() => navigate(`/certificate/${app.certificateCode}`)}
+                        className="h-9 px-4 rounded-md border-emerald-200 font-bold text-xs uppercase tracking-wider text-emerald-700 shadow-none"
+                      >
+                        Certificate
                       </Button>
                     )}
                     {REVOCABLE.includes(app.status) && (

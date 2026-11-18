@@ -42,6 +42,7 @@ const collegeSchema = new mongoose.Schema({
     lowercase: true,
     default: ''
   },
+  principalReportLastSentAt: { type: Date },
   collegeEmail: {
     type: String,
     trim: true,
@@ -88,6 +89,9 @@ const collegeSchema = new mongoose.Schema({
     type: Number,
     default: 100 // matches the Campus Free plan's Student Capacity — see scripts/seedCampusPlans.js
   },
+  // Student packs bought on top of the plan (see utils/collegePack.js). They count only until extraUntil.
+  extraStudents: { type: Number, default: 0 },
+  extraUntil: { type: Date, default: null },
   subscriptionExpiry: {
     type: Date
   },
@@ -125,6 +129,14 @@ const collegeSchema = new mongoose.Schema({
   // Set by an admin for test or demo colleges. They stay in the database but are hidden from the
   // verification list by default and are not counted in admin totals.
   isTest: { type: Boolean, default: false, index: true },
+  // Why an admin verified without a proof document (how it was checked), or why it was rejected.
+  verificationNote: { type: String, default: '', maxlength: 500 },
+  // Messages an admin sent asking the college for proof or details. The status stays as it was.
+  infoRequests: [{
+    message: { type: String, maxlength: 500 },
+    askedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    askedAt: { type: Date, default: Date.now }
+  }],
   verifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -143,6 +155,7 @@ const collegeSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  principalAccessAttempts: { type: Number, default: 0 }, // wrong tries on the current code; reset when a new code is issued
   principalAccessCodeExpiry: {
     type: Date,
     default: null
@@ -155,6 +168,10 @@ const collegeSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Set when an admin merged this duplicate into another college (utils/collegeMerge.js). The record is kept, never deleted.
+  mergedInto: { type: mongoose.Schema.Types.ObjectId, ref: 'College', default: null, index: true },
+  mergedAt: { type: Date, default: null },
+  mergedBy: { type: String, default: '' },
   display_id: {
     type: String,
     unique: true,

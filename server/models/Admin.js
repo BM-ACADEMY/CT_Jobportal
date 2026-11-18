@@ -55,6 +55,13 @@ const adminSchema = new mongoose.Schema({
     default: 'Active',
   },
 
+  // Invite link for an admin added from the Admins page: only a hash of the one-time token is stored.
+  invite: {
+    tokenHash: { type: String },
+    expiresAt: { type: Date },
+  },
+  createdBy: { type: String }, // admin_id of who added this admin (empty for the first admin)
+
   // 3. Audit & Tracking Context
   admin_id: {
     type: String,

@@ -815,7 +815,7 @@ const AssignedRequests = () => {
                  </div>
                  <h2 className="text-2xl font-black text-white tracking-tight m-0">My Requests</h2>
                  <p className="text-xs text-slate-400 font-medium max-w-xl leading-relaxed mt-1 m-0">
-                   Manage organizational join requests and invitations dynamically.
+                   Manage organizational join requests and invitations.
                  </p>
               </div>
             </div>

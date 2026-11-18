@@ -13,6 +13,10 @@ const { buildSpendSummary } = require('../utils/spendSummary');
 const User = require('../models/User');
 const { loadNeedsAction } = require('../utils/needsActionLoader');
 const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
+const College = require('../models/College');
+const sendEmail = require('../utils/sendEmail');
+const { emailWrapper } = require('../utils/emailTemplates');
+const { pickCollegesToAsk, keyFor: collegeAskKey, ROLE_ASK } = require('../utils/collegeReminder');
 const { planAutoAssign, planReminders, escalationBody, digestBody, paymentAlertBody } = require('../utils/adminFollowUp');
 
 const enabled = () => process.env.ADMIN_FOLLOWUP_ENABLED !== 'false';
@@ -104,4 +108,66 @@ const runPaymentAlerts = async () => {
   }
 };
 
-module.exports = { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts };
+// Once a day: colleges still pending after 2 days get one mail asking for name, role and phone. Never asked twice.
+const escape = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const runCollegeRoleReminders = async () => {
+  if (!enabled()) return;
+  try {
+    const pending = await College.find({ verificationStatus: 'pending', isTest: { $ne: true }, 'infoRequests.0': { $exists: false }, createdAt: { $lte: new Date(Date.now() - 2 * 86400000) } })
+      .sort({ createdAt: 1 }).populate('tpoUser', 'name email').limit(50);
+    const sent = await alreadySent(pending.map(collegeAskKey));
+    for (const c of pickCollegesToAsk(pending, sent).slice(0, 10)) { // at most 10 a day, so a first run cannot flood
+      const to = c.principalEmail || c.tpoUser?.email || c.collegeEmail;
+      const ok = await sendEmail({
+        email: to, subject: `[Velaivaaipu] ${c.name}: one quick detail to finish verification`,
+        html: emailWrapper('One quick detail', `<p>Hi ${escape(c.tpoUser?.name || c.principalName || 'there')},</p><p>${escape(ROLE_ASK)}</p>`)
+      }).catch(() => false);
+      if (ok === false) continue;
+      c.infoRequests = [...(c.infoRequests || []), { message: ROLE_ASK, askedAt: new Date() }];
+      await c.save().catch(() => {});
+      if (c.tpoUser?._id) notifyUser({ recipientId: c.tpoUser._id, title: 'One quick detail to finish verification', message: ROLE_ASK, type: 'college_verification', link: '/college/settings', email: false }).catch(() => {});
+      await remember([collegeAskKey(c)]);
+    }
+  } catch (err) {
+    console.error('[Admin follow-up] college reminders failed:', err.message);
+  }
+};
+
+// Once a day: colleges whose student list is over 70%, 90% or 100% of their limit get one message per line crossed
+// (the limit is part of the key, so a new pack or plan starts the count again). Our team gets one call task per college.
+const runCollegeLimitNudges = async () => {
+  if (!enabled()) return;
+  try {
+    const CollegeStudent = require('../models/CollegeStudent');
+    const AdminRequest = require('../models/AdminRequest');
+    const { effectiveStudentLimit } = require('../utils/collegePack');
+    const { levelFor, nudgeText } = require('../utils/collegeLimit');
+    const counts = new Map((await CollegeStudent.aggregate([{ $group: { _id: '$college', n: { $sum: 1 } } }])).map((r) => [String(r._id), r.n]));
+    const colleges = await College.find({ isActive: true, isTest: { $ne: true }, verificationStatus: 'verified' }).populate('tpoUser', 'name email phone').limit(500);
+    const due = [];
+    for (const c of colleges) {
+      const used = counts.get(String(c._id)) || 0; const limit = effectiveStudentLimit(c);
+      const level = levelFor(used, limit);
+      if (level) due.push({ c, used, limit, level, key: `limit:${c._id}:${limit}:${level}` });
+    }
+    const sent = await alreadySent(due.map((d) => d.key));
+    for (const d of due.filter((x) => !sent.has(x.key))) {
+      const text = nudgeText(d.level, { used: d.used, limit: d.limit, college: d.c.name });
+      const tpoId = d.c.tpoUser?._id;
+      if (tpoId) await notifyUser({ recipientId: tpoId, title: text.title, message: text.message, type: 'college_limit', link: '/college/dashboard' }).catch((e) => console.error('[Admin follow-up] limit notice failed:', e.message));
+      const open = await AdminRequest.exists({ type: 'college_upgrade', college: d.c._id, status: { $in: ['pending', 'approved'] } });
+      if (!open && tpoId) {
+        await AdminRequest.create({
+          user: tpoId, type: 'college_upgrade', college: d.c._id,
+          bookingName: d.c.tpoUser?.name || d.c.principalName || '', bookingPhone: d.c.tpoUser?.phone || d.c.collegePhone || '', bookingEmail: d.c.tpoUser?.email || d.c.principalEmail || '',
+          notes: `${d.c.name} has ${d.used} of ${d.limit} students (${d.level}% line crossed). Call to offer a student pack or Campus Lite.`
+        }).catch((e) => console.error('[Admin follow-up] upgrade task failed:', e.message));
+      }
+      await remember([d.key]);
+    }
+  } catch (err) {
+    console.error('[Admin follow-up] college limit nudges failed:', err.message);
+  }
+};
+
+module.exports = { runAutoAssignAndReminders, runDailyDigest, runPaymentAlerts, runCollegeRoleReminders, runCollegeLimitNudges };

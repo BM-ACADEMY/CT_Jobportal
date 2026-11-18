@@ -1,5 +1,6 @@
 const Review = require('../models/Review');
 const { notifyUser, notifyRoles } = require('../utils/inAppNotifications');
+const { reviewFlags } = require('../utils/reviewFlags');
 
 // @desc  Submit or update user review
 // @route POST /api/reviews
@@ -75,7 +76,8 @@ const getAllReviews = async (req, res) => {
       Review.countDocuments(query)
     ]);
 
-    res.json({ reviews, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1) });
+    const withFlags = reviews.map((r) => ({ ...(r.toObject ? r.toObject() : r), flags: reviewFlags(r.comment) }));
+    res.json({ reviews: withFlags, total, page: parseInt(page), pages: Math.max(Math.ceil(total / parseInt(limit)), 1) });
   } catch (err) {
     console.error('Get All Reviews Error:', err.message);
     res.status(500).json({ msg: 'Server Error' });
@@ -91,6 +93,14 @@ const updateReviewStatus = async (req, res) => {
       return res.status(400).json({ msg: 'Invalid status' });
     }
     
+    // A review that looks like an advert, has a link or number, or is very short needs a second look:
+    // approving it takes an explicit confirm from the admin screen.
+    if (status === 'approved' && req.body.confirm !== true) {
+      const existing = await Review.findById(req.params.id).select('comment').lean();
+      const flags = existing ? reviewFlags(existing.comment) : [];
+      if (flags.length) return res.status(409).json({ code: 'FLAGGED', flags, msg: 'This review needs a second look before it goes on the website.' });
+    }
+
     const review = await Review.findByIdAndUpdate(
       req.params.id,
       { status },

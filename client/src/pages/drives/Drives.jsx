@@ -3,7 +3,44 @@ import SEOHead from '../../components/seo/SEOHead';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { CalendarDays, Loader2, Users } from 'lucide-react';
-import { API, fmtDate } from './driveUi';
+import { API, fmtDate, inr } from './driveUi';
+
+// Short price list for organisers. Prices and limits come from the server's drive settings, so this never drifts from what is charged.
+const featureLines = (p) => [
+  `Up to ${p.maxRegistrations.toLocaleString('en-IN')} registrations`,
+  'Pass with QR and token numbers',
+  p.qrCheckIn ? 'Check-in by pass code or QR scan' : 'Check-in by mobile number',
+  p.screeningMax ? `${p.screeningMax} screening questions` : null,
+  p.inviteLimit ? `Invites to ${p.inviteLimit} matching job seekers` : null,
+  p.homeSpotDays ? `Home page spot for ${p.homeSpotDays} days` : null,
+  p.reminders.includes('whatsapp') ? 'Email and WhatsApp reminders' : 'Email reminders',
+  p.fullReport ? 'Full after-drive report and CSV list' : null,
+  p.costPerHire ? 'Cost per hire' : null,
+].filter(Boolean);
+
+const OrganiserPlans = () => {
+  const [plans, setPlans] = useState(null);
+  useEffect(() => { axios.get(`${API}/drives/plans`).then((r) => setPlans(r.data)).catch(() => setPlans(null)); }, []);
+  if (!plans) return null;
+  return (
+    <section className="space-y-3 pt-4">
+      <div>
+        <h2 className="text-lg font-black text-slate-900">Hiring? Run your own walk-in drive</h2>
+        <p className="text-sm text-slate-500 mt-1">Per drive, no monthly plan. Prices are before {Math.round(plans.gstRate * 100)}% GST. Your first drive each month is free.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {plans.plans.map((p) => (
+          <div key={p.key} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-2">
+            <p className="font-black text-slate-900">{p.label}</p>
+            <p className="text-xl font-black text-emerald-700">{p.price ? inr(p.price) : 'Free'}</p>
+            <ul className="text-xs text-slate-600 space-y-1 list-disc pl-4">{featureLines(p).map((l) => <li key={l}>{l}</li>)}</ul>
+          </div>
+        ))}
+      </div>
+      <Link to="/company/drives" className="inline-flex h-11 px-5 items-center rounded-xl bg-emerald-600 text-white text-sm font-bold">Create a drive</Link>
+    </section>
+  );
+};
 
 // Public list of upcoming walk-in drives.
 const Drives = () => {
@@ -30,6 +67,7 @@ const Drives = () => {
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1"><Users size={12} /> {d.roles.map((r) => r.title).slice(0, 3).join(', ')}</p>
           </Link>
         ))}
+      <OrganiserPlans />
     </div>
   );
 };

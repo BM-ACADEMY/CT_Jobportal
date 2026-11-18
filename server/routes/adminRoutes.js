@@ -26,11 +26,15 @@ const { verifyToken, authorizeRoles } = require('../middlewares/authMiddleware')
 const { requireAdminOr } = require('../middlewares/staffPermission');
 const { listStaff, addStaff, updateStaff, removeStaff } = require('../controllers/staffController');
 const { listJobLimits, grantJobLimits } = require('../controllers/adminJobLimitController');
+const { getUserPlan, updateUserPlan } = require('../controllers/adminUserPlanController');
 
 // Public route for admin login
 const { rateLimit: adminRateLimit } = require('../middlewares/rateLimit');
 router.post('/login', adminRateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many login attempts. Please wait a few minutes.' }), loginAdmin);
 router.post('/login-verify-otp', adminRateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: 'Too many attempts. Please wait a few minutes.' }), verifyAdminLoginOTP);
+
+// An invited admin sets their own password with the one-time link from the invite mail (see controllers/adminInviteController.js).
+router.post('/set-password', adminRateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many attempts. Please wait a few minutes.' }), require('../controllers/adminInviteController').setPassword);
 
 // Protected routes (Admin only)
 router.use(verifyToken);
@@ -45,11 +49,30 @@ router.use(authorizeRoles('admin'));
 
 // Employers' active-job limits: see them and raise them without a payment (Super Admin only).
 // Business advisor: weekly numbers, AI notes and ideas (Super Admin only).
+router.get('/college-funnel', require('../controllers/collegeFunnelController').getCollegeFunnel);
+router.get('/student-pack-info', require('../controllers/collegePackController').packInfo);
+router.post('/colleges/:id/student-pack', require('../controllers/collegePackController').recordPack);
+router.get('/activity', require('../controllers/activityController').getActivity);
+// Other full admins: list, invite by email, resend the invite, remove (Super Admin only).
+router.get('/admins', require('../controllers/adminInviteController').listAdmins);
+router.post('/admins', require('../controllers/adminInviteController').inviteAdmin);
+router.post('/admins/:id/resend-invite', require('../controllers/adminInviteController').resendInvite);
+router.delete('/admins/:id', require('../controllers/adminInviteController').removeAdmin);
+router.get('/otp-stats', require('../controllers/otpStatsController').getOtpStats);
+router.get('/email-report', require('../controllers/emailReportController').getEmailReport);
+router.get('/email-report/by-type', require('../controllers/emailReportController').getEmailCountsByType);
+router.get('/free-ai', require('../controllers/freeAiController').adminSummary);
+router.get('/growth/sources', require('../controllers/growthController').getSources);
 router.get('/brand-leads', require('../controllers/brandLeadController').listBrandLeads);
 router.patch('/brand-leads/:userId', require('../controllers/brandLeadController').updateBrandLead);
 router.patch('/jobs/:id/hide', require('../controllers/visibilityController').hideJob);
 router.patch('/companies/:id/hide', require('../controllers/visibilityController').hideCompany);
 router.get('/services-overview', require('../controllers/adminServicesController').getServicesOverview);
+// Duplicate colleges: list and merge (Super Admin only; the controller checks the role again).
+router.get('/college-duplicates', require('../controllers/collegeMergeController').listDuplicates);
+router.post('/colleges/merge', require('../controllers/collegeMergeController').merge);
+// Balance board: live jobs against job seekers by field of work (Super Admin only).
+router.get('/balance-board', require('../controllers/balanceBoardController').getBalanceBoard);
 router.get('/advisor', require('../controllers/advisorController').getAdvisor);
 router.post('/advisor/generate', require('../controllers/advisorController').generate);
 router.post('/advisor/ask', require('../controllers/advisorController').ask);
@@ -58,9 +81,15 @@ router.post('/advisor/ideas/:id', require('../controllers/advisorController').se
 router.get('/drives', require('../controllers/walkInDriveController').adminListDrives);
 router.post('/drives/:id/review', require('../controllers/walkInDriveController').reviewDrive);
 router.post('/drives/:id/mark-paid', require('../controllers/walkInDriveController').markPaid);
+router.get('/drives/organisers', require('../controllers/walkInDriveController').adminOrganisers);
+router.post('/drives/create', require('../controllers/walkInDriveController').adminCreateDrive);
 router.get('/skill-tests', require('../controllers/skillTestAdminController').getSkillTestSummary);
 router.get('/job-limits', listJobLimits);
 router.post('/job-limits/grant', grantJobLimits);
+
+// One person's plan benefits and validity (counts, switches, end date): see utils/planEntitlements.js. Super Admin only.
+router.get('/users/:id/plan', getUserPlan);
+router.patch('/users/:id/plan', updateUserPlan);
 
 // Staff accounts (support, counsellor, college verifier): Super Admin only.
 router.get('/staff', listStaff);
@@ -82,20 +111,40 @@ router.put('/users/:id', updateUser);
 router.put('/users/:id/verification-status', updateUserVerificationStatus);
 router.delete('/users/:id', deleteUser);
 router.patch('/users/:id/block', toggleBlockUser);
+// Below the admin-only gate: staff (support) can read users but cannot verify emails.
+router.patch('/users/:id/verify-email', require('../controllers/adminVerifyEmailController').verifyUserEmail);
 
 router.get('/companies', getCompanies);
 router.delete('/companies/:id', deleteCompany);
 router.patch('/companies/:id/logo-approval', require('../controllers/logoController').approveCompanyLogo);
 router.patch('/colleges/:id/logo', require('../controllers/logoController').setCollegeLogo);
 router.patch('/companies/:id/verify', require('../controllers/companyVerificationController').setCompanyVerified);
+router.patch('/companies/:id/verified-by-call', require('../controllers/companyVerificationController').setVerifiedByCall);
+router.get('/company-proofs', require('../controllers/companyProofController').listProofs);
+router.post('/company-proofs/:id/approve', require('../controllers/companyProofController').approveProof);
+router.post('/company-proofs/:id/reject', require('../controllers/companyProofController').rejectProof);
 
 router.get('/spend', require('../controllers/spendController').getSpend);
 router.post('/spend', require('../controllers/spendController').addSpend);
 router.patch('/spend/:id/void', require('../controllers/spendController').voidSpend);
+const blogCtl = require('../controllers/blogController');
+const blogImageUpload = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 }, fileFilter: (req, file, cb) => cb(null, /^image\/(jpeg|png|webp)$/.test(file.mimetype)) });
+router.get('/blog-posts', blogCtl.listAdmin);
+router.post('/blog-posts', blogCtl.createPost);
+router.get('/blog-posts/:id', blogCtl.getAdmin);
+router.put('/blog-posts/:id', blogCtl.updatePost);
+router.delete('/blog-posts/:id', blogCtl.deletePost);
+router.post('/blog-images', blogImageUpload.single('image'), blogCtl.uploadImage);
+router.get('/whatsapp', require('../controllers/whatsappInboxController').getInbox);
+router.post('/whatsapp/reply', require('../controllers/whatsappInboxController').replyToThread);
+router.put('/whatsapp/:phone/done', require('../controllers/whatsappInboxController').markDone);
 router.get('/needs-action', require('../controllers/needsActionController').getNeedsAction);
 router.put('/needs-action/assign', require('../controllers/needsActionController').assignItem);
 router.put('/needs-action/rules', require('../controllers/needsActionController').setRule);
 router.get('/jobs', getJobs);
+router.get('/external-jobs', require('../controllers/externalJobController').listExternalJobs);
+router.get('/users/:id/usage', require('../controllers/adminUserUsageController').getUserUsage);
+router.post('/external-jobs', require('../controllers/externalJobController').createExternalJob);
 router.patch('/jobs/:id/scam-review', require('../controllers/jobScamReviewController').setJobScamReviewed);
 router.delete('/jobs/:id', deleteJob);
 router.post('/jobs/:id/sponsor', require('../controllers/jobPromotionController').sponsorJob);

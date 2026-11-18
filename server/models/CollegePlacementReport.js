@@ -26,7 +26,8 @@ const collegePlacementReportSchema = new mongoose.Schema({
   sentToPrincipal: {
     type: Boolean,
     default: false
-  }
+  },
+  sentAt: { type: Date, default: null }
 }, { timestamps: true });
 
 collegePlacementReportSchema.index({ college: 1, createdAt: -1 });

@@ -27,7 +27,10 @@ const ManageJobs = () => {
     const days = window.prompt(kind === 'sponsor' ? 'Sponsor for how many days? (1 to 30)' : 'Urgent hiring tag for how many days? (1 to 14, or 0 to remove)');
     if (days === null || days === '') return;
     const body = { days: Number(days) };
-    if (kind === 'sponsor') { body.note = window.prompt('How was it paid? (for example the UPI reference)') || ''; }
+    if (kind === 'sponsor') {
+      body.note = window.prompt('How was it paid? (for example the UPI reference)') || '';
+      body.amount = window.prompt('Amount received in rupees, GST included. Leave empty only if you will note it elsewhere.') || '';
+    }
     try {
       await axios.post(`${import.meta.env.VITE_API_BASE_URL}/admin/jobs/${jobId}/${kind}`, body);
       const until = new Date(Date.now() + body.days * 86400000).toISOString();
@@ -207,7 +210,7 @@ const ManageJobs = () => {
                             {job.scamFlags?.length > 0 && !job.scamReviewed && (
                               <div className="flex items-center gap-2 pt-1">
                                 <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
-                                  Possible scam: {job.scamFlags.map((f) => ({ asks_for_money: 'asks for money', private_chat_or_otp: 'asks for OTP or private chat', pay_too_good: 'pay looks too good', reported_by_users: `reported by ${job.reportCount || 1} user${(job.reportCount || 1) > 1 ? 's' : ''}` }[f] || f)).join(', ')}
+                                  Needs review: {job.scamFlags.map((f) => ({ asks_for_money: 'asks for money', private_chat_or_otp: 'asks for OTP or private chat', pay_too_good: 'pay looks too good', inappropriate_content: 'vulgar or adult wording', reported_by_users: `reported by ${job.reportCount || 1} user${(job.reportCount || 1) > 1 ? 's' : ''}` }[f] || f)).join(', ')}
                                 </span>
                                 <button type="button" onClick={() => markChecked(job._id)} className="text-[10px] font-bold text-emerald-600 hover:underline">Looks fine</button>
                               </div>

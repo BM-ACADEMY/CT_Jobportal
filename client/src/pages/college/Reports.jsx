@@ -3,7 +3,7 @@ import PageSOPBanner from '@/components/common/PageSOPBanner';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
-import { FileText, Key, Copy, ExternalLink, Download, BarChart2, TrendingUp, CheckCircle2, Users, Award, RefreshCw, ScrollText, ShieldCheck, AlertTriangle, FileSpreadsheet, GraduationCap } from 'lucide-react';
+import { FileText, Key, Copy, ExternalLink, Download, BarChart2, TrendingUp, CheckCircle2, Users, Award, RefreshCw, ScrollText, ShieldCheck, AlertTriangle, FileSpreadsheet, GraduationCap, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { openUploadedFile } from '@/utils/signedFiles';
 
@@ -22,6 +22,7 @@ const CollegeReports = () => {
   const [generatingReport, setGeneratingReport] = useState(false);
   const [generatingMou, setGeneratingMou] = useState(false);
   const [downloadingSummary, setDownloadingSummary] = useState(false);
+  const [sendingPrincipal, setSendingPrincipal] = useState(false);
   const defaultAcademicYear = `${new Date().getFullYear() - 1}-${String(new Date().getFullYear()).slice(-2)}`;
   const [academicYear, setAcademicYear] = useState(defaultAcademicYear);
   const [selectedDepartments, setSelectedDepartments] = useState([]);
@@ -108,6 +109,20 @@ const CollegeReports = () => {
     }
   };
 
+  const [sendingId, setSendingId] = useState('');
+  const handleSendReport = async (id) => {
+    setSendingId(id);
+    try {
+      const res = await axios.post(`${API}/college/reports/${id}/send`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setReports(prev => prev.map(r => (r._id === id ? { ...r, sentToPrincipal: true, sentAt: res.data.sentAt } : r)));
+      toast.success(res.data?.msg || 'Report sent');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not send the report');
+    } finally {
+      setSendingId('');
+    }
+  };
+
   const handleGenerateReport = async () => {
     setGeneratingReport(true);
     try {
@@ -181,6 +196,32 @@ const CollegeReports = () => {
     toast.success('Access code copied to clipboard!');
   };
 
+  const sendToPrincipal = async () => {
+    setSendingPrincipal(true);
+    try {
+      const res = await axios.post(`${API}/college/reports/send-to-principal`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(res.data?.msg || 'Report sent');
+    } catch (err) {
+      toast.error(err.response?.data?.msg || 'Could not send the report');
+    } finally {
+      setSendingPrincipal(false);
+    }
+  };
+
+  const downloadOnePager = async () => {
+    try {
+      const res = await axios.get(`${API}/college/reports/one-page-pdf`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data?.college?.code || 'campus'}_placement_summary_1page.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Failed to create the placement summary');
+    }
+  };
+
   const downloadSummaryReport = async () => {
     setDownloadingSummary(true);
     try {
@@ -230,6 +271,21 @@ const CollegeReports = () => {
             className="rounded border-[#d9d9d9] text-slate-700 hover:text-[#39c884] hover:border-[#39c884] hover:bg-white text-xs font-medium gap-2 px-5 h-9 cursor-pointer"
           >
             <RefreshCw size={14} className={generatingReport ? 'animate-spin' : ''} /> {generatingReport ? 'Generating...' : 'Generate Report Now'}
+          </Button>
+          <Button
+            onClick={sendToPrincipal}
+            disabled={sendingPrincipal}
+            variant="outline"
+            className="rounded border-[#d9d9d9] text-slate-700 hover:text-[#39c884] hover:border-[#39c884] hover:bg-white text-xs font-medium gap-2 px-5 h-9 cursor-pointer"
+          >
+            {sendingPrincipal ? 'Sending...' : 'Send report to principal'}
+          </Button>
+          <Button
+            onClick={downloadOnePager}
+            variant="outline"
+            className="rounded border-[#d9d9d9] text-slate-700 hover:text-[#39c884] hover:border-[#39c884] hover:bg-white text-xs font-medium gap-2 px-5 h-9 cursor-pointer"
+          >
+            <Download size={14} /> Placement summary (1 page)
           </Button>
           <Button
             onClick={downloadSummaryReport}
@@ -320,7 +376,7 @@ const CollegeReports = () => {
             </div>
             <div className={`flex items-center gap-3 rounded-none border p-4 ${accreditation.missingEvidence ? 'border-amber-200 bg-amber-50/50' : 'border-emerald-200 bg-emerald-50/50'}`}>
               {accreditation.missingEvidence ? <AlertTriangle className="text-amber-600 shrink-0" size={20} /> : <CheckCircle2 className="text-[#39c884] shrink-0" size={20} />}
-              <div><p className="text-xs font-semibold text-slate-900">{accreditation.missingEvidence ? `${accreditation.missingEvidence} claim(s) missing evidence` : 'All claimed outcomes have evidence'}</p><p className="text-[10px] text-slate-500 mt-0.5">{accreditation.claimCount} placement/progression claims checked. Add evidence from Students → student details before submission.</p></div>
+              <div><p className="text-xs font-semibold text-slate-900">{accreditation.missingEvidence ? `${accreditation.missingEvidence} claim(s) missing evidence` : (accreditation.claimCount > 0 ? 'All claimed outcomes have evidence' : 'No placement outcomes claimed yet')}</p><p className="text-[10px] text-slate-500 mt-0.5">{accreditation.claimCount > 0 ? `${accreditation.claimCount} placement/progression claims checked. ` : ''}Add evidence from Students → student details before submission.</p></div>
             </div>
           </>
         )}
@@ -352,8 +408,16 @@ const CollegeReports = () => {
               <div key={r._id} className="flex items-center justify-between py-3">
                 <div>
                   <p className="text-xs font-semibold text-slate-900">{r.periodLabel}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">{r.frequency} report</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">{r.frequency} report{r.sentToPrincipal ? ' · sent to principal' : ''}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => handleSendReport(r._id)}
+                  disabled={sendingId === r._id}
+                  className="mr-4 ml-auto text-xs font-semibold text-slate-600 hover:text-[#39c884] flex items-center gap-1 bg-transparent border-0 cursor-pointer disabled:opacity-50"
+                >
+                  <Send size={13} /> {sendingId === r._id ? 'Sending...' : r.sentToPrincipal ? 'Send again' : 'Send to principal'}
+                </button>
                 <a
                   href={`${import.meta.env.VITE_API_DOMAIN}${r.reportUrl}`}
                   target="_blank"

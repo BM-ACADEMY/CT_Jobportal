@@ -18,6 +18,8 @@ const FreeAssessment = lazy(() => import('../pages/public/FreeAssessment'));
 const CampusRegistration = lazy(() => import('../pages/public/CampusRegistration'));
 const Jobs = lazy(() => import('../pages/Jobs'));
 const JobDetails = lazy(() => import('../pages/JobDetails'));
+const CategoryJobs = lazy(() => import('../pages/CategoryJobs'));
+const InternshipCertificate = lazy(() => import('../pages/InternshipCertificate'));
 const ForColleges = lazy(() => import('../pages/ForColleges'));
 const Companies = lazy(() => import('../pages/Companies'));
 const CompanyProfilePage = lazy(() => import('../pages/CompanyProfilePage'));
@@ -53,8 +55,12 @@ const AdminLogin = page('admin/AdminLogin');
 const ManageUsers = page('admin/ManageUsers');
 const UserProfile = page('admin/UserProfile');
 const ManageJobs = page('admin/ManageJobs');
+const ManageCompanies = page('admin/ManageCompanies');
+const ExternalJobs = page('admin/ExternalJobs');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
 const ManageStaff = page('admin/ManageStaff');
+const ManageAdmins = page('admin/ManageAdmins');
+const SetAdminPassword = page('admin/SetAdminPassword');
 const ManageRenewals = page('admin/ManageRenewals');
 const ManageRefunds = page('admin/ManageRefunds');
 const ManageBuyers = page('admin/ManageBuyers');
@@ -112,6 +118,8 @@ const WriteReview = page('shared/WriteReview');
 const ManageReviews = page('admin/ManageReviews');
 const AdminSkillTests = page('admin/SkillTests');
 const AdminNeedsAction = page('admin/NeedsAction');
+const AdminWhatsAppInbox = page('admin/WhatsAppInbox');
+const AdminManageBlog = page('admin/ManageBlog');
 const AdminSpendIncome = page('admin/SpendIncome');
 const AdminFeedback = page('admin/ManageFeedback');
 const AdminWalkInDrives = page('admin/WalkInDrivesAdmin');
@@ -120,19 +128,29 @@ const InternshipsPage = page('Internships');
 const AudienceLanding = page('AudienceLanding');
 const AdminServices = page('admin/Services');
 const AdminBrandLeads = page('admin/BrandLeads');
+const AdminGrowth = page('admin/Growth');
+const AdminActivity = page('admin/Activity');
 const CollegeInternships = page('college/Internships');
 const PublicDrives = page('drives/Drives');
 const PublicDriveDetail = page('drives/DriveDetail');
+const PublicJobFairs = page('fairs/JobFairs');
+const PublicJobFairDetail = page('fairs/JobFairDetail');
+const AdminJobFairs = page('admin/JobFairsAdmin');
+const AdminFairCheckIn = page('admin/FairCheckIn');
 const DrivePass = page('drives/DrivePass');
 const WalkInDrives = page('company/WalkInDrives');
 const WalkInManage = page('company/WalkInManage');
 const AdminCollegeVerification = page('admin/CollegeVerification');
+const AdminCollegeFunnel = page('admin/CollegeFunnel');
+const AdminDuplicateColleges = page('admin/DuplicateColleges');
+const AdminBalanceBoard = page('admin/BalanceBoard');
 const CollegeKycDetails = page('admin/CollegeKycDetails');
 const CollegeDashboard = page('college/Dashboard');
 const CollegeStudents = page('college/Students');
 const CollegeDrives = page('college/Drives');
 const CollegeSettings = page('college/Settings');
 const CollegeReports = page('college/Reports');
+const CollegeWhatYouGet = page('college/WhatYouGet');
 const CollegeVerification = page('college/Verification');
 const CollegePlacementTools = page('college/PlacementTools');
 const CollegeOperations = page('college/CollegeOperations');
@@ -176,12 +194,18 @@ const AppRoutes = () => {
         <Route path="/incharge/accept/:driveId/:token" element={<AcceptInchargeInvite />} />
         <Route path="/drives" element={<PublicDrives />} />
         <Route path="/drives/:slug" element={<PublicDriveDetail />} />
+        <Route path="/job-fairs" element={<PublicJobFairs />} />
+        <Route path="/job-fairs/:slug" element={<PublicJobFairDetail />} />
         <Route path="/drive-pass/:code" element={<DrivePass />} />
+        <Route path="/admin/activity" element={<PrivateRoute roles={['admin']}><AdminActivity /></PrivateRoute>} />
+        <Route path="/admin/growth" element={<PrivateRoute roles={['admin']}><AdminGrowth /></PrivateRoute>} />
         <Route path="/admin/brand-leads" element={<PrivateRoute roles={['admin']}><AdminBrandLeads /></PrivateRoute>} />
         <Route path="/admin/services" element={<PrivateRoute roles={['admin']}><AdminServices /></PrivateRoute>} />
         <Route path="/internships" element={<InternshipsPage />} />
         <Route path="/jobs" element={<Jobs />} />
+        <Route path="/jobs/category/:slug" element={<CategoryJobs />} />
         <Route path="/jobs/:location" element={<Jobs />} />
+        <Route path="/certificate/:code" element={<InternshipCertificate />} />
         <Route path="/job/:id" element={<JobDetails />} />
         <Route path="/companies" element={<Companies />} />
         <Route path="/companies/:id" element={<CompanyProfilePage />} />
@@ -247,6 +271,7 @@ const AppRoutes = () => {
         />
         <Route path="/social-auth-success" element={<SocialAuthSuccess />} />
         <Route path="/complete-social-profile" element={<CompleteSocialProfile />} />
+        <Route path="/admin/set-password" element={<SetAdminPassword />} />
         <Route
           path="/admin/login"
           element={
@@ -423,6 +448,7 @@ const AppRoutes = () => {
         <Route path="/college/drives" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
         <Route path="/college/drives/new" element={<PrivateRoute roles={['college']}><CollegeDrives /></PrivateRoute>} />
         <Route path="/college/reports" element={<PrivateRoute roles={['college']}><CollegeReports /></PrivateRoute>} />
+        <Route path="/college/what-you-get" element={<PrivateRoute roles={['college']}><CollegeWhatYouGet /></PrivateRoute>} />
         <Route path="/college/verification" element={<PrivateRoute roles={['college']}><CollegeVerification /></PrivateRoute>} />
         <Route path="/college/subscription" element={<PrivateRoute roles={['college']}><CompanySubscription /></PrivateRoute>} />
         <Route path="/college/payment-history" element={<PrivateRoute roles={['college']}><PaymentHistory /></PrivateRoute>} />
@@ -462,6 +488,32 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <ManageJobs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/companies"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageCompanies />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/web-jobs"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ExternalJobs />
+            </PrivateRoute>
+          }
+        />
+        <Route path="/admin/duplicate-colleges" element={<PrivateRoute roles={['admin']}><AdminDuplicateColleges /></PrivateRoute>} />
+        <Route path="/admin/balance-board" element={<PrivateRoute roles={['admin']}><AdminBalanceBoard /></PrivateRoute>} />
+        <Route
+          path="/admin/college-funnel"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminCollegeFunnel />
             </PrivateRoute>
           }
         />
@@ -590,6 +642,14 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/admin/admins"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <ManageAdmins />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/admin/staff"
           element={
             <PrivateRoute roles={['admin']}>
@@ -622,6 +682,22 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="/admin/job-fairs"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminJobFairs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/job-fairs/:id/checkin"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminFairCheckIn />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/admin/advisor"
           element={
             <PrivateRoute roles={['admin']}>
@@ -642,6 +718,22 @@ const AppRoutes = () => {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminSpendIncome />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/blog"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminManageBlog />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/whatsapp"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminWhatsAppInbox />
             </PrivateRoute>
           }
         />
