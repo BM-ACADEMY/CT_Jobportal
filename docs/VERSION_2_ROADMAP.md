@@ -55,3 +55,28 @@ Branch `v2-complete`. Opted-in job seekers get at most one message a week (Tuesd
 1. Meta approves a template with 4 variables: `Hi {{1}}, {{2}} new jobs match you: {{3}}. See them: {{4}}`.
 2. Sneha sets `WA_TEMPLATE_JOB_ALERT` (the template name) and `WHATSAPP_JOB_ALERTS_ENABLED=true`. `WA_PHONE_NUMBER_ID`, `META_PAGE_ACCESS_TOKEN` and `FRONTEND_URL` must already be set.
 3. Test with one opted-in account before leaving it on.
+
+## Open task list (status 18 Nov, evening)
+
+Sneha:
+1. Merge and deploy PR #60 (government watcher list) and PR #61 (mobile header: icon left, name centred).
+2. Describe the problem she mentioned with the build.
+3. Hostinger backup mail settings (`BACKUP_*`) and send a test code.
+4. Brevo: the queue, the 38 held resends, credits and daily limit.
+5. Test delete with a limited admin login; open Admins, Government jobs, Job fairs and Send a Job Fair.
+6. After deploy: screenshot of Admin > Government jobs; report any "Last check failed".
+7. Explain why Core Talents and The Balified Villa do not show on the Companies page (cache or account type).
+8. Close the old branches: `remove-fake-job-counts`, `launch-fixes`, `charles`, old `installable-site`.
+
+Kamar:
+1. Send BD the health and other pages brief; relay their list so it can be checked and added to `server/config/govtSources.js`.
+2. Send Lokeshwari's invite only after the limited-admin test passes.
+3. Add 2 or 3 real job fairs, or hide the menu item.
+4. Lawyer review of Terms and Privacy.
+5. Prices: Sponsored add-ons, Campus Lite, fair stall. Invoice details in Admin > Settings.
+6. Tamil text check, link the office computer, Razorpay first-week numbers, WhatsApp inbox test.
+7. Meta approval of the WhatsApp alert template; SPF, DKIM and DMARC for email.
+
+Claude:
+1. Re-check the Companies page and the government watcher pages after the deploy.
+2. Keep this roadmap and the plan docs up to date.
