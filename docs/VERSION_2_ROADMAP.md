@@ -13,7 +13,7 @@ Last updated: Mon 16 Nov 2026. Kamar sets the order. Sneha takes the items in th
 4. **Jobs page filters** by place, plus non-graduate, contract and part-time jobs.
    Status: done. Place chips and no-degree, part-time and contract filters are live on the Jobs page.
 5. **Government jobs section on autopilot.** The site watches official announcements, Kamar approves, admin posts.
-   Status: built (branch `v2-complete`). Admin > Government jobs: add official recruitment pages; the site checks them every morning at 8:00 India time; new notices wait for Kamar; "Post as job" opens the web-jobs form prefilled. Needs the pages chosen by Kamar.
+   Status: built (branch `v2-complete`). Admin > Government jobs: add official recruitment pages; the site checks them every morning at 8:00 India time; new notices wait for Kamar; "Post as job" opens the web-jobs form prefilled. The 21 official pages chosen with the BD team (18 Nov) are added automatically the first time the server starts (only while the list is empty); the first scan runs 2 minutes after start and sets the baseline. Madras High Court is left out until someone confirms the page.
 
 ## Also open from the launch
 
