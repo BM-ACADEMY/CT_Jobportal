@@ -35,6 +35,8 @@ stubModule('../../utils/aiHelper', {
 });
 const saved = [];
 stubModule('../../models/FreeTestAttempt', { create: async (d) => d });
+// saveResult checks the account has a mobile number first; give the test user one.
+stubModule('../../models/User', { findById: () => ({ select: async () => ({ profile: { phone: '9876543210' } }) }), updateOne: async () => ({}) });
 stubModule('../../models/SkillTestResult', { findOneAndUpdate: async (q, u) => { saved.push({ q, u }); return { ...u }; } });
 
 const { getAssessment, submitPublicAssessment, saveResult } = require('../../controllers/assessmentController');
