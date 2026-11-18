@@ -1,10 +1,11 @@
 // Daily scan of the watched government pages. On unless GOVT_WATCH_ENABLED=false. With no sources added it does nothing.
-const GovtSource = require('../models/GovtSource');
-const GovtNotice = require('../models/GovtNotice');
+// Models are loaded when used, so the rules here can be tested without a database.
+const GovtSource = { get m() { return require('../models/GovtSource'); } };
+const GovtNotice = { get m() { return require('../models/GovtNotice'); } };
 const { scanSource } = require('../utils/govtNotices');
 
 const scanOne = async (source, opts) => {
-  const known = (await GovtNotice.find({ source: source._id }).select('fingerprint').lean()).map((n) => n.fingerprint);
+  const known = (await GovtNotice.m.find({ source: source._id }).select('fingerprint').lean()).map((n) => n.fingerprint);
   const r = await scanSource(source, known, opts);
   source.lastScanAt = r.error ? source.lastScanAt : new Date();
   source.lastError = r.error || '';
@@ -13,15 +14,26 @@ const scanOne = async (source, opts) => {
   const status = r.baseline ? 'baseline' : 'new';
   let added = 0;
   for (const n of r.fresh) {
-    try { await GovtNotice.create({ source: source._id, title: n.title, url: n.url, fingerprint: n.fingerprint, status }); if (!r.baseline) added += 1; }
+    try { await GovtNotice.m.create({ source: source._id, title: n.title, url: n.url, fingerprint: n.fingerprint, status }); if (!r.baseline) added += 1; }
     catch (e) { if (e.code !== 11000) console.error('Govt notice save:', e.message); }
   }
   return { source: source.name, added, baseline: !!r.baseline };
 };
 
-const runGovtWatch = async (opts) => {
+// Starting list: added once, and only while no source exists at all.
+const seedDefaultSources = async (defaults = require('../config/govtSources'), Model = GovtSource.m) => {
+  if (await Model.estimatedDocumentCount() > 0) return 0;
+  let n = 0;
+  for (const d of defaults) { try { await Model.create(d); n += 1; } catch (e) { if (e.code !== 11000) console.error('Govt seed:', e.message); } }
+  return n;
+};
+
+// staleHours: skip pages already scanned that recently (used when the server starts, so restarts do not re-scan everything).
+const runGovtWatch = async (opts = {}) => {
   if (process.env.GOVT_WATCH_ENABLED === 'false') return [];
-  const sources = await GovtSource.find({ active: true });
+  await seedDefaultSources();
+  const sources = (await GovtSource.m.find({ active: true }))
+    .filter((s) => !opts.staleHours || !s.lastScanAt || Date.now() - new Date(s.lastScanAt).getTime() > opts.staleHours * 3600000);
   const results = [];
   for (const s of sources) {
     try { results.push(await scanOne(s, opts)); } catch (e) { console.error('Govt watch:', s.name, e.message); }
@@ -29,4 +41,4 @@ const runGovtWatch = async (opts) => {
   return results;
 };
 
-module.exports = { runGovtWatch, scanOne };
+module.exports = { runGovtWatch, scanOne, seedDefaultSources };
