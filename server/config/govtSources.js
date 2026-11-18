@@ -1,5 +1,5 @@
-// Official pages watched from the start (checked by the BD team on 18 Nov 2026). Added once, only when no source exists yet.
-// After that the Admin > Government jobs page is the only place that changes the list.
+// Official pages watched (checked by the BD team). Any page here that is not yet watched is added on server start; to add more, add a line below.
+// Pages can also be added, paused or resumed in Admin > Government jobs.
 module.exports = [
   ['TNPSC announcements', 'https://tnpsc.gov.in/web/examdashboard/index.aspx'],
   ['Teachers Recruitment Board', 'https://trb.tn.gov.in/notification.php?language=LG-1&status=Active'],
