@@ -59,7 +59,7 @@ Branch `v2-complete`. Opted-in job seekers get at most one message a week (Tuesd
 ## Open task list (status 18 Nov, evening)
 
 Sneha:
-1. Merge and deploy PR #60 (government watcher list) and PR #61 (mobile header: icon left, name centred).
+1. Merge and deploy PR #60 (government watcher list), PR #61 (mobile header: icon left, name centred), PR #62 (this roadmap) and PR #63 (Admin > Applications page).
 2. Describe the problem she mentioned with the build.
 3. Hostinger backup mail settings (`BACKUP_*`) and send a test code.
 4. Brevo: the queue, the 38 held resends, credits and daily limit.
@@ -80,3 +80,4 @@ Kamar:
 Claude:
 1. Re-check the Companies page and the government watcher pages after the deploy.
 2. Keep this roadmap and the plan docs up to date.
+3. Open Admin > Applications after the deploy and check it lists today's applications (the dashboard card opens it).
