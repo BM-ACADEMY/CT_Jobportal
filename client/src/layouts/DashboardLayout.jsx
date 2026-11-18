@@ -1,13 +1,13 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
 import Header from '../components/common/Header';
 import Sidebar from '../components/common/Sidebar';
 import RecentBlogs from '../components/blog/RecentBlogs';
 import SEOHead from '../components/seo/SEOHead';
 import { OnboardingProvider } from '../context/OnboardingContext';
 import AssistantWidget from '../components/assistant/AssistantWidget';
-import FeedbackButton from '../components/feedback/FeedbackButton';
-import HelpButton from '../components/feedback/HelpButton';
+import SupportMenu from '../components/feedback/SupportMenu';
 import WelcomeTour from '../components/onboarding/WelcomeTour';
 import OnboardingChecklistCard from '../components/onboarding/OnboardingChecklistCard';
 import IncompleteProfileBanner from '../components/onboarding/IncompleteProfileBanner';
@@ -59,7 +59,8 @@ const DashboardLayoutInner = () => {
   }, [isMobileOpen]);
 
   return (
-    <div className="min-h-screen bg-[#f4f7fa] flex flex-row font-sans">
+    // --sidebar-w lets the floating Help / Feedback buttons sit just right of the sidebar on desktop.
+    <div className="min-h-screen bg-[#f4faf7] flex flex-row font-sans" style={{ '--sidebar-w': isCollapsed ? '68px' : '260px' }}>
       <SEOHead title="Dashboard | Velaivaaipu" description="Your private Velaivaaipu account dashboard." robots="noindex, nofollow" />
       
       {/* Mobile Drawer Sidebar */}
@@ -71,14 +72,14 @@ const DashboardLayoutInner = () => {
             onClick={() => setIsMobileOpen(false)}
           />
           {/* Drawer Content */}
-          <div className="relative flex w-[280px] h-full animate-in slide-in-from-left duration-300 bg-[#1b496d]">
+          <div className="relative flex w-[272px] max-w-[85vw] h-full animate-in slide-in-from-left duration-300 bg-[#10213D]">
             <Sidebar isCollapsed={false} toggleSidebar={() => setIsMobileOpen(false)} />
           </div>
         </div>
       )}
 
       {/* Left Sidebar - Hidden on mobile, fixed width on Desktop */}
-      <aside className={`hidden lg:block transition-all duration-300 ${isCollapsed ? 'w-[75px]' : 'w-[280px]'} flex-shrink-0 sticky top-0 h-screen z-20 border-r border-slate-100 bg-[#1b496d]`}>
+      <aside className={`hidden lg:block transition-all duration-300 ${isCollapsed ? 'w-[68px]' : 'w-[260px]'} flex-shrink-0 sticky top-0 h-screen z-20 bg-[#10213D]`}>
         <Sidebar isCollapsed={isCollapsed} toggleSidebar={toggleSidebar} />
       </aside>
 
@@ -89,42 +90,54 @@ const DashboardLayoutInner = () => {
         <div className={`flex-1 w-full mx-auto flex flex-col lg:flex-row ${
           pathname.includes('/messages')
             ? 'max-w-none gap-0 px-0 py-0'
-            : 'max-w-[1440px] gap-8 px-4 sm:px-6 py-8'
+            : 'max-w-none gap-6 px-4 sm:px-6 lg:px-8 py-6 sm:py-8'
         }`}>
           <main className="flex-1 min-w-0">
             {isDashboardHome && <InstallPrompt />}
             {isDashboardHome && <PushPrompt />}
-            {showOnboarding && (isDashboardHome ? <OnboardingChecklistCard /> : <IncompleteProfileBanner />)}
+            {/* The job seeker home places the checklist itself, under the welcome card. */}
+            {showOnboarding && (isDashboardHome ? pathname.replace(/\/$/, '') !== '/candidate' && <OnboardingChecklistCard /> : <IncompleteProfileBanner />)}
             <Outlet />
             {showBlogRecommendations && (
-              <div className="2xl:hidden mt-8 rounded-none border border-slate-200 bg-white p-5 shadow-sm">
-                <RecentBlogs compact />
+              <div className="2xl:hidden">
+                <RecentBlogs compact className="mt-6" />
               </div>
             )}
           </main>
 
-          {showBlogRecommendations && (
-            <aside className="hidden 2xl:block w-[250px] flex-shrink-0">
-              <div className="sticky top-28 rounded-none border border-slate-200 bg-white p-4 shadow-sm">
-                <RecentBlogs compact />
-              </div>
-            </aside>
-          )}
+          {showBlogRecommendations && <RecentBlogs compact asideClassName="hidden 2xl:block w-[260px] flex-shrink-0" />}
         </div>
       </div>
       
       <WelcomeTour />
       <AssistantWidget />
-      {!pathname.startsWith('/admin') && <FeedbackButton />}
-      {!pathname.startsWith('/admin') && <HelpButton />}
+      {!pathname.startsWith('/admin') && <SupportMenu />}
     </div>
   );
 };
 
+// Brand colours for the antd pieces used inside dashboards (pagination, modals, selects, tabs…).
+const ANTD_THEME = {
+  token: {
+    colorPrimary: '#34B678',
+    colorLink: '#1f8a57',
+    colorText: '#18181b',
+    colorTextHeading: '#10213D',
+    borderRadius: 10,
+    fontFamily: 'inherit',
+  },
+  components: {
+    Modal: { borderRadiusLG: 16 },
+    Pagination: { itemActiveBg: '#eaf7f0' },
+  },
+};
+
 const DashboardLayout = () => (
-  <OnboardingProvider>
-    <DashboardLayoutInner />
-  </OnboardingProvider>
+  <ConfigProvider theme={ANTD_THEME}>
+    <OnboardingProvider>
+      <DashboardLayoutInner />
+    </OnboardingProvider>
+  </ConfigProvider>
 );
 
 export default DashboardLayout;

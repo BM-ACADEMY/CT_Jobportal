@@ -33,20 +33,20 @@ const InstallPrompt = ({ variant = 'banner' }) => {
   };
 
   return (
-    <div className="mb-4 flex items-center gap-3 border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
-      <Download size={18} className="shrink-0" />
-      <span className="min-w-0 flex-1">
-        <strong className="font-bold">Install the Velaivaaipu app.</strong>{' '}
+    <div className="mb-5 flex items-center gap-3 rounded-2xl bg-white p-3 pr-2 text-[13px] text-zinc-600 ring-1 ring-zinc-200/80 sm:p-3.5" role="status">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#eaf7f0] text-[#1f8a57]"><Download size={17} /></span>
+      <span className="min-w-0 flex-1 leading-snug">
+        <strong className="font-semibold text-[#10213D]">Install the Velaivaaipu app.</strong>{' '}
         {ios
           ? <>Tap <Share size={13} className="inline -mt-0.5" /> Share, then "Add to Home Screen".</>
           : MESSAGES.installPrompt}
       </span>
       {!ios && (
-        <button type="button" onClick={async () => { await promptInstall(); setHidden(true); }} className="shrink-0 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-2 border-none cursor-pointer">
+        <button type="button" onClick={async () => { await promptInstall(); setHidden(true); }} className="shrink-0 h-9 rounded-lg bg-[#34B678] hover:bg-[#2ca66b] px-3.5 text-xs font-semibold text-white border-none cursor-pointer transition">
           Install
         </button>
       )}
-      <button type="button" onClick={dismiss} aria-label="Not now" className="shrink-0 text-emerald-700 hover:text-emerald-900 bg-transparent border-none cursor-pointer p-1">
+      <button type="button" onClick={dismiss} aria-label="Not now" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 bg-transparent border-none cursor-pointer">
         <X size={15} />
       </button>
     </div>

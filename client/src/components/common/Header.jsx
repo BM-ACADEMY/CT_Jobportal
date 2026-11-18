@@ -105,42 +105,9 @@ const Header = ({ toggleMobileSidebar }) => {
 
   // Typewriter placeholder animation
   // The box searches jobs (Enter opens the jobs page), so every hint must say jobs, never drives or reports.
-  const placeholders = role === 'admin' ? ["Search live jobs on the site..."] : role === 'college' ? [
-    "Search jobs for your students...",
-    "Find companies hiring freshers...",
-    "Search by job title or keyword..."
-  ] : [
-    "Identify roles, companies or skillsets...",
-    "Search jobs by title or keyword...",
-    "Search for top organizations..."
-  ];
-  const [placeholderText, setPlaceholderText] = useState("");
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    let timer;
-    const currentFullText = placeholders[placeholderIndex];
-    
-    if (isDeleting) {
-      timer = setTimeout(() => {
-        setPlaceholderText(prev => prev.substring(0, prev.length - 1));
-      }, 30);
-    } else {
-      timer = setTimeout(() => {
-        setPlaceholderText(prev => currentFullText.substring(0, prev.length + 1));
-      }, 70);
-    }
-
-    if (!isDeleting && placeholderText === currentFullText) {
-      timer = setTimeout(() => setIsDeleting(true), 2500);
-    } else if (isDeleting && placeholderText === "") {
-      setIsDeleting(false);
-      setPlaceholderIndex(prev => (prev + 1) % placeholders.length);
-    }
-
-    return () => clearTimeout(timer);
-  }, [placeholderText, isDeleting, placeholderIndex]);
+  const placeholderText = role === 'admin' ? 'Search live jobs on the site'
+    : role === 'college' ? 'Search jobs for your students'
+    : 'Search jobs or companies';
 
   useEffect(() => {
     if (!user) return;
@@ -216,31 +183,32 @@ const Header = ({ toggleMobileSidebar }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white shadow-sm">
-      <div className="max-w-[1440px] mx-auto px-6 md:px-10 h-20 flex items-center justify-between gap-6">
+    <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+      <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
 
         {/* Logo & Mobile Menu */}
         <div className="flex items-center gap-2.5 lg:hidden">
             <button 
               onClick={toggleMobileSidebar}
-              className="text-slate-500 hover:text-emerald-600 cursor-pointer focus:outline-none p-1 transition-colors"
+              aria-label="Open menu"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 hover:text-[#10213D] bg-transparent border-none cursor-pointer transition-colors"
             >
-              <Menu size={24} />
+              <Menu size={20} />
             </button>
             <Link to="/" className="flex items-center active:scale-95 transition-transform" aria-label="Velaivaaipu home">
-                <img src="/velaivaaipu-logo.webp" alt="Velaivaaipu" loading="eager" decoding="async" className="h-12 w-auto object-contain" />
+                <img src="/velaivaaipu-logo.webp" alt="Velaivaaipu" loading="eager" decoding="async" className="h-10 w-auto object-contain" />
             </Link>
         </div>
 
         {/* Search */}
         <div className="hidden xl:flex flex-1 justify-center max-w-md">
-            <div className="w-full flex items-center shadow-sm border border-slate-300 hover:border-slate-400 focus-within:border-[#34b678] focus-within:ring-1 focus-within:ring-[#34b678]/15 transition-all bg-slate-50/20">
+            <div className="w-full flex items-center rounded-xl ring-1 ring-zinc-200 hover:ring-zinc-300 focus-within:ring-2 focus-within:ring-[#34B678] transition-all bg-zinc-50">
                 <div className="pl-4 pr-1 text-slate-400">
                     <Search size={15} />
                 </div>
                 <input 
                     placeholder={placeholderText} 
-                    className="flex-1 h-11 px-2 bg-transparent border-none outline-none text-slate-800 font-semibold text-xs placeholder-slate-600/90"
+                    className="flex-1 h-9 px-2 bg-transparent border-none outline-none text-zinc-800 font-normal text-[13px] placeholder:text-zinc-400"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={handleSearch}
@@ -251,33 +219,32 @@ const Header = ({ toggleMobileSidebar }) => {
 
 
         {/* Actions */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 sm:gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative h-11 w-11 text-slate-400 hover:text-emerald-600 hover:bg-transparent rounded-none transition-all cursor-pointer group/bell">
-                    <Bell size={20} className="cursor-pointer transition-transform group-hover/bell:scale-125" />
+                <Button variant="ghost" size="icon" aria-label="Notifications" className="relative h-10 w-10 text-zinc-500 hover:text-[#10213D] hover:bg-zinc-100 rounded-xl transition-all cursor-pointer">
+                    <Bell size={19} className="cursor-pointer" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 text-white border-2 border-white rounded-full text-[9px] font-black flex items-center justify-center cursor-pointer">
+                      <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white border-2 border-white rounded-full text-[9px] font-bold flex items-center justify-center cursor-pointer">
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={12} className="w-[280px] rounded-none border border-white/10 shadow-xl p-0 bg-[#1b496d] text-white overflow-visible">
-                <DropdownMenuArrow className="fill-[#1b496d]" />
-                <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
+              <DropdownMenuContent align="end" sideOffset={12} className="w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl border border-zinc-200 shadow-xl p-0 bg-white text-zinc-900 overflow-hidden">
+                <div className="px-4 py-3 flex items-center justify-between border-b border-zinc-100">
                   <div>
-                    <p className="text-xs font-bold text-white">Notifications</p>
-                    <p className="text-[9px] text-slate-300 mt-0.5">{unreadCount} unread</p>
+                    <p className="text-sm font-bold text-[#10213D]">Notifications</p>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">{unreadCount} unread</p>
                   </div>
                   <div className="flex items-center gap-1">
                     {notifications.some(n => n.isRead) && (
-                      <Button variant="ghost" size="sm" onClick={clearReadNotifications} className="h-7 text-[9px] font-bold text-rose-400 hover:text-rose-300 hover:bg-white/5 cursor-pointer px-2">
+                      <Button variant="ghost" size="sm" onClick={clearReadNotifications} className="h-7 text-[11px] font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer px-2">
                         <Trash2 className="w-3 h-3 mr-1" /> Clear read
                       </Button>
                     )}
                     {unreadCount > 0 && (
-                      <Button variant="ghost" size="sm" onClick={markAllNotificationsRead} className="h-7 text-[9px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-white/5 cursor-pointer px-2">
+                      <Button variant="ghost" size="sm" onClick={markAllNotificationsRead} className="h-7 text-[11px] font-semibold text-[#1f8a57] hover:bg-[#eaf7f0] rounded-lg cursor-pointer px-2">
                         <CheckCheck className="w-3 h-3 mr-1" /> Mark all read
                       </Button>
                     )}
@@ -286,27 +253,27 @@ const Header = ({ toggleMobileSidebar }) => {
                 <div className="max-h-[300px] overflow-y-auto">
                   {notifications.length === 0 ? (
                     <div className="py-8 px-4 text-center">
-                      <Bell className="w-5 h-5 mx-auto text-slate-400 mb-1.5" />
-                      <p className="text-xs font-bold text-white">No unread notifications</p>
-                      <p className="text-[10px] text-slate-300 mt-0.5">No unread messages or notifications at this time.</p>
+                      <Bell className="w-5 h-5 mx-auto text-zinc-300 mb-1.5" />
+                      <p className="text-sm font-bold text-[#10213D]">You're all caught up</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">No unread messages or notifications at this time.</p>
                     </div>
                   ) : notifications.map(notification => (
                     <DropdownMenuItem
                       key={notification._id}
                       onClick={() => openNotification(notification)}
-                      className={`block px-4 py-3 rounded-none border-b border-white/5 cursor-pointer focus:bg-white/10 focus:text-white outline-none border-l-4 border-transparent focus:border-[#34b678] ${notification.isRead ? 'bg-transparent text-slate-300' : 'bg-white/5 text-white'}`}
+                      className={`block px-4 py-3 rounded-none border-b border-zinc-100 cursor-pointer focus:bg-zinc-50 outline-none ${notification.isRead ? 'bg-white' : 'bg-[#f4faf7]'}`}
                     >
                       <div className="flex gap-2.5 w-full">
-                        <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${notification.isRead ? 'bg-slate-500' : 'bg-emerald-400'}`} />
+                        <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${notification.isRead ? 'bg-zinc-300' : 'bg-[#34B678]'}`} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-white leading-tight">{notification.title}</p>
-                          <p className="text-[10px] text-slate-300 mt-0.5 leading-normal line-clamp-2">{notification.message}</p>
-                          <p className="text-[8px] text-slate-400 mt-1">{new Date(notification.createdAt).toLocaleString()}</p>
+                          <p className="text-[13px] font-semibold text-[#10213D] leading-tight">{notification.title}</p>
+                          <p className="text-xs text-zinc-500 mt-0.5 leading-normal line-clamp-2">{notification.message}</p>
+                          <p className="text-[10px] text-zinc-400 mt-1">{new Date(notification.createdAt).toLocaleString()}</p>
                         </div>
                         {notification.isRead && (
                           <button
                             onClick={(e) => deleteNotificationItem(e, notification._id)}
-                            className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-white/10 transition-colors mt-0.5"
+                            className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-zinc-400 hover:text-rose-600 hover:bg-rose-50 bg-transparent border-none cursor-pointer transition-colors"
                             title="Delete notification"
                           >
                             <Trash2 size={12} />
@@ -321,43 +288,42 @@ const Header = ({ toggleMobileSidebar }) => {
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <div className="hidden lg:flex items-center gap-3 cursor-pointer pl-6 border-l border-slate-300 h-10 group transition-all">
-                        <div className="hidden sm:flex flex-col items-end leading-none cursor-pointer">
-                            <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors flex items-center gap-1.5 cursor-pointer">
+                    <button type="button" aria-label="Account menu" className="flex items-center gap-2.5 cursor-pointer rounded-xl p-1 lg:pl-2 lg:pr-1.5 h-11 bg-transparent border-none hover:bg-zinc-100 group transition-colors">
+                        <div className="hidden lg:flex flex-col items-end leading-none cursor-pointer">
+                            <p className="m-0 text-[13px] font-medium text-[#10213D] flex items-center gap-1.5 cursor-pointer">
                               {user?.name || 'Authorized User'}
-                              {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={14} className="text-blue-500 shrink-0 cursor-pointer" />}
+                              {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={14} className="text-[#1f8a57] shrink-0 cursor-pointer" />}
                             </p>
-                            <span className="text-[8px] px-2 py-0.5 rounded-none border border-slate-200 bg-slate-50/50 mt-1 uppercase tracking-widest font-bold text-slate-400 cursor-pointer">
+                            <span className="mt-1 text-[11px] font-medium text-zinc-500 cursor-pointer">
                                 {config.label}
                             </span>
                         </div>
-                        <Avatar className="w-10 h-10 rounded-none border-2 border-white shadow-sm ring-1 ring-slate-200 group-hover:ring-emerald-100 transition-all cursor-pointer">
+                        <Avatar className="w-9 h-9 rounded-lg ring-1 ring-zinc-200 cursor-pointer">
                             {user?.avatar && (
                                 <AvatarImage 
                                     src={user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`} 
                                     className="object-cover cursor-pointer" 
                                 />
                             )}
-                            <AvatarFallback className="bg-emerald-50 text-emerald-600 text-xs font-black cursor-pointer rounded-none">
+                            <AvatarFallback className="bg-[#eaf7f0] text-[#1f8a57] text-xs font-bold cursor-pointer rounded-lg">
                                 {user?.name?.[0]?.toUpperCase() || 'U'}
                             </AvatarFallback>
                         </Avatar>
-                        <ChevronDown size={14} className="text-slate-300 group-hover:text-emerald-500 transition-all cursor-pointer" />
-                    </div>
+                        <ChevronDown size={14} className="hidden lg:block text-zinc-400 cursor-pointer" />
+                    </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={12} className="w-48 rounded-none border border-white/10 shadow-xl p-2 bg-[#1b496d] text-white animate-in slide-in-from-top-2 duration-300 overflow-visible">
-                    <div className="absolute right-5 -top-1.5 w-3 h-3 bg-[#1b496d] rotate-45 border-t border-l border-white/10 z-0" />
-                    <DropdownMenuLabel className="px-3 py-3 mb-1 relative z-10">
+                <DropdownMenuContent align="end" sideOffset={12} className="w-56 rounded-2xl border border-zinc-200 shadow-xl p-1.5 bg-white text-zinc-900">
+                    <DropdownMenuLabel className="px-2.5 py-2">
                         <div className="flex flex-col space-y-1.5">
-                            <p className="text-xs font-bold text-white flex items-center gap-1 truncate max-w-[150px]">
+                            <p className="text-[13px] font-semibold text-[#10213D] flex items-center gap-1 truncate">
                               {user?.name || 'User Account'}
-                              {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={13} className="text-blue-400 shrink-0" />}
+                              {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={13} className="text-[#1f8a57] shrink-0" />}
                             </p>
-                            <p className="text-[10px] font-medium text-slate-300 truncate max-w-[150px]">{user?.email}</p>
+                            <p className="text-xs font-normal text-zinc-500 truncate">{user?.email}</p>
                         </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-white/10" />
-                    <div className="p-1 space-y-1 relative z-10">
+                    <DropdownMenuSeparator className="bg-zinc-100" />
+                    <div>
                       <DropdownMenuItem 
                           onClick={() => {
                               const routes = {
@@ -371,20 +337,20 @@ const Header = ({ toggleMobileSidebar }) => {
                               };
                               navigate(routes[user?.role] || '/candidate/settings');
                           }}
-                          className="rounded-none px-3 py-2 text-[10px] font-bold text-slate-300 cursor-pointer focus:bg-white/10 focus:text-white border-l-4 border-transparent focus:border-[#34b678] outline-none transition-all uppercase tracking-widest"
+                          className="rounded-lg px-2.5 py-2 text-[13px] font-medium text-zinc-700 cursor-pointer focus:bg-zinc-100 focus:text-[#10213D] outline-none"
                       >
                           <Settings className="w-3.5 h-3.5 mr-2 cursor-pointer" />
                           <span className="cursor-pointer">Settings</span>
                       </DropdownMenuItem>
                     </div>
-                    <DropdownMenuSeparator className="bg-white/10" />
-                    <div className="p-1 relative z-10">
+                    <DropdownMenuSeparator className="bg-zinc-100" />
+                    <div>
                       <DropdownMenuItem 
                           onClick={() => { logout(); navigate('/'); }}
-                          className="rounded-none px-3 py-2 text-[10px] font-bold text-rose-400 cursor-pointer focus:bg-white/10 focus:text-rose-300 border-l-4 border-transparent focus:border-[#34b678] outline-none transition-all uppercase tracking-widest"
+                          className="rounded-lg px-2.5 py-2 text-[13px] font-medium text-rose-600 cursor-pointer focus:bg-rose-50 focus:text-rose-700 outline-none"
                       >
                           <LogOut className="w-3.5 h-3.5 mr-2 cursor-pointer" />
-                          <span className="cursor-pointer">Logout</span>
+                          <span className="cursor-pointer">Log out</span>
                       </DropdownMenuItem>
                     </div>
                 </DropdownMenuContent>

@@ -22,18 +22,18 @@ const WhatsAppAndInvite = () => {
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-        <p className="font-black text-slate-900">WhatsApp job alerts</p>
-        <p className="text-xs text-slate-500">Optional. Email stays the default. We will only message you on WhatsApp if you say yes here, and you can turn it off any time.</p>
-        <input className="w-full h-11 px-3 rounded-xl border border-slate-200 text-sm" placeholder="WhatsApp mobile number" inputMode="numeric" value={number} onChange={(e) => setNumber(e.target.value)} disabled={d.whatsapp?.optIn} />
-        <button onClick={() => toggle(!d.whatsapp?.optIn)} className={`h-10 px-4 rounded-xl text-sm font-bold ${d.whatsapp?.optIn ? 'border border-slate-200 text-slate-700' : 'bg-emerald-600 text-white'}`}>{d.whatsapp?.optIn ? 'Turn off WhatsApp alerts' : 'Yes, send me alerts on WhatsApp'}</button>
+      <div className="bg-white rounded-2xl ring-1 ring-zinc-200/80 p-5 space-y-3">
+        <p className="m-0 text-[15px] font-semibold text-[#10213D]">WhatsApp job alerts</p>
+        <p className="m-0 text-[13px] leading-relaxed text-zinc-500">Optional. Email stays the default. We will only message you on WhatsApp if you say yes here, and you can turn it off any time.</p>
+        <input className="w-full h-10 px-3.5 rounded-xl bg-white ring-1 ring-zinc-200 border-none outline-none text-[13px] focus:ring-2 focus:ring-[#34B678] disabled:bg-zinc-50" placeholder="WhatsApp mobile number" inputMode="numeric" value={number} onChange={(e) => setNumber(e.target.value)} disabled={d.whatsapp?.optIn} />
+        <button onClick={() => toggle(!d.whatsapp?.optIn)} className={`h-10 px-4 rounded-xl text-[13px] font-semibold border-none cursor-pointer transition ${d.whatsapp?.optIn ? 'bg-white ring-1 ring-zinc-200 text-[#10213D] hover:ring-zinc-300' : 'bg-[#34B678] hover:bg-[#2ca66b] text-white'}`}>{d.whatsapp?.optIn ? 'Turn off WhatsApp alerts' : 'Yes, send me alerts on WhatsApp'}</button>
       </div>
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-        <p className="font-black text-slate-900">Invite a friend</p>
-        <p className="text-xs text-slate-500">Share your link. Friends who join and verify their account: <b>{d.joined}</b>.</p>
+      <div className="bg-white rounded-2xl ring-1 ring-zinc-200/80 p-5 space-y-3">
+        <p className="m-0 text-[15px] font-semibold text-[#10213D]">Invite a friend</p>
+        <p className="m-0 text-[13px] leading-relaxed text-zinc-500">Share your link. Friends who join and verify their account: <b>{d.joined}</b>.</p>
         <div className="flex gap-2 flex-wrap">
-          <a className="h-10 px-4 inline-flex items-center rounded-xl bg-emerald-600 text-white text-sm font-bold" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(text)}`}>Share on WhatsApp</a>
-          <button className="h-10 px-4 rounded-xl border border-slate-200 text-sm font-bold" onClick={() => { navigator.clipboard?.writeText(d.link).then(() => toast.success('Link copied')).catch(() => toast.error('Could not copy')); }}>Copy link</button>
+          <a className="h-10 px-4 inline-flex items-center rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white text-[13px] font-semibold no-underline transition" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(text)}`}>Share on WhatsApp</a>
+          <button className="h-10 px-4 rounded-xl bg-white ring-1 ring-zinc-200 border-none text-[13px] font-semibold text-[#10213D] cursor-pointer transition hover:ring-zinc-300" onClick={() => { navigator.clipboard?.writeText(d.link).then(() => toast.success('Link copied')).catch(() => toast.error('Could not copy')); }}>Copy link</button>
         </div>
       </div>
     </div>

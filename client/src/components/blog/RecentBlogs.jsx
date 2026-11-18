@@ -30,45 +30,39 @@ const Meta = ({ blog, light = false }) => (
   </div>
 );
 
-// Small sidebar version used inside dashboards (unchanged layout).
-const Compact = () => {
-  const blogs = useVisibleBlogs(RECENT_BLOGS).slice(0, 2);
-  return (
-  <section aria-labelledby="recent-blogs-title">
-    <div className="mb-4">
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-1">Career insights</p>
-      <h2 id="recent-blogs-title" className="text-base font-bold text-slate-900">Latest from our blog</h2>
-    </div>
-    <div className="space-y-4">
-      {blogs.map((blog) => (
-        <article key={blog.slug} className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-shadow">
-          <img src={blog.image} alt="" className="h-24 w-full object-cover" />
-          <div className="p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-2">{blog.category} · {blog.readTime}</p>
-            <h3 className="text-sm font-bold text-slate-900 leading-snug mb-2">{blog.title}</h3>
-            <Link to={`/blog/${blog.slug}`} className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700">
-              Read more <ArrowRight size={14} />
+// Small boxed list used beside dashboards. Renders nothing when there are no posts.
+const Compact = ({ className = '', asideClassName = '' }) => {
+  const blogs = useVisibleBlogs(RECENT_BLOGS).slice(0, 3);
+  if (!blogs.length) return null;
+  const card = (
+    <section aria-labelledby="recent-blogs-title" className={`rounded-2xl bg-white p-4 ring-1 ring-zinc-200/80 ${className}`}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="recent-blogs-title" className="m-0 text-sm font-bold text-[#10213D]">From our blog</h2>
+        <Link to="/blog" className="text-xs font-semibold text-[#1f8a57] no-underline hover:underline">See all</Link>
+      </div>
+      <ul className="m-0 mt-3 list-none space-y-1 p-0">
+        {blogs.map((blog) => (
+          <li key={blog.slug}>
+            <Link to={`/blog/${blog.slug}`} className="group -mx-1.5 flex gap-3 rounded-xl p-1.5 no-underline transition hover:bg-zinc-50">
+              <img src={blog.image} alt="" className="h-12 w-16 shrink-0 rounded-lg object-cover" loading="lazy" />
+              <span className="min-w-0">
+                <span className="line-clamp-2 text-[13px] font-semibold leading-snug text-[#10213D] group-hover:text-[#1f8a57]">{blog.title}</span>
+                <span className="mt-0.5 block text-[11px] text-zinc-400">{blog.readTime || blog.date}</span>
+              </span>
             </Link>
-            <div className="mt-3 pt-3 flex items-center gap-2.5 border-t border-slate-100">
-              <div className="h-8 w-8 text-[10px] flex shrink-0 items-center justify-center rounded-none bg-emerald-500 font-black text-white" aria-hidden="true">V</div>
-              <div className="min-w-0">
-                <p className="text-xs truncate font-bold text-slate-900">{blog.author || 'Velaivaaipu'}</p>
-                <time dateTime={blog.date} className="block text-[11px] text-slate-500">{blog.date}</time>
-              </div>
-            </div>
-          </div>
-        </article>
-      ))}
-    </div>
-    <Link to="/blog" className="mt-4 inline-flex text-xs font-bold text-emerald-600 hover:text-emerald-700">See all articles →</Link>
-  </section>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
+  // As a side column, the column itself only exists when there are posts.
+  return asideClassName ? <aside className={asideClassName}><div className="sticky top-24">{card}</div></aside> : card;
 };
 
 // Magazine layout: one featured story with a revealing photo, and a reading list beside it.
-const RecentBlogs = ({ compact = false }) => {
+const RecentBlogs = ({ compact = false, className = '', asideClassName = '' }) => {
   const visible = useVisibleBlogs(BLOGS);
-  if (compact) return <Compact />;
+  if (compact) return <Compact className={className} asideClassName={asideClassName} />;
   const [featured, ...rest] = visible.slice(0, 3);
   if (!featured) return null;
 

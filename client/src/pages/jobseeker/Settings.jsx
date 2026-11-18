@@ -40,7 +40,7 @@ const Tabs = ({ defaultValue, children, className }) => {
     const content = tabContents.find(c => c.props.value === value);
     return {
       key: value,
-      label: <div className="flex items-center gap-2">{trigger.props.children}</div>,
+      label: <div className="flex items-center gap-2 text-[13px] font-medium [&_svg]:!mr-0">{trigger.props.children}</div>,
       children: content ? <div className={content.props.className}>{content.props.children}</div> : null,
     };
   });
@@ -97,14 +97,16 @@ const COMMON_CITIES = [
 const DataDisplay = ({ label, value, icon: Icon, isEditing, children }) => {
     if (isEditing) return children;
     return (
-        <div className="space-y-1">
-            <Label className="text-[10px] text-slate-500 uppercase tracking-widest font-bold ml-1">{label}</Label>
-            <div className="flex items-center gap-3 mt-1">
-                <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 shrink-0 group-hover:bg-emerald-50 transition-colors">
-                    {Icon && <Icon size={16} className="text-slate-500" />}
-                </div>
-                <span className="text-[15px] font-bold text-slate-900 flex-1 flex items-center flex-wrap gap-2">
-                    {value || <span className="text-slate-400 font-medium italic">Not specified</span>}
+        <div className="min-w-0">
+            <p className="m-0 text-xs font-medium text-zinc-500">{label}</p>
+            <div className="mt-1.5 flex items-center gap-2.5">
+                {Icon && (
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-50 ring-1 ring-zinc-200/70">
+                        <Icon size={15} className="text-zinc-500" />
+                    </span>
+                )}
+                <span className="min-w-0 flex-1 break-words text-sm font-semibold text-[#10213D] flex items-center flex-wrap gap-2">
+                    {value || <span className="font-normal text-zinc-400">Not added yet</span>}
                 </span>
             </div>
         </div>
@@ -118,7 +120,7 @@ const Settings = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [cropModal, setCropModal] = useState({ isOpen: false, imageSrc: null, type: null, aspectRatio: 1 });
 
-    // Asset Repository states
+    // Documents states
     const [isAddDocsModalOpen, setIsAddDocsModalOpen] = useState(false);
     const [pendingFiles, setPendingFiles] = useState([]);
     const [uploadingDocs, setUploadingDocs] = useState(false);
@@ -529,7 +531,7 @@ const Settings = () => {
         if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp') || lower.includes('image')) {
             return { label: 'IMG', bg: 'bg-purple-50 text-purple-600 border-purple-200' };
         }
-        return { label: 'DOC', bg: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+        return { label: 'DOC', bg: 'bg-[#eaf7f0] text-[#1f8a57] border-emerald-200' };
     };
 
     // Download any document
@@ -652,7 +654,7 @@ const Settings = () => {
 
             setPendingFiles([]);
             setIsAddDocsModalOpen(false);
-            toast.success(res.data.msg || "Documents added to Asset Repository");
+            toast.success(res.data.msg || "Documents added to Documents");
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.msg || "Document upload failed");
@@ -967,6 +969,13 @@ const Settings = () => {
         });
     };
 
+    // While the Save / Cancel bar is showing, lift the floating Help button above it.
+    useEffect(() => {
+        if (!isEditing) return undefined;
+        document.documentElement.style.setProperty('--bottom-bar-h', '64px');
+        return () => document.documentElement.style.removeProperty('--bottom-bar-h');
+    }, [isEditing]);
+
     const repositoryDocuments = (formData?.profile?.documents && formData.profile.documents.length > 0)
         ? formData.profile.documents
         : (user?.profile?.documents && user.profile.documents.length > 0)
@@ -982,167 +991,169 @@ const Settings = () => {
             }] : []);
 
     return (
-        <div className="max-w-5xl mx-auto space-y-10 py-8 px-4 animate-in fade-in duration-500">
+        <div className="w-full space-y-6 pb-24 animate-in fade-in duration-500">
             <PageSOPBanner pageKey="jobseekerSettings" />
-            <WhatsAppAndInvite />
-            <BrandConsent />
-            {/* Header Section */}
-            <div className="bg-white rounded-[24px] border border-slate-200 p-6 md:p-8 shadow-sm mb-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-                <div className="space-y-2 relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-bold uppercase tracking-widest mb-1">
-                        <BadgeCheck size={12} /> Candidate Portal
-                    </div>
-                    <h1 className="text-3xl font-medium text-slate-900 tracking-tight">
-                        Profile Intelligence
-                    </h1>
-                    <p className="text-[15px] text-slate-500 font-medium max-w-xl">
-                        Design and manage your professional identity, track your career roadmap, and fine-tune your visibility settings.
+            {/* Header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0">
+                    <p className="m-0 mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#1f8a57]">Profile</p>
+                    <h1 className="m-0 text-xl font-bold tracking-tight text-[#10213D] sm:text-[1.375rem]">My profile</h1>
+                    <p className="m-0 mt-1 max-w-2xl text-[13px] leading-relaxed text-zinc-500">
+                        Employers see these details when you apply. Keep them up to date to get better job matches.
                     </p>
                 </div>
-                <div className="flex items-center gap-3 relative z-10 w-full md:w-auto mt-4 md:mt-0">
-                    {isEditing ? (
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                            <Button 
-                                onClick={handleCancel}
-                                className="h-11 px-6 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs uppercase tracking-widest transition-all flex-1 md:flex-none"
-                            >
-                                Discard
-                            </Button>
-                            <Button 
-                                type="primary"
-                                onClick={handleSave}
-                                disabled={loading}
-                                className="h-11 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest shadow-md transition-all border-none flex-1 md:flex-none"
-                            >
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                                Commit Changes
-                            </Button>
-                        </div>
-                    ) : (
-                        <Button 
-                            type="primary"
-                            onClick={() => setIsEditing(true)}
-                            className="h-11 px-8 w-full md:w-auto rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-md transition-all border-none"
-                        >
-                            <Settings2 className="w-4 h-4 mr-2" /> Modify Profile
-                        </Button>
-                    )}
-                </div>
+                {!isEditing && (
+                    <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#34B678] px-4 text-[13px] font-semibold text-white border-none cursor-pointer shadow-md shadow-[#34B678]/25 transition hover:bg-[#2ca66b]"
+                    >
+                        <Edit2 size={15} /> Edit profile
+                    </button>
+                )}
             </div>
 
+            {/* While editing, Save / Cancel stay in reach at the bottom of the screen. */}
+            {isEditing && (
+                <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur lg:left-[var(--sidebar-w,0px)]">
+                    <div className="flex w-full items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+                        <p className="m-0 hidden text-[13px] text-zinc-500 sm:block">You are editing your profile. Save to keep your changes.</p>
+                        <div className="flex w-full gap-2 sm:w-auto">
+                            <button
+                                type="button"
+                                onClick={handleCancel}
+                                className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-white px-4 text-[13px] font-semibold text-[#10213D] ring-1 ring-zinc-200 border-none cursor-pointer transition hover:ring-zinc-300 sm:flex-none"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSave}
+                                disabled={loading}
+                                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[#34B678] px-5 text-[13px] font-semibold text-white border-none cursor-pointer shadow-md shadow-[#34B678]/25 transition hover:bg-[#2ca66b] disabled:opacity-60 sm:flex-none"
+                            >
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                Save changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Wrapped: antd resets the Tabs margin, which would cancel the page spacing. */}
+            <div>
             <Tabs defaultValue="basic" className="w-full">
                 <TabsList className="bg-slate-50 border border-slate-100 rounded-xl p-1.5 h-auto flex justify-start overflow-x-auto shadow-sm flex-nowrap w-full [&::-webkit-scrollbar]:hidden gap-1">
-                    <TabsTrigger value="basic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="basic" className="h-10 px-6 rounded-lg text-xs uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1f8a57] data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <User className="w-3.5 h-3.5 mr-2" /> Basic Info
                     </TabsTrigger>
-                    <TabsTrigger value="academic" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="academic" className="h-10 px-6 rounded-lg text-xs uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1f8a57] data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <GraduationCap className="w-3.5 h-3.5 mr-2" /> Academic
                     </TabsTrigger>
-                    <TabsTrigger value="professional" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="professional" className="h-10 px-6 rounded-lg text-xs uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1f8a57] data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <Briefcase className="w-3.5 h-3.5 mr-2" /> Professional
                     </TabsTrigger>
-                    <TabsTrigger value="resume" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
-                        <FileText className="w-3.5 h-3.5 mr-2" /> Asset Repository
+                    <TabsTrigger value="resume" className="h-10 px-6 rounded-lg text-xs uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1f8a57] data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                        <FileText className="w-3.5 h-3.5 mr-2" /> Documents
                     </TabsTrigger>
-                    <TabsTrigger value="preferences" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="preferences" className="h-10 px-6 rounded-lg text-xs uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1f8a57] data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <Settings2 className="w-3.5 h-3.5 mr-2" /> Preferences
                     </TabsTrigger>
-                    <TabsTrigger value="campus" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="campus" className="h-10 px-6 rounded-lg text-xs uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1f8a57] data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <GraduationCap className="w-3.5 h-3.5 mr-2" /> Campus
                     </TabsTrigger>
-                    <TabsTrigger value="hidden-jobs" className="h-10 px-6 rounded-lg text-[10px] uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
+                    <TabsTrigger value="hidden-jobs" className="h-10 px-6 rounded-lg text-xs uppercase font-bold tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#1f8a57] data-[state=active]:border-slate-100 border border-transparent whitespace-nowrap flex-shrink-0">
                         <EyeOff className="w-3.5 h-3.5 mr-2" /> Hidden Jobs
                     </TabsTrigger>
                 </TabsList>
 
                 {/* ── TAB: BASIC INFO ── */}
                 <TabsContent value="basic" className="mt-8 flex flex-col gap-6">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
-                        <div className="relative h-48 sm:h-64 bg-slate-100 group">
-                            {formData.coverPic ? (
+                    <Card styles={{ body: { padding: 0 } }} className="rounded-2xl border-zinc-200/80 shadow-none bg-white overflow-hidden">
+                        <div className="relative h-24 bg-gradient-to-r from-[#eaf7f0] via-[#f4faf7] to-white sm:h-32">
+                            {formData.coverPic && (
                                 !isEditing ? (
                                     <Zoom>
-                                        <img 
-                                            src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} 
-                                            className="w-full h-48 sm:h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
-                                            alt="Cover" 
-                                            onError={(e) => { e.target.style.display = 'none'; }}
-                                        />
+                                        <img src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} className="h-24 w-full object-cover sm:h-32" alt="Cover" onError={(e) => { e.target.style.display = 'none'; }} />
                                     </Zoom>
                                 ) : (
-                                    <img 
-                                        src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} 
-                                        className="w-full h-full object-cover" 
-                                        alt="Cover" 
-                                        onError={(e) => { e.target.style.display = 'none'; }}
-                                    />
+                                    <img src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} className="h-full w-full object-cover" alt="Cover" onError={(e) => { e.target.style.display = 'none'; }} />
                                 )
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-r from-emerald-100 to-teal-50" />
                             )}
-                                {isEditing && (
-                                <label className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 px-3 rounded-xl shadow-sm cursor-pointer hover:bg-white transition-all text-[10px] font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2 border border-slate-200/50 hover:border-emerald-200 hover:text-emerald-600">
-                                    <Upload size={14} /> Update Cover
+                            {isEditing && (
+                                <label className="absolute right-3 top-3 flex cursor-pointer items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#10213D] shadow-sm ring-1 ring-zinc-200 backdrop-blur transition hover:text-[#1f8a57]">
+                                    <Upload size={13} /> {formData.coverPic ? 'Change cover' : 'Add cover'}
                                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e, 'coverPic')} />
                                 </label>
                             )}
-                            <div className="absolute -bottom-12 left-8">
-                                <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-slate-50 shadow-md overflow-hidden flex items-center justify-center">
+                        </div>
+                        <div className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-end sm:gap-5 sm:px-6">
+                            <div className="relative -mt-10 w-fit shrink-0 sm:-mt-12">
+                                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-white ring-4 ring-white shadow-md sm:h-24 sm:w-24">
                                     {formData.avatar ? (
-                                        <img 
-                                            src={formData.avatar.startsWith('http') ? formData.avatar : `${API_DOMAIN}${formData.avatar}`} 
-                                            className="w-24 h-24 sm:w-32 sm:h-32 object-cover bg-emerald-50" 
-                                            alt="Avatar" 
-                                            onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${formData.name || 'User'}&background=ecfdf5&color=059669&size=128`; }}
+                                        <img
+                                            src={formData.avatar.startsWith('http') ? formData.avatar : `${API_DOMAIN}${formData.avatar}`}
+                                            className="h-full w-full object-cover"
+                                            alt="Profile photo"
+                                            onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${formData.name || 'User'}&background=eaf7f0&color=1f8a57&size=128`; }}
                                         />
                                     ) : (
-                                        <User size={48} className="text-slate-300" />
+                                        <span className="flex h-full w-full items-center justify-center bg-[#eaf7f0] text-2xl font-bold text-[#1f8a57]">
+                                            {formData.name?.[0]?.toUpperCase() || <User size={32} />}
+                                        </span>
                                     )}
                                 </div>
                                 {isEditing && (
-                                    <label className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 bg-white border-2 border-slate-50 rounded-full flex items-center justify-center text-slate-600 shadow-md cursor-pointer hover:bg-emerald-50 hover:text-emerald-600 transition-colors z-10 hover:scale-105 active:scale-95">
-                                        <Camera size={16} />
+                                    <label className="absolute -bottom-1.5 -right-1.5 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[#34B678] text-white shadow-md ring-2 ring-white transition hover:bg-[#2ca66b]" title="Change photo">
+                                        <Camera size={15} />
                                         <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e, 'avatar')} />
                                     </label>
                                 )}
                             </div>
+                            <div className="min-w-0 flex-1 sm:pb-1">
+                                <h2 className="m-0 flex items-center gap-1.5 text-lg font-bold text-[#10213D]">
+                                    <span className="truncate">{formData.name || 'Your name'}</span>
+                                    {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={17} className="shrink-0 text-[#1f8a57]" aria-label="Verified profile" />}
+                                </h2>
+                                <p className="m-0 mt-0.5 truncate text-[13px] text-zinc-500">{formData.profile.headline || 'Add a one-line headline about you'}</p>
+                            </div>
+                            <span className="w-fit shrink-0 rounded-lg bg-zinc-50 px-2.5 py-1.5 font-mono text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200/70 sm:mb-1">{user?.display_id || 'ID pending'}</span>
                         </div>
-                        <CardHeader className="pt-16 pb-4 border-b border-slate-200">
-                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <LayoutGrid className="w-4 h-4 text-emerald-600" /> Identity Foundation
+                        <CardHeader className="border-t border-zinc-100 px-5 pt-5 sm:px-6">
+                            <CardTitle className="text-[15px] font-semibold text-[#10213D]">
+                                Basic details
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6 p-8 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                        <CardContent className="p-5 sm:p-6 pt-4 sm:pt-4 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">
                                 <DataDisplay 
-                                    label="Full Legal Name" 
+                                    label="Full name" 
                                     value={
                                         <div className="flex items-center gap-2">
                                             {formData.name}
-                                            {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={16} className="text-blue-500" title="Verified Profile" />}
-                                            {isPriority && <BadgeCheck size={16} className="text-blue-500 fill-blue-50" title="Priority Candidate" />}
+                                            {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={16} className="text-[#1f8a57]" title="Verified Profile" />}
+                                            {isPriority && <BadgeCheck size={16} className="text-[#1f8a57] fill-blue-50" title="Priority Candidate" />}
                                         </div>
                                     } 
                                     icon={User} 
                                     isEditing={isEditing}
                                 >
                                     <div className="space-y-1.5">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Full Name</Label>
+                                        <Label className="text-[13px] font-medium text-[#10213D]">Full Name</Label>
                                         <div className="relative">
                                             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input 
                                                 value={formData.name} 
                                                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                                className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                                className="pl-11 h-11 rounded-xl bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm" 
                                             />
                                         </div>
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Primary Correspondence" value={user?.email} icon={Mail} isEditing={false}>
+                                <DataDisplay label="Email" value={user?.email} icon={Mail} isEditing={false}>
                                     <div className="space-y-1.5 opacity-60">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Email Address</Label>
+                                        <Label className="text-[13px] font-medium text-[#10213D]">Email Address</Label>
                                         <div className="relative">
                                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input value={user?.email} disabled className="pl-11 h-11 rounded-xl bg-slate-100 border-slate-200 font-medium text-sm" />
@@ -1150,9 +1161,9 @@ const Settings = () => {
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Candidate ID (Unique Identifier)" value={user?.display_id || 'Pending Generate'} icon={Target} isEditing={false}>
+                                <DataDisplay label="Candidate ID" value={user?.display_id || 'Pending Generate'} icon={Target} isEditing={false}>
                                     <div className="space-y-1.5 opacity-60">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Candidate ID</Label>
+                                        <Label className="text-[13px] font-medium text-[#10213D]">Candidate ID</Label>
                                         <div className="relative">
                                             <Target className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input value={user?.display_id || 'Pending Generate'} disabled className="pl-11 h-11 rounded-xl bg-slate-100 border-slate-200 font-medium text-sm" />
@@ -1160,47 +1171,47 @@ const Settings = () => {
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Professional Brand" value={formData.profile.headline} icon={Target} isEditing={isEditing}>
+                                <DataDisplay label="Headline" value={formData.profile.headline} icon={Target} isEditing={isEditing}>
                                     <div className="space-y-1.5">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Professional Headline</Label>
+                                        <Label className="text-[13px] font-medium text-[#10213D]">Headline</Label>
                                         <div className="relative">
                                             <Target className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4" />
                                             <Input 
-                                                placeholder="e.g. Lead Systems Architect" 
+                                                placeholder="e.g. B.Com graduate looking for accounts jobs" 
                                                 value={formData.profile.headline}
                                                 onChange={(e) => setFormData({...formData, profile: {...formData.profile, headline: e.target.value}})}
-                                                className="pl-11 h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                                className="pl-11 h-11 rounded-xl bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm" 
                                             />
                                         </div>
                                     </div>
                                 </DataDisplay>
 
                                 <DataDisplay 
-                                    label="Contact Vector" 
-                                    value={
+                                    label="Phone" 
+                                    value={formData.profile.phone && (
                                         <div className="flex items-center gap-2">
                                             {formData.profile.phone}
                                             {formData.profile.phone && (
-                                                <Badge variant="outline" className={`text-[9px] uppercase tracking-widest px-2 py-0 h-5 ${formData.isPhoneVisible ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-500 bg-slate-100 border-slate-200'}`}>
+                                                <Badge variant="outline" className={`text-[11px] px-2 py-0 h-5 ${formData.isPhoneVisible ? 'text-[#1f8a57] bg-[#eaf7f0] border-emerald-200' : 'text-slate-500 bg-slate-100 border-slate-200'}`}>
                                                     {formData.isPhoneVisible ? 'Visible' : 'Hidden'}
                                                 </Badge>
                                             )}
                                         </div>
-                                    } 
+                                    )}
                                     icon={Phone} 
                                     isEditing={isEditing}
                                 >
                                     <div className="space-y-1.5">
                                         <div className="flex items-center justify-between ml-1">
-                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Phone Number</Label>
+                                            <Label className="text-[13px] font-medium text-[#10213D]">Phone Number</Label>
                                             <div 
                                                 className="flex items-center gap-2 cursor-pointer group" 
                                                 onClick={() => setFormData({...formData, isPhoneVisible: !formData.isPhoneVisible})}
                                             >
-                                                <span className={`text-[9px] uppercase font-bold tracking-widest transition-colors ${formData.isPhoneVisible ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                                <span className={`text-[11px] uppercase font-bold tracking-widest transition-colors ${formData.isPhoneVisible ? 'text-emerald-500' : 'text-slate-400'}`}>
                                                     {formData.isPhoneVisible ? 'Visible to others' : 'Hidden'}
                                                 </span>
-                                                <div className={`w-8 h-4 rounded-full transition-colors relative ${formData.isPhoneVisible ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                                <div className={`w-8 h-4 rounded-full transition-colors relative ${formData.isPhoneVisible ? 'bg-[#eaf7f0]0' : 'bg-slate-300'}`}>
                                                     <div className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full shadow-sm transition-transform ${formData.isPhoneVisible ? 'translate-x-4' : 'translate-x-0'}`} />
                                                 </div>
                                             </div>
@@ -1213,17 +1224,17 @@ const Settings = () => {
                                 </DataDisplay>
 
                                 <div className="md:col-span-2">
-                                    <DataDisplay label="Current Location" value={formData.profile.location} icon={MapPin} isEditing={isEditing}>
+                                    <DataDisplay label="Location" value={formData.profile.location} icon={MapPin} isEditing={isEditing}>
                                         <div className="space-y-1.5">
-                                            <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Current Location (Nationality, State, District)</Label>
+                                            <Label className="text-[13px] font-medium text-[#10213D]">Location (country, state, district)</Label>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                 <div className="relative">
                                                     <select 
                                                         value={locCountry}
                                                         onChange={(e) => { setLocCountry(e.target.value); setLocState(''); setLocCity(''); }}
-                                                        className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none"
+                                                        className="w-full h-11 px-4 rounded-xl bg-white border border-zinc-200 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm appearance-none"
                                                     >
-                                                        <option value="">Select Nationality</option>
+                                                        <option value="">Select country</option>
                                                         {geoData?.Country.getAllCountries().map(c => (
                                                             <option key={c.isoCode} value={c.isoCode}>{c.name}</option>
                                                         ))}
@@ -1237,7 +1248,7 @@ const Settings = () => {
                                                         value={locState}
                                                         onChange={(e) => { setLocState(e.target.value); setLocCity(''); }}
                                                         disabled={!locCountry}
-                                                        className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none disabled:opacity-50"
+                                                        className="w-full h-11 px-4 rounded-xl bg-white border border-zinc-200 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm appearance-none disabled:opacity-50"
                                                     >
                                                         <option value="">Select State</option>
                                                         {locCountry && geoData?.State.getStatesOfCountry(locCountry).map(s => (
@@ -1253,7 +1264,7 @@ const Settings = () => {
                                                         value={locCity}
                                                         onChange={(e) => setLocCity(e.target.value)}
                                                         disabled={!locState}
-                                                        className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm appearance-none disabled:opacity-50"
+                                                        className="w-full h-11 px-4 rounded-xl bg-white border border-zinc-200 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm appearance-none disabled:opacity-50"
                                                     >
                                                         <option value="">Select District</option>
                                                         {locState && locCountry && geoData?.City.getCitiesOfState(locCountry, locState).map(c => (
@@ -1270,12 +1281,12 @@ const Settings = () => {
                                 </div>
                             </div>
                             
-                            <DataDisplay label="Professional Summary" value={formData.profile.bio} icon={FileText} isEditing={isEditing}>
+                            <DataDisplay label="About you" value={formData.profile.bio} icon={FileText} isEditing={isEditing}>
                                 <div className="space-y-1.5">
-                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Bio</Label>
+                                    <Label className="text-[13px] font-medium text-[#10213D]">Bio</Label>
                                     <textarea 
-                                        className="w-full min-h-[120px] p-4 rounded-xl border border-slate-100 bg-slate-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300 transition-all"
-                                        placeholder="Articulate your professional journey and value proposition..."
+                                        className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#34B678]/15 focus:border-[#34B678] transition-all"
+                                        placeholder="A few lines about your experience and what you are looking for"
                                         value={formData.profile.bio}
                                         onChange={(e) => setFormData({...formData, profile: {...formData.profile, bio: e.target.value}})}
                                     />
@@ -1287,18 +1298,18 @@ const Settings = () => {
 
                 {/* ── TAB: ACADEMIC ── */}
                 <TabsContent value="academic" className="mt-8">
-                     <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                     <Card styles={{ body: { padding: 0 } }} className="rounded-2xl border-zinc-200/80 shadow-none bg-white overflow-hidden">
                         <CardHeader className="pb-4 border-b border-slate-200 flex flex-row items-center justify-between p-6">
-                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <GraduationCap className="w-4 h-4 text-emerald-600" /> Academic Credentials
+                            <CardTitle className="text-[15px] font-semibold text-[#10213D] flex items-center gap-2">
+                                Education
                             </CardTitle>
                             {isEditing && (
-                                <Button onClick={addQualification} variant="ghost" size="sm" className="h-9 rounded-lg text-emerald-600 font-bold hover:bg-emerald-50 text-[10px] uppercase tracking-widest px-4">
+                                <Button onClick={addQualification} variant="ghost" size="sm" className="h-9 rounded-lg text-[#1f8a57] font-bold hover:bg-[#eaf7f0] text-xs px-4">
                                     <Plus className="w-3.5 h-3.5 mr-2" /> Insert Record
                                 </Button>
                             )}
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-5 sm:p-6 space-y-6">
                             {formData.profile.qualification.map((item, idx) => (
                                 <div key={idx} className={`group relative ${isEditing ? 'p-6 rounded-2xl border border-slate-100 bg-slate-50/30' : 'bg-white'}`}>
                                     {isEditing && (
@@ -1315,9 +1326,9 @@ const Settings = () => {
                                         </button>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <DataDisplay label="Qualification Degree" value={item.degree} isEditing={isEditing} icon={GraduationCap}>
+                                        <DataDisplay label="Degree" value={item.degree} isEditing={isEditing} icon={GraduationCap}>
                                             <div className="space-y-1.5">
-                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Degree</Label>
+                                                <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Degree</Label>
                                                 <Input 
                                                     value={item.degree}
                                                     onChange={(e) => {
@@ -1329,9 +1340,9 @@ const Settings = () => {
                                                 />
                                             </div>
                                         </DataDisplay>
-                                        <DataDisplay label="Academic Institution" value={item.institution} isEditing={isEditing} icon={Building2}>
+                                        <DataDisplay label="College / school" value={item.institution} isEditing={isEditing} icon={Building2}>
                                             <div className="space-y-1.5">
-                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Institution</Label>
+                                                <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Institution</Label>
                                                 <Input 
                                                     value={item.institution}
                                                     onChange={(e) => {
@@ -1343,9 +1354,9 @@ const Settings = () => {
                                                 />
                                             </div>
                                         </DataDisplay>
-                                        <DataDisplay label="Start Year" value={item.startYear} isEditing={isEditing} icon={Clock}>
+                                        <DataDisplay label="Start year" value={item.startYear} isEditing={isEditing} icon={Clock}>
                                             <div className="space-y-1.5">
-                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Start Year</Label>
+                                                <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Start Year</Label>
                                                 <Input 
                                                     value={item.startYear || ''}
                                                     onChange={(e) => {
@@ -1373,16 +1384,16 @@ const Settings = () => {
                                                             }
                                                             setFormData({...formData, profile: {...formData.profile, qualification: newQual}});
                                                         }}
-                                                        className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600 cursor-pointer"
+                                                        className="w-4 h-4 rounded border-slate-300 text-[#1f8a57] focus:ring-emerald-600 cursor-pointer"
                                                     />
                                                     <Label htmlFor={`pursuing-${idx}`} className="text-sm font-bold text-slate-700 cursor-pointer">Currently Pursuing</Label>
                                                 </div>
                                             )}
                                             
                                             {(!item.currentlyPursuing) ? (
-                                                <DataDisplay label="Passout Year" value={item.year || item.endYear} isEditing={isEditing} icon={CheckCircle2}>
+                                                <DataDisplay label="Year of passing" value={item.year || item.endYear} isEditing={isEditing} icon={CheckCircle2}>
                                                     <div className="space-y-1.5">
-                                                        <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Passout Year</Label>
+                                                        <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Passout Year</Label>
                                                         <Input 
                                                             value={item.year || item.endYear || ''}
                                                             onChange={(e) => {
@@ -1397,7 +1408,7 @@ const Settings = () => {
                                                 </DataDisplay>
                                             ) : (
                                                 !isEditing && (
-                                                    <DataDisplay label="Passout Year" value="Currently Pursuing" isEditing={false} icon={Loader2} />
+                                                    <DataDisplay label="Year of passing" value="Currently Pursuing" isEditing={false} icon={Loader2} />
                                                 )
                                             )}
                                         </div>
@@ -1408,7 +1419,7 @@ const Settings = () => {
                             {formData.profile.qualification.length === 0 && (
                                 <div className="text-center py-16 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                                     <GraduationCap className="w-10 h-10 mx-auto text-slate-200 mb-3" />
-                                    <p className="text-slate-400 text-sm font-medium">No academic records documented.</p>
+                                    <p className="text-slate-400 text-sm font-medium">No education added yet.</p>
                                 </div>
                             )}
                         </CardContent>
@@ -1417,18 +1428,18 @@ const Settings = () => {
 
                 {/* ── TAB: PROFESSIONAL ── */}
                 <TabsContent value="professional" className="mt-8 flex flex-col gap-8">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card styles={{ body: { padding: 0 } }} className="rounded-2xl border-zinc-200/80 shadow-none bg-white overflow-hidden">
                         <CardHeader className="pb-4 border-b border-slate-200 flex flex-row items-center justify-between p-6">
-                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <Briefcase className="w-4 h-4 text-emerald-600" /> Professional Dossier
+                            <CardTitle className="text-[15px] font-semibold text-[#10213D] flex items-center gap-2">
+                                Work experience
                             </CardTitle>
                             {isEditing && (
-                                <Button onClick={addExperience} variant="ghost" size="sm" className="h-9 rounded-lg text-emerald-600 font-bold hover:bg-emerald-50 text-[10px] uppercase tracking-widest px-4">
+                                <Button onClick={addExperience} variant="ghost" size="sm" className="h-9 rounded-lg text-[#1f8a57] font-bold hover:bg-[#eaf7f0] text-xs px-4">
                                     <Plus className="w-3.5 h-3.5 mr-2" /> Append Role
                                 </Button>
                             )}
                         </CardHeader>
-                        <CardContent className="p-8 space-y-8">
+                        <CardContent className="p-5 sm:p-6 space-y-8">
                             {formData.profile.experience.map((item, idx) => (
                                 <div key={idx} className={`group relative ${isEditing ? 'p-6 rounded-2xl border border-slate-100 bg-slate-50/30' : 'bg-white'}`}>
                                     {isEditing && (
@@ -1446,9 +1457,9 @@ const Settings = () => {
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                         <div className="space-y-6">
-                                            <DataDisplay label="Organization Name" value={item.company} isEditing={isEditing} icon={Building2}>
+                                            <DataDisplay label="Company" value={item.company} isEditing={isEditing} icon={Building2}>
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Company</Label>
+                                                    <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Company</Label>
                                                     <Input 
                                                         value={item.company}
                                                         onChange={(e) => {
@@ -1462,7 +1473,7 @@ const Settings = () => {
                                             </DataDisplay>
                                             <DataDisplay label="Designation" value={item.role} isEditing={isEditing} icon={Briefcase}>
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Role</Label>
+                                                    <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Role</Label>
                                                     <Input 
                                                         value={item.role}
                                                         onChange={(e) => {
@@ -1476,7 +1487,7 @@ const Settings = () => {
                                             </DataDisplay>
                                             <DataDisplay label="Location" value={item.location} isEditing={isEditing} icon={MapPin}>
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Location</Label>
+                                                    <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Location</Label>
                                                     <Input 
                                                         value={item.location}
                                                         onChange={(e) => {
@@ -1488,9 +1499,9 @@ const Settings = () => {
                                                     />
                                                 </div>
                                             </DataDisplay>
-                                            <DataDisplay label="Tenure Period" value={item.duration} isEditing={isEditing} icon={Clock}>
+                                            <DataDisplay label="Duration" value={item.duration} isEditing={isEditing} icon={Clock}>
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Duration</Label>
+                                                    <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Duration</Label>
                                                     <Input 
                                                         value={item.duration}
                                                         onChange={(e) => {
@@ -1503,12 +1514,12 @@ const Settings = () => {
                                                 </div>
                                             </DataDisplay>
                                         </div>
-                                        <DataDisplay label="Role responsibilities" value={item.description} isEditing={isEditing} icon={FileText}>
+                                        <DataDisplay label="What you did" value={item.description} isEditing={isEditing} icon={FileText}>
                                             <div className="space-y-1.5 h-full">
-                                                <Label className="text-[9px] uppercase text-slate-400 font-bold tracking-widest ml-1">Description</Label>
+                                                <Label className="text-[11px] uppercase text-slate-400 font-bold tracking-widest ml-1">Description</Label>
                                                 <textarea 
                                                     className="w-full h-full min-h-[180px] p-4 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300 transition-all resize-none"
-                                                    placeholder="Detail your accomplishments and key contributions..."
+                                                    placeholder="What you did and what you achieved"
                                                     value={item.description}
                                                     onChange={(e) => {
                                                         const newExp = [...formData.profile.experience];
@@ -1525,23 +1536,23 @@ const Settings = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden mt-8">
+                    <Card styles={{ body: { padding: 0 } }} className="rounded-2xl border-zinc-200/80 shadow-none bg-white overflow-hidden mt-8">
                         <CardHeader className="pb-4 border-b border-slate-200 p-6">
-                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <Target className="w-4 h-4 text-emerald-600" /> Specialized Skills
+                            <CardTitle className="text-[15px] font-semibold text-[#10213D] flex items-center gap-2">
+                                Skills
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-5 sm:p-6 space-y-6">
                             {isEditing && (
                                 <div className="flex gap-3">
                                     <Input 
                                         value={newSkill}
                                         onChange={(e) => setNewSkill(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && addSkill()}
-                                        placeholder="Add specialized competency..." 
-                                        className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                        placeholder="Add a skill, e.g. Excel" 
+                                        className="h-11 rounded-xl bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm" 
                                     />
-                                    <Button onClick={addSkill} className="h-11 rounded-xl bg-slate-900 text-white font-bold text-xs px-6 uppercase tracking-widest">Inject</Button>
+                                    <Button onClick={addSkill} className="h-11 rounded-xl bg-[#34B678] hover:!bg-[#2ca66b] text-white border-none font-bold text-xs px-6">Add</Button>
                                 </div>
                             )}
                              <div className="flex flex-wrap gap-2.5 justify-start mt-4">
@@ -1563,19 +1574,19 @@ const Settings = () => {
 
                 {/* ── TAB: RESUME / ASSET REPOSITORY ── */}
                 <TabsContent value="resume" className="mt-8">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card styles={{ body: { padding: 0 } }} className="rounded-2xl border-zinc-200/80 shadow-none bg-white overflow-hidden">
                         <CardHeader className="p-6 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-50/50 via-white to-emerald-50/20">
                             <div>
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                                    <div className="w-10 h-10 rounded-xl bg-[#eaf7f0] border border-emerald-100 text-[#1f8a57] flex items-center justify-center shadow-xs">
                                         <FileText className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <CardTitle className="text-lg font-bold text-slate-900 tracking-tight">
-                                            Asset Repository
+                                        <CardTitle className="text-lg font-bold text-[#10213D] tracking-tight">
+                                            Documents
                                         </CardTitle>
                                         <CardDescription className="text-xs font-medium text-slate-500 mt-0.5">
-                                            Manage your resumes, certifications, portfolios, and job application documents with custom titles.
+                                            Keep your resume, certificates and other documents here, each with its own name.
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -1583,7 +1594,7 @@ const Settings = () => {
                             <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                                 <span className="text-[11px] font-bold text-slate-500 bg-slate-100/80 border border-slate-200 px-3 py-1.5 rounded-full flex items-center gap-1.5">
                                     <Layers size={13} className="text-slate-500" />
-                                    {repositoryDocuments.length} {repositoryDocuments.length === 1 ? 'Asset' : 'Assets'}
+                                    {repositoryDocuments.length} {repositoryDocuments.length === 1 ? 'document' : 'documents'}
                                 </span>
                                 <Button 
                                     type="primary"
@@ -1591,7 +1602,7 @@ const Settings = () => {
                                         setPendingFiles([]);
                                         setIsAddDocsModalOpen(true);
                                     }}
-                                    className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-sm border-none flex items-center gap-2"
+                                    className="h-10 px-5 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white font-bold text-xs transition-all shadow-sm border-none flex items-center gap-2"
                                 >
                                     <Plus className="w-4 h-4" /> Add Documents
                                 </Button>
@@ -1621,12 +1632,12 @@ const Settings = () => {
                                                         </div>
                                                         <div className="space-y-1 min-w-0 flex-1">
                                                             <div className="flex items-center flex-wrap gap-2">
-                                                                <h4 className="text-sm font-bold text-slate-900 truncate max-w-md group-hover:text-emerald-700 transition-colors">
+                                                                <h4 className="text-sm font-bold text-[#10213D] truncate max-w-md group-hover:text-[#1f8a57] transition-colors">
                                                                     {doc.name}
                                                                 </h4>
                                                                 {isPrimary && (
-                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                                        <Star size={11} className="fill-emerald-600 text-emerald-600" /> Primary Document
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                                        <Star size={11} className="fill-emerald-600 text-[#1f8a57]" /> Main resume
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -1656,7 +1667,7 @@ const Settings = () => {
                                                         <Button 
                                                             variant="outline" 
                                                             size="sm" 
-                                                            className="h-9 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-all flex items-center gap-1.5"
+                                                            className="h-9 px-3.5 rounded-lg text-xs font-bold border-slate-200 hover:bg-slate-100 hover:text-[#10213D] transition-all flex items-center gap-1.5"
                                                             asChild
                                                         >
                                                             <a href={docDownloadUrl} target="_blank" rel="noreferrer">
@@ -1668,7 +1679,7 @@ const Settings = () => {
                                                             variant="outline" 
                                                             size="sm" 
                                                             onClick={() => handleDownloadDoc(doc)}
-                                                            className="h-9 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-all flex items-center gap-1.5"
+                                                            className="h-9 px-3.5 rounded-lg text-xs font-bold border-slate-200 hover:bg-slate-100 hover:text-[#10213D] transition-all flex items-center gap-1.5"
                                                         >
                                                             <Download size={12} /> Download
                                                         </Button>
@@ -1678,7 +1689,7 @@ const Settings = () => {
                                                                 variant="outline" 
                                                                 size="sm" 
                                                                 onClick={() => setRenameModal({ isOpen: true, docId: doc._id, currentName: doc.name, newName: doc.name })}
-                                                                className="h-9 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-all flex items-center gap-1.5"
+                                                                className="h-9 px-3.5 rounded-lg text-xs font-bold border-slate-200 hover:bg-slate-100 hover:text-[#10213D] transition-all flex items-center gap-1.5"
                                                             >
                                                                 <Edit2 size={12} /> Rename
                                                             </Button>
@@ -1690,7 +1701,7 @@ const Settings = () => {
                                                                 size="sm" 
                                                                 disabled={isActionBusy}
                                                                 onClick={() => handleSetPrimaryDocument(doc)}
-                                                                className="h-9 px-3.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border-emerald-200 bg-emerald-50/50 text-emerald-700 hover:bg-emerald-100 transition-all flex items-center gap-1.5"
+                                                                className="h-9 px-3.5 rounded-lg text-xs font-bold border-emerald-200 bg-[#eaf7f0]/50 text-[#1f8a57] hover:bg-emerald-100 transition-all flex items-center gap-1.5"
                                                             >
                                                                 {isActionBusy ? <Loader2 size={12} className="animate-spin" /> : <Star size={12} />} Make Primary
                                                             </Button>
@@ -1701,7 +1712,7 @@ const Settings = () => {
                                                             size="sm" 
                                                             disabled={isActionBusy}
                                                             onClick={() => setDeleteModal({ isOpen: true, doc })}
-                                                            className="h-9 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all flex items-center gap-1"
+                                                            className="h-9 px-3 rounded-lg text-xs font-bold border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all flex items-center gap-1"
                                                             title="Delete document"
                                                         >
                                                             <Trash2 size={13} />
@@ -1714,21 +1725,21 @@ const Settings = () => {
 
                                     {/* Repository Footer Info */}
                                     <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200/70 flex items-start gap-3">
-                                        <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
+                                        <div className="w-5 h-5 rounded-full bg-emerald-100 text-[#1f8a57] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
                                             ✓
                                         </div>
                                         <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                                            <span className="font-bold text-slate-800">Application Dispatch Note:</span> The document marked as <strong className="text-emerald-700">Primary Document</strong> will be automatically attached when applying to jobs via Instant 1-Click apply. You can switch the primary document anytime.
+                                            <span className="font-bold text-slate-800">Application Dispatch Note:</span> The document marked as <strong className="text-[#1f8a57]">Main resume</strong> will be automatically attached when applying to jobs via Instant 1-Click apply. You can switch the primary document anytime.
                                         </p>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="border-2 border-dashed border-slate-200 rounded-[24px] p-12 md:p-16 flex flex-col items-center justify-center text-center gap-4 hover:border-emerald-300 transition-all bg-slate-50/40">
-                                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-xs">
+                                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-12 md:p-16 flex flex-col items-center justify-center text-center gap-4 hover:border-emerald-300 transition-all bg-slate-50/40">
+                                    <div className="w-16 h-16 bg-[#eaf7f0] text-[#1f8a57] rounded-2xl flex items-center justify-center shadow-xs">
                                         <Upload className="w-8 h-8" />
                                     </div>
                                     <div className="space-y-1.5 max-w-md">
-                                        <h3 className="text-base font-bold text-slate-900">Your Asset Repository is Empty</h3>
+                                        <h3 className="text-base font-bold text-[#10213D]">No documents yet</h3>
                                         <p className="text-xs text-slate-500 font-medium">
                                             Upload your resumes, certifications, cover letters, and transcripts. You can upload multiple documents and give a custom name to each.
                                         </p>
@@ -1739,7 +1750,7 @@ const Settings = () => {
                                             setPendingFiles([]);
                                             setIsAddDocsModalOpen(true);
                                         }}
-                                        className="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-md border-none flex items-center gap-2 mt-2"
+                                        className="h-11 px-6 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white font-bold text-xs transition-all shadow-md border-none flex items-center gap-2 mt-2"
                                     >
                                         <Plus className="w-4 h-4" /> Add Documents Now
                                     </Button>
@@ -1752,18 +1763,18 @@ const Settings = () => {
                 {/* ── TAB: JOB PREFERENCES ── */}
                 <TabsContent value="preferences" className="mt-8 flex flex-col gap-6">
                     <PushSettings />
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card styles={{ body: { padding: 0 } }} className="rounded-2xl border-zinc-200/80 shadow-none bg-white overflow-hidden">
                         <CardHeader className="pb-4 border-b border-slate-200 p-6">
-                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <Settings2 className="w-4 h-4 text-emerald-600" /> Strategic Career Vector
+                            <CardTitle className="text-[15px] font-semibold text-[#10213D] flex items-center gap-2">
+                                Job preferences
                             </CardTitle>
-                            <CardDescription className="text-xs font-medium text-slate-400">Define your ideal operational conditions and professional requirements</CardDescription>
+                            <CardDescription className="mt-0.5 block text-xs text-zinc-500">The kind of job you want. We use this to match jobs to you.</CardDescription>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-10">
+                        <CardContent className="p-5 sm:p-6 space-y-10">
                             
                             {/* Fields of work (up to 3): a small boost in "For You" matching */}
                             <div className="space-y-4">
-                                <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Fields I want to work in (pick up to 3)</Label>
+                                <Label className="text-[13px] font-medium text-[#10213D]">Fields I want to work in (pick up to 3)</Label>
                                 <div className="flex flex-wrap gap-2.5" role="group" aria-label="Fields of work">
                                     {JOB_CATEGORIES.filter((c) => isEditing || (formData.profile.interestedCategories || []).includes(c.key)).map((c) => {
                                         const picked = (formData.profile.interestedCategories || []).includes(c.key);
@@ -1779,29 +1790,29 @@ const Settings = () => {
                                                     const next = picked ? current.filter((k) => k !== c.key) : [...current, c.key];
                                                     setFormData({ ...formData, profile: { ...formData.profile, interestedCategories: next } });
                                                 }}
-                                                className={`h-9 px-3.5 rounded-full border text-[11px] font-bold transition-colors ${picked ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-200'} ${isEditing ? 'hover:border-emerald-300' : 'cursor-default'}`}
+                                                className={`h-9 px-3.5 rounded-full border text-[11px] font-bold transition-colors ${picked ? 'bg-[#34B678] text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-200'} ${isEditing ? 'hover:border-emerald-300' : 'cursor-default'}`}
                                             >
                                                 {c.label}
                                             </button>
                                         );
                                     })}
-                                    {!isEditing && (formData.profile.interestedCategories || []).length === 0 && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
+                                    {!isEditing && (formData.profile.interestedCategories || []).length === 0 && <span className="text-sm font-bold text-slate-300 ml-1">Not added yet</span>}
                                 </div>
                             </div>
 
                             {/* Job Titles */}
                             <div className="space-y-4">
-                                <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Preferred Professional Designations</Label>
+                                <Label className="text-[13px] font-medium text-[#10213D]">Job titles you want</Label>
                                 {isEditing && (
                                     <div className="flex gap-3">
                                         <Input 
                                             value={newJobTitle}
                                             onChange={(e) => setNewJobTitle(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && addJobTitle()}
-                                            placeholder="Append target role title..." 
-                                            className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                            placeholder="Add a job title, e.g. Sales executive" 
+                                            className="h-11 rounded-xl bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm" 
                                         />
-                                        <Button onClick={addJobTitle} className="h-11 rounded-xl bg-slate-900 text-white font-bold text-xs px-6 uppercase tracking-widest">Inject</Button>
+                                        <Button onClick={addJobTitle} className="h-11 rounded-xl bg-[#34B678] hover:!bg-[#2ca66b] text-white border-none font-bold text-xs px-6">Add</Button>
                                     </div>
                                 )}
                                 <div className="flex flex-wrap gap-2.5">
@@ -1815,14 +1826,14 @@ const Settings = () => {
                                             {title}
                                         </Badge>
                                     ))}
-                                    {formData.profile.jobPreferences.jobTitles.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
+                                    {formData.profile.jobPreferences.jobTitles.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not added yet</span>}
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                 {/* Location Types */}
                                 <div className="space-y-4">
-                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Operational Modality</Label>
+                                    <Label className="text-[13px] font-medium text-[#10213D]">Work mode</Label>
                                     <div className="flex flex-wrap gap-2.5">
                                         {['On-site', 'Hybrid', 'Remote'].map((type) => (
                                             <div 
@@ -1843,7 +1854,7 @@ const Settings = () => {
                                                 }}
                                                 className={`px-5 py-2.5 rounded-xl border text-[11px] cursor-pointer transition-all font-bold tracking-tight ${
                                                     formData.profile.jobPreferences.locationTypes.includes(type)
-                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-600 shadow-sm'
+                                                        ? 'border-emerald-200 bg-[#eaf7f0] text-[#1f8a57] shadow-sm'
                                                         : 'border-slate-100 bg-slate-50 text-slate-400'
                                                 } ${!isEditing && 'cursor-default'}`}
                                             >
@@ -1855,7 +1866,7 @@ const Settings = () => {
 
                                 {/* Employment Types */}
                                 <div className="space-y-4">
-                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Contract Architecture</Label>
+                                    <Label className="text-[13px] font-medium text-[#10213D]">Job type</Label>
                                     <div className="flex flex-wrap gap-2.5">
                                         {['Full-time', 'Contract', 'Freelance', 'Internship'].map((type) => (
                                             <div 
@@ -1876,7 +1887,7 @@ const Settings = () => {
                                                 }}
                                                 className={`px-5 py-2.5 rounded-xl border text-[11px] cursor-pointer transition-all font-bold tracking-tight ${
                                                     formData.profile.jobPreferences.employmentTypes.includes(type)
-                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-600 shadow-sm'
+                                                        ? 'border-emerald-200 bg-[#eaf7f0] text-[#1f8a57] shadow-sm'
                                                         : 'border-slate-100 bg-slate-50 text-slate-400'
                                                 } ${!isEditing && 'cursor-default'}`}
                                             >
@@ -1890,9 +1901,9 @@ const Settings = () => {
                             {/* On-Site Locations */}
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center pr-2">
-                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Geographic Targets</Label>
+                                    <Label className="text-[13px] font-medium text-[#10213D]">Preferred locations</Label>
                                     {isEditing && (
-                                        <Button onClick={addOnSiteLocation} variant="ghost" size="sm" className="text-[10px] h-8 font-bold text-emerald-600 hover:bg-emerald-50 rounded-lg uppercase tracking-widest px-3">
+                                        <Button onClick={addOnSiteLocation} variant="ghost" size="sm" className="text-xs h-8 font-bold text-[#1f8a57] hover:bg-[#eaf7f0] rounded-lg px-3">
                                             <Plus className="w-3.5 h-3.5 mr-2" /> Add Location
                                         </Button>
                                     )}
@@ -1910,7 +1921,7 @@ const Settings = () => {
                                                                 next[idx].state = e.target.value;
                                                                 setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, onSiteLocations: next}}});
                                                             }}
-                                                            className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900 outline-none focus:border-emerald-300 transition-all"
+                                                            className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-xs font-bold text-[#10213D] outline-none focus:border-emerald-300 transition-all"
                                                         >
                                                             <option value="">State</option>
                                                             {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1922,14 +1933,14 @@ const Settings = () => {
                                                                 next[idx].city = e.target.value;
                                                                 setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, onSiteLocations: next}}});
                                                             }}
-                                                            className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-900 outline-none focus:border-emerald-300 transition-all"
+                                                            className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-xs font-bold text-[#10213D] outline-none focus:border-emerald-300 transition-all"
                                                         >
                                                             <option value="">City</option>
                                                             {COMMON_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                                                         </select>
                                                     </>
                                                 ) : (
-                                                    <div className="flex gap-2 items-center font-bold text-sm col-span-2 text-slate-900">
+                                                    <div className="flex gap-2 items-center font-bold text-sm col-span-2 text-[#10213D]">
                                                         <MapPin size={14} className="text-slate-300" />
                                                         {loc.city}, {loc.state}
                                                     </div>
@@ -1942,20 +1953,20 @@ const Settings = () => {
                                             )}
                                         </div>
                                     ))}
-                                    {formData.profile.jobPreferences.onSiteLocations.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
+                                    {formData.profile.jobPreferences.onSiteLocations.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not added yet</span>}
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <DataDisplay label="Operational Availability" value={formData.profile.jobPreferences.noticePeriod} icon={Clock} isEditing={isEditing}>
+                                <DataDisplay label="Notice period" value={formData.profile.jobPreferences.noticePeriod} icon={Clock} isEditing={isEditing}>
                                     <div className="space-y-1.5">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Notice Period</Label>
+                                        <Label className="text-[13px] font-medium text-[#10213D]">Notice Period</Label>
                                         <select 
                                             value={formData.profile.jobPreferences.noticePeriod}
                                             onChange={(e) => setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, noticePeriod: e.target.value}}})}
-                                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-slate-900 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 transition-all"
+                                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-[#10213D] outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 transition-all"
                                         >
-                                            <option value="">Select threshold...</option>
+                                            <option value="">Select notice period</option>
                                             <option value="Immediately available">Immediately available</option>
                                             <option value="15 Days or less">15 Days or less</option>
                                             <option value="30 Days">30 Days</option>
@@ -1966,9 +1977,9 @@ const Settings = () => {
                                     </div>
                                 </DataDisplay>
 
-                                <DataDisplay label="Compensation Baseline" value={formData.profile.jobPreferences.expectedSalary} icon={Building2} isEditing={isEditing}>
+                                <DataDisplay label="Expected salary" value={formData.profile.jobPreferences.expectedSalary} icon={Building2} isEditing={isEditing}>
                                     <div className="space-y-1.5">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Expected Annual Salary</Label>
+                                        <Label className="text-[13px] font-medium text-[#10213D]">Expected Annual Salary</Label>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-sm font-bold">₹</span>
                                             <Input 
@@ -1984,17 +1995,17 @@ const Settings = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                 <div className="space-y-4">
-                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Remote Geographic Expansion</Label>
+                                    <Label className="text-[13px] font-medium text-[#10213D]">Remote work locations</Label>
                                     {isEditing && (
                                         <div className="flex gap-3">
                                             <Input 
                                                 value={newRemoteLocation}
                                                 onChange={(e) => setNewRemoteLocation(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && addRemoteLocation()}
-                                                placeholder="Add territory/region..." 
-                                                className="h-11 rounded-xl bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm" 
+                                                placeholder="Add a city or region" 
+                                                className="h-11 rounded-xl bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm" 
                                             />
-                                            <Button onClick={addRemoteLocation} className="h-11 rounded-xl bg-slate-900 text-white font-bold text-xs px-6 uppercase tracking-widest">Inject</Button>
+                                            <Button onClick={addRemoteLocation} className="h-11 rounded-xl bg-[#34B678] hover:!bg-[#2ca66b] text-white border-none font-bold text-xs px-6">Add</Button>
                                         </div>
                                     )}
                                     <div className="flex flex-wrap gap-2.5 mt-2">
@@ -2009,42 +2020,42 @@ const Settings = () => {
                                                 {loc}
                                             </Badge>
                                         ))}
-                                        {formData.profile.jobPreferences.remoteLocations.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not specified</span>}
+                                        {formData.profile.jobPreferences.remoteLocations.length === 0 && !isEditing && <span className="text-sm font-bold text-slate-300 ml-1">Not added yet</span>}
                                     </div>
                                 </div>
 
-                                <DataDisplay label="Engagement Readiness" value={formData.profile.jobPreferences.startDate} icon={Target} isEditing={isEditing}>
+                                <DataDisplay label="When can you start?" value={formData.profile.jobPreferences.startDate} icon={Target} isEditing={isEditing}>
                                     <div className="space-y-1.5">
-                                        <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Application Status</Label>
+                                        <Label className="text-[13px] font-medium text-[#10213D]">Application Status</Label>
                                         <select 
                                             value={formData.profile.jobPreferences.startDate}
                                             onChange={(e) => setFormData({...formData, profile: {...formData.profile, jobPreferences: {...formData.profile.jobPreferences, startDate: e.target.value}}})}
-                                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-slate-900 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 transition-all"
+                                            className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 text-sm font-medium text-[#10213D] outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 transition-all"
                                         >
-                                            <option value="">Select engagement level...</option>
-                                            <option value="Immediately, I am actively applying">High Intensity (Active)</option>
-                                            <option value="Flexible, I am just browsing">Low Intensity (Passive)</option>
-                                            <option value="Looking for the right opportunity">Strategic Fit Search</option>
+                                            <option value="">Select one</option>
+                                            <option value="Immediately, I am actively applying">Right away, I am actively applying</option>
+                                            <option value="Flexible, I am just browsing">Flexible, I am just looking</option>
+                                            <option value="Looking for the right opportunity">When the right job comes</option>
                                         </select>
                                     </div>
                                 </DataDisplay>
                             </div>
 
                             {/* Visibility */}
-                            <div className="p-8 rounded-[24px] bg-slate-50 border border-slate-100 space-y-6 shadow-sm">
+                            <div className="p-8 rounded-2xl bg-slate-50 border border-slate-100 space-y-6 shadow-sm">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-emerald-600 shadow-sm border border-slate-100">
+                                    <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-[#1f8a57] shadow-sm border border-slate-100">
                                         <Eye className="w-6 h-6" />
                                     </div>
                                     <div className="space-y-0.5">
-                                        <h4 className="text-base font-bold text-slate-900">Information Privacy Matrix</h4>
-                                        <p className="text-xs text-slate-400 font-medium">Control the exposure of your professional preferences</p>
+                                        <h4 className="text-base font-bold text-[#10213D]">Privacy</h4>
+                                        <p className="text-xs text-slate-400 font-medium">Choose what employers can see</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     {[
-                                        { id: 'Everyone', label: 'Universal Access', sub: 'Standard platform visibility' },
-                                        { id: 'Recruiters', label: 'Restricted Access', sub: 'Verified strategic partners only' }
+                                        { id: 'Everyone', label: 'Everyone', sub: 'Anyone who opens your profile' },
+                                        { id: 'Recruiters', label: 'Recruiters only', sub: 'Recruiters and companies on Velaivaaipu' }
                                     ].map((opt) => (
                                         <div 
                                             key={opt.id}
@@ -2060,11 +2071,11 @@ const Settings = () => {
                                         >
                                             <div className="flex items-center gap-3 mb-1.5">
                                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${formData.profile.jobPreferences.visibility === opt.id ? 'border-emerald-600' : 'border-slate-200'}`}>
-                                                    {formData.profile.jobPreferences.visibility === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-emerald-600" />}
+                                                    {formData.profile.jobPreferences.visibility === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-[#34B678]" />}
                                                 </div>
-                                                <span className={`font-bold text-sm ${formData.profile.jobPreferences.visibility === opt.id ? 'text-slate-900' : 'text-slate-400'}`}>{opt.label}</span>
+                                                <span className={`font-bold text-sm ${formData.profile.jobPreferences.visibility === opt.id ? 'text-[#10213D]' : 'text-slate-400'}`}>{opt.label}</span>
                                             </div>
-                                            <p className={`text-[10px] uppercase tracking-widest font-bold ml-8 ${formData.profile.jobPreferences.visibility === opt.id ? 'text-emerald-500' : 'text-slate-300'}`}>{opt.sub}</p>
+                                            <p className={`text-xs font-bold ml-8 ${formData.profile.jobPreferences.visibility === opt.id ? 'text-emerald-500' : 'text-slate-300'}`}>{opt.sub}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -2075,16 +2086,16 @@ const Settings = () => {
 
                 {/* ── TAB: CAMPUS ── */}
                 <TabsContent value="campus" className="mt-8">
-                    <Card className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card styles={{ body: { padding: 0 } }} className="rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                         <CardHeader className="pb-4 border-b border-slate-200 p-6">
-                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <GraduationCap className="w-4 h-4 text-emerald-600" /> Campus / College Status
+                            <CardTitle className="text-[15px] font-semibold text-[#10213D] flex items-center gap-2">
+                                College
                             </CardTitle>
-                            <CardDescription className="text-xs font-medium text-slate-400">Link your account to multiple college placement portals</CardDescription>
+                            <CardDescription className="mt-0.5 block text-xs text-zinc-500">Link your account to your college's placement team</CardDescription>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-10">
+                        <CardContent className="p-5 sm:p-6 space-y-10">
                             {campusLoading ? (
-                                <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
+                                <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-[#1f8a57]" /></div>
                             ) : (
                                 <>
                                     {Array.isArray(campusStudent) && campusStudent.length > 0 ? (
@@ -2093,10 +2104,10 @@ const Settings = () => {
                                                 <div key={student._id || idx} className="p-6 rounded-none border border-slate-200 bg-slate-50 relative">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                         <DataDisplay label="College" value={student.college?.name} icon={GraduationCap} isEditing={false} />
-                                                        <DataDisplay label="Placement Status" value={student.placementStatus} icon={CheckCircle2} isEditing={false} />
-                                                        <DataDisplay label="Registration Source" value={student.registrationSource} icon={FileText} isEditing={false} />
+                                                        <DataDisplay label="Placement status" value={student.placementStatus} icon={CheckCircle2} isEditing={false} />
+                                                        <DataDisplay label="Joined through" value={student.registrationSource} icon={FileText} isEditing={false} />
                                                         <DataDisplay 
-                                                            label="ID Verification" 
+                                                            label="ID check" 
                                                             value={student.idVerification?.status === 'pending' ? 'Awaiting TPO approval' : student.idVerification?.status} 
                                                             icon={BadgeCheck} 
                                                             isEditing={false} 
@@ -2106,7 +2117,7 @@ const Settings = () => {
                                                         <div className="p-6 mt-4 rounded-none bg-red-50 border border-red-100 space-y-3">
                                                             <div className="flex items-center gap-2">
                                                                 <XCircle size={18} className="text-red-500" />
-                                                                <h4 className="text-sm font-bold text-slate-900">Join request rejected</h4>
+                                                                <h4 className="text-sm font-bold text-[#10213D]">Join request rejected</h4>
                                                             </div>
                                                             <p className="text-xs text-slate-500">
                                                                 Your request to join {student.college?.name || 'this college'} was rejected by the TPO.
@@ -2117,7 +2128,7 @@ const Settings = () => {
                                                         <div className="p-4 mt-4 rounded-none bg-amber-50 border border-amber-100 flex items-start gap-3">
                                                             <AlertCircle size={18} className="text-amber-500 mt-0.5 shrink-0" />
                                                             <div>
-                                                                <h4 className="text-sm font-bold text-slate-900">Awaiting TPO approval</h4>
+                                                                <h4 className="text-sm font-bold text-[#10213D]">Awaiting TPO approval</h4>
                                                                 <p className="text-xs text-slate-500 mt-1">Your join request to {student.college?.name} is under review.</p>
                                                             </div>
                                                         </div>
@@ -2126,7 +2137,7 @@ const Settings = () => {
                                                             <AlertCircle size={16} /> Your profile is approved but not active for {student.college?.name}.
                                                         </div>
                                                     ) : (
-                                                        <div className="p-4 mt-4 rounded-none bg-emerald-50 border border-emerald-100 flex items-center gap-2 text-xs font-bold text-emerald-600">
+                                                        <div className="p-4 mt-4 rounded-none bg-[#eaf7f0] border border-emerald-100 flex items-center gap-2 text-xs font-bold text-[#1f8a57]">
                                                             <CheckCircle2 size={16} /> Active and visible to {student.college?.name}.
                                                         </div>
                                                     )}
@@ -2138,55 +2149,55 @@ const Settings = () => {
                                     )}
 
                                     <div className="pt-6 border-t border-slate-200">
-                                        <h3 className="text-lg font-bold text-slate-900 mb-4">Join Another College</h3>
+                                        <h3 className="text-lg font-bold text-[#10213D] mb-4">Join Another College</h3>
                                         <form onSubmit={handleJoinCollege} className="max-w-md space-y-4">
                                             <p className="text-sm text-slate-500 font-medium">
                                                 Enter your details below (ask your TPO for the college code) to send a join request.
                                             </p>
                                             <div className="space-y-1.5">
-                                                <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">College Code</Label>
+                                                <Label className="text-[13px] font-medium text-[#10213D]">College Code</Label>
                                                 <Input
                                                     value={joinForm.collegeCode}
                                                     onChange={(e) => setJoinForm(p => ({ ...p, collegeCode: e.target.value }))}
                                                     placeholder="e.g. SKCT"
-                                                    className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                                    className="h-11 rounded-none bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm"
                                                 />
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Roll Number</Label>
+                                                    <Label className="text-[13px] font-medium text-[#10213D]">Roll Number</Label>
                                                     <Input
                                                         value={joinForm.rollNumber}
                                                         onChange={(e) => setJoinForm(p => ({ ...p, rollNumber: e.target.value }))}
                                                         placeholder="e.g. 21CS045"
-                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                                        className="h-11 rounded-none bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm"
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Department</Label>
+                                                    <Label className="text-[13px] font-medium text-[#10213D]">Department</Label>
                                                     <Input
                                                         value={joinForm.department}
                                                         onChange={(e) => setJoinForm(p => ({ ...p, department: e.target.value }))}
                                                         placeholder="e.g. CSE"
-                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                                        className="h-11 rounded-none bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm"
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Year of Passing / Batch</Label>
+                                                    <Label className="text-[13px] font-medium text-[#10213D]">Year of passing</Label>
                                                     <Input
                                                         type="number"
                                                         value={joinForm.batchYear}
                                                         onChange={(e) => setJoinForm(p => ({ ...p, batchYear: e.target.value }))}
                                                         placeholder="e.g. 2026"
-                                                        className="h-11 rounded-none bg-slate-50 border-slate-100 focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium text-sm"
+                                                        className="h-11 rounded-none bg-white border-zinc-200 hover:border-zinc-300 focus:border-[#34B678] focus:ring-[#34B678]/15 transition-all font-medium text-sm"
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[9px] text-slate-400 uppercase tracking-widest font-bold ml-1">Phone Number</Label>
+                                                    <Label className="text-[13px] font-medium text-[#10213D]">Phone Number</Label>
                                                     <PhoneNumberInput value={joinForm.phone} onChange={(phone) => setJoinForm(p => ({ ...p, phone }))} />
                                                 </div>
                                             </div>
-                                            <Button type="submit" disabled={joiningCollege} className="h-11 px-6 rounded-none bg-slate-900 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest">
+                                            <Button type="submit" disabled={joiningCollege} className="h-11 px-6 rounded-none bg-[#34B678] hover:bg-[#2ca66b] text-white font-bold text-xs">
                                                 {joiningCollege ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Send Join Request
                                             </Button>
                                         </form>
@@ -2199,13 +2210,13 @@ const Settings = () => {
 
                 {/* ── TAB: HIDDEN JOBS ── */}
                 <TabsContent value="hidden-jobs" className="mt-8">
-                    <Card className="rounded-[24px] border-slate-200 shadow-sm bg-white overflow-hidden">
+                    <Card styles={{ body: { padding: 0 } }} className="rounded-2xl border-zinc-200/80 shadow-none bg-white overflow-hidden">
                         <CardHeader className="pb-4 border-b border-slate-200 flex flex-row items-center justify-between p-6">
-                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <EyeOff className="w-4 h-4 text-emerald-600" /> Hidden Jobs
+                            <CardTitle className="text-[15px] font-semibold text-[#10213D] flex items-center gap-2">
+                                Hidden Jobs
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
+                        <CardContent className="p-5 sm:p-6 space-y-6">
                             {hiddenJobsLoading ? (
                                 <div className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-500" /></div>
                             ) : hiddenJobs.length === 0 ? (
@@ -2216,20 +2227,20 @@ const Settings = () => {
                                         <div key={job._id} className="p-4 rounded-xl border border-slate-100 bg-slate-50 flex flex-col gap-3">
                                             <div className="flex justify-between items-start gap-4">
                                                 <div>
-                                                    <h3 className="font-bold text-slate-900 line-clamp-1">{job.title}</h3>
+                                                    <h3 className="font-bold text-[#10213D] line-clamp-1">{job.title}</h3>
                                                     <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-1">{job.company?.name || 'Unknown Company'}</p>
                                                 </div>
                                                 <Button 
                                                     onClick={() => handleUnhideJob(job._id)} 
                                                     variant="outline" 
                                                     size="sm"
-                                                    className="shrink-0 h-8 text-[10px] uppercase tracking-widest font-bold"
+                                                    className="shrink-0 h-8 text-xs font-bold"
                                                 >
                                                     <Eye className="w-3 h-3 mr-1.5" /> Unhide
                                                 </Button>
                                             </div>
                                             {job.status !== 'active' && (
-                                                <Badge variant="destructive" className="w-fit text-[10px] uppercase">No longer available</Badge>
+                                                <Badge variant="destructive" className="w-fit text-xs uppercase">No longer available</Badge>
                                             )}
                                         </div>
                                     ))}
@@ -2239,6 +2250,7 @@ const Settings = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
+            </div>
             {/* ── MODAL: ADD MULTIPLE DOCUMENTS WITH NAME FOR EACH ── */}
             {isAddDocsModalOpen && (
                 <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -2246,11 +2258,11 @@ const Settings = () => {
                         {/* Header */}
                         <div className="p-6 md:p-7 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                                <div className="w-10 h-10 rounded-xl bg-[#eaf7f0] border border-emerald-100 text-[#1f8a57] flex items-center justify-center shadow-xs">
                                     <FileUp className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">Add Documents to Repository</h3>
+                                    <h3 className="text-lg font-bold text-[#10213D] tracking-tight">Upload documents</h3>
                                     <p className="text-xs font-medium text-slate-500 mt-0.5">Select multiple documents and assign a unique title to each</p>
                                 </div>
                             </div>
@@ -2282,7 +2294,7 @@ const Settings = () => {
                                 }}
                                 className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${
                                     isDragging 
-                                        ? 'border-emerald-500 bg-emerald-50/50 scale-[0.99]' 
+                                        ? 'border-emerald-500 bg-[#eaf7f0]/50 scale-[0.99]' 
                                         : 'border-slate-200 hover:border-emerald-300 hover:bg-slate-50/60 bg-slate-50/30'
                                 }`}
                                 onClick={() => document.getElementById('repo-multi-file-input')?.click()}
@@ -2298,7 +2310,7 @@ const Settings = () => {
                                         e.target.value = '';
                                     }}
                                 />
-                                <div className="w-12 h-12 mx-auto rounded-xl bg-white border border-slate-200 text-emerald-600 flex items-center justify-center shadow-xs mb-3">
+                                <div className="w-12 h-12 mx-auto rounded-xl bg-white border border-slate-200 text-[#1f8a57] flex items-center justify-center shadow-xs mb-3">
                                     <Upload size={22} />
                                 </div>
                                 <h4 className="text-sm font-bold text-slate-800">
@@ -2313,13 +2325,13 @@ const Settings = () => {
                             {pendingFiles.length > 0 && (
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Layers size={13} className="text-emerald-600" />
+                                        <span className="text-xs font-bold text-[#10213D] flex items-center gap-1.5">
+                                            <Layers size={13} className="text-[#1f8a57]" />
                                             Selected Documents ({pendingFiles.length})
                                         </span>
                                         <label 
                                             htmlFor="repo-multi-file-input" 
-                                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer flex items-center gap-1"
+                                            className="text-xs font-bold text-[#1f8a57] hover:text-[#1f8a57] cursor-pointer flex items-center gap-1"
                                         >
                                             <Plus size={13} /> Add more files
                                         </label>
@@ -2335,14 +2347,14 @@ const Settings = () => {
                                                 >
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div className="flex items-center gap-2.5 min-w-0">
-                                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${badgeInfo.bg}`}>
+                                                            <span className={`px-2 py-0.5 rounded-md text-xs font-bold border ${badgeInfo.bg}`}>
                                                                 {badgeInfo.label}
                                                             </span>
                                                             <div className="min-w-0">
                                                                 <p className="text-xs font-medium text-slate-500 truncate max-w-xs" title={item.file.name}>
                                                                     {item.file.name}
                                                                 </p>
-                                                                <p className="text-[10px] text-slate-400">
+                                                                <p className="text-xs text-slate-400">
                                                                     {formatFileSize(item.file.size)}
                                                                 </p>
                                                             </div>
@@ -2352,14 +2364,14 @@ const Settings = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => togglePendingPrimary(item.id)}
-                                                                className={`h-7 px-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 transition-all ${
+                                                                className={`h-7 px-2.5 rounded-lg text-xs font-bold border flex items-center gap-1 transition-all ${
                                                                     item.isPrimary
-                                                                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                                                        ? 'bg-[#eaf7f0] border-emerald-300 text-[#1f8a57]'
                                                                         : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                                                                 }`}
                                                                 title="Set this as primary resume for applications"
                                                             >
-                                                                <Star size={11} className={item.isPrimary ? 'fill-emerald-600 text-emerald-600' : ''} />
+                                                                <Star size={11} className={item.isPrimary ? 'fill-emerald-600 text-[#1f8a57]' : ''} />
                                                                 {item.isPrimary ? 'Primary' : 'Make Primary'}
                                                             </button>
 
@@ -2376,7 +2388,7 @@ const Settings = () => {
 
                                                     {/* Document Name input field */}
                                                     <div className="space-y-1">
-                                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">
+                                                        <label className="text-xs font-bold text-slate-500 block">
                                                             Document Title / Name <span className="text-rose-500">*</span>
                                                         </label>
                                                         <Input
@@ -2402,7 +2414,7 @@ const Settings = () => {
                                     setPendingFiles([]);
                                 }}
                                 disabled={uploadingDocs}
-                                className="h-10 px-5 rounded-xl border-slate-200 bg-white font-bold text-xs uppercase tracking-widest text-slate-600 hover:bg-slate-50"
+                                className="h-10 px-5 rounded-xl border-slate-200 bg-white font-bold text-xs text-slate-600 hover:bg-slate-50"
                             >
                                 Cancel
                             </Button>
@@ -2411,7 +2423,7 @@ const Settings = () => {
                                 type="primary"
                                 onClick={handleUploadAllDocuments}
                                 disabled={uploadingDocs || pendingFiles.length === 0}
-                                className="h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-md border-none flex items-center gap-2"
+                                className="h-10 px-6 rounded-xl bg-[#34B678] hover:bg-[#2ca66b] text-white font-bold text-xs transition-all shadow-md border-none flex items-center gap-2"
                             >
                                 {uploadingDocs ? (
                                     <>
@@ -2435,10 +2447,10 @@ const Settings = () => {
                     <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-lg bg-[#eaf7f0] border border-emerald-100 text-[#1f8a57] flex items-center justify-center">
                                     <Edit2 size={15} />
                                 </div>
-                                <h3 className="text-base font-bold text-slate-900">Rename Document</h3>
+                                <h3 className="text-base font-bold text-[#10213D]">Rename Document</h3>
                             </div>
                             <button
                                 type="button"
@@ -2450,7 +2462,7 @@ const Settings = () => {
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            <label className="text-xs font-bold text-slate-500">
                                 Document Title
                             </label>
                             <Input
@@ -2474,7 +2486,7 @@ const Settings = () => {
                                 type="primary"
                                 onClick={handleSaveRename}
                                 disabled={actionLoading === renameModal.docId || !renameModal.newName.trim()}
-                                className="h-9 px-5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs border-none"
+                                className="h-9 px-5 rounded-lg bg-[#34B678] hover:bg-[#2ca66b] text-white font-bold text-xs border-none"
                             >
                                 {actionLoading === renameModal.docId ? <Loader2 size={13} className="animate-spin" /> : 'Save Title'}
                             </Button>
@@ -2492,8 +2504,8 @@ const Settings = () => {
                                 <Trash2 size={18} />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Remove Document</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Are you sure you want to remove this asset from your repository?</p>
+                                <h3 className="text-base font-bold text-[#10213D]">Remove Document</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Remove this document from your profile?</p>
                             </div>
                         </div>
 
@@ -2526,7 +2538,10 @@ const Settings = () => {
                 </div>
             )}
 
-            <div className="max-w-3xl"><DeleteAccountCard /></div>
+            {/* Alerts, invites and contact consent sit under the profile itself. */}
+            <WhatsAppAndInvite />
+            <BrandConsent />
+            <DeleteAccountCard />
 
             {cropModal.isOpen && (
                 <ImageCropperModal

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import PaymentTrust from '@/components/subscription/PaymentTrust';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -433,11 +434,7 @@ const SubscriptionPage = () => {
         )}
       </div>
 
-      <div className="text-center mt-12">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.4em] m-0">
-          Secure Payments via Razorpay &bull; Cancel Anytime
-        </p>
-      </div>
+      <PaymentTrust note="Cancel any time" />
     </div>
   );
 };

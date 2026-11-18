@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import PaymentTrust from '@/components/subscription/PaymentTrust';
 import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
 import { toast } from 'sonner';
@@ -700,9 +701,7 @@ const SubscriptionPage = () => {
         </Tabs>
       </div>
 
-      <div className="text-center opacity-40">
-        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-[0.4em]">Secure Transactions via Razorpay</p>
-      </div>
+      <PaymentTrust note="Instant activation" />
       </div>
     </div>
   );

@@ -29,7 +29,7 @@ const DeleteAccountCard = () => {
   };
 
   return (
-    <div className="border border-rose-200 bg-rose-50/40 rounded-xl p-6 space-y-3">
+    <div className="mt-8 rounded-2xl bg-white ring-1 ring-rose-200 p-5 sm:p-6 space-y-3">
       <div className="flex items-center gap-2 text-rose-700 font-bold text-sm"><Trash2 className="w-4 h-4" /> Delete my account</div>
       <p className="text-xs text-slate-600 leading-relaxed">
         This removes your profile, resume, documents, notifications and skill test history, and signs you out everywhere. It cannot be undone.

@@ -14,10 +14,10 @@ const BrandConsent = () => {
   };
   if (on === null) return null;
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4">
+    <div className="bg-white rounded-2xl ring-1 ring-zinc-200/80 p-4">
       <label className="flex items-start gap-3 cursor-pointer">
-        <input type="checkbox" className="w-5 h-5 mt-0.5 rounded-md border-slate-300 text-emerald-600" checked={on} onChange={(e) => change(e.target.checked)} />
-        <span className="text-sm text-slate-700">Allow Velaivaaipu and its sister brands (BM Academy, CoreTalents) to contact me about training and hiring services. Optional. Untick any time.</span>
+        <input type="checkbox" className="w-4 h-4 mt-0.5 shrink-0 accent-[#34B678]" checked={on} onChange={(e) => change(e.target.checked)} />
+        <span className="text-[13px] leading-relaxed text-zinc-600">Allow Velaivaaipu and its sister brands (BM Academy, CoreTalents) to contact me about training and hiring services. Optional. Untick any time.</span>
       </label>
       {err && <p className="text-xs text-red-600 mt-2">{err}</p>}
     </div>

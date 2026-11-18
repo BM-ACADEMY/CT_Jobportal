@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowLeft, MessageCircle, User as UserIcon, Calendar, Building2, CheckCircle2, Megaphone, Loader2, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ArrowLeft, MessageCircle, User as UserIcon, Calendar, Building2, CheckCircle2, Megaphone, Loader2 } from 'lucide-react';
+import { Page, Panel, btnPrimary } from '@/components/candidate/CandidateUI';
 
 const CampusDriveDetails = () => {
   const { id } = useParams();
@@ -64,7 +64,7 @@ const CampusDriveDetails = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-24"><Loader2 className="w-7 h-7 animate-spin text-emerald-600" /></div>;
+    return <div className="flex justify-center py-24"><Loader2 className="h-7 w-7 animate-spin text-[#34B678]" /></div>;
   }
 
   if (!drive) return null;
@@ -79,137 +79,119 @@ const CampusDriveDetails = () => {
   })).values()];
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6 py-6 px-1 sm:px-3 animate-in fade-in duration-500">
-      <div className="flex items-center gap-4">
-        <button 
+    <Page>
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
           onClick={() => navigate('/candidate/campus-drives')}
-          className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all bg-white shadow-sm"
+          aria-label="Back to campus drives"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-zinc-500 ring-1 ring-zinc-200 border-none cursor-pointer transition hover:text-[#10213D]"
         >
           <ArrowLeft size={18} />
         </button>
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">{drive.title}</h1>
-          <p className="text-sm font-medium text-slate-500 flex items-center gap-2 mt-1">
-            <Calendar size={14} /> Batch {drive.batchYear}
-          </p>
+        <div className="min-w-0">
+          <p className="m-0 mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#1f8a57]">Campus drive</p>
+          <h1 className="m-0 text-xl sm:text-[1.375rem] font-bold tracking-tight text-[#10213D]">{drive.title}</h1>
+          <p className="m-0 mt-1 flex items-center gap-1.5 text-sm text-zinc-500"><Calendar size={14} /> Batch {drive.batchYear}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-8 space-y-6 min-w-0">
-          <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Info size={18} className="text-emerald-500" /> Drive Details
-            </h2>
-            {drive.description ? (
-              <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{drive.description}</p>
-            ) : (
-              <p className="text-sm text-slate-400 italic">No description provided.</p>
-            )}
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-6">
+          <Panel title="About this drive">
+            {drive.description
+              ? <p className="m-0 whitespace-pre-wrap text-sm leading-relaxed text-zinc-600">{drive.description}</p>
+              : <p className="m-0 text-sm text-zinc-400">No details added yet.</p>}
 
             {companies.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-slate-100">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Participating Companies</h3>
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-6 border-t border-zinc-100 pt-5">
+                <h3 className="m-0 mb-3 text-sm font-bold text-[#10213D]">Companies hiring</h3>
+                <div className="grid gap-2 sm:grid-cols-2">
                   {companies.map((c, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl">
-                      <Building2 size={16} className="text-slate-400" />
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">{c.name}</p>
-                        {c.packageLPA > 0 && <p className="text-[10px] font-bold text-emerald-600">{c.packageLPA} LPA</p>}
+                    <div key={i} className="flex items-center gap-3 rounded-xl bg-[#f4faf7] p-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#1f8a57] ring-1 ring-zinc-200"><Building2 size={16} /></span>
+                      <div className="min-w-0">
+                        <p className="m-0 truncate text-sm font-bold text-[#10213D]">{c.name}</p>
+                        {c.packageLPA > 0 && <p className="m-0 text-xs font-semibold text-[#1f8a57]">{c.packageLPA} LPA</p>}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
+          </Panel>
 
           {drive.announcements?.length > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Megaphone size={18} className="text-emerald-500" /> Announcements
-              </h2>
-              <div className="space-y-4">
+            <Panel title="Announcements">
+              <ul className="m-0 list-none space-y-3 p-0">
                 {drive.announcements.slice().reverse().map((a, i) => (
-                  <div key={i} className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                    <div className="flex justify-between items-start mb-1">
-                      <p className="font-bold text-slate-900">{a.title}</p>
-                      <span className="text-[10px] font-bold text-slate-400">{new Date(a.postedAt).toLocaleDateString()}</span>
+                  <li key={i} className="flex gap-3 rounded-xl bg-zinc-50 p-4">
+                    <Megaphone size={16} className="mt-0.5 shrink-0 text-[#1f8a57]" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="m-0 text-sm font-bold text-[#10213D]">{a.title}</p>
+                        {a.postedAt && <span className="shrink-0 text-[11px] text-zinc-400">{new Date(a.postedAt).toLocaleDateString('en-IN')}</span>}
+                      </div>
+                      {a.message && <p className="m-0 mt-1 text-xs leading-relaxed text-zinc-600">{a.message}</p>}
+                      {a.link && <a href={a.link} target="_blank" rel="noreferrer" className="mt-2 inline-block break-all text-xs font-bold text-[#1f8a57] hover:underline">{a.link}</a>}
                     </div>
-                    {a.message && <p className="text-xs text-slate-600 mt-1 leading-relaxed">{a.message}</p>}
-                    {a.link && (
-                      <a href={a.link} target="_blank" rel="noreferrer" className="inline-block mt-2 text-xs font-bold text-emerald-600 hover:underline">
-                        {a.link}
-                      </a>
-                    )}
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </Panel>
           )}
         </div>
 
-        <aside className="lg:col-span-4 space-y-6 min-w-0 lg:sticky lg:top-24">
-          <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Registration Status</h3>
+        <aside className="grid min-w-0 content-start gap-6 md:grid-cols-2 xl:sticky xl:top-24 xl:grid-cols-1">
+          <Panel title="Your registration">
             {drive.myApplication ? (
-              <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
-                <CheckCircle2 size={20} />
+              <div className="flex items-center gap-3 rounded-xl bg-[#eaf7f0] p-4 text-[#1f8a57]">
+                <CheckCircle2 size={20} className="shrink-0" />
                 <div>
-                  <p className="text-sm font-bold uppercase">{drive.myApplication.status}</p>
-                  <p className="text-[10px] font-medium opacity-80">You are registered for this drive.</p>
+                  <p className="m-0 text-sm font-bold capitalize">{drive.myApplication.status || 'Registered'}</p>
+                  <p className="m-0 text-xs text-[#1f8a57]/80">You are registered for this drive.</p>
                 </div>
               </div>
             ) : (
-              <div>
-                <p className="text-xs text-slate-500 mb-4">You have not registered for this drive yet.</p>
-                <Button 
-                  onClick={registerForDrive} 
-                  disabled={registering}
-                  className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                >
-                  {registering ? 'Registering...' : 'Register Now'}
-                </Button>
-              </div>
+              <>
+                <p className="m-0 mb-4 text-sm text-zinc-500">You have not registered for this drive yet.</p>
+                <button type="button" onClick={registerForDrive} disabled={registering} className={`${btnPrimary} w-full`}>
+                  {registering ? 'Registering…' : 'Register now'}
+                </button>
+              </>
             )}
-          </div>
+          </Panel>
 
-          <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Placement In-charge</h3>
+          <Panel title="Placement in-charge">
             {inCharges.length > 0 ? (
-              <div className="space-y-3">
+              <ul className="m-0 list-none space-y-2 p-0">
                 {inCharges.map(ic => (
-                  <div key={ic.user?._id || ic.user || ic.email} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 min-w-0">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-                        <UserIcon size={18} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-900 truncate">{ic.name}</p>
-                        <p className="text-[10px] text-slate-500 truncate" title={ic.email}>{ic.email}</p>
-                      </div>
+                  <li key={ic.user?._id || ic.user || ic.email} className="flex min-w-0 items-center gap-3 rounded-xl bg-zinc-50 p-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf7f0] text-[#1f8a57]"><UserIcon size={18} /></span>
+                    <div className="min-w-0 flex-1">
+                      <p className="m-0 truncate text-sm font-bold text-[#10213D]">{ic.name}</p>
+                      <p className="m-0 truncate text-[11px] text-zinc-500" title={ic.email}>{ic.email}</p>
                     </div>
-                    <Button 
+                    <button
+                      type="button"
                       onClick={() => handleChat(ic.user)}
-                      variant="ghost" 
-                      size="icon"
-                      className="w-8 h-8 shrink-0 rounded-lg text-emerald-600 hover:bg-emerald-100 disabled:opacity-40"
                       disabled={!ic.user}
-                      title="Chat with In-charge"
+                      aria-label={`Message ${ic.name}`}
+                      title={ic.user ? 'Send a message' : 'Not on Velaivaaipu yet'}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#1f8a57] ring-1 ring-zinc-200 border-none cursor-pointer transition hover:bg-[#eaf7f0] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <MessageCircle size={16} />
-                    </Button>
-                  </div>
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
-              <p className="text-xs text-slate-400 italic">No in-charges assigned yet.</p>
+              <p className="m-0 text-sm text-zinc-400">No in-charge added yet.</p>
             )}
-          </div>
+          </Panel>
         </aside>
       </div>
-    </div>
+    </Page>
   );
 };
 

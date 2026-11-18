@@ -68,7 +68,7 @@ const AssistantWidget = () => {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Open the Velaivaaipu assistant"
-          className="fixed bottom-5 right-5 z-40 flex items-center gap-2 h-12 px-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-lg border-none cursor-pointer"
+          className="fixed bottom-16 right-4 sm:bottom-[4.25rem] sm:right-5 z-40 flex items-center gap-2 h-12 px-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-lg border-none cursor-pointer"
         >
           <Sparkles size={16} /> Ask assistant
         </button>

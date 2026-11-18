@@ -27,7 +27,7 @@ const IncompleteProfileBanner = () => {
     : `Your setup is ${data.percent}% complete.`;
 
   return (
-    <div className="mb-4 flex items-center gap-3 border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900" role="status">
+    <div className="mb-5 flex items-center gap-3 rounded-xl bg-amber-50 px-4 py-2.5 text-sm text-amber-900 ring-1 ring-amber-200" role="status">
       <span className="min-w-0 flex-1">
         <strong className="font-bold">{lead}</strong>{' '}
         {next && <Link to={next.path} className="font-semibold underline underline-offset-2 text-amber-900">Next: {next.label} <ArrowRight size={13} className="inline -mt-0.5" /></Link>}

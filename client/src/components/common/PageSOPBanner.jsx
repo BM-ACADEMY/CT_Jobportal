@@ -23,7 +23,7 @@ const PageSOPBanner = ({ pageKey }) => {
   };
 
   return (
-    <div className="mb-6 rounded-none border border-slate-200 bg-slate-50 p-4 sm:p-5 relative">
+    <div className="mb-6 rounded-2xl bg-white ring-1 ring-zinc-200/80 p-4 sm:p-5 relative">
       <button
         onClick={handleDismiss}
         className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-200/50 transition-colors cursor-pointer"
@@ -32,18 +32,18 @@ const PageSOPBanner = ({ pageKey }) => {
         <X size={16} />
       </button>
       <div className="flex gap-3 pr-8">
-        <div className="w-8 h-8 rounded bg-slate-200/60 text-slate-600 flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-[#eaf7f0] text-[#1f8a57] flex items-center justify-center shrink-0">
           <Info size={16} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+          <h3 className="m-0 text-[13px] font-semibold text-[#10213D]">{title}</h3>
           <p className="text-xs text-slate-600 mt-1 leading-relaxed">{whatItIs}</p>
           {howItWorks.length > 0 && (
             <>
               <button
                 type="button"
                 onClick={() => setExpanded(!expanded)}
-                className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-700 cursor-pointer bg-transparent border-none"
+                className="mt-2 flex items-center gap-1 text-[11px] font-bold text-[#1f8a57] hover:underline cursor-pointer bg-transparent border-none"
               >
                 How it works {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>

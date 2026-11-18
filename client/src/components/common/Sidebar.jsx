@@ -5,13 +5,12 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeftOpen,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, CalendarDays, ListChecks, Wallet, MessageSquareHeart
+  BookOpen, Mic, UserCheck, ArrowUpRight, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, CalendarDays, ListChecks, Wallet, MessageSquareHeart
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findPermissionKeyForPath } from '../../config/teamPermissions';
 import { staffMenuFor } from '../../config/staffPermissions';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { ROLE_LABELS, taglineFor } from '../../data/microcopy';
 import { hasFeature } from '../subscription/FeatureGate';
 
@@ -172,96 +171,78 @@ const premiumMenus = {
   ],
 };
 
-const NavItem = ({ item, active, isCollapsed }) => {
-  const Icon = item.icon;
-  return (
-    <Link
-      to={item.path}
-      title={item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined)}
-      className={`group flex items-center transition-all rounded-none relative outline-none focus:outline-none
-        ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
-        ${active
-          ? 'bg-[#34b678]/25 text-white font-medium'
-          : 'text-slate-300 hover:text-[#34b678] hover:bg-white/10'
-        }`}
-    >
-      {active && <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#34b678]" />}
-      <div className={`flex items-center justify-center w-5 h-5 transition-all
-        ${active ? 'text-white' : 'text-slate-400 group-hover:text-[#34b678]'}`}>
-        <Icon size={18} strokeWidth={active ? 2 : 1.5} />
+// ─── Look ────────────────────────────────────────────────────────────────────
+// Modelled on the shadcn sidebar: compact rows, a soft highlight for the current
+// page, small group labels, and the signed-in user pinned to the footer.
+const itemCls = (active, isCollapsed, extra = '') =>
+  `group relative flex items-center rounded-lg text-[13px] no-underline outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#34B678]/60
+   ${isCollapsed ? 'mx-auto h-9 w-9 justify-center' : 'h-9 w-full gap-2.5 px-2.5'}
+   ${active ? 'bg-white/[0.09] text-white font-medium' : 'text-slate-300 font-normal hover:bg-white/[0.05] hover:text-white'} ${extra}`;
+
+const ItemIcon = ({ icon: Icon, active, size = 17 }) => (
+  <Icon size={size} strokeWidth={active ? 2.2 : 1.8} className={`shrink-0 transition-colors ${active ? 'text-[#5fd39b]' : 'text-slate-400 group-hover:text-slate-200'}`} />
+);
+
+const GroupLabel = ({ children, action, isCollapsed }) => (
+  isCollapsed
+    ? <div className="mx-auto my-3 h-px w-6 bg-white/10" />
+    : (
+      <div className="flex h-8 items-center justify-between px-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+        <span>{children}</span>
+        {action}
       </div>
-      {!isCollapsed && <span className="text-xs font-medium flex-1 tracking-wide">{item.label}</span>}
-    </Link>
-  );
-};
+    )
+);
+
+// Links that open the public website (outside the dashboard). They get their own group
+// at the bottom of the sidebar so they are not mixed with the account pages.
+const SITE_PATHS = ['/jobs', '/companies', '/blog'];
+
+const NavItem = ({ item, active, isCollapsed }) => (
+  <Link
+    to={item.path}
+    title={isCollapsed ? item.label : item.tagline || undefined}
+    aria-current={active ? 'page' : undefined}
+    className={itemCls(active, isCollapsed)}
+  >
+    <ItemIcon icon={item.icon} active={active} />
+    {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
+    {!isCollapsed && item.external && <ArrowUpRight size={13} className="shrink-0 text-slate-500 group-hover:text-slate-300" aria-hidden="true" />}
+  </Link>
+);
 
 const CollapsibleNavItem = ({ item, location, isCollapsed }) => {
-  const [isOpen, setIsOpen] = React.useState(() => {
-    return (item.children || []).some(child => location.pathname === child.path || location.pathname.startsWith(child.path + '/'));
-  });
-
-  const Icon = item.icon;
-  const isAnyChildActive = (item.children || []).some(child => location.pathname === child.path || location.pathname.startsWith(child.path + '/'));
+  const childActive = (child) => location.pathname === child.path || location.pathname.startsWith(child.path + '/');
+  const isAnyChildActive = (item.children || []).some(childActive);
+  const [isOpen, setIsOpen] = React.useState(isAnyChildActive);
 
   if (isCollapsed) {
     return (
-      <Link
-        to={item.path || (item.children && item.children[0]?.path)}
-        title={item.label}
-        className={`group flex items-center justify-center p-3 transition-all relative rounded-none outline-none focus:outline-none
-          ${isAnyChildActive
-            ? 'bg-[#34b678]/25 text-white font-medium'
-            : 'text-slate-300 hover:text-[#34b678] hover:bg-white/10'
-          }`}
-      >
-        {isAnyChildActive && <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#34b678]" />}
-        <div className={`flex items-center justify-center w-5 h-5 transition-all
-          ${isAnyChildActive ? 'text-white' : 'text-slate-400 group-hover:text-[#34b678]'}`}>
-          <Icon size={18} strokeWidth={isAnyChildActive ? 2 : 1.5} />
-        </div>
+      <Link to={item.path || item.children?.[0]?.path} title={item.label} className={itemCls(isAnyChildActive, true)}>
+        <ItemIcon icon={item.icon} active={isAnyChildActive} />
       </Link>
     );
   }
 
   return (
-    <div className="space-y-1">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full group flex items-center gap-4 px-4 py-3 transition-all relative text-left rounded-none outline-none focus:outline-none
-          ${isAnyChildActive
-            ? 'bg-[#34b678]/25 text-white font-medium'
-            : 'text-slate-300 hover:text-[#34b678] hover:bg-white/10'
-          }`}
-      >
-        {isAnyChildActive && <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#34b678]" />}
-        <div className={`flex items-center justify-center w-5 h-5 transition-all
-          ${isAnyChildActive ? 'text-white' : 'text-slate-400 group-hover:text-[#34b678]'}`}>
-          <Icon size={18} strokeWidth={isAnyChildActive ? 2 : 1.5} />
-        </div>
-        <span className="text-xs font-medium flex-1 tracking-wide">{item.label}</span>
-        <ChevronRight
-          size={14}
-          className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90 text-white' : ''}`}
-        />
+    <div>
+      <button type="button" onClick={() => setIsOpen(!isOpen)} aria-expanded={isOpen} className={`${itemCls(isAnyChildActive && !isOpen, false)} border-none bg-transparent cursor-pointer text-left`}>
+        <ItemIcon icon={item.icon} active={isAnyChildActive} />
+        <span className="flex-1 truncate">{item.label}</span>
+        <ChevronRight size={14} className={`shrink-0 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
       </button>
-
       {isOpen && (
-        <div className="pl-10 pr-2 py-1 space-y-1">
+        <div className="ml-[18px] mt-0.5 space-y-0.5 border-l border-white/10 py-0.5 pl-2.5">
           {(item.children || []).map(child => {
-            const childActive = location.pathname === child.path || location.pathname.startsWith(child.path + '/');
+            const active = childActive(child);
             return (
               <Link
                 key={child.path}
                 to={child.path}
-                className={`group flex items-center gap-2 py-1.5 transition-all text-xs font-medium relative rounded-none px-3 outline-none focus:outline-none
-                  ${childActive
-                    ? 'bg-[#34b678]/20 text-white font-medium'
-                    : 'text-slate-400 hover:text-[#34b678] hover:bg-white/10'
-                  }`}
+                aria-current={active ? 'page' : undefined}
+                className={`flex h-8 items-center rounded-md px-2.5 text-[13px] no-underline transition-colors ${active ? 'bg-white/[0.09] font-semibold text-white' : 'text-slate-400 hover:bg-white/[0.05] hover:text-white'}`}
               >
-                {childActive && <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#34b678]" />}
-                <span className="absolute left-1 text-slate-500">-</span>
-                <span className="flex-1 text-xs tracking-wide">{child.label}</span>
+                <span className="truncate">{child.label}</span>
               </Link>
             );
           })}
@@ -271,43 +252,22 @@ const CollapsibleNavItem = ({ item, location, isCollapsed }) => {
   );
 };
 
-const PremiumNavItem = ({ item, active, unlocked, isCollapsed }) => {
-  const Icon = item.icon;
-  return (
-    <Link
-      to={item.path}
-      title={!unlocked ? `${item.label}: not in your current plan. Open it to see what you get and how to upgrade.` : (item.tagline ? (isCollapsed ? `${item.label}: ${item.tagline}` : item.tagline) : (isCollapsed ? item.label : undefined))}
-      className={`group flex items-center transition-all relative rounded-none outline-none focus:outline-none
-        ${isCollapsed ? 'justify-center p-3' : 'gap-4 px-4 py-3'}
-        ${active
-          ? 'bg-[#34b678]/25 text-white font-medium'
-          : unlocked
-            ? 'text-slate-300 hover:text-[#34b678] hover:bg-white/10'
-            : 'text-slate-500 hover:bg-white/5'
-        }`}
-    >
-      {active && <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#34b678]" />}
-      <div className={`flex items-center justify-center w-5 h-5 transition-all
-        ${active ? 'text-white' : 'text-slate-555 group-hover:text-[#34b678]'}`}>
-        <Icon size={17} strokeWidth={active ? 2 : 1.5} />
-      </div>
-      {!isCollapsed && (
-        <>
-          <span className={`text-xs font-medium flex-1 tracking-wide ${unlocked ? '' : 'opacity-50'}`}>
-            {item.label}
-          </span>
-          {active ? (
-            <div className="w-1.5 h-1.5 bg-[#34b678] rounded-full" />
-          ) : unlocked ? (
-            <div className="w-1.5 h-1.5 bg-[#34b678] rounded-full opacity-60" />
-          ) : (
-            <Lock size={10} className="text-slate-500 shrink-0" />
-          )}
-        </>
-      )}
-    </Link>
-  );
-};
+const PremiumNavItem = ({ item, active, unlocked, isCollapsed }) => (
+  <Link
+    to={item.path}
+    title={!unlocked ? `${item.label}: not in your current plan. Open it to see what you get and how to upgrade.` : (isCollapsed ? item.label : item.tagline || undefined)}
+    aria-current={active ? 'page' : undefined}
+    className={itemCls(active, isCollapsed)}
+  >
+    <ItemIcon icon={item.icon} active={active} />
+    {!isCollapsed && (
+      <>
+        <span className={`flex-1 truncate ${unlocked || active ? '' : 'text-slate-400'}`}>{item.label}</span>
+        {!unlocked && <Lock size={12} className="shrink-0 text-slate-500" aria-label="Locked" />}
+      </>
+    )}
+  </Link>
+);
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const { user, logout } = useAuth();
@@ -376,218 +336,148 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
-  return (
-    <aside className="w-full h-full bg-[#1b496d] flex flex-col font-sans select-none transition-all duration-300">
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+  const siteItems = coreItems.filter(i => SITE_PATHS.includes(i.path)).map(i => ({ ...i, external: true }));
+  const menuItems = coreItems.filter(i => !SITE_PATHS.includes(i.path));
 
-      {/* Brand */}
-      <div className={`h-20 px-6 border-b border-white/10 flex items-center shrink-0 bg-white/5 ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}>
+  const settingsPath = {
+    jobseeker: '/candidate/settings',
+    recruiter: '/company/settings',
+    company: '/company/settings',
+    college: '/college/settings',
+    admin: '/admin/settings',
+    subadmin: '/subadmin',
+    org_employee: '/employee/settings'
+  }[role] || '/candidate/settings';
+  const upgradePath = role === 'jobseeker' ? '/candidate/subscription' : role === 'college' ? '/college/subscription' : '/company/subscription';
+  const showUpgrade = (!user?.subscription || user?.subscription?.price === 0) && premiumItems.some(i => i.featureKey && !hasFeature(user, i.featureKey));
+  const avatarSrc = user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`) : '/usericon.webp';
+
+  return (
+    <aside className="flex h-full w-full flex-col bg-[#10213D] font-sans text-white select-none">
+      {/* Header */}
+      <div className={`flex h-16 shrink-0 items-center border-b border-white/[0.08] ${isCollapsed ? 'justify-center px-2' : 'justify-between pl-4 pr-3'}`}>
         {!isCollapsed && (
-          <Link to="/" className="flex items-center">
-            <img src="/velaivaaipu-logo.webp" alt="Velaivaaipu" className="h-16 w-auto object-contain brightness-110 filter" />
+          <Link to="/" className="flex items-center" aria-label="Velaivaaipu home">
+            <img src="/velaivaaipu-logo.webp" alt="Velaivaaipu" className="h-10 w-auto object-contain" />
           </Link>
         )}
-        <button 
-          onClick={toggleSidebar} 
-          className="text-slate-300 hover:text-white transition-colors cursor-pointer p-1.5 focus:outline-none"
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border-none bg-transparent text-slate-400 transition-colors hover:bg-white/[0.07] hover:text-white cursor-pointer"
         >
-          {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          {isCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
         </button>
       </div>
 
-      {/* Scrollable Content */}
-      <div
-        className="flex-1 overflow-y-auto no-scrollbar flex flex-col"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }}
-      >
-        {/* User card */}
-        <div className={`pt-8 pb-4 shrink-0 ${isCollapsed ? 'px-3' : 'px-6'}`}>
-          <div 
-            onClick={() => {
-                const routes = {
-                    jobseeker: '/candidate/settings',
-                    recruiter: '/company/settings',
-                    company: '/company/settings',
-                    college: '/college/settings',
-                    admin: '/admin/settings',
-                    subadmin: '/subadmin',
-                    org_employee: '/employee/settings'
-                };
-                navigate(routes[role] || '/candidate/settings');
-            }} 
-            className={`rounded-none border border-white/10 flex items-center bg-white/5 group hover:border-[#34b678]/40 hover:bg-white/10 transition-all duration-300 cursor-pointer ${isCollapsed ? 'justify-center p-2' : 'p-3 gap-3'}`}
-          >
-            <div className="relative shrink-0">
-              <Avatar className="w-8 h-8 rounded-full border border-white/10 shadow-sm bg-white/10">
-                <AvatarImage
-                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`) : '/usericon.webp'}
-                    className="object-cover"
-                />
-                <AvatarFallback className="bg-white/10 text-white font-bold text-xs rounded-full">
-                  {user?.name?.[0]?.toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              {!isCollapsed && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#1b496d] rounded-full shadow-sm" />}
-            </div>
-            {!isCollapsed && (
-              <>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white truncate tracking-tight flex items-center gap-1">
-                    {user?.name || 'Authorized User'}
-                    {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={13} className="text-blue-400 shrink-0" />}
-                  </p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mt-0.5">{ROLE_LABELS[role] || role}</p>
-                </div>
-                <ChevronRight size={14} className="text-slate-500 group-hover:text-[#34b678] transition-colors shrink-0" />
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Profile Completion for Jobseekers */}
+      {/* Content */}
+      <div className={`flex-1 overflow-y-auto overscroll-contain py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${isCollapsed ? 'px-2' : 'px-3'}`}>
         {role === 'jobseeker' && !isCollapsed && (
-          <div className="px-6 pb-6">
-            <div className="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 shadow-xl relative overflow-hidden group hover:bg-white/10 transition-all duration-300">
-              <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-400/30 transition-colors duration-500" />
-              <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-teal-400/20 rounded-full blur-2xl pointer-events-none group-hover:bg-teal-400/30 transition-colors duration-500" />
-
-              <div className="flex items-center justify-between mb-3 relative z-10">
-                <span className="text-[10px] font-bold text-slate-200 uppercase tracking-widest flex items-center gap-1.5 drop-shadow-sm">
-                  <Activity size={14} className="text-emerald-400" />
-                  Profile Score
-                </span>
-                <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 drop-shadow-sm">{profileCompletion}%</span>
-              </div>
-
-              <div className="h-2 w-full bg-black/20 rounded-full overflow-hidden relative z-10 mb-3 shadow-inner">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000 ease-out relative"
-                  style={{ width: `${profileCompletion}%` }}
-                >
-                  <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/40 animate-pulse" />
-                </div>
-              </div>
-
-              <p className="text-[10px] font-medium text-slate-300/90 leading-relaxed relative z-10">
-                {profileCompletion === 100
-                  ? "Excellent! Your profile is fully optimized for top recruiters."
-                  : "Reach 100% to make your profile easier for recruiters to find."}
-              </p>
-              {profileCompletion < 100 && (
-                <button onClick={() => navigate('/candidate/settings')} className="mt-3 w-full py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-emerald-200 text-[10px] font-bold transition-all border border-emerald-500/30 hover:border-emerald-500/50 relative z-10 shadow-sm backdrop-blur-sm">
-                  Complete Profile
-                </button>
-              )}
+          <Link to="/candidate/settings" className="mb-3 block rounded-xl bg-white/[0.05] p-3 no-underline ring-1 ring-white/[0.08] transition hover:bg-white/[0.08]">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-slate-300">Profile strength</span>
+              <span className="font-bold text-[#5fd39b]">{profileCompletion}%</span>
             </div>
-          </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={profileCompletion} aria-valuemin={0} aria-valuemax={100} aria-label="Profile strength">
+              <div className="h-full rounded-full bg-[#34B678] transition-all duration-700" style={{ width: `${profileCompletion}%` }} />
+            </div>
+            {profileCompletion < 100 && <p className="m-0 mt-2 text-[11px] font-semibold text-[#5fd39b]">Complete your profile →</p>}
+          </Link>
         )}
 
-        {/* Core nav */}
-        <div className={`flex-1 ${isCollapsed ? 'px-2' : 'px-4'}`}>
-          <div className="space-y-1">
-            {!isCollapsed ? (
-              <div className="px-5 mb-4 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 flex items-center gap-3">
-                <span>Menu</span>
-                <div className="h-[1px] flex-1 bg-white/10" />
-              </div>
-            ) : (
-              <div className="h-[1px] bg-white/10 my-4 mx-2" />
-            )}
-            {coreItems.map((item, idx) => {
-              // Admin menu is grouped (Daily, Money, Growth, Setup); other roles have no groups.
-              const startsGroup = item.group && item.group !== coreItems[idx - 1]?.group && !isCollapsed;
-              const header = startsGroup ? (
-                <div key={`g-${item.group}`} className="px-5 pt-4 pb-1 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">{item.group}</div>
-              ) : null;
-              if (item.children) {
-                return (
-                  <React.Fragment key={item.path}>
-                    {header}
-                    <CollapsibleNavItem item={item} location={location} isCollapsed={isCollapsed} />
-                  </React.Fragment>
-                );
-              }
-              return (
-                <React.Fragment key={item.path}>
-                  {header}
-                  <NavItem item={item} active={isActive(item.path)} isCollapsed={isCollapsed} />
-                </React.Fragment>
-              );
-            })}
-          </div>
+        <nav aria-label="Main" className="space-y-0.5">
+          <GroupLabel isCollapsed={isCollapsed}>Menu</GroupLabel>
+          {menuItems.map((item, idx) => {
+            // Admin menu is grouped (Daily, Money, Growth, Setup); other roles have no groups.
+            const startsGroup = item.group && item.group !== menuItems[idx - 1]?.group && idx > 0;
+            return (
+              <React.Fragment key={item.path}>
+                {startsGroup && <GroupLabel isCollapsed={isCollapsed}>{item.group}</GroupLabel>}
+                {item.children
+                  ? <CollapsibleNavItem item={item} location={location} isCollapsed={isCollapsed} />
+                  : <NavItem item={item} active={isActive(item.path)} isCollapsed={isCollapsed} />}
+              </React.Fragment>
+            );
+          })}
+        </nav>
 
-          {/* Premium Features section */}
-          {premiumItems.length > 0 && (
-            <div className="mt-6 space-y-1">
-              {!isCollapsed ? (
-                <div className="px-5 mb-3 flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">
-                  <span>Premium Features</span>
-                  <div className="h-[1px] flex-1 bg-white/10" />
-                  {(!user?.subscription || user?.subscription?.price === 0) && premiumItems.some(i => i.featureKey && !hasFeature(user, i.featureKey)) && (
-                    <Badge className="text-[8px] font-bold bg-amber-50 text-amber-600 border-amber-100 px-1.5 py-0 shrink-0 rounded-none">
-                      Upgrade
-                    </Badge>
-                  )}
-                </div>
-              ) : (
-                <div className="h-[1px] bg-white/10 my-6 mx-2" />
-              )}
-              {premiumItems.map(item => {
-                const unlocked = !item.featureKey || hasFeature(user, item.featureKey);
-                return (
-                  <PremiumNavItem
-                    key={item.path}
-                    item={item}
-                    active={isActive(item.path)}
-                    unlocked={unlocked}
-                    isCollapsed={isCollapsed}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {premiumItems.length > 0 && (
+          <nav aria-label="Premium" className="mt-4 space-y-0.5">
+            <GroupLabel
+              isCollapsed={isCollapsed}
+              action={showUpgrade && <Link to={upgradePath} className="text-[11px] font-semibold normal-case tracking-normal text-[#5fd39b] no-underline hover:underline">Upgrade</Link>}
+            >
+              Premium
+            </GroupLabel>
+            {premiumItems.map(item => (
+              <PremiumNavItem
+                key={item.path}
+                item={item}
+                active={isActive(item.path)}
+                unlocked={!item.featureKey || hasFeature(user, item.featureKey)}
+                isCollapsed={isCollapsed}
+              />
+            ))}
+          </nav>
+        )}
+
+        {siteItems.length > 0 && (
+          <nav aria-label="Velaivaaipu website" className="mt-4 space-y-0.5">
+            <GroupLabel isCollapsed={isCollapsed}>Velaivaaipu site</GroupLabel>
+            {siteItems.map(item => (
+              <NavItem key={item.path} item={item} active={false} isCollapsed={isCollapsed} />
+            ))}
+          </nav>
+        )}
 
         {role === 'drive_incharge' && !isCollapsed && (
-          <div className="px-6 mt-6">
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50/30 rounded-none p-4 border border-emerald-100/50 shadow-sm relative overflow-hidden">
-              <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-200/20 rounded-full blur-xl pointer-events-none" />
-              <h3 className="text-[11px] font-black text-emerald-800 uppercase tracking-wider mb-2 relative z-10">
-                Unlock Features
-              </h3>
-              <p className="text-[10px] font-medium text-emerald-700/80 leading-relaxed relative z-10 mb-3">
-                Register fully to post jobs, apply for jobs, and access the complete platform.
-              </p>
-              <button
-                onClick={() => navigate('/complete-social-profile')}
-                className="w-full py-2 rounded-none bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all shadow-sm shadow-emerald-600/20 relative z-10"
-              >
-                Complete Registration
-              </button>
-            </div>
+          <div className="mt-4 rounded-xl bg-white/[0.05] p-3 ring-1 ring-white/[0.08]">
+            <p className="m-0 text-xs font-bold text-white">Unlock more features</p>
+            <p className="m-0 mt-1 text-[11px] leading-relaxed text-slate-400">Finish signing up to post jobs, apply for jobs and use the full platform.</p>
+            <button
+              type="button"
+              onClick={() => navigate('/complete-social-profile')}
+              className="mt-2.5 h-8 w-full rounded-lg border-none bg-[#34B678] text-xs font-bold text-white transition hover:bg-[#2ca66b] cursor-pointer"
+            >
+              Complete registration
+            </button>
           </div>
         )}
-
       </div>
 
-      {/* Logout */}
-      <div className={`py-4 border-t border-white/10 bg-white/5 shrink-0 ${isCollapsed ? 'px-2' : 'px-6'}`}>
-        <button
-          onClick={() => { logout(); navigate('/'); }}
-          title={isCollapsed ? 'Logout' : undefined}
-          className={`flex items-center justify-between w-full rounded-none text-slate-300 hover:text-[#34b678] hover:bg-white/5 hover:border-white/10 border border-transparent transition-all duration-300 group ${isCollapsed ? 'p-3 justify-center' : 'px-5 py-2.5'}`}
+      {/* Footer: signed-in user */}
+      <div className={`shrink-0 border-t border-white/[0.08] p-2 ${isCollapsed ? 'space-y-1' : 'space-y-0.5'}`}>
+        <Link
+          to={settingsPath}
+          title={isCollapsed ? `${user?.name || 'Account'} · Settings` : 'Account settings'}
+          className={`group flex items-center rounded-lg no-underline transition-colors hover:bg-white/[0.06] ${isCollapsed ? 'mx-auto h-10 w-10 justify-center' : 'gap-2.5 p-2'}`}
         >
-          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'}`}>
-            <LogOut size={16} strokeWidth={2} className="group-hover:-translate-x-1 transition-transform" />
-            {!isCollapsed && <span className="text-[10px] font-bold uppercase tracking-widest">Logout</span>}
-          </div>
+          <Avatar className="h-8 w-8 shrink-0 rounded-lg bg-white/10">
+            <AvatarImage src={avatarSrc} className="object-cover" />
+            <AvatarFallback className="rounded-lg bg-white/10 text-xs font-bold text-white">{user?.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+          </Avatar>
+          {!isCollapsed && (
+            <>
+              <span className="min-w-0 flex-1 leading-tight">
+                <span className="flex items-center gap-1 truncate text-[13px] font-medium text-white">
+                  <span className="truncate">{user?.name || 'Account'}</span>
+                  {user?.profileVerificationStatus === 'Verified' && <BadgeCheck size={13} className="shrink-0 text-[#5fd39b]" aria-label="Verified" />}
+                </span>
+                <span className="block truncate text-[11px] text-slate-400">{ROLE_LABELS[role] || role}</span>
+              </span>
+              <Settings size={15} className="shrink-0 text-slate-500 transition-colors group-hover:text-slate-200" />
+            </>
+          )}
+        </Link>
+        <button
+          type="button"
+          onClick={() => { logout(); navigate('/'); }}
+          title={isCollapsed ? 'Log out' : undefined}
+          className={`${itemCls(false, isCollapsed)} border-none bg-transparent cursor-pointer`}
+        >
+          <LogOut size={16} className="shrink-0 text-slate-400 group-hover:text-rose-300" />
+          {!isCollapsed && <span>Log out</span>}
         </button>
       </div>
     </aside>
