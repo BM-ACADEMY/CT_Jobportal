@@ -1,11 +1,12 @@
 # Velaivaaipu Version 2 roadmap
 
-Last updated: Mon 16 Nov 2026. Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates.
+Last updated: Mon 16 Nov 2026 (night). Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates.
 
 ## Order of work
 
 1. **Reliable codes.** Backup sender (branch `mail-fallback`), code counter (branch `otp-stats`), Brevo credits watch.
    Status: built, waiting for merge and for the BACKUP_* server settings.
+   Also built, waiting for merge: second admin by email invite (`admin-invites`), then Limited access for new admins (`admin-restrict`, merge after `admin-invites`).
 2. **Admin autopilot check.** Test the needs-action inbox, auto-assign, notifications and feedback with real activity and fix the gaps.
    Status: features and unit tests exist. A tick-list for testing with real data is in `docs/AUTOPILOT_CHECK.md` (branch `v2-complete`); Sneha runs it.
 3. **Installable website** (Add to Home Screen). Branch `installable-site`.
@@ -14,6 +15,22 @@ Last updated: Mon 16 Nov 2026. Kamar sets the order. Sneha takes the items in th
    Status: done. Place chips and no-degree, part-time and contract filters are live on the Jobs page.
 5. **Government jobs section on autopilot.** The site watches official announcements, Kamar approves, admin posts.
    Status: built (branch `v2-complete`). Admin > Government jobs: add official recruitment pages; the site checks them every morning at 8:00 India time; new notices wait for Kamar; "Post as job" opens the web-jobs form prefilled. Needs the pages chosen by Kamar.
+
+## Built on branches, waiting for Sneha to merge
+
+Merge order: `mail-fallback`, `otp-stats`, `qc-fixes`, `brand-leads-help`, `admin-invites`, then `admin-restrict`. `whatsapp-link` last, after the WhatsApp inbox test.
+
+- `qc-fixes`: home job count matches the public list, same-day jobs show Pondicherry and Tamil Nadu first, job titles and cities tidied when saved, footer line corrected, Plans page grammar.
+- `brand-leads-help`: help requests readable in Admin > Requests (no recruiter Assign), Brand leads with priority, WhatsApp, follow-up dates.
+- `admin-restrict`: new admins are Limited. They cannot delete, change money, plans or users, export data, change security or add admins. After deploying, test one blocked action with the new admin's login.
+
+## From the live-site review (16 Nov)
+
+- Companies page shows only BM Academy. Check why Core Talents and The Balified Villa are not listed (verified or hidden setting).
+- Job fairs page is empty. Add 2 or 3 real fairs, or hide the menu item until there is one.
+- Mostly Core Talents jobs, outside Tamil Nadu. Get local employers to post (Puducherry shops, clinics, schools).
+- Not yet checked: phone layout and the admin pages on a real phone.
+- Ideas, in order: WhatsApp job alerts (needs a WhatsApp Business account; consent is already recorded), new-jobs-today strip on the home page, Tamil toggle (after the Tamil text check), referral rewards (referral tracking exists).
 
 ## Also open from the launch
 
