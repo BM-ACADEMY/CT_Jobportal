@@ -431,6 +431,18 @@ const ManageRequests = () => {
                 </div>
               )}
 
+              {viewReq.type === 'help_request' && (
+                <div className="space-y-2" data-testid="help-request-view">
+                  <p><span className="font-bold">Page:</span> {viewReq.pageUrl || '—'}</p>
+                  <p><span className="font-bold">Phone:</span> {viewReq.bookingPhone || '—'}</p>
+                  <div>
+                    <p className="font-bold mb-1">Their message:</p>
+                    <div className="bg-slate-50 p-3 rounded-xl text-xs whitespace-pre-wrap">{viewReq.notes || '—'}</div>
+                  </div>
+                  <p className="text-xs text-slate-500">Reply to them directly, then use Update to mark it Completed. A help request is for our team, so it is not assigned to a recruiter.</p>
+                </div>
+              )}
+
               {viewReq.adminNotes && (
                 <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-blue-800">
                   <p className="font-bold text-xs mb-1">Additional Notes / Instructions:</p>
@@ -679,7 +691,7 @@ const ManageRequests = () => {
                           >
                             <Eye size={11} /> View
                           </button>
-                          {canAssign && r.type !== 'student_pack' && r.type !== 'college_call' && r.type !== 'college_upgrade' && r.status !== 'cancelled' && r.status !== 'completed' && (
+                          {canAssign && r.type !== 'student_pack' && r.type !== 'college_call' && r.type !== 'college_upgrade' && r.type !== 'help_request' && r.status !== 'cancelled' && r.status !== 'completed' && (
                             <button
                               onClick={() => setAssignTarget(r)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors whitespace-nowrap"

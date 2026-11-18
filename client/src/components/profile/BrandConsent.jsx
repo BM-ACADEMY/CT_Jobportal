@@ -4,7 +4,7 @@ import axios from 'axios';
 const API = import.meta.env.VITE_API_BASE_URL;
 
 // Optional tick: allow sister brands to contact about training and hiring. Used in the job seeker and company settings.
-const BrandConsent = () => {
+const BrandConsent = ({ nudge = false }) => {
   const [on, setOn] = useState(null);
   const [err, setErr] = useState('');
   useEffect(() => { axios.get(`${API}/user/brand-consent`).then((r) => setOn(!!r.data.contact)).catch(() => setOn(false)); }, []);
@@ -12,9 +12,10 @@ const BrandConsent = () => {
     setErr('');
     try { await axios.put(`${API}/user/brand-consent`, { contact: v }); setOn(v); } catch { setErr('Could not save. Try again.'); }
   };
-  if (on === null) return null;
+  if (on === null || (nudge && on)) return null; // a nudge only shows to people who have not agreed
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4">
+    <div className="bg-white rounded-2xl border border-slate-100 p-4" data-testid={nudge ? 'brand-consent-nudge' : undefined}>
+      {nudge && <p className="text-sm font-bold text-slate-900 mb-2">Want help getting shortlisted?</p>}
       <label className="flex items-start gap-3 cursor-pointer">
         <input type="checkbox" className="w-5 h-5 mt-0.5 rounded-md border-slate-300 text-emerald-600" checked={on} onChange={(e) => change(e.target.checked)} />
         <span className="text-sm text-slate-700">Allow Velaivaaipu and its sister brands (BM Academy, CoreTalents) to contact me about training and hiring services. Optional. Untick any time.</span>
