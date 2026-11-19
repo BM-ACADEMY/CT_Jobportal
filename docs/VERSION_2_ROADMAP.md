@@ -56,9 +56,9 @@ Branch `v2-complete`. Opted-in job seekers get at most one message a week (Tuesd
 2. Sneha sets `WA_TEMPLATE_JOB_ALERT` (the template name) and `WHATSAPP_JOB_ALERTS_ENABLED=true`. `WA_PHONE_NUMBER_ID`, `META_PAGE_ACCESS_TOKEN` and `FRONTEND_URL` must already be set.
 3. Test with one opted-in account before leaving it on.
 
-## Open task list (status 18 Nov, evening)
+## Open task list (status 19 Nov, evening)
 
-Sneha:
+Sneha: PRs #60 to #64 merged on 19 Nov, 17:26. Sneha reports all items below done (19 Nov); she also fixed the Post Job form reloading on auth refresh. Still to confirm by looking: items 5 and 6 (limited-admin test, Government jobs screenshot) and Babila's Post Job test.
 1. Merge and deploy PR #60 (government watcher list), PR #61 (mobile header: icon left, name centred), PR #62 (this roadmap) and PR #63 (Admin > Applications page).
 2. Describe the problem she mentioned with the build.
 3. Hostinger backup mail settings (`BACKUP_*`) and send a test code.
