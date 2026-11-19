@@ -144,13 +144,14 @@ const PublicHeader = () => {
   return (
     <>
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${headerBase}`}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+        <div className="relative max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
 
-          {/* Logo */}
+          {/* Logo: on phones the icon stays left and only the name (Velaivaaipu.in) sits in the middle; desktop shows the full logo */}
           <Link to="/" className="group shrink-0 flex flex-col items-start gap-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" aria-label="Velaivaaipu home">
-            <span data-brand-logo className="block h-14">
-              <BrandLogo className="h-full" />
+            <span data-brand-logo className="block h-14 max-md:h-[45px] max-md:overflow-hidden">
+              <BrandLogo className="h-14" />
             </span>
+            <img src="/images/brand/wordmark.webp" alt="" draggable="false" className="md:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-auto select-none" />
           </Link>
 
           {/* Desktop Nav */}
