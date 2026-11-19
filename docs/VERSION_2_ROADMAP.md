@@ -1,6 +1,6 @@
 # Velaivaaipu Version 2 roadmap
 
-Last updated: Mon 16 Nov 2026 (night). Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates.
+See `ROADMAP.md` in the repo root for the master task list. Last updated: Mon 16 Nov 2026 (night). Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates.
 
 ## Order of work
 
