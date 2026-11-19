@@ -20,11 +20,15 @@ const scanOne = async (source, opts) => {
   return { source: source.name, added, baseline: !!r.baseline };
 };
 
-// Starting list: added once, and only while no source exists at all.
+// Built-in list (config/govtSources.js): every page in it that is not yet watched is added on server start.
+// A page you paused in Admin stays paused (it still exists), and the Admin page can still add more of its own.
 const seedDefaultSources = async (defaults = require('../config/govtSources'), Model = GovtSource.m) => {
-  if (await Model.estimatedDocumentCount() > 0) return 0;
+  const have = new Set((await Model.find({}).select('url').lean()).map((x) => x.url));
   let n = 0;
-  for (const d of defaults) { try { await Model.create(d); n += 1; } catch (e) { if (e.code !== 11000) console.error('Govt seed:', e.message); } }
+  for (const d of defaults) {
+    if (have.has(d.url)) continue;
+    try { await Model.create(d); n += 1; } catch (e) { if (e.code !== 11000) console.error('Govt seed:', e.message); }
+  }
   return n;
 };
 

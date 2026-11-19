@@ -53,18 +53,21 @@ test('admin routes for the watcher exist and the cron is registered', () => {
   assert.match(fs.readFileSync(require('node:path').join(__dirname, '../cron/index.js'), 'utf8'), /runGovtWatch/);
 });
 
-test('starting list: all pages pass the safety check, no duplicates, seeded only when empty', async () => {
+test('starting list: all pages pass the safety check, no duplicates, new ones added on start', async () => {
   const defaults = require('../config/govtSources');
   const { checkUrl } = require('../utils/fairNotice');
   assert.equal(defaults.length, 21);
   assert.equal(new Set(defaults.map((d) => d.url)).size, defaults.length);
   for (const d of defaults) assert.equal(checkUrl(d.url).error, undefined, d.url);
   const created = [];
-  let count = 0;
-  const Model = { estimatedDocumentCount: async () => count, create: async (d) => { created.push(d.url); } };
+  let existing = [];
+  const Model = { find: () => ({ select: () => ({ lean: async () => existing }) }), create: async (d) => { created.push(d.url); } };
   const { seedDefaultSources } = require('../cron/govtWatch');
-  assert.equal(await seedDefaultSources(defaults, Model), 21);
-  count = 3;
-  assert.equal(await seedDefaultSources(defaults, Model), 0);
-  assert.equal(created.length, 21);
+  assert.equal(await seedDefaultSources(defaults, Model), 21);          // empty: everything added
+  existing = defaults.slice(0, 18).map((d) => ({ url: d.url }));
+  created.length = 0;
+  assert.equal(await seedDefaultSources(defaults, Model), 3);           // only the new ones
+  assert.deepEqual(created, defaults.slice(18).map((d) => d.url));
+  existing = defaults.map((d) => ({ url: d.url }));
+  assert.equal(await seedDefaultSources(defaults, Model), 0);           // nothing to add: no change
 });
