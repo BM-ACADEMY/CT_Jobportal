@@ -57,6 +57,7 @@ router.get('/college-funnel', require('../controllers/collegeFunnelController').
 router.get('/student-pack-info', require('../controllers/collegePackController').packInfo);
 router.post('/colleges/:id/student-pack', require('../controllers/collegePackController').recordPack);
 router.get('/activity', require('../controllers/activityController').getActivity);
+router.get('/applications', require('../controllers/adminApplicationsController').listApplications);
 // Other full admins: list, invite by email, resend the invite, remove (Super Admin only).
 router.get('/admins', require('../controllers/adminInviteController').listAdmins);
 router.post('/admins', require('../controllers/adminInviteController').inviteAdmin);

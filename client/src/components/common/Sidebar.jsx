@@ -107,6 +107,7 @@ const coreMenus = {
     { icon: CalendarDays,    label: 'Walk-in Drives',   path: '/admin/drives', group: 'Growth' },
     { icon: CalendarDays,    label: 'Job Fairs',        path: '/admin/job-fairs', group: 'Growth' },
     { icon: Landmark,        label: 'Government jobs',  path: '/admin/govt-jobs', group: 'Growth' },
+    { icon: FileText,        label: 'Applications',     path: '/admin/applications', group: 'Growth' },
     { icon: Activity,        label: 'Daily activity',   path: '/admin/activity', group: 'Growth' },
     { icon: Users,           label: 'Signup sources',   path: '/admin/growth', group: 'Growth' },
     { icon: Users,           label: 'Brand Leads',      path: '/admin/brand-leads', group: 'Growth' },
