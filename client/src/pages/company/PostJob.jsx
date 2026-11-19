@@ -49,7 +49,8 @@ const PostJob = () => {
                 const token = localStorage.getItem('token');
                 try {
                     const quotaRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/jobs/quota`, {
-                        headers: { Authorization: `Bearer ${token}` }
+                        headers: { Authorization: `Bearer ${token}` },
+                        timeout: 8000 // a slow or stuck server must not keep the form on the spinner
                     });
                     setQuota(quotaRes.data);
                 } catch {
