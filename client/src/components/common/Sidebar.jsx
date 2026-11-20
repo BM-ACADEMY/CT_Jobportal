@@ -430,10 +430,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           >
             <div className="relative shrink-0">
               <Avatar className="w-8 h-8 rounded-full border border-white/10 shadow-sm bg-white/10">
-                <AvatarImage
-                    src={user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_DOMAIN}${user.avatar}`) : '/usericon.webp'}
-                    className="object-cover"
-                />
+                {user?.avatar && <AvatarImage src={user.avatar} className="object-cover" />}
                 <AvatarFallback className="bg-white/10 text-white font-bold text-xs rounded-full">
                   {user?.name?.[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>

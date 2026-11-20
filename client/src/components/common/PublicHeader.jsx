@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -294,8 +294,9 @@ const PublicHeader = () => {
                   <DropdownMenuTrigger asChild>
                     <div className="flex items-center gap-2 cursor-pointer rounded-xl px-2.5 py-1.5 border transition-all group bg-slate-50 border-slate-200 hover:bg-slate-100">
                       <Avatar className="h-7 w-7 rounded-lg">
+                        {user.avatar && <AvatarImage src={user.avatar} />}
                         <AvatarFallback className="bg-[#138060] text-white font-bold text-xs rounded-lg">
-                          {user.name?.[0]?.toUpperCase() || <User size={12} />}
+                          {user.name?.trim()?.[0]?.toUpperCase() || <User size={12} />}
                         </AvatarFallback>
                       </Avatar>
                       <div className="hidden sm:flex flex-col items-start leading-none">

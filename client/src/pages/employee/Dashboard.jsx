@@ -7,6 +7,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { hasFeature } from '@/components/subscription/FeatureGate';
 import { Card, Typography, Row, Col, Tag, Avatar, Button } from 'antd';
+import { mediaUrl, profileInitial } from '@/utils/mediaUrl';
 
 const { Title, Text } = Typography;
 
@@ -203,11 +204,11 @@ const EmployeeDashboard = () => {
               <div className="relative">
                 <Avatar 
                   size={64}
-                  src={user?.avatar}
+                  src={mediaUrl(user?.avatar)}
                   className="bg-slate-300 flex items-center justify-center text-slate-500 font-bold text-2xl shrink-0"
                   shape="circle"
                 >
-                  {!user?.avatar && (user?.name?.[0]?.toUpperCase() || '')}
+                  {profileInitial(user?.name)}
                 </Avatar>
                 <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-50"></div>
               </div>

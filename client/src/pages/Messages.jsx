@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSocket } from '@/context/SocketContext';
 import axios from 'axios';
+import { mediaUrl, profileInitial } from '@/utils/mediaUrl';
 
 const getOtherParticipant = (participants, currentUserId) => {
   const id = currentUserId?.toString();
@@ -280,8 +281,9 @@ const Messages = () => {
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
-                          <div className="w-11 h-11 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                            {recipient?.avatar ? <img src={recipient.avatar} alt={rName} className="w-full h-full object-cover" /> : rName[0]}
+                          <div className="relative w-11 h-11 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+                            <span>{profileInitial(rName)}</span>
+                            {recipient?.avatar && <img src={mediaUrl(recipient.avatar)} alt={rName} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                           </div>
                           <Circle size={9} className="absolute bottom-0 right-0 fill-blue-500 text-blue-500 border-2 border-white rounded-full" />
                         </div>
@@ -323,8 +325,9 @@ const Messages = () => {
                     const rRole = displayRole(recipient);
                     return (
                       <>
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
-                          {recipient?.avatar ? <img src={recipient.avatar} alt={rName} className="w-full h-full object-cover" /> : rName[0]}
+                        <div className="relative w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
+                          <span>{profileInitial(rName)}</span>
+                          {recipient?.avatar && <img src={mediaUrl(recipient.avatar)} alt={rName} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-slate-900 truncate leading-tight">{rName}</p>

@@ -203,10 +203,11 @@ const PublicProfile = () => {
           className="h-48 md:h-56 relative"
           style={{
             background: coverUrl
-              ? `url(${coverUrl}) center/cover no-repeat`
+              ? `linear-gradient(135deg, rgba(6, 78, 59, .35), rgba(19, 78, 74, .35)), url(${coverUrl}) center/cover no-repeat`
               : 'linear-gradient(135deg, #064e3b 0%, #065f46 30%, #0f766e 60%, #134e4a 100%)'
           }}
         >
+          {!coverUrl && <span className="absolute inset-0 flex items-center justify-center text-white/20 text-8xl font-black select-none">{profile.name?.trim()?.[0]?.toUpperCase() || 'U'}</span>}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
           {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-40 -mt-40" />
@@ -237,11 +238,8 @@ const PublicProfile = () => {
           {/* Avatar */}
           <div className="absolute -top-16 left-8 md:left-10">
             <div className="w-32 h-32 rounded-[32px] border-4 border-white shadow-xl overflow-hidden bg-emerald-600 flex items-center justify-center">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white text-4xl font-black">{profile.name?.[0]?.toUpperCase()}</span>
-              )}
+              <span className="text-white text-4xl font-black">{profile.name?.trim()?.[0]?.toUpperCase() || 'U'}</span>
+              {avatarUrl && <img src={avatarUrl} alt={profile.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
             </div>
           </div>
 
