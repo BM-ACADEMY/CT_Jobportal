@@ -6,6 +6,7 @@ module.exports = [
   ['Medical Services Recruitment Board', 'https://www.mrb.tn.gov.in/content.php?menu_id=MTkw&dept_id=ODAw&lang=MQ=='],
   ['TN Uniformed Services Recruitment Board', 'https://www.tnusrb.tn.gov.in/jr_recruit-tnusrb.php'],
   ['Puducherry Government recruitment', 'https://www.py.gov.in/recruitment'],
+  ['Puducherry recruitment portal (exams)', 'https://recruitment.py.gov.in/'],
   ['Pondicherry University recruitment', 'https://recruitment.pondiuni.edu.in/'],
   ['Pondicherry University careers', 'https://www.pondiuni.edu.in/news_tag/careers/'],
   ['JIPMER jobs', 'https://jipmer.edu.in/announcement/jobs'],
