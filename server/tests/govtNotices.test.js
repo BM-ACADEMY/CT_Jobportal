@@ -56,18 +56,18 @@ test('admin routes for the watcher exist and the cron is registered', () => {
 test('starting list: all pages pass the safety check, no duplicates, new ones added on start', async () => {
   const defaults = require('../config/govtSources');
   const { checkUrl } = require('../utils/fairNotice');
-  assert.equal(defaults.length, 21);
+  assert.equal(defaults.length, 22);
   assert.equal(new Set(defaults.map((d) => d.url)).size, defaults.length);
   for (const d of defaults) assert.equal(checkUrl(d.url).error, undefined, d.url);
   const created = [];
   let existing = [];
   const Model = { find: () => ({ select: () => ({ lean: async () => existing }) }), create: async (d) => { created.push(d.url); } };
   const { seedDefaultSources } = require('../cron/govtWatch');
-  assert.equal(await seedDefaultSources(defaults, Model), 21);          // empty: everything added
-  existing = defaults.slice(0, 18).map((d) => ({ url: d.url }));
+  assert.equal(await seedDefaultSources(defaults, Model), 22);          // empty: everything added
+  existing = defaults.slice(0, 19).map((d) => ({ url: d.url }));
   created.length = 0;
   assert.equal(await seedDefaultSources(defaults, Model), 3);           // only the new ones
-  assert.deepEqual(created, defaults.slice(18).map((d) => d.url));
+  assert.deepEqual(created, defaults.slice(19).map((d) => d.url));
   existing = defaults.map((d) => ({ url: d.url }));
   assert.equal(await seedDefaultSources(defaults, Model), 0);           // nothing to add: no change
 });
