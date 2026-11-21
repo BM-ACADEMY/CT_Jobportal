@@ -1,20 +1,20 @@
 # Velaivaaipu Version 2 roadmap
 
-Last updated: Sat 21 Nov 2026. Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates. Every item below carries a tag: [DONE] finished and merged into main (live on the server not always confirmed), [IN PROGRESS], [BLOCKED: reason], [NOT STARTED], [NOT SURE].
+Last updated: Sat 21 Nov 2026 (evening). Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates. Every item below carries a tag: [DONE] finished and merged into main (live on the server not always confirmed), [IN PROGRESS], [BLOCKED: reason], [NOT STARTED], [NOT SURE].
 
 ## Order of work
 
 1. **Reliable codes.** Backup sender (branch `mail-fallback`), code counter (branch `otp-stats`), Brevo credits watch.
-   Status: [DONE] backup sender, code counter and Brevo watch code are merged. [NOT STARTED] BACKUP_* server settings and test code. [BLOCKED: needs the Brevo login holder] Brevo queue, 38 held resends, credits and daily limit.
+   Status: [DONE] Backup sender code, code counter and Brevo watch code are merged. [BLOCKED: Hostinger refused the backup mailbox password (535); needs a mailbox with a working password] BACKUP_EMAIL_HOST is set but no test code has been delivered yet. [BLOCKED: needs the Brevo login holder] Brevo queue, 38 held resends, credits and daily limit.
    [DONE] Second admin by email invite (`admin-invites`) and Limited access for new admins (`admin-restrict`) are merged.
 2. **Admin autopilot check.** Test the needs-action inbox, auto-assign, notifications and feedback with real activity and fix the gaps.
-   Status: features and unit tests exist. A tick-list for testing with real data is in `docs/AUTOPILOT_CHECK.md` (branch `v2-complete`); Sneha runs it. [NOT STARTED] Nobody has run the tick-list yet.
+   Status: features and unit tests exist. A tick-list for testing with real data is in `docs/AUTOPILOT_CHECK.md` (branch `v2-complete`); Sneha runs it. [IN PROGRESS] Checks #1 needs-action inbox, #2 auto-assign, #6 feedback and #7 bell are done. #3 reminders (24h/48h) and #4 daily summary (9:00) are waiting for time. #5 failed payment (Razorpay test mode only) and #8 switch-off are not done yet.
 3. **Installable website** (Add to Home Screen). Branch `installable-site`.
    Status: the installable base (manifest, icons, service worker) is already in main. The branch `installable-site` only adds the camera QR scan for drive check-in and two shortcuts; it waits for merge. [DONE] Merged in #57. [NOT SURE] whether it is live on the server.
 4. **Jobs page filters** by place, plus non-graduate, contract and part-time jobs.
    Status: done. Place chips and no-degree, part-time and contract filters are live on the Jobs page. [DONE]
 5. **Government jobs section on autopilot.** The site watches official announcements, Kamar approves, admin posts.
-   Status: built (branch `v2-complete`). Admin > Government jobs: add official recruitment pages; the site checks them every morning at 8:00 India time; new notices wait for Kamar; "Post as job" opens the web-jobs form prefilled. The 21 official pages chosen with the BD team (18 Nov) are built into `server/config/govtSources.js`; any page in that file not yet watched is added when the server starts (to add more, add a line there). A new page's first scan only sets the baseline. Madras High Court is left out until someone confirms the page. [DONE] Merged in #58 and #60. [NOT SURE] whether it is live on the server. [NOT STARTED] Screenshot of Admin > Government jobs after deploy.
+   Status: built (branch `v2-complete`). Admin > Government jobs: add official recruitment pages; the site checks them every morning at 8:00 India time; new notices wait for Kamar; "Post as job" opens the web-jobs form prefilled. The 21 official pages chosen with the BD team (18 Nov) are built into `server/config/govtSources.js`; any page in that file not yet watched is added when the server starts (to add more, add a line there). A new page's first scan only sets the baseline. Madras High Court is left out until someone confirms the page. [DONE] Merged (#58, #60). Admin > Government jobs checked 21 Nov: 13 of 21 pages OK; 8 show "Last check failed" (4 too slow, 3 could not be read, UPSC link gives 404). [NOT STARTED] Fix the failed links once the BD team confirms the right pages.
 
 ## Built on branches (all merged into main)
 
@@ -22,7 +22,7 @@ Last updated: Sat 21 Nov 2026. Kamar sets the order. Sneha takes the items in th
 
 - `qc-fixes`: home job count matches the public list, same-day jobs show Pondicherry and Tamil Nadu first, job titles and cities tidied when saved, footer line corrected, Plans page grammar. [DONE]
 - `brand-leads-help`: help requests readable in Admin > Requests (no recruiter Assign), Brand leads with priority, WhatsApp, follow-up dates. [DONE]
-- `admin-restrict`: new admins are Limited. They cannot delete, change money, plans or users, export data, change security or add admins. After deploying, test one blocked action with the new admin's login. [DONE] merged. [IN PROGRESS] Blocked-action test with a new admin login (waiting on the Mongo login to check her level).
+- `admin-restrict`: new admins are Limited. They cannot delete, change money, plans or users, export data, change security or add admins. After deploying, test one blocked action with the new admin's login. [DONE] merged. Lokeshwari set to Limited in the database on 21 Nov. [NOT STARTED] Delete test with a limited login (on hold).
 
 ## From the live-site review (16 Nov)
 
@@ -35,7 +35,7 @@ Last updated: Sat 21 Nov 2026. Kamar sets the order. Sneha takes the items in th
 ## Also open from the launch
 
 - Merge `whatsapp-link` (Chat on WhatsApp in the footer and Contact page) after the WhatsApp inbox test passes. [DONE] Merged. [NOT SURE] WhatsApp inbox test (Kamar).
-- Ask Hostinger why its mail refused mail on Sat 14 Nov night (it is the backup sender). [NOT STARTED]
+- Ask Hostinger why its mail refused mail on Sat 14 Nov night (it is the backup sender). [DONE] Asked 21 Nov. Hostinger: the free mailbox allows 100 outgoing mails per rolling 24 hours (shared with login codes), cannot be raised; paid plans give 1,000 to 3,000 a day. DNS (MX, SPF, DKIM, DMARC) is correct.
 - Link the office computer. [NOT SURE] Kamar.
 - Tamil text check (needs a Tamil reader). [BLOCKED: needs a Tamil reader]
 - Lawyer review of Terms and Privacy (Kamar). [NOT SURE] Kamar.
@@ -73,12 +73,12 @@ Extra work done: fixed 5 outdated tests; Part 43 phone-check sheet (local file);
 Sneha:
 1. Merge and deploy PR #60 (government watcher list), PR #61 (mobile header: icon left, name centred), PR #62 (this roadmap) and PR #63 (Admin > Applications page). [DONE] #60-#63 merged. [NOT SURE] deployed on the server.
 2. Describe the problem she mentioned with the build. [DONE] No build error; 5 old tests fixed and merged.
-3. Hostinger backup mail settings (`BACKUP_*`) and send a test code. [NOT STARTED]
+3. Hostinger backup mail settings (`BACKUP_*`) and send a test code. [BLOCKED: mailbox password refused (535)]
 4. Brevo: the queue, the 38 held resends, credits and daily limit. [BLOCKED: needs the Brevo login holder]
-5. Test delete with a limited admin login; open Admins, Government jobs, Job fairs and Send a Job Fair. [IN PROGRESS] Waiting on the Mongo login.
-6. After deploy: screenshot of Admin > Government jobs; report any "Last check failed". [NOT STARTED] Needs the deploy first.
+5. Test delete with a limited admin login; open Admins, Government jobs, Job fairs and Send a Job Fair. [NOT STARTED] On hold. Lokeshwari is set to Limited; the delete test with a test admin is still to do. Admin pages open as owner: done.
+6. After deploy: screenshot of Admin > Government jobs; report any "Last check failed". [DONE] 13 of 21 OK, 8 failed (listed above).
 7. Explain why Core Talents and The Balified Villa do not show on the Companies page (cache or account type). [DONE] They were unverified; now verified.
-8. Close the old branches: `remove-fake-job-counts`, `launch-fixes`, `charles`, old `installable-site`. [NOT STARTED] `remove-fake-job-counts`, `launch-fixes`, `charles` still have commits not in main; decide first.
+8. Close the old branches: `remove-fake-job-counts`, `launch-fixes`, `charles`, old `installable-site`. [DONE] `remove-fake-job-counts`, `installable-site` removed; PR #31 / `launch-fixes` closed. [NOT SURE] `charles` waits for Kamar's OK.
 
 Kamar:
 1. Send BD the health and other pages brief; relay their list so it can be checked and added to `server/config/govtSources.js`. [NOT SURE] Kamar's item.
@@ -90,6 +90,15 @@ Kamar:
 7. Meta approval of the WhatsApp alert template; SPF, DKIM and DMARC for email. [NOT SURE] Kamar's item.
 
 Claude:
-1. Re-check the Companies page and the government watcher pages after the deploy. [DONE] Companies page (live list shows them). [NOT STARTED] watcher pages after deploy.
+1. Re-check the Companies page and the government watcher pages after the deploy. [DONE] Companies page. [DONE] Government watcher pages checked 21 Nov (see above).
 2. Keep this roadmap and the plan docs up to date. [DONE] Updated 21 Nov.
-3. Open Admin > Applications after the deploy and check it lists today's applications (the dashboard card opens it). [NOT STARTED] Needs the deploy first.
+3. Open Admin > Applications after the deploy and check it lists today's applications (the dashboard card opens it). [DONE] Opens and shows today's count.
+
+## Extra work done (21 Nov)
+
+- Fixed 5 outdated server tests (all 1026 tests pass).
+- Stuck-user apology mails: script `server/scripts/notifyUnverified.js` added (#69). 95 of 208 mailed so far, 0 refused; about 113 left, 15 to 20 per batch because of the 100-a-day Hostinger limit. Next batch 22 Nov.
+- Admin autopilot check: #1, #2, #6 and #7 passed. #3 and #4 are waiting for time.
+- WhatsApp follow-ups set back to false on the server.
+- Deploy check: the live site was rebuilt and restarted on 20 Nov after the `e0795bb` pull.
+- Part 43 phone-check sheet built (`docs/PART43_PHONE_CHECK.xlsx`, local only).
