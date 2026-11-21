@@ -1,6 +1,6 @@
 # Velaivaaipu Version 2 roadmap
 
-Last updated: Mon 16 Nov 2026 (night). Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates.
+Last updated: Sat 21 Nov 2026. Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates. Status below: Done = merged into main (not always confirmed live on the server).
 
 ## Order of work
 
@@ -56,7 +56,19 @@ Branch `v2-complete`. Opted-in job seekers get at most one message a week (Tuesd
 2. Sneha sets `WA_TEMPLATE_JOB_ALERT` (the template name) and `WHATSAPP_JOB_ALERTS_ENABLED=true`. `WA_PHONE_NUMBER_ID`, `META_PAGE_ACCESS_TOKEN` and `FRONTEND_URL` must already be set.
 3. Test with one opted-in account before leaving it on.
 
-## Open task list (status 18 Nov, evening)
+## Status (21 Nov 2026)
+
+Done (merged into main): mail-fallback, otp-stats, qc-fixes, brand-leads-help, admin-invites, admin-restrict, whatsapp-link, installable-site (#57), job-fairs-orgs, later-items, government watcher list (#58), PRs #60-#64 (watcher list, mobile header, roadmap, Admin > Applications, profile photos), the Post Job refresh fix, and the 5 outdated server tests (fix-tests; all 1026 tests pass). The full build passes. Core Talents and The Balified Villa were unverified; they are verified now and listed.
+
+In progress (Sneha): limited-admin delete test, then Admins, Government jobs, Job fairs and Send a Job Fair open without errors. Check that the latest main is deployed on the server.
+
+Blocked: Brevo queue, the 38 held resends, credits and daily limit (needs the Brevo login holder). WhatsApp job alerts (Meta template approval; switched off on purpose). Lokeshwari's invite (after the limited-admin test passes).
+
+Not started: Hostinger backup sender (BACKUP_* settings) and test code. Ask Hostinger about Sat 14 Nov night. Run docs/AUTOPILOT_CHECK.md. Mail the stuck users (75 apology mails unsent). Screenshot of Admin > Government jobs after deploy. Check Admin > Applications after deploy. Close old branches remove-fake-job-counts, launch-fixes, charles (they still have commits not in main, decide first). Phone layout check. SPF, DKIM and DMARC for email. Kamar's items below.
+
+Extra work done: fixed 5 outdated tests; Part 43 phone-check sheet (local file); unverified-user apology mail script (server only); WhatsApp follow-ups set back to false on the server.
+
+## Open task list (status 18 Nov, evening; see Status above for 21 Nov)
 
 Sneha:
 1. Merge and deploy PR #60 (government watcher list), PR #61 (mobile header: icon left, name centred), PR #62 (this roadmap) and PR #63 (Admin > Applications page).
