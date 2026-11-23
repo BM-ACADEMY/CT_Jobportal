@@ -66,7 +66,7 @@ Blocked: Brevo queue, the 38 held resends, credits and daily limit (needs the Br
 
 Not started: SPF, DKIM and DMARC for email. Kamar's items below.
 
-Corrected 23 Nov (this list used to say "not started" for items done since): Hostinger backup sender is [BLOCKED: mailbox password refused (535)], code merged. Ask Hostinger about 14 Nov is [DONE]. docs/AUTOPILOT_CHECK.md is [IN PROGRESS] (4 of 8 checks passed). Stuck-user mails are [IN PROGRESS] (95 of 208 sent). Screenshot of Admin > Government jobs is [DONE]. Admin > Applications check is [DONE]. Old branches: `remove-fake-job-counts` and `installable-site` are gone [DONE]; `launch-fixes` (PR closed, but the branch is still on GitHub with 28 commits not in main) and `charles` (1 commit not in main) are still there [NOT SURE: decide first]. `v2-complete` is also still on GitHub; its one remaining commit is already covered in main.
+Corrected 23 Nov (this list used to say "not started" for items done since): Hostinger backup sender is [BLOCKED: mailbox password refused (535)], code merged. Ask Hostinger about 14 Nov is [DONE]. docs/AUTOPILOT_CHECK.md is [IN PROGRESS] (4 of 8 checks passed). Stuck-user mails are [IN PROGRESS] (95 of 208 sent). Screenshot of Admin > Government jobs is [DONE]. Admin > Applications check is [DONE]. Old branches: `remove-fake-job-counts`, `installable-site`, `launch-fixes` and `charles` are all deleted from GitHub [DONE] (backup kept outside the repo). `v2-complete` is also still on GitHub; its one remaining commit is already covered in main.
 
 Extra work done: fixed 5 outdated tests; Part 43 phone-check sheet (local file); unverified-user apology mail script (server only); WhatsApp follow-ups set back to false on the server.
 
@@ -80,7 +80,7 @@ Sneha:
 5. Test delete with a limited admin login; open Admins, Government jobs, Job fairs and Send a Job Fair. [BLOCKED: PROBLEM, see admin-restrict above] The delete went through for a limited test admin. Not yet diagnosed; next step is to check the live server (pm2 script path, checkLimited in the running files, last commit of adminLevel.js).
 6. After deploy: screenshot of Admin > Government jobs; report any "Last check failed". [DONE] 13 of 21 OK, 8 failed (listed above).
 7. Explain why Core Talents and The Balified Villa do not show on the Companies page (cache or account type). [DONE] They were unverified; now verified.
-8. Close the old branches: `remove-fake-job-counts`, `launch-fixes`, `charles`, old `installable-site`. [DONE] `remove-fake-job-counts`, `installable-site` removed; PR #31 / `launch-fixes` closed. [NOT STARTED] The `launch-fixes` branch itself is still on GitHub (checked 23 Nov); delete it if nothing in it is needed. [NOT SURE] `charles` waits for Kamar's OK.
+8. Close the old branches: `remove-fake-job-counts`, `launch-fixes`, `charles`, old `installable-site`. [DONE] All four deleted from GitHub (23 Nov). Their code was already in main; a backup of both is in CT_Jobportal_branch_backups (outside the repo), with 3 plan docs that were only on launch-fixes.
 
 Kamar:
 1. Send BD the health and other pages brief; relay their list so it can be checked and added to `server/config/govtSources.js`. [NOT SURE] Kamar's item.

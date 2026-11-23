@@ -14,7 +14,7 @@ Last updated: Mon 23 Nov 2026. This is the master plan. Kamar sets the order; Sn
 - [ ] Test delete with a limited admin login (problem found 22 Nov: a limited test admin could delete a job on the live site; check the server); open Admins, Government jobs, Job fairs, Send a Job Fair and Applications.
 - [x] Send a screenshot of Admin > Government jobs; report any "Last check failed". 13 of 21 OK, 8 failed (21 Nov).
 - [x] Explain why Core Talents and The Balified Villa do not show on the Companies page. They were unverified; verified now.
-- [ ] Close the old branches: `remove-fake-job-counts` and `installable-site` done; `launch-fixes` branch still on GitHub; `charles` waits for Kamar.
+- [x] Close the old branches: `remove-fake-job-counts`, `launch-fixes`, `charles`, old `installable-site`. All deleted from GitHub (23 Nov); a backup of both is in CT_Jobportal_branch_backups (outside the repo), with 3 plan docs that were only on launch-fixes.
 
 ### Kamar
 - [ ] Send BD the health and other pages brief; give their list to Claude to check and add to `server/config/govtSources.js`.
