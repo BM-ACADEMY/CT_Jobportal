@@ -4,6 +4,7 @@ import { Card, Typography, Spin } from 'antd';
 import FeatureGate from '@/components/subscription/FeatureGate';
 import axios from 'axios';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
+import { mediaUrl } from '@/utils/mediaUrl';
 
 const { Title, Text } = Typography;
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -218,12 +219,9 @@ const ProfileInsights = () => {
                 return (
                   <Card key={v._id || i} bordered={false} className="rounded-xl shadow-sm hover:shadow-md transition-all border border-slate-100 hover:border-emerald-100 bg-white" bodyStyle={{ padding: '16px' }}>
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center text-white text-base font-bold shrink-0 overflow-hidden">
-                        {(viewer.avatar || viewer.logo) ? (
-                          <img src={viewer.avatar || viewer.logo} alt={name} className="w-full h-full object-cover" />
-                        ) : (
-                          initial
-                        )}
+                      <div className="relative w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center text-white text-base font-bold shrink-0 overflow-hidden">
+                        <span>{initial}</span>
+                        {(viewer.avatar || viewer.logo) && <img src={mediaUrl(viewer.avatar || viewer.logo)} alt={name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-slate-900 m-0">{name}</p>

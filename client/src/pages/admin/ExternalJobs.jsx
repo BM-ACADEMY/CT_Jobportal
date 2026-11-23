@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Loader2, ExternalLink } from 'lucide-react';
@@ -11,7 +12,9 @@ const empty = { title: '', employerName: '', applyUrl: '', sourceName: '', locat
 
 // Jobs found on Google or an employer's careers page. Candidates apply on the employer's site, not here.
 const ExternalJobs = () => {
-  const [form, setForm] = useState(empty);
+  const [params] = useSearchParams();
+  // Coming from Admin > Government jobs: the notice's title and link are filled in; add a short description in your own words.
+  const [form, setForm] = useState(() => ({ ...empty, title: (params.get('title') || '').slice(0, 200), applyUrl: params.get('url') || '', sourceName: params.get('source') || '' }));
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

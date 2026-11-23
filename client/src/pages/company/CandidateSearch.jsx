@@ -11,6 +11,7 @@ import {
   Input, Button, Card, Typography, Avatar, Tag, Alert, Form, Row, Col, Space, Checkbox, Empty
 } from 'antd';
 import { UserOutlined, SearchOutlined } from '@ant-design/icons';
+import { mediaUrl, profileInitial } from '@/utils/mediaUrl';
 
 const { Title, Text } = Typography;
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -286,11 +287,12 @@ const CandidateSearch = () => {
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                   <Avatar 
                     size={64} 
-                    src={candidate.avatar} 
-                    icon={<UserOutlined />}
+                    src={mediaUrl(candidate.avatar)}
                     shape="square"
                     className="rounded-xl"
-                  />
+                  >
+                    {candidate.name ? profileInitial(candidate.name) : <UserOutlined />}
+                  </Avatar>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

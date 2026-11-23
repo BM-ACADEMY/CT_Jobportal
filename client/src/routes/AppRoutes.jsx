@@ -57,6 +57,8 @@ const UserProfile = page('admin/UserProfile');
 const ManageJobs = page('admin/ManageJobs');
 const ManageCompanies = page('admin/ManageCompanies');
 const ExternalJobs = page('admin/ExternalJobs');
+const GovtNotices = page('admin/GovtNotices');
+const AdminApplications = page('admin/Applications');
 const ManageSubscriptions = page('admin/ManageSubscriptions');
 const ManageStaff = page('admin/ManageStaff');
 const ManageAdmins = page('admin/ManageAdmins');
@@ -110,6 +112,7 @@ const BulkApplicantManagement = page('company/features/BulkApplicantManagement')
 const MyJobs = page('company/MyJobs');
 const CandidateSearch = page('company/CandidateSearch');
 const DriveRequests = page('company/DriveRequests');
+const SendJobFair = page('company/SendJobFair');
 const RaiseTicket = page('tickets/RaiseTicket');
 const MyTickets = page('tickets/MyTickets');
 const AdminTickets = page('admin/AdminTickets');
@@ -416,6 +419,7 @@ const AppRoutes = () => {
         <Route path="/company/interview-scheduling" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="interview_scheduling"><FeatureGate featureKey="hasInterviewScheduling" subscriptionPath="/company/subscription"><InterviewScheduling /></FeatureGate></PrivateRoute>} />
         <Route path="/company/ai-matching" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="ai_candidate_matching"><FeatureGate featureKey="hasAICandidateMatching" subscriptionPath="/company/subscription"><AICandidateMatching /></FeatureGate></PrivateRoute>} />
         <Route path="/company/messages" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']} permissionKey="messages"><Messages /></PrivateRoute>} />
+        <Route path="/company/job-fairs" element={<PrivateRoute roles={['company', 'recruiter']}><SendJobFair /></PrivateRoute>} />
         <Route path="/company/drive-requests" element={<PrivateRoute roles={['company']}><DriveRequests /></PrivateRoute>} />
         <Route path="/company/payment-history" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><PaymentHistory /></PrivateRoute>} />
         <Route path="/company/unlocks" element={<PrivateRoute roles={['recruiter', 'company', 'college', 'org_employee']}><PayPerFeatures /></PrivateRoute>} />
@@ -507,6 +511,8 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route path="/admin/govt-jobs" element={<PrivateRoute roles={['admin']}><GovtNotices /></PrivateRoute>} />
+        <Route path="/admin/applications" element={<PrivateRoute roles={['admin']}><AdminApplications /></PrivateRoute>} />
         <Route path="/admin/duplicate-colleges" element={<PrivateRoute roles={['admin']}><AdminDuplicateColleges /></PrivateRoute>} />
         <Route path="/admin/balance-board" element={<PrivateRoute roles={['admin']}><AdminBalanceBoard /></PrivateRoute>} />
         <Route
@@ -732,7 +738,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/whatsapp"
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['admin', 'subadmin']} staffPermission="whatsapp_inbox">
               <AdminWhatsAppInbox />
             </PrivateRoute>
           }

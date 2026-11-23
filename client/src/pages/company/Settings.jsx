@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { mediaUrl, profileInitial } from '@/utils/mediaUrl';
 import ImageCropperModal from "@/components/shared/ImageCropperModal";
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
@@ -541,18 +542,19 @@ const RecruiterSettings = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <Card className="lg:col-span-2 rounded-none border-slate-200 shadow-sm bg-white overflow-hidden">
                             <div className="relative h-48 sm:h-64 bg-slate-100 group">
+                                {!formData.coverPic && <span className="absolute inset-0 flex items-center justify-center text-emerald-700/20 text-7xl font-black select-none">{profileInitial(formData.name)}</span>}
                                 {formData.coverPic ? (
                                     !isEditing ? (
                                         <Zoom>
                                             <img 
-                                                src={formData.coverPic.startsWith('http') ? formData.coverPic : `${import.meta.env.VITE_API_DOMAIN}${formData.coverPic}`} 
+                                                src={mediaUrl(formData.coverPic)}
                                                 className="w-full h-48 sm:h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
                                                 alt="Cover" 
                                             />
                                         </Zoom>
                                     ) : (
                                         <img 
-                                            src={formData.coverPic.startsWith('http') ? formData.coverPic : `${import.meta.env.VITE_API_DOMAIN}${formData.coverPic}`} 
+                                            src={mediaUrl(formData.coverPic)}
                                             className="w-full h-full object-cover" 
                                             alt="Cover" 
                                         />
@@ -572,20 +574,20 @@ const RecruiterSettings = () => {
                                             !isEditing ? (
                                                 <Zoom>
                                                     <img 
-                                                        src={formData.avatar.startsWith('http') ? formData.avatar : `${import.meta.env.VITE_API_DOMAIN}${formData.avatar}`} 
+                                                        src={mediaUrl(formData.avatar)}
                                                         className="w-24 h-24 sm:w-32 sm:h-32 object-cover cursor-pointer hover:opacity-90 transition-opacity" 
                                                         alt="Avatar" 
                                                     />
                                                 </Zoom>
                                             ) : (
                                                 <img 
-                                                    src={formData.avatar.startsWith('http') ? formData.avatar : `${import.meta.env.VITE_API_DOMAIN}${formData.avatar}`} 
+                                                        src={mediaUrl(formData.avatar)}
                                                     className="w-full h-full object-cover" 
                                                     alt="Avatar" 
                                                 />
                                             )
                                         ) : (
-                                            <User size={48} className="text-slate-300" />
+                                            <span className="text-3xl sm:text-4xl font-bold text-emerald-700">{profileInitial(formData.name)}</span>
                                         )}
                                         {isEditing && (
                                             <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">

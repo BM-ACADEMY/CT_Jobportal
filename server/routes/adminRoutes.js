@@ -44,6 +44,10 @@ router.get('/users', requireAdminOr('users_view'), getUsers);
 router.get('/users/:id', requireAdminOr('users_view'), getUserDetails);
 router.get('/users/:id/applications', requireAdminOr('users_view'), getUserApplications);
 router.get('/roles', requireAdminOr('users_view'), getRoles);
+// Staff with the whatsapp_inbox permission (Sales role) use the WhatsApp inbox; admins always can.
+router.get('/whatsapp', requireAdminOr('whatsapp_inbox'), require('../controllers/whatsappInboxController').getInbox);
+router.post('/whatsapp/reply', requireAdminOr('whatsapp_inbox'), require('../controllers/whatsappInboxController').replyToThread);
+router.put('/whatsapp/:phone/done', requireAdminOr('whatsapp_inbox'), require('../controllers/whatsappInboxController').markDone);
 
 router.use(authorizeRoles('admin'));
 
@@ -53,11 +57,17 @@ router.get('/college-funnel', require('../controllers/collegeFunnelController').
 router.get('/student-pack-info', require('../controllers/collegePackController').packInfo);
 router.post('/colleges/:id/student-pack', require('../controllers/collegePackController').recordPack);
 router.get('/activity', require('../controllers/activityController').getActivity);
+router.get('/applications', require('../controllers/adminApplicationsController').listApplications);
 // Other full admins: list, invite by email, resend the invite, remove (Super Admin only).
 router.get('/admins', require('../controllers/adminInviteController').listAdmins);
 router.post('/admins', require('../controllers/adminInviteController').inviteAdmin);
 router.post('/admins/:id/resend-invite', require('../controllers/adminInviteController').resendInvite);
 router.delete('/admins/:id', require('../controllers/adminInviteController').removeAdmin);
+// Government jobs watcher: official pages checked daily, new notices wait here for approval.
+router.get('/govt-notices', require('../controllers/govtNoticeController').overview);
+router.post('/govt-notices/sources', require('../controllers/govtNoticeController').addSource);
+router.patch('/govt-notices/sources/:id', require('../controllers/govtNoticeController').setSource);
+router.patch('/govt-notices/:id', require('../controllers/govtNoticeController').setNotice);
 router.get('/otp-stats', require('../controllers/otpStatsController').getOtpStats);
 router.get('/email-report', require('../controllers/emailReportController').getEmailReport);
 router.get('/email-report/by-type', require('../controllers/emailReportController').getEmailCountsByType);
@@ -135,9 +145,6 @@ router.get('/blog-posts/:id', blogCtl.getAdmin);
 router.put('/blog-posts/:id', blogCtl.updatePost);
 router.delete('/blog-posts/:id', blogCtl.deletePost);
 router.post('/blog-images', blogImageUpload.single('image'), blogCtl.uploadImage);
-router.get('/whatsapp', require('../controllers/whatsappInboxController').getInbox);
-router.post('/whatsapp/reply', require('../controllers/whatsappInboxController').replyToThread);
-router.put('/whatsapp/:phone/done', require('../controllers/whatsappInboxController').markDone);
 router.get('/needs-action', require('../controllers/needsActionController').getNeedsAction);
 router.put('/needs-action/assign', require('../controllers/needsActionController').assignItem);
 router.put('/needs-action/rules', require('../controllers/needsActionController').setRule);

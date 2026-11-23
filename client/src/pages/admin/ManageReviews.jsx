@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Check, X, Star, MessageSquareQuote, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Pagination from '@/components/shared/Pagination';
+import { mediaUrl, profileInitial } from '@/utils/mediaUrl';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
@@ -111,12 +112,15 @@ const ManageReviews = () => {
               </div>
 
               <div className="flex items-center gap-3 mb-4 mt-2">
-                <img 
-                  src={r.user?.avatar ? `${API}${r.user.avatar}` : `https://ui-avatars.com/api/?name=${r.user?.name}&background=0D8ABC&color=fff`} 
-                  alt={r.user?.name}
-                  className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                  onError={e => { e.target.src = `https://ui-avatars.com/api/?name=${r.user?.name}&background=0D8ABC&color=fff` }}
-                />
+                <div className="relative w-10 h-10 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold border border-slate-200 overflow-hidden">
+                  <span>{profileInitial(r.user?.name)}</span>
+                  {r.user?.avatar && <img
+                    src={mediaUrl(r.user.avatar)}
+                    alt={r.user?.name || ''}
+                    className="absolute inset-0 w-full h-full rounded-full object-cover"
+                    onError={e => { e.currentTarget.style.display = 'none'; }}
+                  />}
+                </div>
                 <div>
                   <p className="font-bold text-sm text-slate-900">{r.user?.name || 'Unknown User'}</p>
                   <div className="flex items-center gap-2">

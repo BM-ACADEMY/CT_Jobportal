@@ -167,7 +167,7 @@ router.get('/stats', async (req, res) => {
       ]),
     ]);
 
-    const hero = await computeHeroStats({ User, Job, Role });
+    const hero = await computeHeroStats({ User, Job, Role, Company });
 
     return {
       ...hero,

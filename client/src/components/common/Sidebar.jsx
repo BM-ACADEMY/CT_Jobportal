@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserCog, TrendingUp, Bell,
   Activity, CreditCard, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeftOpen,
   Lock, MessageCircle, Video, Layers, BarChart2, Mail,
-  BookOpen, Mic, UserCheck, ArrowUpRight, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, CalendarDays, ListChecks, Wallet, MessageSquareHeart
+  BookOpen, Mic, UserCheck, ArrowUpRight, List, History, Sparkles, ClipboardList, ShieldCheck, Headphones, MessageSquareQuote, ShoppingBag, Settings, GraduationCap, QrCode, BadgeCheck, Landmark, CalendarDays, ListChecks, Wallet, MessageSquareHeart
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { findPermissionKeyForPath } from '../../config/teamPermissions';
@@ -35,6 +35,7 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Post Job',          path: '/company/jobs/new' },
     { icon: Users,           label: 'Search Candidates',   path: '/company/candidates' },
     { icon: CalendarDays,    label: 'Walk-in Drives',    path: '/company/drives' },
+    { icon: CalendarDays,    label: 'Send a Job Fair',   path: '/company/job-fairs' },
     { icon: ClipboardList,   label: 'Requests',          path: '/company/requests' },
     { icon: CreditCard,      label: 'My Plan',      path: '/company/subscription' },
     { icon: History,         label: 'Payment History',   path: '/company/payment-history' },
@@ -104,6 +105,8 @@ const coreMenus = {
     { icon: Briefcase,       label: 'Web jobs',  path: '/admin/web-jobs', group: 'Growth' },
     { icon: CalendarDays,    label: 'Walk-in Drives',   path: '/admin/drives', group: 'Growth' },
     { icon: CalendarDays,    label: 'Job Fairs',        path: '/admin/job-fairs', group: 'Growth' },
+    { icon: Landmark,        label: 'Government jobs',  path: '/admin/govt-jobs', group: 'Growth' },
+    { icon: FileText,        label: 'Applications',     path: '/admin/applications', group: 'Growth' },
     { icon: Activity,        label: 'Daily activity',   path: '/admin/activity', group: 'Growth' },
     { icon: Users,           label: 'Signup sources',   path: '/admin/growth', group: 'Growth' },
     { icon: Users,           label: 'Brand Leads',      path: '/admin/brand-leads', group: 'Growth' },
@@ -158,6 +161,7 @@ const premiumMenus = {
     { icon: Video,     label: 'Interviews', path: '/company/video-interview',     featureKey: 'hasInterviewScheduling' },
     { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },
     { icon: ClipboardList, label: 'Campus Drives', path: '/company/drive-requests' },
+    { icon: CalendarDays, label: 'Send a Job Fair', path: '/company/job-fairs' },
   ],
   college: [
     { icon: MessageCircle, label: 'Messages',      path: '/company/messages' },

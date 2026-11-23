@@ -21,6 +21,8 @@ const publicJobConditions = ({ now = Date.now(), verifiedCompanyIds = null, hidd
   ];
   if (verifiedCompanyIds) and.push({ company: { $in: verifiedCompanyIds } });
   else if (hiddenCompanyIds && hiddenCompanyIds.length) and.push({ company: { $nin: hiddenCompanyIds } });
+  // A flagged internship (asks for money, private chat, too-good pay...) stays off the public pages until an admin reviews it.
+  and.push({ $nor: [{ jobType: 'Internship', 'scamFlags.0': { $exists: true }, scamReviewed: { $ne: true } }] });
   return and;
 };
 
@@ -31,6 +33,7 @@ const publicCompanyConditions = () => ({ hiddenFromPublic: { $ne: true }, ...(hi
 // Used by the search-engine pages so Google is never told about a job the site itself hides.
 const jobIsPublic = (job, now = Date.now()) => {
   if (!job || job.hiddenFromPublic) return false;
+  if (job.jobType === 'Internship' && Array.isArray(job.scamFlags) && job.scamFlags.length > 0 && job.scamReviewed !== true) return false;
   const cut = freshCutoff(now).getTime();
   const t = (d) => (d ? new Date(d).getTime() : 0);
   if (job.shortLife) { if (t(job.createdAt) < now - SHORT_LIFE_DAYS * DAY) return false; }

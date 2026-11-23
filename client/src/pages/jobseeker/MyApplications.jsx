@@ -5,6 +5,7 @@ import { Modal, Pagination } from 'antd';
 import { toast } from 'sonner';
 import { Briefcase, MapPin, Clock, Search, FileText, Undo2, BadgeCheck, Award, Eye, AlertCircle, Hourglass, Star, XCircle } from 'lucide-react';
 import PageSOPBanner from '@/components/common/PageSOPBanner';
+import BrandConsent from '@/components/profile/BrandConsent';
 import { jobPath } from '../../utils/jobUrl';
 import {
   Page, PageHeader, StatTile, CompanyLogo, EmptyState, JobItemSkeleton, StatusLabel,
@@ -95,6 +96,7 @@ const MyApplications = () => {
   return (
     <Page>
       <PageSOPBanner pageKey="myApplications" />
+      {applications.length > 0 && <BrandConsent nudge />}
 
       <PageHeader
         eyebrow="Applications"

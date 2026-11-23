@@ -176,7 +176,7 @@ const Plans = () => {
           <>
             {signedInElsewhere && (
               <p className="text-center text-sm text-zinc-500 mb-8 m-0">
-                You are signed in as a {user.role.replace('_', ' ')}. These plans are for {current.label.toLowerCase()}; your own plans are under{' '}
+                You are signed in as {/^[aeiou]/i.test(user.role) ? 'an' : 'a'} {user.role.replace('_', ' ')}. These plans are for {current.label.toLowerCase()}; your own plans are under{' '}
                 <button onClick={() => pick(userAudience || 'jobseeker')} className="text-[#34B678] font-bold bg-transparent border-none p-0 cursor-pointer hover:underline">your tab</button>.
               </p>
             )}

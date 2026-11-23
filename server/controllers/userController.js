@@ -382,36 +382,41 @@ const uploadImage = async (req, res) => {
     
     const type = req.query.type === 'cover' ? 'cover' : 'profile';
     const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
     const ext = path.extname(req.file.filename).toLowerCase();
-    
     const targetDir = path.join(__dirname, '..', 'uploads', type);
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
-    
-    const targetFilename = `${userId}${ext}`;
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+    // Use a new filename each time so browsers and CDNs cannot keep showing a cached photo.
+    const targetFilename = `${userId}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
     const targetPath = path.join(targetDir, targetFilename);
     const relativeUrl = `/uploads/${type}/${targetFilename}`;
-    
-    // Find the user to get old image path and delete it
-    const user = await User.findById(userId);
-    if (user) {
-       const oldUrl = type === 'profile' ? user.avatar : user.coverPic;
-       if (oldUrl && oldUrl.startsWith(`/uploads/${type}/`)) {
-          const oldFilename = oldUrl.split('/').pop();
-          if (oldFilename !== targetFilename) {
-             const oldPath = path.join(targetDir, oldFilename);
-             if (fs.existsSync(oldPath)) {
-                fs.unlinkSync(oldPath);
-             }
-          }
-       }
-    }
-    
-    // Move the uploaded file to targetPath
+    const field = type === 'profile' ? 'avatar' : 'coverPic';
+    const oldUrl = user[field];
+
     fs.renameSync(req.file.path, targetPath);
-    
-    res.json({ imageUrl: relativeUrl });
+    try {
+      user[field] = relativeUrl;
+      await user.save();
+    } catch (saveError) {
+      if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+      throw saveError;
+    }
+
+    // Remove only the previous image in this user's same upload folder.
+    if (oldUrl && oldUrl.startsWith(`/uploads/${type}/`)) {
+      const oldFilename = path.basename(oldUrl.split('?')[0]);
+      const oldPath = path.join(targetDir, oldFilename);
+      try {
+        if (oldFilename !== targetFilename && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      } catch (cleanupError) {
+        console.warn('Previous profile image cleanup failed:', cleanupError.message);
+      }
+    }
+
+    res.json({ imageUrl: relativeUrl, avatar: user.avatar, coverPic: user.coverPic });
   } catch (err) {
     console.error('Image Upload Error:', err.message);
     res.status(500).json({ msg: 'Server error during image upload' });

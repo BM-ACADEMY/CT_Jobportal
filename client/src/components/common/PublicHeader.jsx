@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -144,13 +144,17 @@ const PublicHeader = () => {
   return (
     <>
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${headerBase}`}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+        <div className="relative max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
 
-          {/* Logo */}
+          {/* Logo. Logged out on a phone: the icon stays left and only the name (Velaivaaipu.in) sits in the middle.
+              Logged in: the bell and profile chip need the room, so the full logo stays on the left. Desktop: full logo. */}
           <Link to="/" className="group shrink-0 flex flex-col items-start gap-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" aria-label="Velaivaaipu home">
-            <span data-brand-logo className="block h-14">
-              <BrandLogo className="h-full" />
+            <span data-brand-logo className={`block h-14 ${user ? '' : 'max-md:h-[45px] max-md:overflow-hidden'}`}>
+              <BrandLogo className="h-14" />
             </span>
+            {!user && (
+              <img src="/images/brand/wordmark.webp" alt="" draggable="false" className="md:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-5 w-auto select-none" />
+            )}
           </Link>
 
           {/* Desktop Nav */}
@@ -293,8 +297,9 @@ const PublicHeader = () => {
                   <DropdownMenuTrigger asChild>
                     <div className="flex items-center gap-2 cursor-pointer rounded-xl px-2.5 py-1.5 border transition-all group bg-slate-50 border-slate-200 hover:bg-slate-100">
                       <Avatar className="h-7 w-7 rounded-lg">
+                        {user.avatar && <AvatarImage src={user.avatar} />}
                         <AvatarFallback className="bg-[#138060] text-white font-bold text-xs rounded-lg">
-                          {user.name?.[0]?.toUpperCase() || <User size={12} />}
+                          {user.name?.trim()?.[0]?.toUpperCase() || <User size={12} />}
                         </AvatarFallback>
                       </Avatar>
                       <div className="hidden sm:flex flex-col items-start leading-none">

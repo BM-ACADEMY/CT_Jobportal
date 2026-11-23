@@ -10,6 +10,7 @@ import {
   XCircle, AlertCircle, Building2, Camera, Edit2, Star, ExternalLink, FileUp, Sparkles, FolderArchive, File, Check, Layers
 } from 'lucide-react';
 import { Button, Input, Tag as Badge, Card, Tabs as AntdTabs, Progress } from 'antd';
+import { mediaUrl, profileInitial } from '@/utils/mediaUrl';
 
 // Shadcn wrappers to minimize massive code rewrites
 const Label = ({ className, children, ...props }) => <label className={`inline-block ${className}`} {...props}>{children}</label>;
@@ -114,7 +115,7 @@ const DataDisplay = ({ label, value, icon: Icon, isEditing, children }) => {
 };
 
 const Settings = () => {
-    const { user, updateUser, refreshUser } = useAuth();
+    const { user, updateUser } = useAuth();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -490,12 +491,12 @@ const Settings = () => {
             const res = await axios.post(`${API_USER_URL}/upload-image?type=${type === 'coverPic' ? 'cover' : 'profile'}`, uploadData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            const cacheBustedUrl = `${res.data.imageUrl}?t=${new Date().getTime()}`;
+            const cacheBustedUrl = res.data.imageUrl;
             setFormData(prev => ({
                 ...prev,
                 [type]: cacheBustedUrl
             }));
-            await refreshUser();
+            updateUser({ [type === 'coverPic' ? 'coverPic' : 'avatar']: res.data.imageUrl });
             toast.success("Image updated successfully");
         } catch (err) {
             console.error(err);
@@ -1074,10 +1075,10 @@ const Settings = () => {
                             {formData.coverPic && (
                                 !isEditing ? (
                                     <Zoom>
-                                        <img src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} className="h-24 w-full object-cover sm:h-32" alt="Cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                                        <img src={mediaUrl(formData.coverPic)} className="h-24 w-full object-cover sm:h-32" alt="Cover" onError={(e) => { e.target.style.display = 'none'; }} />
                                     </Zoom>
                                 ) : (
-                                    <img src={formData.coverPic.startsWith('http') ? formData.coverPic : `${API_DOMAIN}${formData.coverPic}`} className="h-full w-full object-cover" alt="Cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                                    <img src={mediaUrl(formData.coverPic)} className="h-full w-full object-cover" alt="Cover" onError={(e) => { e.target.style.display = 'none'; }} />
                                 )
                             )}
                             {isEditing && (
@@ -1089,19 +1090,14 @@ const Settings = () => {
                         </div>
                         <div className="flex flex-col gap-3 px-5 pb-5 sm:flex-row sm:items-end sm:gap-5 sm:px-6">
                             <div className="relative -mt-10 w-fit shrink-0 sm:-mt-12">
-                                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-white ring-4 ring-white shadow-md sm:h-24 sm:w-24">
-                                    {formData.avatar ? (
-                                        <img
-                                            src={formData.avatar.startsWith('http') ? formData.avatar : `${API_DOMAIN}${formData.avatar}`}
-                                            className="h-full w-full object-cover"
-                                            alt="Profile photo"
-                                            onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${formData.name || 'User'}&background=eaf7f0&color=1f8a57&size=128`; }}
-                                        />
-                                    ) : (
-                                        <span className="flex h-full w-full items-center justify-center bg-[#eaf7f0] text-2xl font-bold text-[#1f8a57]">
-                                            {formData.name?.[0]?.toUpperCase() || <User size={32} />}
-                                        </span>
-                                    )}
+                                <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-[#eaf7f0] ring-4 ring-white shadow-md sm:h-24 sm:w-24">
+                                    <span className="text-2xl font-bold text-[#1f8a57]">{profileInitial(formData.name)}</span>
+                                    {formData.avatar && <img
+                                        src={mediaUrl(formData.avatar)}
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                        alt="Profile photo"
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                    />}
                                 </div>
                                 {isEditing && (
                                     <label className="absolute -bottom-1.5 -right-1.5 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[#34B678] text-white shadow-md ring-2 ring-white transition hover:bg-[#2ca66b]" title="Change photo">

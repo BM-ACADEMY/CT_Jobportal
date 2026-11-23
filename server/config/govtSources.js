@@ -1,0 +1,26 @@
+// Official pages watched (checked by the BD team). Any page here that is not yet watched is added on server start; to add more, add a line below.
+// Pages can also be added, paused or resumed in Admin > Government jobs.
+module.exports = [
+  ['TNPSC announcements', 'https://tnpsc.gov.in/web/examdashboard/index.aspx'],
+  ['Teachers Recruitment Board', 'https://trb.tn.gov.in/notification.php?language=LG-1&status=Active'],
+  ['Medical Services Recruitment Board', 'https://www.mrb.tn.gov.in/content.php?menu_id=MTkw&dept_id=ODAw&lang=MQ=='],
+  ['TN Uniformed Services Recruitment Board', 'https://www.tnusrb.tn.gov.in/jr_recruit-tnusrb.php'],
+  ['Puducherry Government recruitment', 'https://www.py.gov.in/recruitment'],
+  ['Puducherry recruitment portal (exams)', 'https://recruitment.py.gov.in/'],
+  ['Pondicherry University recruitment', 'https://recruitment.pondiuni.edu.in/'],
+  ['Pondicherry University careers', 'https://www.pondiuni.edu.in/news_tag/careers/'],
+  ['JIPMER jobs', 'https://jipmer.edu.in/announcement/jobs'],
+  ['SSC notice board', 'https://ssc.gov.in/home/notice-board'],
+  ['UPSC recruitment advertisements', 'https://www.upsc.gov.in/recruitment/recruitment-advertisement'],
+  ['IBPS CRP updates', 'https://www.ibps.in/index.php/crp-updates/'],
+  ['SBI current openings', 'https://sbi.bank.in/web/careers/Current-openings'],
+  ['India Post vacancies', 'https://www.indiapost.gov.in/vacancies'],
+  ['Anna University recruitment', 'https://www.annauniv.edu/recruitment.php'],
+  ['University of Madras teaching posts', 'https://www.unom.ac.in/index.php?route=miscelleneous%2Fappointment'],
+  ['Puducherry Health recruitments', 'https://health.py.gov.in/recruitments'],
+  ['Puducherry Education recruitment', 'https://schooledn.py.gov.in/recruitment.html'],
+  ['Puducherry Local Administration recruitments', 'https://lad.py.gov.in/recruitments'],
+  ['Puducherry District Court recruitments', 'https://puducherry.dcourts.gov.in/notice-category/recruitments/'],
+  ['TN Pollution Control Board recruitment', 'https://www.tnpcb.gov.in/recruitment.php'],
+  ['Puducherry Police latest news', 'https://police.py.gov.in/view_latest_news.php'],
+].map(([name, url]) => ({ name, url }));

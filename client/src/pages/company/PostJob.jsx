@@ -28,6 +28,8 @@ const PostJob = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const editId = searchParams.get('edit');
+    const hasCompany = Boolean(user?.company);
     const [form] = Form.useForm();
     const watchedJobType = Form.useWatch('jobType', form);
     const watchedPayUnit = Form.useWatch('payUnit', form) || 'year';
@@ -49,7 +51,8 @@ const PostJob = () => {
                 const token = localStorage.getItem('token');
                 try {
                     const quotaRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/jobs/quota`, {
-                        headers: { Authorization: `Bearer ${token}` }
+                        headers: { Authorization: `Bearer ${token}` },
+                        timeout: 8000 // a slow or stuck server must not keep the form on the spinner
                     });
                     setQuota(quotaRes.data);
                 } catch {
@@ -57,7 +60,6 @@ const PostJob = () => {
                 }
 
                 // If editing, fetch jobs to find the job to edit
-                const editId = searchParams.get('edit');
                 if (editId) {
                     const res = await axios.get(`${API_JOBS_URL}/company-jobs`);
                     const jobToEdit = res.data.find(j => j._id === editId);
@@ -96,7 +98,7 @@ const PostJob = () => {
                 } else {
                     // Initial form defaults
                     form.setFieldsValue({
-                        postedAs: user?.company ? 'company' : 'recruiter',
+                        postedAs: hasCompany ? 'company' : 'recruiter',
                         jobType: 'Full-time',
                         workMode: 'On-site',
                         payUnit: 'year',
@@ -118,7 +120,7 @@ const PostJob = () => {
             }
         };
         initialize();
-    }, [searchParams, user, form]);
+    }, [editId, hasCompany, form]);
 
     const handleCloseSkill = (removedSkill) => {
         const newSkills = skills.filter((skill) => skill !== removedSkill);

@@ -52,7 +52,7 @@ const Footer = () => (
             <BrandLogo className="w-36" />
           </Link>
           <p className="text-zinc-600 text-sm font-medium leading-relaxed max-w-xs">
-            India's most trusted job portal connecting visionary companies with exceptional talent across the nation.
+            Jobs across India, with a focus on Tamil Nadu and Pondicherry. Free for job seekers.
           </p>
           <div className="mt-6 flex items-center gap-3">
             {SOCIALS.map(({ label, href, icon: Icon, bg }) => (
