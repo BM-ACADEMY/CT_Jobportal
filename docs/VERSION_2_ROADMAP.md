@@ -1,6 +1,6 @@
 # Velaivaaipu Version 2 roadmap
 
-Last updated: Mon 23 Nov 2026 (statuses checked against the code in main, commit `e3c5ed1`). Items that depend on the live server, the Brevo or Meta accounts, or people outside the code cannot be confirmed from the code; they keep their last reported status. Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates. Every item below carries a tag: [DONE] finished and merged into main (live on the server not always confirmed), [IN PROGRESS], [BLOCKED: reason], [NOT STARTED], [NOT SURE].
+See `ROADMAP.md` in the repo root for the master task list. Last updated: Mon 23 Nov 2026 (statuses checked against the code in main, commit `e3c5ed1`). Items that depend on the live server, the Brevo or Meta accounts, or people outside the code cannot be confirmed from the code; they keep their last reported status. Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates. Every item below carries a tag: [DONE] finished and merged into main (live on the server not always confirmed), [IN PROGRESS], [BLOCKED: reason], [NOT STARTED], [NOT SURE].
 
 ## Order of work
 
