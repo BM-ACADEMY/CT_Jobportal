@@ -127,6 +127,13 @@ const PublicHeader = () => {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  // Stop the page behind from scrolling while the phone menu is open.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   const handleDashboardRedirect = () => {
     const routes = { jobseeker: '/candidate', recruiter: '/company/dashboard', company: '/company/dashboard', admin: '/admin/dashboard', subadmin: '/subadmin' };
     navigate(routes[user?.role] || '/candidate');
@@ -356,7 +363,9 @@ const PublicHeader = () => {
             {/* Mobile Hamburger */}
             <button
               onClick={() => setMobileOpen(v => !v)}
-              className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-colors text-slate-700 hover:bg-slate-100"
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileOpen}
+              className="md:hidden w-11 h-11 rounded-xl flex items-center justify-center transition-colors text-slate-700 hover:bg-slate-100"
             >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -365,11 +374,12 @@ const PublicHeader = () => {
 
         {/* Mobile Menu */}
         {mobileOpen && (
-          <div className="md:hidden bg-white border-t border-slate-100 px-6 py-5 space-y-1">
+          <div className="md:hidden bg-white border-t border-slate-100 px-6 py-5 space-y-1 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain">
             {NAV_LINKS.filter(link => !(link.label === 'Find Jobs' && (user?.role === 'recruiter' || user?.role === 'company'))).map(link => (
               <Link
                 key={link.to}
                 to={link.to}
+                onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
                   isActive(link.to)
                     ? 'bg-emerald-50 text-emerald-700'
