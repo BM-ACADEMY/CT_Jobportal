@@ -1,6 +1,6 @@
 # Velaivaaipu Version 2 roadmap
 
-Last updated: Sat 21 Nov 2026 (evening). Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates. Every item below carries a tag: [DONE] finished and merged into main (live on the server not always confirmed), [IN PROGRESS], [BLOCKED: reason], [NOT STARTED], [NOT SURE].
+Last updated: Mon 23 Nov 2026. Kamar sets the order. Sneha takes the items in this order and reports when each is done. No dates. Every item below carries a tag: [DONE] finished and merged into main (live on the server not always confirmed), [IN PROGRESS], [BLOCKED: reason], [NOT STARTED], [NOT SURE].
 
 ## Order of work
 
@@ -22,7 +22,7 @@ Last updated: Sat 21 Nov 2026 (evening). Kamar sets the order. Sneha takes the i
 
 - `qc-fixes`: home job count matches the public list, same-day jobs show Pondicherry and Tamil Nadu first, job titles and cities tidied when saved, footer line corrected, Plans page grammar. [DONE]
 - `brand-leads-help`: help requests readable in Admin > Requests (no recruiter Assign), Brand leads with priority, WhatsApp, follow-up dates. [DONE]
-- `admin-restrict`: new admins are Limited. They cannot delete, change money, plans or users, export data, change security or add admins. After deploying, test one blocked action with the new admin's login. [DONE] merged. Lokeshwari set to Limited in the database on 21 Nov. [NOT STARTED] Delete test with a limited login (on hold).
+- `admin-restrict`: new admins are Limited. They cannot delete, change money, plans or users, export data, change security or add admins. After deploying, test one blocked action with the new admin's login. [DONE] merged. Lokeshwari set to Limited in the database. [BLOCKED: PROBLEM] On 22 Nov a test admin with level "limited" in the database was able to delete a job on the live site. The code on main refuses it (checked with the real routes), so the live server or the path used must be checked. Do not send Lokeshwari's invite until fixed.
 
 ## From the live-site review (16 Nov)
 
@@ -75,14 +75,14 @@ Sneha:
 2. Describe the problem she mentioned with the build. [DONE] No build error; 5 old tests fixed and merged.
 3. Hostinger backup mail settings (`BACKUP_*`) and send a test code. [BLOCKED: mailbox password refused (535)]
 4. Brevo: the queue, the 38 held resends, credits and daily limit. [BLOCKED: needs the Brevo login holder]
-5. Test delete with a limited admin login; open Admins, Government jobs, Job fairs and Send a Job Fair. [NOT STARTED] On hold. Lokeshwari is set to Limited; the delete test with a test admin is still to do. Admin pages open as owner: done.
+5. Test delete with a limited admin login; open Admins, Government jobs, Job fairs and Send a Job Fair. [BLOCKED: PROBLEM, see admin-restrict above] The delete went through for a limited test admin. Not yet diagnosed; next step is to check the live server (pm2 script path, checkLimited in the running files, last commit of adminLevel.js).
 6. After deploy: screenshot of Admin > Government jobs; report any "Last check failed". [DONE] 13 of 21 OK, 8 failed (listed above).
 7. Explain why Core Talents and The Balified Villa do not show on the Companies page (cache or account type). [DONE] They were unverified; now verified.
 8. Close the old branches: `remove-fake-job-counts`, `launch-fixes`, `charles`, old `installable-site`. [DONE] `remove-fake-job-counts`, `installable-site` removed; PR #31 / `launch-fixes` closed. [NOT SURE] `charles` waits for Kamar's OK.
 
 Kamar:
 1. Send BD the health and other pages brief; relay their list so it can be checked and added to `server/config/govtSources.js`. [NOT SURE] Kamar's item.
-2. Send Lokeshwari's invite only after the limited-admin test passes. [BLOCKED: waits for the limited-admin test to pass]
+2. Send Lokeshwari's invite only after the limited-admin test passes. [BLOCKED: do not send until the limited-admin problem is fixed]
 3. Add 2 or 3 real job fairs, or hide the menu item. [NOT SURE] Kamar's item.
 4. Lawyer review of Terms and Privacy. [NOT SURE] Kamar's item.
 5. Prices: Sponsored add-ons, Campus Lite, fair stall. Invoice details in Admin > Settings. [NOT SURE] Kamar's item.
@@ -102,3 +102,13 @@ Claude:
 - WhatsApp follow-ups set back to false on the server.
 - Deploy check: the live site was rebuilt and restarted on 20 Nov after the `e0795bb` pull.
 - Part 43 phone-check sheet built (`docs/PART43_PHONE_CHECK.xlsx`, local only).
+
+## Extra work done (22-23 Nov)
+
+- Backup sender: BACKUP_EMAIL_HOST set to Hostinger; test code refused by Hostinger (535, wrong mailbox password). Left off until a working mailbox password exists.
+- Hostinger answered: 100 outgoing mails per rolling 24 hours on the free mailbox, shared with login codes. Paid plans give 1,000 to 3,000 a day.
+- Duplicate MONGODB_URI line removed from the server .env (identical copy); database connects.
+- Government watcher checked: 13 of 21 pages OK, 8 failed (4 too slow, 3 could not be read, UPSC 404).
+- Phone layout checked on a real phone: no problems reported.
+- Server shows "System restart required" (pending system update). Needs a quiet time chosen by Kamar.
+- Part 43 phone-check sheet added to docs/.
