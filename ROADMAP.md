@@ -8,7 +8,9 @@ Last updated: Mon 23 Nov 2026. This is the master plan. Kamar sets the order; Sn
 - [x] Merge and deploy PRs #60 to #64 (government watcher list, mobile header, roadmap, Admin > Applications, Post Job timeout). Merged 19 Nov.
 - [x] Fix the Post Job form reloading on auth refresh (pushed 19 Nov).
 - [x] Merge the roadmap PRs (#65 and this file). Merged 23 Nov.
-- [ ] Deploy the latest main on the server (pull, build the client, restart with pm2).
+- [ ] Deploy the latest main on the server (pull, build the client, restart with pm2). Still pending at 23 Nov 13:00: PR #67 (mobile header with login) and PR #70 (Puducherry recruitment portal, 22nd watched page) are merged but the live Government jobs page still lists 21 pages.
+- [ ] Government watcher: 8 of 21 pages still failed on 23 Nov. Look at JIPMER and UPSC first (both links open in a normal browser, so the fault may be in the watcher). Then the 4 "took too long" pages (TRB, MRB, TNUSRB, TNPCB). Puducherry Health and Local Administration can be dropped; py.gov.in/recruitment covers them.
+- [ ] Razorpay refund of Rs 588.82 (payment of 7 Nov): refund shows Processed, the customer's bank has not credited it. Support ticket #21938160 raised 20 Nov; Razorpay replies by 24 Nov.
 - [ ] Hostinger backup mail settings (`BACKUP_*`) and send a test code. Blocked: Hostinger refused the mailbox password (535).
 - [ ] Brevo: the queue, the 38 held resends, credits and daily limit. Blocked: needs the Brevo login holder.
 - [ ] Test delete with a limited admin login (problem found 22 Nov: a limited test admin could delete a job on the live site; check the server); open Admins, Government jobs, Job fairs, Send a Job Fair and Applications.
@@ -27,7 +29,7 @@ Last updated: Mon 23 Nov 2026. This is the master plan. Kamar sets the order; Sn
 - [ ] Ask Babila to post a job on the Core Talent account and confirm the form works.
 
 ### Claude
-- [ ] Check the live site after the deploy: mobile header, Admin > Applications, Companies page, government watcher pages.
+- [ ] Check the live site after the deploy: mobile header, Admin > Applications, Companies page, government watcher pages. Checked 23 Nov (before deploy): home page, Admin > Applications and Admin > Government jobs load fine; mobile header (logged in) still to check on a phone.
 - [ ] Keep this file and the plan docs up to date as things change.
 
 ## Version 2 (built and merged)
