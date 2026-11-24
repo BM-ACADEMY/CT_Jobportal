@@ -37,13 +37,13 @@ const FairCheckIn = () => {
   const c = data.counts;
   return (
     <div className="space-y-4 max-w-xl">
-      <Link to="/admin/job-fairs" className="text-xs font-bold text-emerald-700">Back to job fairs</Link>
+      <Link to="/admin/job-fairs" className="inline-flex items-center h-10 sm:h-auto text-xs font-bold text-emerald-700">Back to job fairs</Link>
       <h1 className="text-xl font-black text-slate-900">Check-in: {data.title}</h1>
       <div className="grid grid-cols-2 gap-3 text-center">
         <div className="bg-white rounded-2xl border border-slate-100 p-3"><p className="text-2xl font-black text-slate-900">{c.seekerIn} / {c.going}</p><p className="text-xs text-slate-500">Job seekers in / registered</p></div>
         <div className="bg-white rounded-2xl border border-slate-100 p-3"><p className="text-2xl font-black text-slate-900">{c.stallsIn} / {c.stallsApproved}</p><p className="text-xs text-slate-500">Stalls in / approved</p></div>
       </div>
-      <input className="w-full h-12 px-3 rounded-xl border border-slate-200 bg-white text-sm" placeholder="Search name or phone number" value={q} onChange={(e) => setQ(e.target.value)} inputMode="search" />
+      <input className="w-full h-12 px-3 rounded-xl border border-slate-200 bg-white text-base sm:text-sm" placeholder="Search name or phone number" value={q} onChange={(e) => setQ(e.target.value)} inputMode="search" />
       {data.stalls.length > 0 && <div className="space-y-2"><p className="text-xs font-bold uppercase text-slate-500">Stalls</p>{data.stalls.map((s) => <Row key={s.id} kind="stall" row={s} sub={[s.contactName, s.phone].filter(Boolean).join(' · ')} />)}</div>}
       <div className="space-y-2">
         <p className="text-xs font-bold uppercase text-slate-500">Job seekers</p>

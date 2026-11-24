@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, CalendarDays } from 'lucide-react';
 
 const API = import.meta.env.VITE_API_BASE_URL;
-const input = 'w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm';
+const input = 'w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-base sm:text-sm';
 const EMPTY = { title: '', kind: 'government', organiserName: '', date: '', endDate: '', officialUrl: '', venueName: '', venueAddress: '', venueCity: '', venueDistrict: '', eligibility: '', documents: '', companies: '', description: '', supportedByUs: true };
 
 // Super Admin: add a fair from an official notice, publish it, close it. Fairs show on /job-fairs once published.
@@ -81,8 +81,8 @@ const JobFairsAdmin = () => {
         <input className={input} placeholder="Who can attend (optional)" value={f.eligibility} onChange={set('eligibility')} />
         <input className={input} placeholder="Documents to bring, separated by commas" value={f.documents} onChange={set('documents')} />
         <input className={input} placeholder="Companies listed in the notice, separated by commas (optional)" value={f.companies} onChange={set('companies')} />
-        <textarea className="w-full rounded-xl border border-slate-200 p-3 text-sm" rows={3} placeholder="Short description (optional)" value={f.description} onChange={set('description')} />
-        <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={f.supportedByUs} onChange={set('supportedByUs')} /> Show "Supported by Velaivaaipu"</label>
+        <textarea className="w-full rounded-xl border border-slate-200 p-3 text-base sm:text-sm" rows={3} placeholder="Short description (optional)" value={f.description} onChange={set('description')} />
+        <label className="text-sm flex items-center gap-2 min-h-10"><input type="checkbox" checked={f.supportedByUs} onChange={set('supportedByUs')} /> Show "Supported by Velaivaaipu"</label>
         <div className="flex gap-2">
           <button type="button" disabled={saving} onClick={() => create('published')} className="h-11 px-5 rounded-xl bg-emerald-600 text-white font-bold text-sm">Publish</button>
           <button type="button" disabled={saving} onClick={() => create('draft')} className="h-11 px-5 rounded-xl border border-slate-200 font-bold text-sm">Save draft</button>
@@ -93,15 +93,15 @@ const JobFairsAdmin = () => {
           <div className="flex justify-between gap-2"><b>{x.title}</b><span className={`text-xs font-bold ${x.status === 'pending' ? 'text-amber-700' : 'text-slate-500'}`}>{x.status === 'pending' ? 'Sent by an organiser: review' : x.status}</span></div>
           <p className="text-xs text-slate-500">{new Date(x.date).toLocaleDateString('en-IN')} · {[x.venue?.city, x.venue?.district].filter(Boolean).join(', ')} · {x.going} going</p>
           <div className="flex flex-wrap gap-2 pt-1">
-            {x.status !== 'published' && <button type="button" onClick={() => setStatus(x._id, 'published')} className="h-8 px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold">Publish</button>}
-            {x.status === 'pending' && <button type="button" onClick={() => setStatus(x._id, 'draft')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Not accepted</button>}
-            {x.status === 'published' && <button type="button" onClick={() => setStatus(x._id, 'closed')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Close</button>}
+            {x.status !== 'published' && <button type="button" onClick={() => setStatus(x._id, 'published')} className="h-10 sm:h-8 px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold">Publish</button>}
+            {x.status === 'pending' && <button type="button" onClick={() => setStatus(x._id, 'draft')} className="h-10 sm:h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Not accepted</button>}
+            {x.status === 'published' && <button type="button" onClick={() => setStatus(x._id, 'closed')} className="h-10 sm:h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Close</button>}
             {x.status === 'published' && [['seeker', 'job seekers', 'Mail seekers'], ['company', 'companies', 'Mail companies'], ['college', 'colleges', 'Mail colleges']].map(([k, l, b]) => (
-              <button key={k} type="button" onClick={() => sendMail(x, k, l)} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">{b}</button>
+              <button key={k} type="button" onClick={() => sendMail(x, k, l)} className="h-10 sm:h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">{b}</button>
             ))}
-            {x.kind === 'own' && <button type="button" onClick={() => openStalls(x)} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Stalls</button>}
-            {x.kind === 'own' && <Link to={`/admin/job-fairs/${x._id}/checkin`} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold inline-flex items-center">Check-in</Link>}
-            <a href={`${API}/job-fairs/${x.slug}/card.svg`} target="_blank" rel="noopener noreferrer" className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold inline-flex items-center">Poster card</a>
+            {x.kind === 'own' && <button type="button" onClick={() => openStalls(x)} className="h-10 sm:h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold">Stalls</button>}
+            {x.kind === 'own' && <Link to={`/admin/job-fairs/${x._id}/checkin`} className="h-10 sm:h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold inline-flex items-center">Check-in</Link>}
+            <a href={`${API}/job-fairs/${x.slug}/card.svg`} target="_blank" rel="noopener noreferrer" className="h-10 sm:h-8 px-3 rounded-lg border border-slate-200 text-xs font-bold inline-flex items-center">Poster card</a>
           </div>
           {stalls[x._id] && (
             <div className="pt-2 space-y-2">
@@ -110,8 +110,8 @@ const JobFairsAdmin = () => {
                   <p><b>{st.name}</b> · {st.contactName} · {st.phone} · {st.status}</p>
                   <p className="text-slate-600">{st.need}</p>
                   <div className="flex gap-2">
-                    {st.status !== 'approved' && <button type="button" onClick={() => stallStatus(x, st, 'approved')} className="h-7 px-3 rounded-lg bg-emerald-600 text-white font-bold">Approve</button>}
-                    {st.status !== 'declined' && <button type="button" onClick={() => stallStatus(x, st, 'declined')} className="h-7 px-3 rounded-lg border border-slate-200 font-bold">Decline</button>}
+                    {st.status !== 'approved' && <button type="button" onClick={() => stallStatus(x, st, 'approved')} className="h-10 sm:h-7 px-3 rounded-lg bg-emerald-600 text-white font-bold">Approve</button>}
+                    {st.status !== 'declined' && <button type="button" onClick={() => stallStatus(x, st, 'declined')} className="h-10 sm:h-7 px-3 rounded-lg border border-slate-200 font-bold">Decline</button>}
                   </div>
                 </div>
               ))}
