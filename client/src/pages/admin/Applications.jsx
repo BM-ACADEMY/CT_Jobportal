@@ -34,10 +34,10 @@ const Applications = () => {
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm text-slate-600">From
-          <input type="date" value={from} max={to} onChange={(e) => e.target.value && setFrom(e.target.value)} className="block border border-slate-300 rounded-md px-2 py-1 mt-1" />
+          <input type="date" value={from} max={to} onChange={(e) => e.target.value && setFrom(e.target.value)} className="block border border-slate-300 rounded-md px-2 py-2 text-base mt-1" />
         </label>
         <label className="text-sm text-slate-600">To
-          <input type="date" value={to} min={from} onChange={(e) => e.target.value && setTo(e.target.value)} className="block border border-slate-300 rounded-md px-2 py-1 mt-1" />
+          <input type="date" value={to} min={from} onChange={(e) => e.target.value && setTo(e.target.value)} className="block border border-slate-300 rounded-md px-2 py-2 text-base mt-1" />
         </label>
         {data && <p className="text-sm text-slate-600 pb-1">{data.total} application{data.total === 1 ? '' : 's'}{data.total > data.shown ? `, showing the latest ${data.shown}` : ''}</p>}
       </div>
@@ -49,17 +49,17 @@ const Applications = () => {
       ) : (
         <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
           {data.applications.map((a) => (
-            <div key={a._id} className="p-3 flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-medium text-slate-900 truncate">{a.applicant?.name || 'Deleted user'}</p>
-                <p className="text-xs text-slate-500 truncate">{[a.applicant?.email, a.applicant?.phone].filter(Boolean).join(' · ')}</p>
+            <div key={a._id} className="p-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-slate-900 break-words sm:truncate">{a.applicant?.name || 'Deleted user'}</p>
+                <p className="text-xs text-slate-500 break-words sm:truncate">{[a.applicant?.email, a.applicant?.phone].filter(Boolean).join(' · ')}</p>
                 <p className="text-sm text-slate-700 mt-1">
                   Applied to{' '}
                   {a.job ? <Link to={`/admin/jobs/${a.job._id}/applicants`} className="text-emerald-700 hover:underline">{a.job.title}</Link> : 'a deleted job'}
                   {a.job?.company ? ` at ${a.job.company}` : ''}
                 </p>
               </div>
-              <div className="text-right text-xs text-slate-500 shrink-0">
+              <div className="sm:text-right text-xs text-slate-500 shrink-0">
                 <p>{when(a.at)}</p>
                 <p className="capitalize">{a.status}</p>
               </div>
